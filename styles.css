@@ -1,0 +1,808 @@
+
+    /* Base Styles */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Orbitron', sans-serif;
+      background: #000;
+      color: #fff;
+      overflow-x: hidden;
+      position: relative;
+    }
+    /* Header */
+    header {
+      background: #000;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    header h1 {
+      background: #ff2800;
+      padding: 10px 20px;
+      border-radius: 10px;
+      transition: background 0.3s ease, color 0.3s ease;
+      cursor: pointer;
+    }
+
+    header h1:hover {
+      background: #24b6ff;
+      color: #000;
+      box-shadow: 0 0 15px #24b6ff;
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+    }
+
+    nav a {
+      color: #ffffff;
+      margin-left: 20px;
+      text-decoration: none;
+      font-weight: bold;
+      position: relative;
+      /* Ensure text links also have padding for consistent hover */
+      padding: 5px 0;
+    }
+
+    nav a::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: -4px;
+      width: 0%;
+      height: 2px;
+      background: white;
+      transition: width 0.3s ease;
+    }
+
+    nav a:hover::after {
+      width: 100%;
+      background: #24b6ff;
+    }
+
+    /* My Profile Icon */
+    .profile-icon-link {
+      margin-left: 20px;
+      display: flex;
+      align-items: center;
+      text-decoration: none; /* Remove underline from the anchor */
+      position: relative; /* For the potential tooltip */
+    }
+
+    .profile-icon {
+      width: 30px; /* Adjust size as needed */
+      height: 30px; /* Adjust size as needed */
+      background-color: #555; /* A gray circle for the face */
+      border-radius: 50%;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+      cursor: pointer;
+    }
+
+    .profile-icon::before {
+      content: '';
+      position: absolute;
+      width: 60%;
+      height: 40%;
+      background-color: #777; /* Top part of the head */
+      border-radius: 50%;
+      top: 15%;
+      left: 20%;
+    }
+
+    .profile-icon::after {
+      content: '';
+      position: absolute;
+      width: 80%;
+      height: 50%;
+      background-color: #777; /* Shoulders/body */
+      border-radius: 50% 50% 0 0;
+      bottom: 0;
+      left: 10%;
+    }
+
+    .profile-icon-link:hover .profile-icon {
+      transform: scale(1.1);
+      box-shadow: 0 0 8px #24b6ff;
+      background-color: #24b6ff; /* Change color on hover */
+    }
+
+    .profile-icon-link:hover .profile-icon::before,
+    .profile-icon-link:hover .profile-icon::after {
+      background-color: #000; /* Change inner parts color on hover */
+    }
+
+    /* Hero Section */
+    .hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      text-align: center;
+      background: #000;
+      padding: 5px 20px;
+      position: relative;
+    }
+
+    .falling-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      overflow: hidden;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 3;
+      color: #fff;
+      max-width: 800px;
+      padding: 10px;
+      animation: fadeIn 2s ease-in-out forwards;
+      margin-bottom: 5px; /* Reduced space between hero content (including quote) and features */
+    }
+
+    .hero h2, .hero h3 {
+      font-size: 3em;
+      margin-top: 25px;
+      margin-bottom: 45px;
+      transition: text-shadow 0.3s ease;
+    }
+
+    .hero h2:hover, .hero h3:hover {
+      text-shadow: 0 0 3px #24b6ff;
+    }
+
+    .hero p {
+      font-size: 1.4em;
+      margin-bottom: 10px;
+      transition: text-shadow 0.3s ease;
+    }
+
+    .hero p:hover {
+      text-shadow: 0 0 10px #24b6ff;
+    }
+
+    .hero a.modal-trigger {
+      display: inline-block;
+      margin-top: 40px;
+      padding: 15px 40px;
+      background: #ff2800;
+      color: #fff;
+      text-decoration: none;
+      font-weight: bold;
+      border-radius: 10px;
+      transition: background 0.3s ease, transform 0.3s ease;
+      backdrop-filter: blur(4px);
+      cursor: pointer;
+    }
+
+    .hero a.modal-trigger:hover {
+      background: #24b6ff;
+      color: #000;
+      transform: translateY(-1px);
+      box-shadow: 0 0 5px #24b6ff;
+    }
+
+    /* Quote Billboard */
+    .quote-billboard {
+      width: 100%;
+      max-width: 800px;
+      height: 100px;
+      padding: 1rem;
+      text-align: center;
+      border-radius: 10px;
+      margin-top: 1rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #digital-quote {
+      font-size: 1rem;
+      line-height: 1.5rem;
+      white-space: normal;
+      opacity: 0;
+      transition: opacity 1s ease-in-out;
+      animation: glow 1s infinite alternate ease-in-out;
+    }
+
+    /* Features Section */
+    .features {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 10px 10px;
+      background: #000;
+      gap: 10px;
+      padding-bottom: 100px; /* Increased space between features and footer */
+    }
+
+    .feature {
+      background: rgba(26, 26, 26, 0.419);
+      padding: 5px;
+      border-radius: 15px;
+      max-width: 360px;
+      text-align: center;
+      box-shadow: 0 0 10px rgba(255,255,255,0.05);
+      transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease, color 0.3s ease, text-shadow 0.3s ease;
+      backdrop-filter: blur(2px);
+    }
+
+    .feature:hover {
+      transform: translateY(-3px);
+      background: rgba(26, 26, 26, 0.6);
+      color: #fff;
+      box-shadow: 0 3px 15px #24b6ff;
+      text-shadow: 0 0 2px #24b6ff;
+    }
+
+    /* Footer */
+    footer {
+      background: #ff2800;
+      color: #fff;
+      padding: 20px;
+      font-size: 0.8em;
+      transition: background 0.3s ease, color 0.3s ease;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 60px; /* Maintain height */
+    }
+
+    footer:hover {
+      background: #24b6ff;
+      color: #000;
+    }
+
+    footer .footer-left {
+      text-align: left;
+    }
+
+    footer .footer-right {
+      text-align: right;
+      display: flex;
+      gap: 20px;
+    }
+
+    footer a {
+        color: #fff;
+        text-decoration: none;
+        font-weight: bold;
+        transition: color 0.3s ease;
+    }
+
+    footer a:hover {
+        color: #000;
+    }
+
+    /* New container for stationary icons */
+    .static-icons-container {
+      display: flex;
+      flex-wrap: wrap; /* Allows icons to wrap to the next line */
+      justify-content: center; /* Centers icons horizontally */
+      padding: 20px 20px 0; /* Add some padding around the container */
+      gap: 9px; /* Reduced gap between icons */
+      background-color: #000; /* Match body background */
+    }
+
+    /* Icon styles for the flip effect */
+    .icon {
+      width: 120px; /* Increased width to accommodate more space */
+      height: 98px; /* Maintain aspect ratio */
+      perspective: 1000px; /* Establishes 3D space for the flip */
+      cursor: pointer;
+      position: relative; /* Needed for absolute positioning of front/back */
+      transition: transform 0.6s; /* Smooth transition for the flip */
+    }
+
+    /* Inner container for the flip effect */
+    .icon-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      text-align: center;
+      transition: transform 0.6s;
+      transform-style: preserve-3d; /* Key for 3D transforms */
+    }
+
+    /* Flip on hover */
+    .icon:hover .icon-inner {
+      transform: rotateY(180deg);
+    }
+
+    /* Front and back of the flip card */
+    .icon-front,
+    .icon-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      -webkit-backface-visibility: hidden; /* Hide back of the element when facing away */
+      backface-visibility: hidden; /* Hide back of the element when facing away */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 8px; /* Consistent border radius */
+    }
+
+    .icon-front {
+      background-color: transparent; /* Image itself will be visible */
+    }
+
+    .icon-front img {
+      width: 100%; /* Make image fill the front of the card */
+      height: 100%;
+      object-fit: contain; /* Ensure flag proportions are kept */
+      border-radius: 8px; /* Match container border-radius */
+    }
+
+    .icon-back {
+      background-color: #000; /* Changed background color to black */
+      color: #fff;
+      transform: rotateY(180deg); /* Start rotated for the back */
+      font-size: 1em; /* Adjust font size for tooltip text */
+      padding: 5px; /* Padding for the text */
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.8); /* Darker glow for black background */
+      word-break: break-word; /* Allow long words to break */
+      line-height: 1.2;
+    }
+
+    /* Adjust tooltip to be the back of the card */
+    .icon::after {
+      content: none; /* Remove the old tooltip, it's now the .icon-back */
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-content {
+      background: #1a1a1a;
+      padding: 30px;
+      border-radius: 15px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+      position: relative;
+      transform: translateY(-20px);
+      opacity: 0;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+
+    .modal-overlay.active .modal-content {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .modal-close-button {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: none;
+      border: none;
+      font-size: 1.5em;
+      color: #ff2800;
+      cursor: pointer;
+      transition: color 0.3s ease;
+    }
+
+    .modal-close-button:hover {
+      color: #24b6ff;
+    }
+
+    .modal-content h2 {
+      margin-bottom: 20px;
+      text-align: center;
+      color: #ff2800;
+    }
+
+    .modal-content form {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-content label {
+      margin-bottom: 8px;
+      font-size: 0.9em;
+      color: #ccc;
+    }
+
+    .modal-content input[type="text"],
+    .modal-content input[type="email"],
+    .modal-content input[type="password"] {
+      padding: 12px;
+      margin-bottom: 15px;
+      border: 1px solid #333;
+      border-radius: 5px;
+      background: #0d0d0d;
+      color: #fff;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1em;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .modal-content input[type="text"]:focus,
+    .modal-content input[type="email"]:focus,
+    .modal-content input[type="password"]:focus {
+      outline: none;
+      border-color: #24b6ff;
+      box-shadow: 0 0 5px rgba(36, 182, 255, 0.5);
+    }
+
+    .modal-content button[type="submit"] {
+      padding: 12px 20px;
+      background: #ff2800;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1.1em;
+      font-weight: bold;
+      transition: background 0.3s ease, transform 0.2s ease;
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    .modal-content button[type="submit"]:hover {
+      background: #24b6ff;
+      color: #000;
+      transform: translateY(-2px);
+    }
+
+    .modal-switch-text {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 0.9em;
+      color: #aaa;
+    }
+
+    .modal-switch-text a {
+      color: #24b6ff;
+      text-decoration: none;
+      font-weight: bold;
+      transition: color 0.3s ease;
+    }
+
+    .modal-switch-text a:hover {
+      color: #ff2800;
+    }
+
+    /* Profile Modal Specific Styles */
+    #profileModal .modal-content h2 {
+      color: #ff2800; /* A different color for profile modal title */
+    }
+
+    .profile-avatar-container {
+      width: 100px; /* Adjust size as needed */
+      height: 100px; /* Adjust size as needed */
+      border-radius: 50%;
+      overflow: hidden;
+      margin: 0 auto 20px auto; /* Center and add space below */
+      border: 3px solid #24b6ff; /* A border around the avatar */
+      box-shadow: 0 0 10px rgba(36, 182, 255, 0.5);
+    }
+
+    .profile-avatar-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover; /* Ensures the image covers the area without distortion */
+    }
+
+    .profile-details p {
+      margin-bottom: 10px;
+      font-size: 1.1em;
+      color: #eee;
+    }
+
+    .profile-details strong {
+      color: #fff;
+    }
+
+    .profile-actions {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 25px;
+    }
+
+    .profile-actions button {
+      padding: 12px 25px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease, color 0.3s ease; /* Added color to transition */
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    #editProfileBtn {
+      background: #ff2800;
+      color: #fff;
+    }
+
+    #editProfileBtn:hover {
+      background: #24b6ff;
+      color: #000; /* Changed text color to black on hover */
+    }
+
+    #logoutBtn {
+      background: #555;
+      color: #fff;
+    }
+
+    #logoutBtn:hover {
+      background: #24b6ff;
+      color: #000; /* Changed text color to blue on hover */
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fall {
+      0% {
+        transform: translateY(-100px) rotate(0deg) scale(0.8);
+        opacity: 0;
+      }
+      100% {
+        transform: translateY(calc(100vh + 100px)) rotate(360deg) scale(1.2);
+        opacity: 0.8;
+      }
+    }
+
+    @keyframes glow {
+      from {
+        text-shadow: 0 0 10px #24b6ff, 0 0 20px #24b6ff;
+      }
+      to {
+        text-shadow: 0 0 20px #24b6ff, 0 0 40px #24b6ff;
+      }
+    }
+
+    .falling-suit {
+      position: absolute;
+      font-size: 5px;
+      animation: fall linear infinite;
+      color: #fff;
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    /* Media Queries */
+    @media (max-width: 768px) {
+      .hero h2, .hero h3 {
+        font-size: 2em;
+      }
+
+      .hero p {
+        font-size: 1.2em;
+      }
+
+      .features {
+        flex-direction: column;
+        padding: 40px 10px;
+      }
+
+      .feature {
+        margin-bottom: 20px;
+      }
+
+      footer {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+        padding: 15px 20px; /* Adjust padding for better look on small screens */
+      }
+
+      footer .footer-right {
+        flex-direction: column;
+        gap: 5px;
+      }
+      .static-icons-container {
+        gap: 10px; /* Further reduced gap on smaller screens */
+      }
+      .icon {
+        width: 100px; /* Adjust size for smaller screens */
+        height: 70px;
+      }
+    }
+  /* Additional Mobile & Orientation Support */
+
+/* Portrait mode */
+@media screen and (max-width: 768px) and (orientation: portrait) {
+  .hero h2, .hero h3 {
+    font-size: 1.8em;
+  }
+
+  .hero p {
+    font-size: 1.1em;
+  }
+
+  .modal-content {
+    padding: 20px;
+  }
+
+  .icon {
+    width: 90px;
+    height: 65px;
+  }
+
+  .feature {
+    max-width: 95%;
+  }
+}
+
+/* Landscape mode */
+@media screen and (max-width: 768px) and (orientation: landscape) {
+  header {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  nav {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .hero {
+    padding: 20px 10px;
+  }
+
+  .icon {
+    width: 85px;
+    height: 60px;
+  }
+
+  .modal-content {
+    width: 95%;
+    max-width: 450px;
+  }
+
+  .features {
+    gap: 15px;
+  }
+
+  footer {
+    flex-direction: row;
+    justify-content: space-around;
+    padding: 10px;
+  }
+}
+/* ID Card Styles */
+/* Existing CSS */
+
+/* ID Card Styles */
+.id-card-display {
+  margin-top: 20px;
+  border-top: 1px solid #ccc;
+  padding-top: 20px;
+}
+
+.id-card {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+  max-width: 350px;
+  margin: 0 auto;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  font-family: Arial, sans-serif;
+  color: #333;
+  /* Watermark styles */
+  background-image: url('watermark.png'); /* Replace 'watermark.png' with the actual path to your image */
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain; /* Adjust as needed: cover, auto, or specific dimensions */
+  opacity: 0.15; /* Adjust the opacity for desired subtlety */
+}
+
+.id-card-header {
+  text-align: center;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+  /* Ensure header text is above the watermark */
+  position: relative;
+  z-index: 1;
+  opacity: 1; /* Reset opacity for content */
+}
+
+.id-card-header h4 {
+  margin: 0;
+  color: #007bff;
+  font-size: 1.2em;
+}
+
+.id-card-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  /* Ensure body content is above the watermark */
+  position: relative;
+  z-index: 1;
+  opacity: 1; /* Reset opacity for content */
+}
+
+.id-card-photo-container {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #007bff;
+  flex-shrink: 0; /* Prevent shrinking */
+}
+
+.id-card-photo-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.id-card-info {
+  flex-grow: 1;
+}
+
+.id-card-info p {
+  margin: 5px 0;
+  font-size: 0.9em;
+}
+
+.id-card-info strong {
+  color: #555;
+}
+
+.id-card-flag-container {
+  width: 60px;
+  height: 40px;
+  border: 1px solid #eee;
+  margin-top: 5px;
+}
+
+.id-card-flag-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.id-card-about {
+  font-style: italic;
+  font-size: 0.85em;
+  color: #777;
+  margin-top: 10px;
+  border-top: 1px dashed #eee;
+  padding-top: 8px;
+}
