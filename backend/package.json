@@ -1,0 +1,19 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "tenofakind.com backend",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon src/index.j"
+  },
+  "keywords": [
+    "javascript",
+    "backend",
+    "ten"
+  ],
+  "author": "xrajan",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}

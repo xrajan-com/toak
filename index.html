@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ten Of A Kind - Winner Takes All</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet"></noscript>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+</head>
+<body>
+  <header role="banner">
+    <h1>Ten of a Kind</h1>
+    <nav role="navigation">
+      <a href="#">Leaderboard</a>
+      <a href="#" class="profile-icon-link">
+        <div class="profile-icon"></div>
+      </a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="static-icons-container">
+        <div class="icon" data-tooltip="Baroda">
+          <div class="icon-inner">
+            <div class="icon-front">
+              <img src="640px/Baroda.png" alt="Flag of Baroda" loading="lazy">
+            </div>
+            <div class="icon-back">
+              Baroda
+            </div>
+          </div>
+        </div>
+        <div class="icon" data-tooltip="New Delhi">
+          <div class="icon-inner">
+            <div class="icon-front">
+              <img src="640px/Delhi.png" alt="Flag of New Delhi" loading="lazy">
+            </div>
+            <div class="icon-back">
+              New Delhi
+            </div>
+          </div>
+        </div>
+        <div class="icon" data-tooltip="Hyderabad">
+          <div class="icon-inner">
+            <div class="icon-front">
+              <img src="640px/Hyderabad.png" alt="Flag of Hyderabad" loading="lazy">
+            </div>
+            <div class="icon-back">
+              Hyderabad
+            </div>
+          </div>
+        </div>
+        <div class="icon" data-tooltip="Indore">
+          <div class="icon-inner">
+            <div class="icon-front">
+              <img src="640px/Indore.png" alt="Flag of Indore" loading="lazy">
+            </div>
+            <div class="icon-back">
+              Indore
+            </div>
+          </div>
+        </div>
+        <div class="icon" data-tooltip="Jaipur">
+          <div class="icon-inner">
+            <div class="icon-front">
+              <img src="640px/Jaipur.png" alt="Flag of Jaipur" loading="lazy">
+            </div>
+            <div class="icon-back">
+              Jaipur
+            </div>
+          </div>
+        </div>
+        <div class="icon" data-tooltip="Maratha Empire">
+          <div class="icon-inner">
+            <div class="icon-front">
+              <img src="640px/Maratha Empire.png" alt="Flag of Maratha Empire" loading="lazy">
+            </div>
+            <div class="icon-back">
+              Maratha Empire
+            </div>
+          </div>
+        </div>
+        <div class="icon" data-tooltip="Mysore">
+          <div class="icon-inner">
+            <div class="icon-front">
+              <img src="640px/Mysore.png" alt="Flag of Mysore" loading="lazy">
+            </div>
+            <div class="icon-back">
+              Mysore
+            </div>
+          </div>
+        </div>
+        <div class="icon" data-tooltip="Sikh Empire">
+          <div class="icon-inner">
+            <div class="icon-front">
+              <img src="640px/Sikh Empire.png" alt="Flag of Sikh Empire" loading="lazy">
+            </div>
+            <div class="icon-back">
+              Sikh Empire
+            </div>
+          </div>
+        </div>
+        <div class="icon" data-tooltip="Sikkim">
+          <div class="icon-inner">
+            <div class="icon-front">
+              <img src="640px/Sikkim.png" alt="Flag of Sikkim" loading="lazy">
+            </div>
+            <div class="icon-back">
+              Sikkim
+            </div>
+          </div>
+        </div>
+        <div class="icon" data-tooltip="Travancore">
+          <div class="icon-inner">
+            <div class="icon-front">
+              <img src="640px/Travancore.png" alt="Flag of Travancore" loading="lazy">
+            </div>
+            <div class="icon-back">
+              Travancore
+            </div>
+          </div>
+        </div>
+    </div>
+
+    <section class="hero">
+      <div class="falling-container"></div>
+      <div class="hero-content">
+        <h2>You're Welcome</h2>
+        <h3>To an Epic Game of Poker</h3>
+        <p>Much like the Historic Battle of Ten Kings</p>
+        <p>In the 'Ten of a Kind - Winner Takes All' Poker Tournament</p>
+        <p>Ten Kings will be competing against each other.</p>
+        <a href="#" class="modal-trigger" id="openLoginModal">Login/Register</a>
+
+        <div class="quote-billboard">
+          <p id="digital-quote">"Loading quote..."</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="features" id="about-content">
+      <div class="feature">
+        <h3>Real-Time</h3>
+        <p>Leaderboard</p>
+      </div>
+      <div class="feature">
+        <h3>It's Free!</h3>
+        <p>For Now</p>
+      </div>
+      <div class="feature">
+        <h3>Version</h3>
+        <p>Texas Hold'em</p>
+      </div>
+    </section>
+  </main>
+
+  <footer id="footer-section">
+    <div class="footer-left">
+        &copy; 2025 Ten Of A Kind. All rights reserved.
+        <br>
+        Background music: "Blue Martini" by Podington Bear
+    </div>
+    <div class="footer-right">
+        <a href="#about-content">About Us</a>
+        <a href="#">Support/Feedback</a>
+    </div>
+  </footer>
+<div class="modal-overlay" id="loginRegisterModal">
+    <div class="modal-content">
+      <button class="modal-close-button" id="closeModal">&times;</button>
+      <h2 id="modalTitle">Login</h2>
+      <form id="loginForm">
+        <label for="loginEmail">Email:</label>
+        <input type="email" id="loginEmail" name="loginEmail" required><br>
+        <label for="loginPassword">Password:</label>
+        <input type="password" id="loginPassword" name="loginPassword" required><br>
+        <button type="submit">Login</button>
+        <p class="modal-switch-text">Don't have an account? <a href="#" id="switchToRegister">Register here</a></p>
+      </form>
+      <form id="registerForm" style="display: none;">
+        <label for="registerUsername">Username:</label>
+        <input type="text" id="registerUsername" name="registerUsername" required><br>
+        <label for="registerEmail">Email:</label>
+        <input type="email" id="registerEmail" name="registerEmail" required><br>
+        <label for="registerPassword">Password:</label>
+        <input type="password" id="registerPassword" name="registerPassword" required><br>
+        <label for="confirmPassword">Confirm Password:</label>
+        <input type="password" id="confirmPassword" name="confirmPassword" required><br>
+        <label for="userPhoto">Upload Photo:</label>
+        <input type="file" id="userPhoto" name="userPhoto" accept="image/*"><br>
+        <label for="aboutUser">About (max 30 chars):</label>
+        <input type="text" id="aboutUser" name="aboutUser" maxlength="30"><br>
+        <button type="submit">Register</button>
+        <p class="modal-switch-text">Already have an account? <a href="#" id="switchToLogin">Login here</a></p>
+      </form>
+      </div>
+  </div>
+  <div class="modal-overlay" id="profileModal">
+    <div class="modal-content">
+      <button class="modal-close-button" id="closeProfileModal">&times;</button>
+      <h2 id="profileModalTitle">My Profile</h2>
+      <div class="profile-details">
+        <div class="profile-avatar-container">
+            <img id="profileAvatar" src="placeholder.jpg" alt="User Avatar">
+        </div>
+        <p><strong>Username:</strong> <span id="profileUsername">JohnDoe</span></p>
+        <p><strong>Email:</strong> <span id="profileEmail">johndoe@example.com</span></p>
+        <p><strong>Chosen Kingdom:</strong> <span id="profileKingdom">Not Set</span></p>
+        <p><strong>Total Prize Money:</strong> <span id="profilePrizeMoney">$0.00</span></p>
+      </div>
+      <div class="profile-actions">
+        <button id="editProfileBtn">Edit Profile</button>
+        <button id="logoutBtn">Logout</button>
+        <button id="viewIdCardBtn">View ID Card</button> </div>
+
+      <div class="id-card-display" style="display: none;">
+        <h3>Your Official ID Card</h3>
+        <div class="id-card">
+          <div class="id-card-header">
+            <h4>Ten of a Kind Player ID</h4>
+          </div>
+          <div class="id-card-body">
+            <div class="id-card-photo-container">
+              <img id="idCardPhoto" src="placeholder.jpg" alt="User Photo">
+            </div>
+            <div class="id-card-info">
+              <p><strong>Username:</strong> <span id="idCardUsername"></span></p>
+              <p><strong>Kingdom:</strong> <span id="idCardKingdom"></span></p>
+              <div class="id-card-flag-container">
+                <img id="idCardKingdomFlag" src="" alt="Kingdom Flag">
+              </div>
+              <p class="id-card-about">"<span id="idCardAbout"></span>"</p>
+            </div>
+          </div>
+        </div>
+        <button id="closeIdCardBtn">Close ID Card</button>
+      </div>
+    </div>
+  </div>
+  <script src="scripts.js" defer></script>
+  <audio autoplay loop preload="auto">
+    <source src="Blue-martini.mp3" type="audio/mpeg">
+    Your browser does not support the audio element.
+  </audio>
+</body>
+</html>
