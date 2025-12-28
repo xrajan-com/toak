@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "96098527170",
+    "project_id": "ten-of-a-kind-poker",
+    "storage_bucket": "ten-of-a-kind-poker.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:96098527170:android:a93b62f7c15462d898185b",
+        "android_client_info": {
+          "package_name": "com.example.ten_of_a_kind_poker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCIK0qZsBtW3A6WloakH2svx0wwx7OmEx4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

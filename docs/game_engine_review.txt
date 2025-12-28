@@ -1,0 +1,34 @@
+TEN OF A KIND POKER - ENGINE REVIEW
+Date: 2025-11-17
+
+Scope & current strengths
+- Self-contained Hold'em engine with PCG32 RNG, deterministic deck handling, and a modular evaluator (lib/game/game_engine.dart, lib/game/hand_evaluator.dart).
+- Clear DTOs for config, payouts, and snapshots simplify serialization (lib/game/models.dart).
+- Event bus abstraction (lib/game/events.dart) enables UI layers to react without tight coupling.
+
+Critical correctness & security issues
+1. Duplicate event definitions cause name collisions and inconsistent payloads. The engine defines BlindsPosted/HandSettled/Shuffle*/Dealing* again (lib/game/game_engine.dart:20-80) even though the canonical versions already exist in lib/game/events.dart:17-153. Dart reports duplicate class names, so the package does not compile, and even if it did, listeners would receive incompatible payloads (e.g., events.dart expects named amounts, engine emits positional indices). Consolidate the types in events.dart and update emitters.
+2. Short-stacked blinds mis-set the required call amount. Regardless of what the SB/BB actually manage to post, currentBet is forced to config.bigBlind (lib/game/game_engine.dart:515-519). When the big blind has fewer chips this makes everyone else call more chips than are in the live bet, which violates Hold'em rules and can freeze the hand. Track the exact bet posted per seat and set currentBet to that amount.
+3. Skip-to-winner force-folds broke players. When requestSkipToWinner() or _forceCloseBettingRound() auto-closes action, anyone who cannot cover the call is immediately folded (lib/game/game_engine.dart:864-885). A short stack must instead be pushed all-in for their remaining chips; folding them rewrites equity and payouts. Modify the logic to treat insufficient stacks as all-in calls.
+4. Snapshots leak every player's hole cards. snapshot() copies List.unmodifiable(p.hole) for all seats (lib/game/game_engine.dart:1480-1502) and PlayerSnapshot always exposes hole cards (lib/game/models.dart:173-197). Any UI or spectator that receives a snapshot gets perfect information, enabling collusion. Provide hero/observer-filtered snapshots or redact hole/best until showdown.
+5. Event stream gaps hinder UIs. DealerButtonMoved and NextToActChanged are defined (lib/game/events.dart:17-46) but never emitted, and BlindsPosted emits different data than documented. As a result, UIs cannot reliably label blinds, track the button, or animate action. Emit these events during button rotation and when actingIndex advances.
+6. RNG seeding is not audit-ready. Pcg32 defaults to DateTime-based seeds (_defaultSeed in lib/game/rng.dart:34-70), and GameEngine._prepareHandRng never seeds from Random.secure() unless a caller injects it. For real-money poker you need crypto-grade entropy plus per-hand logging and verification to satisfy regulators.
+
+Missing capabilities versus best-in-class Hold'em
+- Table/tournament management: no blind/ante schedule, level timers, rebuys/add-ons, seat balancing, or multi-table tournament orchestration (GameConfig only holds static blinds; lib/game/models.dart:79-105).
+- Gameplay depth: no configurable bet structures (limit/pot-limit), button antes, kill games, deal-making, or advanced preflop options (straddles limited to a single button straddle in lib/game/game_engine.dart:534-548 with no change to first-to-act order at 553-560).
+- Player experience: no action clocks, time banks, show/muck controls, rabbit hunting, hand histories, or replayer/export features. requestShowNow() simply forces showdowns for everyone with no selective reveal logic.
+- Platform/service readiness: no persistence layer, networking, reconnection, telemetry, hand-ID tracking, or anti-collusion tooling. Game snapshots lack IDs/checksums, and there is no crash-recovery path.
+- Compliance & economy: no rake, jackpot contributions, currency abstraction, AML/KYC hooks, or responsible gaming guardrails. PayoutTable is static per game and cannot represent tiered prize pools or house fees.
+- Bots & PvE: BotAdvisor is a single deterministic heuristic (lib/game/bot_engine.dart:38-200) with no randomness, difficulty settings, or post-flop board evaluation, so bots become predictable and easy to exploit.
+
+Testing & documentation gaps
+- There are zero automated tests for the engine, evaluator, or RNG. The only test is a widget smoke test (test/widget_test.dart) that checks a UI string. Regessions in hand ranking, side pots, or action flow would go unnoticed.
+- No fuzz/load testing, stress tools, or simulations exist to ensure stability under mis-clicks, malformed states, or large tourneys.
+- README.md is the default Flutter template, so newcomers have no guidance on rules, architecture, launch steps, or certification posture.
+
+Suggested next steps
+1. Unify event definitions, fix blind accounting, and correct skip-to-winner handling so the core engine compiles and respects Hold'em rules.
+2. Harden security/fairness: produce hero-filtered snapshots, add crypto seeding + per-hand seed logging, and emit a full auditable event trail.
+3. Prioritize product gaps: implement blind schedules + action clocks, broaden bet/straddle options, capture hand histories, and expand bot AI before layering on UX polish.
+4. Build a regression harness: property-based tests for the evaluator, exhaustive side-pot fixtures, RNG determinism checks, and integration tests that replay full hands.
