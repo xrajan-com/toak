@@ -35,7 +35,7 @@ fi
 
 echo "==> Deploying to Firebase Hosting"
 deploy_log="$(mktemp)"
-if ! firebase deploy --only hosting 2>&1 | tee "$deploy_log"; then
+if ! env -u DEBUG firebase deploy --only hosting --non-interactive 2>&1 | tee "$deploy_log"; then
   if grep -q "Hosting storage quota" "$deploy_log"; then
     cat >&2 <<'EOF'
 
