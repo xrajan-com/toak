@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ten_of_a_kind_poker/game/game_engine.dart' as eng;
 
 void main() {
-  test('High-aura champion folds weak hand facing river all-in', () {
+  test('Rock folds weak hand facing river all-in', () {
     final e = eng.GameEngine(
       config: const eng.GameConfig(
         tableSeed: 1,
@@ -17,11 +17,12 @@ void main() {
         id: 'P$i',
         name: 'P$i',
         chips: 8000,
-        enduranceMinutes: 30,
         aura: i == 1 ? 90 : 61,
         isBot: true,
       ));
     }
+    e.players[1].temperament = eng.BotTemperament.worldChamp;
+    e.players[1].skill = eng.BotSkill.killer;
 
     // River state: bot at seat 1 faces an all-in call for its whole stack.
     e.phase = eng.GamePhase.river;
@@ -49,7 +50,7 @@ void main() {
     expect(advice.action, eng.ActionType.fold);
   });
 
-  test('High-aura champion calls flush facing river all-in', () {
+  test('Rock calls flush facing river all-in', () {
     final e = eng.GameEngine(
       config: const eng.GameConfig(
         tableSeed: 1,
@@ -64,11 +65,12 @@ void main() {
         id: 'P$i',
         name: 'P$i',
         chips: 8000,
-        enduranceMinutes: 30,
         aura: i == 1 ? 90 : 61,
         isBot: true,
       ));
     }
+    e.players[1].temperament = eng.BotTemperament.worldChamp;
+    e.players[1].skill = eng.BotSkill.killer;
 
     e.phase = eng.GamePhase.river;
     e.pot = 20000;
@@ -95,4 +97,3 @@ void main() {
     expect(advice.action, eng.ActionType.call);
   });
 }
-

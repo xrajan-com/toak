@@ -7,13 +7,13 @@
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:ten_of_a_kind_poker/main.dart';
+import 'package:ten_of_a_kind_poker/app/app.dart';
 
 void main() {
-  testWidgets('App shows venue selection heading', (WidgetTester tester) async {
+  testWidgets('App shows disclaimer on launch', (WidgetTester tester) async {
     await tester.pumpWidget(const TenOfAKindApp());
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('Choose a Venue'), findsOneWidget);
+    expect(find.text('DISCLAIMER'), findsOneWidget);
   });
 }

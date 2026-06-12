@@ -2,7 +2,7 @@ name: ten_of_a_kind_poker
 description: A Flutter app for Ten Of A Kind poker tournament
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.2.8+58
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -16,14 +16,15 @@ dependencies:
   timezone: ^0.9.2
 
   # Firebase
-  firebase_core: ^2.32.0
-  firebase_auth: ^4.17.4
+  firebase_core: 2.32.0
+  firebase_auth: 4.20.0
+  cloud_firestore: 4.17.5
 
   # Google Sign-In
   google_sign_in: ^6.2.1
 
   # Profile image picker
-  image_picker: ^1.0.7
+  image_picker: 1.1.2
   flutter_svg: ^2.0.7
 
   # State management
@@ -32,19 +33,24 @@ dependencies:
   # Environment variables
   flutter_dotenv: ^5.1.0
   http: ^1.2.1
+  shared_preferences: ^2.2.3
   just_audio: ^0.9.38
   url_launcher: ^6.3.0
 
   # Icons / cards
   cupertino_icons: ^1.0.6
   playing_cards: ^0.4.1+11
-  pdf: ^3.11.3
-  printing: ^5.13.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+
+dependency_overrides:
+  image_picker_android: 0.8.12+24
+  shared_preferences_android: 2.4.17
+  url_launcher_android: 6.3.16
+  webview_flutter_android: 4.9.0
 
 flutter:
   uses-material-design: true
@@ -78,7 +84,10 @@ flutter:
     - assets/images/watermarks/Sikkim/
     - assets/images/watermarks/Travancore/
     - assets/images/avatars/bots/
+    - assets/ml/
     - assets/sounds/
+    - assets/sounds/announcer/
+    - assets/sounds/announcer/female/
 
     # Explicit single assets
     - assets/images/default_profile.png
@@ -90,12 +99,39 @@ flutter:
     - assets/images/card_back.png
 
     # Env file
-    - .env
 
   fonts:
-    - family: BarlowCondensed
+    - family: OpenSans
       fonts:
-        - asset: assets/fonts/BarlowCondensed-Light.ttf
-    - family: PokerFont
-      fonts:
-        - asset: assets/fonts/PokerFont-Regular.ttf
+        - asset: assets/fonts/OpenSans-Variable.ttf
+          weight: 200
+        - asset: assets/fonts/OpenSans-Variable.ttf
+          weight: 300
+        - asset: assets/fonts/OpenSans-Variable.ttf
+          weight: 400
+        - asset: assets/fonts/OpenSans-Variable.ttf
+          weight: 600
+        - asset: assets/fonts/OpenSans-Variable.ttf
+          weight: 700
+        - asset: assets/fonts/OpenSans-Variable.ttf
+          weight: 800
+        - asset: assets/fonts/OpenSans-Variable.ttf
+          weight: 900
+        - asset: assets/fonts/OpenSans-Italic-Variable.ttf
+          weight: 300
+          style: italic
+        - asset: assets/fonts/OpenSans-Italic-Variable.ttf
+          weight: 400
+          style: italic
+        - asset: assets/fonts/OpenSans-Italic-Variable.ttf
+          weight: 600
+          style: italic
+        - asset: assets/fonts/OpenSans-Italic-Variable.ttf
+          weight: 700
+          style: italic
+        - asset: assets/fonts/OpenSans-Italic-Variable.ttf
+          weight: 800
+          style: italic
+        - asset: assets/fonts/OpenSans-Italic-Variable.ttf
+          weight: 900
+          style: italic

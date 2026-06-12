@@ -1,4 +1,5 @@
 // lib/game/game_engine.dart
+import 'dart:convert';
 import 'dart:async';
 import 'dart:math' show Random, min, max;
 
@@ -7,6 +8,8 @@ import 'core.dart'
 import 'hand_evaluator.dart' show HandRank, HandEvaluator, HandCategory;
 import 'models.dart'
     show
+        BotSkill,
+        BotTemperament,
         BlindLevel,
         BlindSchedule,
         GameConfig,
@@ -17,12 +20,16 @@ import 'models.dart'
         PlayerSnapshot;
 import 'events.dart';
 import 'rng.dart';
+import 'bot/advisor.dart';
+import 'bot/memory.dart';
 
 // Re-exports for convenience
 export 'core.dart' show Card, GamePhase, ActionType, Suit, Rank, rankValue;
 export 'hand_evaluator.dart' show HandCategory, HandRank, HandEvaluator;
 export 'models.dart'
     show
+        BotSkill,
+        BotTemperament,
         BlindLevel,
         BlindSchedule,
         GameConfig,
@@ -31,16 +38,36 @@ export 'models.dart'
         PotSlice,
         GameSnapshot,
         PlayerSnapshot;
-
-part 'bot_engine.dart';
+export 'events.dart' show ActionResult;
+export 'bot/advisor.dart' show BotAdvisor, GameEngineBotLogic;
+export 'bot/memory.dart'
+    show BotDecisionLogEntry, BotOpponentMemory, BotStyleState;
 
 const int _kRaiseIncrement = 10; // enforce bet/raise granularity
 
 /// Public expose of bet/raise increment so UI can snap slider values.
 const int kRaiseIncrement = _kRaiseIncrement;
 
+class GameEngineTiming {
+  final int skipActionDelayMs;
+  final int skipBoardBaseDelayMs;
+  final int skipBoardPerCardDelayMs;
+
+  const GameEngineTiming({
+    this.skipActionDelayMs = 70,
+    this.skipBoardBaseDelayMs = 40,
+    this.skipBoardPerCardDelayMs = 70,
+  });
+
+  int skipBoardDelayMs(int cards) {
+    final int count = cards.clamp(1, 5).toInt();
+    return skipBoardBaseDelayMs + skipBoardPerCardDelayMs * count;
+  }
+}
+
 class GameEngine {
   final GameConfig config;
+  final GameEngineTiming timing;
 
   // Table state
   final List<Player> players = [];
@@ -65,11 +92,22 @@ class GameEngine {
   // RNG context (table-wide + per-hand copy)
   final Pcg32 _tableRng = Pcg32();
   Pcg32 _handRng = Pcg32();
+  Pcg32 get handRng => _handRng;
   static final BigInt _mask64 = BigInt.parse('0xFFFFFFFFFFFFFFFF');
   BigInt _lastHandSeed = BigInt.zero;
   BigInt get lastHandSeed => _lastHandSeed;
   BigInt _tableSeed = BigInt.zero;
   BigInt get tableSeed => _tableSeed;
+  final Map<String, BotOpponentMemory> _botMemories =
+      <String, BotOpponentMemory>{};
+  final Map<String, BotStyleState> _botStyleStates = <String, BotStyleState>{};
+  final Map<String, BotHandTracker> _botHandTrackers =
+      <String, BotHandTracker>{};
+  final List<BotDecisionLogEntry> _botDecisionLog = <BotDecisionLogEntry>[];
+  final Set<String> _botAggressedThisStreet = <String>{};
+  String? _preflopAggressorId;
+  String? _streetVoluntaryAggressorId;
+  String? _previousStreetAggressorId;
 
   // Hand state
   Deck _deck = Deck();
@@ -127,6 +165,7 @@ class GameEngine {
 
   // Aggression/raise tracking
   int? _lastAggressor;
+  int? get lastAggressorIndex => _lastAggressor;
   int _lastRaiseSize = 0;
 
   // Output from last hand
@@ -136,7 +175,10 @@ class GameEngine {
   bool _tournamentOver = false;
   bool get isTournamentOver => _tournamentOver;
 
-  GameEngine({this.config = const GameConfig()}) {
+  GameEngine({
+    this.config = const GameConfig(),
+    this.timing = const GameEngineTiming(),
+  }) {
     _resetBlindsFromConfig();
     if (config.tableSeed != null) {
       _tableRng.reseed(
@@ -207,11 +249,18 @@ class GameEngine {
   bool get canShowNow {
     if (phase == GamePhase.handOver || phase == GamePhase.showdown)
       return false;
-    // If all remaining players are all-in with matched action, we can run out immediately.
+    // If the hand is in pure board-runout mode, SHOW can resolve it immediately.
     if (_earlyAllInClosed()) return true;
     // If only one live player remains, the hand will auto-award, but SHOW now is also safe.
     final live = players.where(_isLiveInHand).length;
     return live <= 1;
+  }
+
+  bool wasAggressorPreviousStreet(int seatIndex) {
+    if (seatIndex < 0 || seatIndex >= players.length) return false;
+    final String id = players[seatIndex].id;
+    if (id.isEmpty) return false;
+    return _previousStreetAggressorId == id;
   }
 
   BigInt _seedFromRandom(Random rng) {
@@ -255,6 +304,12 @@ class GameEngine {
   Player get actingPlayer => players[actingIndex];
   String get smallBlindLabel => 'SB $smallBlind';
   String get bigBlindLabel => 'BB $bigBlind';
+
+  bool _seatCanAct(int index) {
+    if (index < 0 || index >= players.length) return false;
+    final p = players[index];
+    return !p.folded && !p.allIn && !p.sittingOut && !p.isOut;
+  }
 
   /* ==================== Eligibility / Rotation ==================== */
 
@@ -311,6 +366,10 @@ class GameEngine {
   bool addPlayer(Player p) {
     if (players.length >= config.maxPlayers) return false;
     players.add(p);
+    _memoryForPlayerId(p.id);
+    if (p.isBot) {
+      _styleForPlayerId(p.id);
+    }
     return true;
   }
 
@@ -318,7 +377,119 @@ class GameEngine {
     final idx = players.indexWhere((p) => p.id == id);
     if (idx >= 0) {
       players.removeAt(idx);
+      _botMemories.remove(id);
+      _botStyleStates.remove(id);
+      _botHandTrackers.remove(id);
       if (players.isEmpty) _resetTable();
+    }
+  }
+
+  BotOpponentMemory opponentMemoryForSeat(int seat) {
+    return _memoryForPlayerId(players[seat].id);
+  }
+
+  BotStyleState styleStateForSeat(int seat) {
+    return _styleForPlayerId(players[seat].id);
+  }
+
+  List<BotDecisionLogEntry> get botDecisionLog =>
+      List.unmodifiable(_botDecisionLog);
+
+  void clearBotDecisionLog() {
+    _botDecisionLog.clear();
+  }
+
+  String exportBotDecisionLogJson({bool pretty = true}) {
+    final payload = _botDecisionLog.map((entry) => entry.toJson()).toList();
+    if (pretty) {
+      return const JsonEncoder.withIndent('  ').convert(payload);
+    }
+    return jsonEncode(payload);
+  }
+
+  String exportBotDecisionLogJsonLines() {
+    return _botDecisionLog
+        .map((entry) => jsonEncode(entry.toJson()))
+        .join('\n');
+  }
+
+  void recordBotDecision({
+    required int seat,
+    required ActionType action,
+    required int toAmount,
+    required double confidence,
+    required double strength,
+  }) {
+    if (seat < 0 || seat >= players.length) return;
+    final p = players[seat];
+    final style = _styleForPlayerId(p.id);
+    final int toCall = toCallFor(seat);
+    final int liveOpponents = players
+        .asMap()
+        .entries
+        .where((entry) =>
+            entry.key != seat &&
+            !entry.value.folded &&
+            !entry.value.sittingOut &&
+            !entry.value.isOut)
+        .length;
+    final bool hasToCall = toCall > 0;
+    final bool multiway = liveOpponents >= 2;
+    final double stack = p.chips.toDouble();
+    final double stackFrac =
+        stack > 0 ? (toCall / stack).clamp(0.0, 1.0).toDouble() : 1.0;
+    final bool betIsAllIn = players.any(
+      (other) => other.allIn && other.betThisStreet == currentBet,
+    );
+    final int? aggressor = _lastAggressor;
+    final BotOpponentMemory? aggressorMemory = aggressor != null &&
+            aggressor >= 0 &&
+            aggressor < players.length &&
+            aggressor != seat
+        ? _memoryForPlayerId(players[aggressor].id)
+        : null;
+    final bool revengeSpot = aggressor != null &&
+        aggressor >= 0 &&
+        aggressor < players.length &&
+        aggressor != seat &&
+        players[aggressor].id == style.revengeTargetId;
+    _botDecisionLog.add(
+      BotDecisionLogEntry(
+        handNumber: handNumber,
+        seat: seat,
+        playerId: p.id,
+        playerName: p.name,
+        phase: phase,
+        temperament: p.temperament,
+        skill: p.skill,
+        aura: p.aura,
+        pot: pot,
+        currentBet: currentBet,
+        toCall: toCall,
+        stack: p.chips,
+        liveOpponents: liveOpponents,
+        hasToCall: hasToCall,
+        multiway: multiway,
+        facingAllIn: hasToCall &&
+            betIsAllIn &&
+            (stackFrac >= 0.50 || toCall >= bigBlind * 5),
+        revengeSpot: revengeSpot,
+        fieldFoldRate: _fieldFoldRateForSeat(seat),
+        fieldAggression: _fieldAggressionForSeat(seat),
+        aggressorAggression: aggressorMemory?.aggressionIndex ?? 0.5,
+        aggressorSolidity: aggressorMemory?.showdownStrength ?? 0.5,
+        action: action,
+        toAmount: toAmount,
+        confidence: confidence,
+        strength: strength,
+        aggressionHeat: style.aggressionHeat,
+        bluffAppetite: style.bluffAppetite,
+        caution: style.caution,
+        styleConfidence: style.confidence,
+      ),
+    );
+    if (_botDecisionLog.length > 2500) {
+      _botDecisionLog.removeRange(0, _botDecisionLog.length - 2500);
     }
   }
 
@@ -333,6 +504,7 @@ class GameEngine {
       p.best = null;
       if (!keepStacks) p.chips = resetStackTo ?? p.chips;
     }
+    _resetBotLearningState();
     _resetTable();
   }
 
@@ -353,6 +525,81 @@ class GameEngine {
     handNumber = 0;
     _firstActorThisStreet = -1;
     _actedThisStreet.clear();
+    _botAggressedThisStreet.clear();
+    _preflopAggressorId = null;
+    _streetVoluntaryAggressorId = null;
+    _previousStreetAggressorId = null;
+    _botHandTrackers.clear();
+    if (players.isEmpty) {
+      _resetBotLearningState();
+    }
+  }
+
+  BotOpponentMemory _memoryForPlayerId(String id) {
+    return _botMemories.putIfAbsent(id, () => BotOpponentMemory());
+  }
+
+  BotStyleState _styleForPlayerId(String id) {
+    return _botStyleStates.putIfAbsent(id, () => BotStyleState());
+  }
+
+  BotHandTracker _trackerForPlayerId(String id) {
+    return _botHandTrackers.putIfAbsent(id, () => BotHandTracker());
+  }
+
+  void _resetBotLearningState() {
+    _botMemories.clear();
+    _botStyleStates.clear();
+    _botHandTrackers.clear();
+    _botDecisionLog.clear();
+    _botAggressedThisStreet.clear();
+    _preflopAggressorId = null;
+    _streetVoluntaryAggressorId = null;
+    _previousStreetAggressorId = null;
+  }
+
+  void _prepareBotLearningStateForHand() {
+    _preflopAggressorId = null;
+    _streetVoluntaryAggressorId = null;
+    _previousStreetAggressorId = null;
+    _botAggressedThisStreet.clear();
+    _botHandTrackers.clear();
+    for (final p in players) {
+      if (!_isEligibleForHand(p)) continue;
+      _memoryForPlayerId(p.id).observeNewHand();
+      _trackerForPlayerId(p.id);
+      if (p.isBot) {
+        _styleForPlayerId(p.id).decayTowardNeutral();
+      }
+    }
+  }
+
+  double _fieldFoldRateForSeat(int seat) {
+    double total = 0.0;
+    int seen = 0;
+    for (int i = 0; i < players.length; i++) {
+      if (i == seat) continue;
+      final p = players[i];
+      if (p.sittingOut || p.isOut) continue;
+      total += _memoryForPlayerId(p.id).foldPressure;
+      seen += 1;
+    }
+    if (seen == 0) return 0.5;
+    return (total / seen).clamp(0.0, 1.0).toDouble();
+  }
+
+  double _fieldAggressionForSeat(int seat) {
+    double total = 0.0;
+    int seen = 0;
+    for (int i = 0; i < players.length; i++) {
+      if (i == seat) continue;
+      final p = players[i];
+      if (p.sittingOut || p.isOut) continue;
+      total += _memoryForPlayerId(p.id).aggressionIndex;
+      seen += 1;
+    }
+    if (seen == 0) return 0.5;
+    return (total / seen).clamp(0.0, 1.0).toDouble();
   }
 
   /* ==================== Hand Lifecycle ==================== */
@@ -380,10 +627,13 @@ class GameEngine {
     phase = GamePhase.predeal;
     _lastAggressor = null;
     _lastRaiseSize = bigBlind;
+    _streetVoluntaryAggressorId = null;
+    _previousStreetAggressorId = null;
     lastPayouts = const [];
     for (final p in players) {
       p.resetForNewHand(); // clears folded/allIn/bets/best/hole
     }
+    _prepareBotLearningStateForHand();
 
     _postAntesIfAny();
     _dealHoleCardsInstant(); // emits CardDealt immediately per card
@@ -395,6 +645,7 @@ class GameEngine {
 
     // IMPORTANT: HandStarted signature assumed to be HandStarted(dealerIndex)
     _emit(HandStarted(dealerIndex));
+    _resolveClosedStateIfNeeded();
     return ActionResult.ok;
   }
 
@@ -433,10 +684,13 @@ class GameEngine {
     phase = GamePhase.predeal;
     _lastAggressor = null;
     _lastRaiseSize = bigBlind;
+    _streetVoluntaryAggressorId = null;
+    _previousStreetAggressorId = null;
     lastPayouts = const [];
     for (final p in players) {
       p.resetForNewHand();
     }
+    _prepareBotLearningStateForHand();
 
     // Antes
     _postAntesIfAny();
@@ -463,11 +717,12 @@ class GameEngine {
 
     // IMPORTANT: HandStarted signature assumed to be HandStarted(dealerIndex)
     _emit(HandStarted(dealerIndex));
+    _resolveClosedStateIfNeeded();
 
     return ActionResult.ok;
   }
 
-  /// True if two or more live players are all-in and all live bets match.
+  /// True when the rest of the hand is only a board runout.
   bool everyoneAllInMatched() => _earlyAllInClosed();
 
   void _postAntesIfAny() {
@@ -616,16 +871,10 @@ class GameEngine {
       // Ring: first to act is left of BB
       actingIndex = _nextEligibleSeatFrom(bigBlindIndex);
     }
-    _skipToNextEligible();
     _beginStreetAt(actingIndex);
   }
 
   void _setFirstToActPostflop() {
-    // First to act postflop is left of the dealer (works for HU and ring)
-    actingIndex = _nextEligibleSeatFrom(dealerIndex);
-    _skipToNextEligible();
-    _beginStreetAt(actingIndex);
-
     // Reset street state
     currentBet = 0;
     for (final p in players) {
@@ -633,12 +882,38 @@ class GameEngine {
     }
     _lastAggressor = null;
     _lastRaiseSize = bigBlind;
+
+    // First to act postflop is left of the dealer (works for HU and ring)
+    actingIndex = _nextEligibleSeatFrom(dealerIndex);
+    _beginStreetAt(actingIndex);
   }
 
   void _beginStreetAt(int index) {
-    _firstActorThisStreet = index;
+    actingIndex = index;
+    if (!_skipToNextEligible()) {
+      actingIndex = -1;
+      _firstActorThisStreet = -1;
+      _actedThisStreet.clear();
+      _botAggressedThisStreet.clear();
+      return;
+    }
+    _firstActorThisStreet = actingIndex;
     _actedThisStreet.clear();
+    _botAggressedThisStreet.clear();
     _emit(NextToActChanged(actingIndex));
+  }
+
+  void _advanceFirstActorPastIneligible(int seatIndex) {
+    if (_firstActorThisStreet != seatIndex) return;
+    final nextActor = _nextActingSeatFrom(seatIndex);
+    _firstActorThisStreet = nextActor;
+  }
+
+  bool _botAggressionLocked(int index) {
+    if (index < 0 || index >= players.length) return false;
+    final p = players[index];
+    if (!p.isBot) return false;
+    return _botAggressedThisStreet.contains(p.id);
   }
 
   void _recordActed(int index) {
@@ -655,14 +930,81 @@ class GameEngine {
     return true;
   }
 
-  void _skipToNextEligible() {
-    int hops = 0;
-    while (hops < players.length) {
-      final p = players[actingIndex];
-      if (!p.folded && !p.allIn && !p.sittingOut && !p.isOut) return;
-      actingIndex = (actingIndex + 1) % players.length;
-      hops++;
+  bool _skipToNextEligible() {
+    if (_seatCanAct(actingIndex)) return true;
+    final int nextActor = _nextActingSeatFrom(actingIndex);
+    actingIndex = nextActor;
+    return nextActor >= 0;
+  }
+
+  int _nextActingSeatFrom(int start) {
+    if (players.isEmpty) return -1;
+    var idx = start;
+    for (int hops = 0; hops < players.length; hops++) {
+      idx = (idx + 1) % players.length;
+      if (_seatCanAct(idx)) return idx;
     }
+    return -1;
+  }
+
+  List<int> _liveSeatIndices() {
+    final out = <int>[];
+    for (int i = 0; i < players.length; i++) {
+      if (_isLiveInHand(players[i])) out.add(i);
+    }
+    return out;
+  }
+
+  List<int> _liveBettingSeatIndices() {
+    final out = <int>[];
+    for (int i = 0; i < players.length; i++) {
+      final p = players[i];
+      if (_isLiveInHand(p) && !p.allIn) out.add(i);
+    }
+    return out;
+  }
+
+  bool _runoutReady() {
+    if (phase == GamePhase.handOver || phase == GamePhase.showdown)
+      return false;
+    final live = _liveSeatIndices();
+    if (live.length < 2) return false;
+
+    final bettingSeats = _liveBettingSeatIndices();
+    if (bettingSeats.isEmpty) return true;
+    if (bettingSeats.length > 1) return false;
+
+    final onlySeat = bettingSeats.first;
+    return players[onlySeat].betThisStreet == currentBet;
+  }
+
+  void _closeClosedRound() {
+    if (_runoutReady()) {
+      if (_skipFastForwardActive) {
+        _skipRunoutPending = true;
+      } else {
+        _dealOutRemainingBoardToShowdownAnimatedIfWanted();
+      }
+      return;
+    }
+    _goNextStreetAnimatedIfWanted();
+  }
+
+  bool _resolveClosedStateIfNeeded() {
+    if (phase == GamePhase.handOver || phase == GamePhase.showdown)
+      return false;
+
+    final live = _liveSeatIndices();
+    if (live.length <= 1) {
+      final winnerIdx = live.isNotEmpty ? live.first : null;
+      _awardAllTo(winnerIdx);
+      _finalizeHandAndEmit();
+      return true;
+    }
+
+    if (!_bettingRoundComplete()) return false;
+    _closeClosedRound();
+    return true;
   }
 
   /* ==================== UI Helpers ==================== */
@@ -701,16 +1043,19 @@ class GameEngine {
 
     final p = players[index];
     if (p.folded || p.allIn || p.sittingOut || p.isOut) return out;
+    final bool botRaiseLocked = _botAggressionLocked(index);
 
     final toCall = toCallFor(index);
     final canMatch = p.chips >= toCall;
+    final int shoveTo = p.betThisStreet + p.chips;
+    final bool shoveWouldReopen = shoveTo > currentBet;
 
     if (p.betThisStreet == currentBet) {
       out.add(ActionType.check);
-      if (currentBet == 0) {
+      if (!botRaiseLocked && currentBet == 0) {
         final bounds = raiseBoundsTo(index);
         if (bounds.minTo <= bounds.maxTo) out.add(ActionType.bet);
-      } else {
+      } else if (!botRaiseLocked) {
         final bounds = raiseBoundsTo(index);
         if (bounds.minTo <= bounds.maxTo && (bounds.minTo > currentBet)) {
           out.add(ActionType.raise);
@@ -719,34 +1064,215 @@ class GameEngine {
     } else {
       out.add(ActionType.fold);
       if (toCall > 0) out.add(ActionType.call);
-      final bounds = raiseBoundsTo(index);
-      if (bounds.minTo <= bounds.maxTo &&
-          (bounds.minTo > currentBet) &&
-          canMatch) {
-        out.add(ActionType.raise);
+      if (!botRaiseLocked) {
+        final bounds = raiseBoundsTo(index);
+        if (bounds.minTo <= bounds.maxTo &&
+            (bounds.minTo > currentBet) &&
+            canMatch) {
+          out.add(ActionType.raise);
+        }
       }
     }
 
-    out.add(ActionType.allIn);
+    if (!botRaiseLocked || !shoveWouldReopen) {
+      out.add(ActionType.allIn);
+    }
     return out;
   }
 
   /* ==================== Actions ==================== */
 
+  void _recordBehaviorSignal({
+    required int actorIndex,
+    required ActionType type,
+    required int toCallBefore,
+    required int currentBetBefore,
+  }) {
+    final p = players[actorIndex];
+    final memory = _memoryForPlayerId(p.id);
+    final tracker = _trackerForPlayerId(p.id);
+    final style = _styleForPlayerId(p.id);
+    final bool aggressiveAction = type == ActionType.bet ||
+        type == ActionType.raise ||
+        type == ActionType.allIn;
+    final bool facingPressure = toCallBefore > 0;
+    bool facingRaise = facingPressure && p.betThisStreet > 0;
+    if (phase == GamePhase.preflop &&
+        _preflopAggressorId == null &&
+        currentBetBefore == bigBlind) {
+      facingRaise = false;
+    }
+
+    if (phase == GamePhase.preflop &&
+        type != ActionType.check &&
+        type != ActionType.fold &&
+        !tracker.sawVpip) {
+      tracker.sawVpip = true;
+      memory.vpipHands += 1;
+    }
+
+    if (phase == GamePhase.preflop &&
+        aggressiveAction &&
+        !tracker.sawPreflopRaise) {
+      tracker.sawPreflopRaise = true;
+      memory.preflopRaiseHands += 1;
+      _preflopAggressorId = p.id;
+    }
+
+    if (phase == GamePhase.flop &&
+        p.id == _preflopAggressorId &&
+        currentBetBefore == 0) {
+      if (!tracker.sawFlopCBetOpportunity) {
+        tracker.sawFlopCBetOpportunity = true;
+        memory.flopCBetOpportunities += 1;
+      }
+      if (aggressiveAction && !tracker.sawFlopCBet) {
+        tracker.sawFlopCBet = true;
+        memory.flopCBetCount += 1;
+      }
+    }
+
+    if (phase == GamePhase.turn &&
+        p.id == _preflopAggressorId &&
+        tracker.sawFlopCBet &&
+        currentBetBefore == 0) {
+      if (!tracker.sawTurnBarrelOpportunity) {
+        tracker.sawTurnBarrelOpportunity = true;
+        memory.turnBarrelOpportunities += 1;
+      }
+      if (aggressiveAction && !tracker.sawTurnBarrel) {
+        tracker.sawTurnBarrel = true;
+        memory.turnBarrelCount += 1;
+      }
+    }
+
+    if (phase == GamePhase.river) {
+      if (!tracker.sawRiverActionOpportunity) {
+        tracker.sawRiverActionOpportunity = true;
+        memory.riverActionOpportunities += 1;
+      }
+      if (aggressiveAction && !tracker.sawRiverAggression) {
+        tracker.sawRiverAggression = true;
+        memory.riverAggressionCount += 1;
+      }
+    }
+
+    if (facingPressure) {
+      if (facingRaise) {
+        if (!tracker.sawFacedRaise) {
+          tracker.sawFacedRaise = true;
+          memory.facedRaiseSpots += 1;
+        }
+        if (type == ActionType.fold && !tracker.sawFoldToRaise) {
+          tracker.sawFoldToRaise = true;
+          memory.foldToRaiseCount += 1;
+        }
+      } else {
+        if (!tracker.sawFacedBet) {
+          tracker.sawFacedBet = true;
+          memory.facedBetSpots += 1;
+        }
+        if (type == ActionType.fold && !tracker.sawFoldToBet) {
+          tracker.sawFoldToBet = true;
+          memory.foldToBetCount += 1;
+        }
+      }
+    }
+
+    if (!p.isBot) return;
+
+    if (aggressiveAction) {
+      style.aggressionHeat += phase == GamePhase.river ? 0.05 : 0.035;
+      style.bluffAppetite +=
+          (phase == GamePhase.turn || phase == GamePhase.river) ? 0.02 : 0.01;
+      style.caution -= 0.01;
+    }
+
+    if (type == ActionType.call && facingPressure) {
+      style.confidence += 0.01;
+      style.caution -= 0.01;
+    }
+
+    if (type == ActionType.fold && facingPressure) {
+      style.caution += 0.045;
+      style.confidence -= 0.02;
+      final int? aggressor = _lastAggressor;
+      if (aggressor != null &&
+          aggressor >= 0 &&
+          aggressor < players.length &&
+          aggressor != actorIndex) {
+        style.revengeTargetId = players[aggressor].id;
+      }
+    }
+
+    style.normalize();
+  }
+
+  double _handStrengthForStyle(HandRank rank) {
+    final double catScore =
+        rank.category.index / (HandCategory.values.length - 1);
+    final double kickerScore =
+        rank.tiebreakers.isEmpty ? 0.0 : rank.tiebreakers.first / 14.0;
+    return (catScore * 0.8 + kickerScore * 0.2).clamp(0.0, 1.0).toDouble();
+  }
+
+  void _updateBotStyleAfterHand({
+    required List<int> bustedNow,
+    required Set<int> winners,
+  }) {
+    for (int i = 0; i < players.length; i++) {
+      final p = players[i];
+      if (!p.isBot) continue;
+      final style = _styleForPlayerId(p.id);
+      final bool won = winners.contains(i);
+      final bool busted = bustedNow.contains(i);
+      final bool reachedShowdown = !p.folded && p.best != null;
+
+      if (won) {
+        style.confidence += 0.08;
+        style.caution -= 0.03;
+        style.aggressionHeat += 0.02;
+      } else if (reachedShowdown) {
+        style.confidence -= 0.05;
+        style.caution += 0.035;
+      }
+
+      if (busted) {
+        style.confidence -= 0.14;
+        style.caution += 0.10;
+        style.aggressionHeat = (style.aggressionHeat * 0.7) + 0.15;
+      }
+
+      style.normalize();
+    }
+  }
+
   ActionResult act(ActionType type, {int amount = 0}) {
     if (phase == GamePhase.handOver || phase == GamePhase.showdown) {
+      return ActionResult.illegalAtThisPhase;
+    }
+    if (actingIndex < 0 || actingIndex >= players.length) {
       return ActionResult.illegalAtThisPhase;
     }
 
     final actorIndex = actingIndex;
     final p = players[actorIndex];
+    final int toCallBefore = toCallFor(actorIndex);
+    final int currentBetBefore = currentBet;
     if (p.folded || p.allIn || p.sittingOut || p.isOut) {
       return ActionResult.alreadyFoldedOrAllIn;
     }
 
     switch (type) {
       case ActionType.fold:
+        _recordBehaviorSignal(
+          actorIndex: actorIndex,
+          type: type,
+          toCallBefore: toCallBefore,
+          currentBetBefore: currentBetBefore,
+        );
         p.folded = true;
+        _advanceFirstActorPastIneligible(actorIndex);
         _recordActed(actorIndex);
         _emit(ActionTaken(actorIndex, type, 0));
         return _afterActionAdvance();
@@ -754,6 +1280,12 @@ class GameEngine {
       case ActionType.check:
         if (p.betThisStreet != currentBet)
           return ActionResult.cannotCheckFacingBet;
+        _recordBehaviorSignal(
+          actorIndex: actorIndex,
+          type: type,
+          toCallBefore: toCallBefore,
+          currentBetBefore: currentBetBefore,
+        );
         _recordActed(actorIndex);
         _emit(ActionTaken(actorIndex, type, 0));
         return _afterActionAdvance();
@@ -762,6 +1294,12 @@ class GameEngine {
         {
           final need = toCallFor(actorIndex);
           if (need <= 0) return ActionResult.nothingToCall;
+          _recordBehaviorSignal(
+            actorIndex: actorIndex,
+            type: type,
+            toCallBefore: toCallBefore,
+            currentBetBefore: currentBetBefore,
+          );
           final pay = min(need, p.chips);
           _payIntoPot(p, pay);
           _recordActed(actorIndex);
@@ -779,9 +1317,9 @@ class GameEngine {
   ActionResult _afterActionAdvance() {
     _advanceTurnOrStreet();
 
-    // If betting is closed and all remaining players are all-in, auto-run out
+    // If the hand is now in pure runout mode, auto-resolve it.
     if (_earlyAllInClosed()) {
-      _dealOutRemainingBoardToShowdownAnimatedIfWanted(); // respects phase; instant by default
+      _closeClosedRound();
     }
     return ActionResult.ok;
   }
@@ -797,6 +1335,8 @@ class GameEngine {
   ActionResult _doBetOrRaise(ActionType type, int toAmount) {
     final idx = actingIndex;
     final p = players[idx];
+    final int toCallBefore = toCallFor(idx);
+    final int currentBetBefore = currentBet;
 
     final bool forceAllIn = type == ActionType.allIn;
     if (forceAllIn) {
@@ -825,6 +1365,12 @@ class GameEngine {
       final minBetTo = bigBlind;
       if (!isAllIn && toAmount < minBetTo) return ActionResult.invalidBetAmount;
 
+      _recordBehaviorSignal(
+        actorIndex: idx,
+        type: type,
+        toCallBefore: toCallBefore,
+        currentBetBefore: currentBetBefore,
+      );
       _recordActed(idx);
       _payIntoPot(p, delta);
       _registerAggression(
@@ -841,6 +1387,12 @@ class GameEngine {
       return ActionResult.invalidRaiseAmount;
     }
 
+    _recordBehaviorSignal(
+      actorIndex: idx,
+      type: type,
+      toCallBefore: toCallBefore,
+      currentBetBefore: currentBetBefore,
+    );
     _recordActed(idx);
     _payIntoPot(p, delta);
 
@@ -873,6 +1425,18 @@ class GameEngine {
       }
     }
     _lastAggressor = actingIndex;
+    if (actingIndex >= 0 && actingIndex < players.length) {
+      final actor = players[actingIndex];
+      if (actor.isBot) {
+        _botAggressedThisStreet.add(actor.id);
+      }
+      _streetVoluntaryAggressorId = actor.id;
+    }
+  }
+
+  void _captureStreetAggressorForNextStreet() {
+    _previousStreetAggressorId = _streetVoluntaryAggressorId;
+    _streetVoluntaryAggressorId = null;
   }
 
   /* ==================== Turn / Street Advancement ==================== */
@@ -889,13 +1453,16 @@ class GameEngine {
     }
 
     if (_bettingRoundComplete()) {
-      _goNextStreetAnimatedIfWanted(); // instant by default
+      _closeClosedRound();
       return;
     }
 
-    _nextActor();
+    if (!_nextActor()) {
+      _resolveClosedStateIfNeeded();
+      return;
+    }
     if (_bettingRoundComplete()) {
-      _goNextStreetAnimatedIfWanted(); // instant by default
+      _closeClosedRound();
       return;
     }
   }
@@ -932,9 +1499,16 @@ class GameEngine {
     int safety = players.length * 4;
     while (!_bettingRoundComplete() && safety-- > 0) {
       final idx = actingIndex;
+      if (idx < 0 || idx >= players.length) {
+        _resolveClosedStateIfNeeded();
+        return;
+      }
       final p = players[idx];
       if (p.folded || p.allIn || p.sittingOut || p.isOut) {
-        _nextActor();
+        if (!_nextActor()) {
+          _resolveClosedStateIfNeeded();
+          return;
+        }
         continue;
       }
 
@@ -949,6 +1523,7 @@ class GameEngine {
               p.betThisStreet));
         } else {
           p.folded = true;
+          _advanceFirstActorPastIneligible(idx);
           _recordActed(idx);
           _emit(ActionTaken(idx, ActionType.fold, 0));
         }
@@ -962,17 +1537,15 @@ class GameEngine {
     }
   }
 
-  void _nextActor() {
-    int hops = 0;
-    do {
-      actingIndex = (actingIndex + 1) % players.length;
-      hops++;
-      if (hops > players.length) break; // safety
-    } while (players[actingIndex].folded ||
-        players[actingIndex].allIn ||
-        players[actingIndex].sittingOut ||
-        players[actingIndex].isOut);
+  bool _nextActor() {
+    final int nextActor = _nextActingSeatFrom(actingIndex);
+    if (nextActor < 0) {
+      actingIndex = -1;
+      return false;
+    }
+    actingIndex = nextActor;
     _emit(NextToActChanged(actingIndex));
+    return true;
   }
 
   /* ---------- Burn helper ---------- */
@@ -985,6 +1558,7 @@ class GameEngine {
   /* ---------- Street progression (instant) ---------- */
 
   void _goNextStreet() {
+    _captureStreetAggressorForNextStreet();
     // Reset per-street numbers (but DO NOT touch `isOut` mid-hand)
     for (final p in players) {
       p.betThisStreet = 0;
@@ -1038,6 +1612,9 @@ class GameEngine {
   // If you want full-table animation for streets, set true before calling.
   bool animateStreets = true;
   int msBetweenBoardCards = 220;
+  bool _skipFastForwardActive = false;
+  bool get skipFastForwardActive => _skipFastForwardActive;
+  bool _skipRunoutPending = false;
 
   void _goNextStreetAnimatedIfWanted() {
     if (!animateStreets) {
@@ -1048,6 +1625,7 @@ class GameEngine {
   }
 
   Future<void> _goNextStreetAnimated() async {
+    _captureStreetAggressorForNextStreet();
     // Reset per-street numbers
     for (final p in players) {
       p.betThisStreet = 0;
@@ -1117,64 +1695,12 @@ class GameEngine {
 
   /* ==================== Skip/Show: public triggers ==================== */
 
-  /// Fast-forward the remainder of the hand to the winner immediately, regardless of hero state.
-  /// Closes betting with minimal actions, deals out remaining streets instantly, and settles.
+  /// Fast-forward the remainder of the hand to the winner quickly.
+  /// Auto-plays actions so the pot evolves naturally, then runs out the board.
   void requestSkipToWinner() {
-    if (phase == GamePhase.handOver) return;
-
-    final prevAnimate = animateStreets;
-    animateStreets = false; // Instant runout
-    try {
-      // Helper: who is still live
-      bool isLive(int i) {
-        final p = players[i];
-        final bool folded = (p.folded == true) ||
-            (() {
-              try {
-                return (p as dynamic).hasFolded == true;
-              } catch (_) {
-                return false;
-              }
-            })();
-        final bool outish = (p.sittingOut == true) || (p.isOut == true);
-        return !folded && !outish;
-      }
-
-      // 1) Close current betting minimally
-      try {
-        _forceCloseBettingRound();
-      } catch (_) {}
-      if (phase == GamePhase.handOver) return;
-
-      // 2) If only one live player, award & finalize
-      final liveIdx = <int>[];
-      for (var i = 0; i < players.length; i++) {
-        if (isLive(i)) liveIdx.add(i);
-      }
-      if (liveIdx.length <= 1) {
-        final int? winnerIdx = liveIdx.isNotEmpty ? liveIdx.first : null;
-        try {
-          _awardAllTo(winnerIdx);
-        } catch (_) {}
-        try {
-          _finalizeHandAndEmit();
-        } catch (_) {}
-        return;
-      }
-
-      // 3) Otherwise complete the board, showdown, and finalize
-      try {
-        _dealOutRemainingBoardToShowdown();
-      } catch (_) {}
-      try {
-        _showdownAndPayout();
-      } catch (_) {}
-      try {
-        _finalizeHandAndEmit();
-      } catch (_) {}
-    } finally {
-      animateStreets = prevAnimate;
-    }
+    if (phase == GamePhase.handOver || phase == GamePhase.showdown) return;
+    if (_skipFastForwardActive) return;
+    unawaited(_fastForwardToWinner());
   }
 
   /// Resolve immediately when showdown is logically determined (e.g., everyone is all-in
@@ -1191,16 +1717,7 @@ class GameEngine {
   /* ==================== Early All-in Runout ==================== */
 
   bool _earlyAllInClosed() {
-    // If all remaining contenders are all-in and betting is matched, deal out
-    if (phase == GamePhase.handOver || phase == GamePhase.showdown)
-      return false;
-    final live =
-        players.where((p) => !p.folded && !p.sittingOut && !p.isOut).toList();
-    if (live.length < 2) return false;
-    final allAllIn = live.every((p) => p.allIn || p.chips == 0);
-    if (!allAllIn) return false;
-    final matched = live.every((p) => p.betThisStreet == currentBet);
-    return matched;
+    return _runoutReady();
   }
 
   void _dealOutRemainingBoardToShowdown() {
@@ -1243,6 +1760,186 @@ class GameEngine {
       return;
     }
     unawaited(_dealOutRemainingBoardToShowdownAnimated());
+  }
+
+  int _skipBoardDelayMs(int cards) {
+    return timing.skipBoardDelayMs(cards);
+  }
+
+  Future<void> _dealOutRemainingBoardToShowdownAnimatedWithDelay() async {
+    while (phase != GamePhase.handOver && phase != GamePhase.showdown) {
+      switch (phase) {
+        case GamePhase.preflop:
+          _burn();
+          _emit(const DealingStarted("flop"));
+          final flopCards = <Card>[
+            _deck.draw(),
+            _deck.draw(),
+            _deck.draw(),
+          ];
+          community
+            ..clear()
+            ..addAll(flopCards);
+          for (final c in flopCards) {
+            _emit(CardDealt(seatIndex: -1, card: c, isBoard: true));
+          }
+          _emit(const DealingEnded("flop"));
+
+          phase = GamePhase.flop;
+          _emit(StreetDealt(phase));
+          await Future.delayed(Duration(milliseconds: _skipBoardDelayMs(3)));
+          continue;
+
+        case GamePhase.flop:
+          _burn();
+          _emit(const DealingStarted("turn"));
+          final t = _deck.draw();
+          community.add(t);
+          _emit(CardDealt(seatIndex: -1, card: t, isBoard: true));
+          _emit(const DealingEnded("turn"));
+
+          phase = GamePhase.turn;
+          _emit(StreetDealt(phase));
+          await Future.delayed(Duration(milliseconds: _skipBoardDelayMs(1)));
+          continue;
+
+        case GamePhase.turn:
+          _burn();
+          _emit(const DealingStarted("river"));
+          final r = _deck.draw();
+          community.add(r);
+          _emit(CardDealt(seatIndex: -1, card: r, isBoard: true));
+          _emit(const DealingEnded("river"));
+
+          phase = GamePhase.river;
+          _emit(StreetDealt(phase));
+          await Future.delayed(Duration(milliseconds: _skipBoardDelayMs(1)));
+          continue;
+
+        case GamePhase.river:
+          phase = GamePhase.showdown;
+          _showdownAndPayout();
+          _finalizeHandAndEmit();
+          return;
+
+        default:
+          return;
+      }
+    }
+  }
+
+  Future<void> _fastForwardToWinner() async {
+    _skipFastForwardActive = true;
+    _skipRunoutPending = false;
+    final prevAnimate = animateStreets;
+    animateStreets = true;
+
+    int safety = players.length * 200;
+    int lastCommunity = community.length;
+
+    try {
+      _forceHeroFoldForSkipIfNeeded();
+      while (phase != GamePhase.handOver &&
+          phase != GamePhase.showdown &&
+          safety-- > 0) {
+        if (_skipRunoutPending) {
+          _skipRunoutPending = false;
+          await _dealOutRemainingBoardToShowdownAnimatedWithDelay();
+          break;
+        }
+
+        final idx = actingIndex;
+        if (idx < 0 || idx >= players.length) {
+          if (!_nextActor()) {
+            _resolveClosedStateIfNeeded();
+          }
+          continue;
+        }
+        final p = players[idx];
+        if (p.folded || p.allIn || p.sittingOut || p.isOut) {
+          if (!_nextActor()) {
+            _resolveClosedStateIfNeeded();
+          }
+          continue;
+        }
+
+        final advice = BotAdvisor.suggest(this, idx);
+        recordBotDecision(
+          seat: idx,
+          action: advice.action,
+          toAmount: advice.toAmount,
+          confidence: advice.confidence,
+          strength: advice.strength,
+        );
+        if (act(advice.action, amount: advice.toAmount) != ActionResult.ok) {
+          if (canCheck(idx)) {
+            act(ActionType.check);
+          } else if (toCallFor(idx) > 0) {
+            act(ActionType.fold);
+          } else {
+            act(ActionType.check);
+          }
+        }
+
+        if (_skipRunoutPending) {
+          _skipRunoutPending = false;
+          await _dealOutRemainingBoardToShowdownAnimatedWithDelay();
+          break;
+        }
+
+        if (phase == GamePhase.handOver || phase == GamePhase.showdown) {
+          break;
+        }
+
+        final int newCommunity = community.length;
+        final int delta = newCommunity - lastCommunity;
+        lastCommunity = newCommunity;
+
+        if (delta > 0) {
+          await Future.delayed(
+              Duration(milliseconds: _skipBoardDelayMs(delta)));
+        } else {
+          await Future.delayed(
+              Duration(milliseconds: timing.skipActionDelayMs));
+        }
+      }
+
+      if (safety <= 0 &&
+          phase != GamePhase.handOver &&
+          phase != GamePhase.showdown) {
+        _dealOutRemainingBoardToShowdown();
+        _showdownAndPayout();
+        _finalizeHandAndEmit();
+      }
+    } finally {
+      animateStreets = prevAnimate;
+      _skipFastForwardActive = false;
+      _skipRunoutPending = false;
+    }
+  }
+
+  void _forceHeroFoldForSkipIfNeeded() {
+    if (heroIndex < 0 || heroIndex >= players.length) return;
+    final p = players[heroIndex];
+    if (p.folded || p.allIn || p.sittingOut || p.isOut) return;
+
+    if (actingIndex == heroIndex) {
+      final prevPhase = phase;
+      final bool heroWasFirst = _firstActorThisStreet == heroIndex;
+      act(ActionType.fold);
+      if (heroWasFirst &&
+          phase == prevPhase &&
+          _firstActorThisStreet == heroIndex &&
+          actingIndex >= 0) {
+        _firstActorThisStreet = actingIndex;
+      }
+      return;
+    }
+
+    p.folded = true;
+    _advanceFirstActorPastIneligible(heroIndex);
+    _emit(ActionTaken(heroIndex, ActionType.fold, 0));
+    _resolveClosedStateIfNeeded();
   }
 
   Future<void> _dealOutRemainingBoardToShowdownAnimated() async {
@@ -1482,6 +2179,14 @@ class GameEngine {
       }
     }
 
+    for (int i = 0; i < players.length; i++) {
+      final p = players[i];
+      if (p.folded || p.best == null) continue;
+      final memory = _memoryForPlayerId(p.id);
+      memory.showdowns += 1;
+      memory.showdownStrengthTotal += _handStrengthForStyle(p.best!);
+    }
+
     // Optional tournament winner (only one alive seat remains overall)
     final alive = _aliveSeats();
     if (alive.length == 1 && !_tournamentOver) {
@@ -1494,6 +2199,7 @@ class GameEngine {
 
     // Build winners set (anyone who received > 0 in lastPayouts)
     final winners = lastPayouts.map((p) => p.playerIndex).toSet();
+    _updateBotStyleAfterHand(bustedNow: bustedNow, winners: winners);
 
     // Transition to final hand state
     phase = GamePhase.handOver;
@@ -1590,7 +2296,6 @@ class GameEngine {
               contributedThisHand: p.contributedThisHand,
               hole: reveal ? List.unmodifiable(p.hole) : const [],
               best: reveal ? p.best : null,
-              enduranceMinutes: p.enduranceMinutes,
               aura: p.aura,
             );
           }(),
@@ -1624,7 +2329,6 @@ class GameEngine {
               contributedThisHand: p.contributedThisHand,
               hole: List.unmodifiable(p.hole),
               best: p.best,
-              enduranceMinutes: p.enduranceMinutes,
               aura: p.aura,
             ),
         ],

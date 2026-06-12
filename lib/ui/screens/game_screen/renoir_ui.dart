@@ -20,7 +20,7 @@ import 'models.dart' show GCard;
 import 'players.dart' show Seat;
 import 'cards.dart' as cardui show PlayingCard, CardBack;
 import 'cards.dart' show CardVisibilityGate, ActionGate;
-import '../../../game/events.dart' show EngineEvent;
+import '../../../game/events.dart' show CardDealt, EngineEvent;
 import 'pacing.dart' as pace;
 import 'table.dart' show WoodType, WoodPalette, WoodTypeX;
 
@@ -42,8 +42,9 @@ class RenoirSignals {
 const int kRenoirShuffleLoops = 5; // was 6; shorter overall duration
 
 // Best-hand outline colors used during the winners overlay.
-const Color _kHeroWinOutline = Color(0xFF3BB143); // green
-const Color _kBotWinOutline = Color(0xFFFFC857); // yellow
+const Color _kHeroWinOutline = Color(0xFF24B6FF); // blue
+const Color _kBotWinOutline = Color(0xFFFF2800); // red
+const Color _kHandHighlightOutline = Color(0xFFFFD100); // yellow
 
 String _normRank(String raw) {
   final u = raw.trim().toUpperCase();
@@ -96,6 +97,9 @@ class RenoirLayer extends StatefulWidget {
   // --- Geometry (felt space) ---
   final Offset origin; // deck origin in felt coords
   final List<Offset> seatTargets; // per-seat target centers (felt)
+  final List<Offset> seatPanelPositions; // table-space seat rects
+  final double seatPanelWidth;
+  final double seatPanelHeight;
   final Offset boardTarget; // center Y for community lane (felt)
 
   // --- Card art / size ---
@@ -107,6 +111,8 @@ class RenoirLayer extends StatefulWidget {
   final List<Seat> seats;
   final List<GCard> board;
   final int heroIndex;
+  final bool showHandHighlight;
+  final List<GCard> handHighlightCards;
   final Set<int> hiddenSeats; // seats that shouldn't show cards (e.g., empty)
   final bool showToggleVisible; // global “Show” toggle
   final bool heroShow; // whether hero shows when Show is on
@@ -149,6 +155,9 @@ class RenoirLayer extends StatefulWidget {
     required this.wood,
     required this.origin,
     required this.seatTargets,
+    this.seatPanelPositions = const <Offset>[],
+    this.seatPanelWidth = 0,
+    this.seatPanelHeight = 0,
     required this.boardTarget,
     required this.cardBackAsset,
     required this.cardW,
@@ -156,6 +165,8 @@ class RenoirLayer extends StatefulWidget {
     required this.seats,
     required this.board,
     required this.heroIndex,
+    this.showHandHighlight = false,
+    this.handHighlightCards = const <GCard>[],
     required this.hiddenSeats,
     required this.showToggleVisible,
     required this.heroShow,
@@ -293,7 +304,7 @@ class _RenoirLayerState extends State<RenoirLayer>
   static const double _kHandSlidePx = 6.0;
   static const double _kHandDipPx = 3.0;
   static const double _kHandTiltRad = 0.02;
-  static const bool _kLockRenoirChair = true;
+  static const bool _kLockRenoirChair = false;
   // Calibration: observed Renoir shuffle ends earlier than theoretical frames*loops
   // Use a bias to align reveal to the *actual* on-screen end. 0.50 ≈ 50% shorter.
   static const double _kShuffleTimingBias = 0.50; // tweak if art/loops change
@@ -301,7 +312,8 @@ class _RenoirLayerState extends State<RenoirLayer>
   // Visual constants
   static const double _kOppSmallScale = 0.62; // face-down opponents shrink
   static const double _kOppShowScale = 1.25;
-  static const double _kHeroScale = 1.45;
+  // Shrink hero/community cards slightly to reduce overlap with board.
+  static const double _kHeroScale = 1.24;
   static const double _kFanOverlap = 0.50;
   static const double _kHeroFanDeg = 10.0;
   static const double _kOppFanDeg = 8.0;
@@ -471,7 +483,7 @@ class _RenoirLayerState extends State<RenoirLayer>
     _engineSub?.cancel();
     if (widget.engineEvents == null) return;
     _engineSub = widget.engineEvents!.listen((e) {
-      // Accept any event object; drain only if we can adapt it to a target.
+      if (e is! CardDealt) return;
       _pendingEngineDeals.add(e);
       _scheduleEngineDrain();
     });
@@ -1191,7 +1203,7 @@ class _RenoirLayerState extends State<RenoirLayer>
 
     // Dealer sprite is moved to RenoirDealerOverlay when cardsOnly==true.
     final renoirSize =
-        (widget.renoirRadius * 4.6).clamp(160.0, 270.0).toDouble();
+        (widget.renoirRadius * 4.6).clamp(148.0, 270.0).toDouble();
     final renoirTranslateY = computeRenoirTranslateY(
       railW: widget.railWidth,
       size: renoirSize,
@@ -1219,6 +1231,18 @@ class _RenoirLayerState extends State<RenoirLayer>
     final bool showBadge = !widget.cardsOnly &&
         widget.showDealerBadge &&
         ((widget.renoirAsset?.isNotEmpty ?? false) || usesCustomAvatar);
+    final bool handHighlightActive =
+        widget.showHandHighlight && !_winnerOverlayVisible;
+    final Set<String> handHighlightCodes = handHighlightActive
+        ? {
+            for (final c in widget.handHighlightCards)
+              _cardCode(c.rank, c.suit),
+          }
+        : const {};
+    final Set<String> boardHighlightCodes =
+        _winnerOverlayVisible ? _winningBoardCodes : handHighlightCodes;
+    final Color boardHighlightColor =
+        _winnerOverlayVisible ? _winningOutlineColor : _kHandHighlightOutline;
 
     return Stack(
       clipBehavior: Clip.none,
@@ -1235,15 +1259,18 @@ class _RenoirLayerState extends State<RenoirLayer>
               final full = widget.board;
               final int vis = _boardCardCount.clamp(0, full.length);
               final boardCards = full.take(vis).toList(growable: false);
+              final double communityW =
+                  widget.cardW * _RenoirLayerState._kHeroScale * 0.935;
+              final double communityH =
+                  widget.cardH * _RenoirLayerState._kHeroScale * 0.935;
               return Center(
                 child: communityRowFaceUp(
                   cards: boardCards,
-                  cardW: widget.cardW,
-                  cardH: widget.cardH,
+                  cardW: communityW,
+                  cardH: communityH,
                   spacing: 10,
-                  highlightCodes:
-                      _winnerOverlayVisible ? _winningBoardCodes : const {},
-                  highlightColor: _winningOutlineColor,
+                  highlightCodes: boardHighlightCodes,
+                  highlightColor: boardHighlightColor,
                 ),
               );
             },
@@ -1258,6 +1285,9 @@ class _RenoirLayerState extends State<RenoirLayer>
               railW: widget.railWidth,
               seats: widget.seats,
               seatTargets: widget.seatTargets,
+              seatPanelPositions: widget.seatPanelPositions,
+              seatPanelWidth: widget.seatPanelWidth,
+              seatPanelHeight: widget.seatPanelHeight,
               heroIndex: widget.heroIndex,
               hiddenSeats: widget.hiddenSeats,
               showToggleVisible: widget.showToggleVisible && !_hideHoleCards,
@@ -1271,6 +1301,10 @@ class _RenoirLayerState extends State<RenoirLayer>
               winningSeats: _winningSeats,
               winningHoleCodes: _winningHoleCodes,
               winnerShowPref: _winnerShowPref,
+              handHighlightActive: handHighlightActive,
+              handHighlightSeat: widget.heroIndex,
+              handHighlightCodes: handHighlightCodes,
+              handHighlightColor: _kHandHighlightOutline,
             ),
           ),
         ),
@@ -1628,7 +1662,7 @@ class RenoirDealerOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = (renoirRadius * 4.6).clamp(160.0, 270.0).toDouble();
+    final size = (renoirRadius * 4.6).clamp(148.0, 270.0).toDouble();
     final WoodPalette railPalette = wood.palette;
     final bool usesCustomAvatar = avatarStyle != DealerAvatarStyle.classic;
     final translateY = computeRenoirTranslateY(
@@ -1716,6 +1750,9 @@ class _SeatHoleCardsLayer extends StatelessWidget {
   final double railW;
   final List<Seat> seats;
   final List<Offset> seatTargets; // felt-space centers for card anchor
+  final List<Offset> seatPanelPositions; // table-space seat rects
+  final double seatPanelWidth;
+  final double seatPanelHeight;
   final int heroIndex;
   final Set<int> hiddenSeats;
   final bool hideAllHoleCards;
@@ -1728,11 +1765,18 @@ class _SeatHoleCardsLayer extends StatelessWidget {
   final Set<int> winningSeats;
   final Map<int, Set<String>> winningHoleCodes;
   final Map<int, bool> winnerShowPref;
+  final bool handHighlightActive;
+  final int handHighlightSeat;
+  final Set<String> handHighlightCodes;
+  final Color handHighlightColor;
 
   const _SeatHoleCardsLayer({
     required this.railW,
     required this.seats,
     required this.seatTargets,
+    required this.seatPanelPositions,
+    required this.seatPanelWidth,
+    required this.seatPanelHeight,
     required this.heroIndex,
     required this.hiddenSeats,
     required this.showToggleVisible,
@@ -1746,6 +1790,10 @@ class _SeatHoleCardsLayer extends StatelessWidget {
     required this.winningSeats,
     required this.winningHoleCodes,
     required this.winnerShowPref,
+    required this.handHighlightActive,
+    required this.handHighlightSeat,
+    required this.handHighlightCodes,
+    required this.handHighlightColor,
   });
 
   @override
@@ -1759,7 +1807,14 @@ class _SeatHoleCardsLayer extends StatelessWidget {
         final h = c.maxHeight;
 
         final List<Widget> layers = [];
-        final feltCenter = _feltCenterFromTargets(seatTargets);
+        final List<Rect> seatRects = _seatPanelRects(
+          positions: seatPanelPositions,
+          seatWidth: seatPanelWidth,
+          seatHeight: seatPanelHeight,
+        );
+        final Offset centerScreen = seatRects.isNotEmpty
+            ? _rectCloudCenter(seatRects)
+            : _feltCenterFromTargets(seatTargets) + Offset(railW, railW);
 
         // Safe padding away from rail for cards as well
         final double pad =
@@ -1775,9 +1830,7 @@ class _SeatHoleCardsLayer extends StatelessWidget {
 
           final seat = seats[i];
           final isHero = (i == heroIndex);
-          final bool winnerMode =
-              winnerOverlayVisible || winningSeats.isNotEmpty;
-          final bool overlayUp = winnerOverlayVisible;
+          final bool winnerMode = winnerOverlayVisible;
           final bool isWinner = winningSeats.contains(i);
           final bool winnerShows = winnerShowPref[i] ?? true;
 
@@ -1793,6 +1846,8 @@ class _SeatHoleCardsLayer extends StatelessWidget {
           final bool facesUp = winnerMode
               ? (isHero || (isWinner && winnerShows))
               : (isHero ? revealHero : revealOpp);
+          // Face-up cards are rendered in the UI overlay above seat widgets.
+          if (facesUp) continue;
 
           // Sizes
           final double cardW = isHero
@@ -1805,23 +1860,47 @@ class _SeatHoleCardsLayer extends StatelessWidget {
               : (facesUp
                   ? baseCardH * _RenoirLayerState._kOppShowScale
                   : baseCardH * _RenoirLayerState._kOppSmallScale);
+          final bool heroSideBySide = isHero && nToDraw > 1;
 
-          // Anchor in SCREEN space (felt targets + rail offset)
-          final feltAnchor = seatTargets[i];
-          final anchor = Offset(feltAnchor.dx + railW, feltAnchor.dy + railW);
-
-          // Push towards table center so cards don't drift to the rail
-          final centerScreen = feltCenter + Offset(railW, railW);
-          final dirToCenter = _unitVec(centerScreen - anchor);
-
-          double pushBase = (facesUp ? 6.0 : 2.0) + (baseCardH / 2);
-          if (winnerMode && isWinner) pushBase += baseCardH * 0.35;
-          final double push = isHero ? pushBase : pushBase - 6.0;
-          final anchorPushed =
-              anchor + Offset(dirToCenter.dx * push, dirToCenter.dy * push);
+          Offset anchor;
+          double fittedCardW = cardW;
+          double fittedCardH = cardH;
+          if (seatRects.length > i) {
+            final fit = _fitSeatCardLayout(
+              seatRect: seatRects[i],
+              otherSeatRects: [
+                for (int j = 0; j < seatRects.length && j < seats.length; j++)
+                  if (j != i && !hiddenSeats.contains(j)) seatRects[j],
+              ],
+              tableCenter: centerScreen,
+              isHero: isHero,
+              nToDraw: nToDraw,
+              cardW: cardW,
+              cardH: cardH,
+              heroSideBySide: heroSideBySide,
+              fanOverlap: _RenoirLayerState._kFanOverlap,
+              heroSideBySideGap: 1.05,
+            );
+            anchor = fit.anchor;
+            fittedCardW *= fit.scale;
+            fittedCardH *= fit.scale;
+          } else {
+            final feltAnchor = seatTargets[i];
+            anchor = Offset(feltAnchor.dx + railW, feltAnchor.dy + railW);
+            final dirToCenter = _unitVec(centerScreen - anchor);
+            double pushBase = (facesUp ? 6.0 : 2.0) + (baseCardH / 2);
+            if (winnerMode && isWinner) pushBase += baseCardH * 0.35;
+            final double push = isHero ? pushBase : pushBase - 6.0;
+            final anchorPushed =
+                anchor + Offset(dirToCenter.dx * push, dirToCenter.dy * push);
+            anchor = isHero
+                ? anchorPushed + Offset(0, baseCardH * 0.14)
+                : anchorPushed;
+          }
 
           // Fan
-          final double step = cardW * (1 - _RenoirLayerState._kFanOverlap);
+          final double step =
+              fittedCardW * (1 - _RenoirLayerState._kFanOverlap);
           final double totalAngleDeg = facesUp
               ? (isHero
                   ? _RenoirLayerState._kHeroFanDeg
@@ -1835,33 +1914,38 @@ class _SeatHoleCardsLayer extends StatelessWidget {
           final double startAngle = (nToDraw > 1) ? (-totalAngle / 2) : 0.0;
 
           for (int k = 0; k < nToDraw; k++) {
-            final double cxRaw =
-                anchorPushed.dx + (k - (nToDraw - 1)) * 0.5 * step;
-            final double cyRaw = anchorPushed.dy;
+            final double cxRaw = anchor.dx + (k - (nToDraw - 1)) * 0.5 * step;
+            final double cyRaw = anchor.dy;
 
             // Clamp so cards can’t touch the rail
-            final double cx = clampX(cxRaw, cardW / 2);
-            final double cy = clampY(cyRaw, cardH / 2);
+            final double cx = clampX(cxRaw, fittedCardW / 2);
+            final double cy = clampY(cyRaw, fittedCardH / 2);
             final double ang = startAngle + k * anglePer;
 
             final String code =
                 (k < seat.hole.length) ? _cardKeySeat(seat.hole[k]) : '';
-            final bool highlight = overlayUp &&
-                isWinner &&
+            final bool handHighlight = handHighlightActive &&
+                i == handHighlightSeat &&
                 facesUp &&
-                (winningHoleCodes[i]?.contains(code) ?? false);
+                handHighlightCodes.contains(code);
+            final bool highlight = handHighlight;
+            final Color highlightColor = handHighlightColor;
 
             Widget card = (facesUp && k < seat.hole.length)
                 ? cardui.PlayingCard(
                     rank: seat.hole[k].rank,
                     suit: seat.hole[k].suit,
-                    w: cardW,
-                    h: cardH,
+                    w: fittedCardW,
+                    h: fittedCardH,
                   )
-                : cardui.CardBack(w: cardW, h: cardH, asset: backAsset);
+                : cardui.CardBack(
+                    w: fittedCardW,
+                    h: fittedCardH,
+                    asset: backAsset,
+                  );
 
             if (highlight) {
-              final double borderW = (cardW * 0.06).clamp(1.5, 4.0) * 1.2;
+              final double borderW = (fittedCardW * 0.06).clamp(1.5, 4.0) * 1.2;
               card = Stack(
                 fit: StackFit.expand,
                 children: [
@@ -1869,15 +1953,14 @@ class _SeatHoleCardsLayer extends StatelessWidget {
                   IgnorePointer(
                     child: Container(
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(cardW * 0.18),
+                        borderRadius: BorderRadius.circular(fittedCardW * 0.18),
                         border: Border.all(
-                          color: isHero ? _kHeroWinOutline : _kBotWinOutline,
+                          color: highlightColor,
                           width: borderW,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: (isHero ? _kHeroWinOutline : _kBotWinOutline)
-                                .withValues(alpha: 0.6),
+                            color: highlightColor.withValues(alpha: 0.6),
                             blurRadius: borderW * 2.2,
                             spreadRadius: borderW * 0.4,
                           ),
@@ -1891,10 +1974,10 @@ class _SeatHoleCardsLayer extends StatelessWidget {
 
             layers.add(
               Positioned(
-                left: cx - cardW / 2,
-                top: cy - cardH / 2,
-                width: cardW,
-                height: cardH,
+                left: cx - fittedCardW / 2,
+                top: cy - fittedCardH / 2,
+                width: fittedCardW,
+                height: fittedCardH,
                 child: Transform.rotate(
                   angle: ang,
                   alignment: Alignment.center,
@@ -2062,7 +2145,8 @@ double computeRenoirTranslateY({
   required double handAnchor,
 }) {
   final target = railW - handAnchor * size - lift;
-  final minY = -(size * 0.60);
+  // Keep Renoir slightly lower on compact/mobile layouts so his face remains visible.
+  final minY = -(size * 0.52);
   final maxY = railW + size * 0.25;
   return target.clamp(minY, maxY).toDouble();
 }
@@ -2159,4 +2243,213 @@ Offset _unitVec(Offset v) {
   final len = math.sqrt(v.dx * v.dx + v.dy * v.dy);
   if (len == 0) return const Offset(0, -1);
   return Offset(v.dx / len, v.dy / len);
+}
+
+class _SeatCardLayout {
+  final Offset anchor;
+  final double scale;
+
+  const _SeatCardLayout({
+    required this.anchor,
+    required this.scale,
+  });
+}
+
+List<Rect> _seatPanelRects({
+  required List<Offset> positions,
+  required double seatWidth,
+  required double seatHeight,
+}) {
+  if (positions.isEmpty || seatWidth <= 0 || seatHeight <= 0) {
+    return const <Rect>[];
+  }
+  return [
+    for (final p in positions) Rect.fromLTWH(p.dx, p.dy, seatWidth, seatHeight),
+  ];
+}
+
+Offset _rectCloudCenter(List<Rect> rects) {
+  double minX = double.infinity, minY = double.infinity;
+  double maxX = -double.infinity, maxY = -double.infinity;
+  for (final r in rects) {
+    if (r.left < minX) minX = r.left;
+    if (r.top < minY) minY = r.top;
+    if (r.right > maxX) maxX = r.right;
+    if (r.bottom > maxY) maxY = r.bottom;
+  }
+  return Offset((minX + maxX) / 2, (minY + maxY) / 2);
+}
+
+double _rectExtentAlong(Rect rect, Offset unitDir) {
+  final halfW = rect.width / 2;
+  final halfH = rect.height / 2;
+  final double dx = unitDir.dx.abs();
+  final double dy = unitDir.dy.abs();
+  final double tx = dx < 1e-4 ? double.infinity : halfW / dx;
+  final double ty = dy < 1e-4 ? double.infinity : halfH / dy;
+  return math.min(tx, ty);
+}
+
+Offset _along(Offset unitDir, double distance) =>
+    Offset(unitDir.dx * distance, unitDir.dy * distance);
+
+Rect _seatCardFanBounds({
+  required Offset anchor,
+  required double cardW,
+  required double cardH,
+  required double step,
+  required int nToDraw,
+  required bool heroSideBySide,
+}) {
+  final double fanWidth = cardW + math.max(0, nToDraw - 1) * step;
+  return Rect.fromCenter(
+    center: anchor,
+    width: fanWidth + cardW * 0.16,
+    height: cardH * (heroSideBySide ? 1.08 : 1.20),
+  );
+}
+
+_SeatCardLayout _fitSeatCardLayout({
+  required Rect seatRect,
+  required List<Rect> otherSeatRects,
+  required Offset tableCenter,
+  required bool isHero,
+  required int nToDraw,
+  required double cardW,
+  required double cardH,
+  required bool heroSideBySide,
+  required double fanOverlap,
+  required double heroSideBySideGap,
+}) {
+  final double maxExtraPush = math.max(24.0, cardH * 0.72);
+  final double minScale = isHero ? 0.78 : 0.72;
+  final Offset dirToCenter =
+      _seatCardAttachmentDir(seatRect: seatRect, tableCenter: tableCenter);
+  Offset fallbackAnchor = _seatAvatarFacingCardAnchor(
+    seatRect: seatRect,
+    dirToCenter: dirToCenter,
+    cardClusterHalfExtent: _seatCardClusterHalfExtent(
+      dirToCenter: dirToCenter,
+      fittedCardW: cardW * minScale,
+      fittedCardH: cardH * minScale,
+      heroSideBySide: heroSideBySide,
+      nToDraw: nToDraw,
+      step: heroSideBySide
+          ? cardW * minScale * heroSideBySideGap
+          : cardW * minScale * (1 - fanOverlap),
+    ),
+  );
+  double fallbackScale = minScale;
+
+  const int attempts = 6;
+  for (int attempt = 0; attempt < attempts; attempt++) {
+    final double t = attempts == 1 ? 1.0 : attempt / (attempts - 1);
+    final double scale = 1.0 - (1.0 - minScale) * t;
+    final double fittedCardW = cardW * scale;
+    final double fittedCardH = cardH * scale;
+    final double step = heroSideBySide
+        ? fittedCardW * heroSideBySideGap
+        : fittedCardW * (1 - fanOverlap);
+    final double outwardNudge = maxExtraPush * t * 0.08;
+    final Offset anchor = _seatAvatarFacingCardAnchor(
+      seatRect: seatRect,
+      dirToCenter: dirToCenter,
+      cardClusterHalfExtent: _seatCardClusterHalfExtent(
+        dirToCenter: dirToCenter,
+        fittedCardW: fittedCardW,
+        fittedCardH: fittedCardH,
+        heroSideBySide: heroSideBySide,
+        nToDraw: nToDraw,
+        step: step,
+      ),
+      outwardNudge: outwardNudge,
+    );
+    fallbackAnchor = anchor;
+    fallbackScale = scale;
+    final Rect fanBounds = _seatCardFanBounds(
+      anchor: anchor,
+      cardW: fittedCardW,
+      cardH: fittedCardH,
+      step: step,
+      nToDraw: nToDraw,
+      heroSideBySide: heroSideBySide,
+    );
+    final bool clearsOthers = otherSeatRects.every(
+      (r) => !fanBounds.overlaps(r.inflate(math.max(8.0, fittedCardH * 0.10))),
+    );
+    if (clearsOthers) {
+      return _SeatCardLayout(anchor: anchor, scale: scale);
+    }
+  }
+
+  return _SeatCardLayout(anchor: fallbackAnchor, scale: fallbackScale);
+}
+
+Rect _seatAvatarRect(Rect seatRect) {
+  final double pillH = seatRect.height;
+  final double avatarBaseSize = (pillH * 0.94).clamp(40.0, pillH).toDouble();
+  final double avatarSize =
+      (avatarBaseSize * 0.85).clamp(34.0, pillH).toDouble();
+  final double avatarInset =
+      ((pillH - avatarSize) / 2).clamp(2.0, pillH * 0.18).toDouble();
+  return Rect.fromLTWH(
+    seatRect.left + avatarInset,
+    seatRect.top + avatarInset,
+    avatarSize,
+    avatarSize,
+  );
+}
+
+Offset _seatCardAttachmentDir({
+  required Rect seatRect,
+  required Offset tableCenter,
+}) {
+  final Offset delta = tableCenter - seatRect.center;
+  final double absDx = delta.dx.abs();
+  final double absDy = delta.dy.abs();
+  if (absDx < 1e-3 && absDy < 1e-3) {
+    return const Offset(0, -1);
+  }
+  if (absDy >= absDx * 0.85) {
+    return Offset(0, delta.dy >= 0 ? 1 : -1);
+  }
+  return Offset(delta.dx >= 0 ? 1 : -1, 0);
+}
+
+double _seatCardClusterHalfExtent({
+  required Offset dirToCenter,
+  required double fittedCardW,
+  required double fittedCardH,
+  required bool heroSideBySide,
+  required int nToDraw,
+  required double step,
+}) {
+  final Rect fanRect = _seatCardFanBounds(
+    anchor: Offset.zero,
+    cardW: fittedCardW,
+    cardH: fittedCardH,
+    step: step,
+    nToDraw: nToDraw,
+    heroSideBySide: heroSideBySide,
+  );
+  return _rectExtentAlong(fanRect, dirToCenter);
+}
+
+Offset _seatAvatarFacingCardAnchor({
+  required Rect seatRect,
+  required Offset dirToCenter,
+  required double cardClusterHalfExtent,
+  double outwardNudge = 0.0,
+}) {
+  final Rect avatarRect = _seatAvatarRect(seatRect);
+  final double avatarRadius = avatarRect.shortestSide / 2;
+  final Offset avatarEdge =
+      avatarRect.center + _along(dirToCenter, avatarRadius);
+  final double touchAllowance =
+      math.min(10.0, cardClusterHalfExtent * 0.18).toDouble();
+  final double distance =
+      (cardClusterHalfExtent - touchAllowance + outwardNudge)
+          .clamp(0.0, 9999.0)
+          .toDouble();
+  return avatarEdge + _along(dirToCenter, distance);
 }

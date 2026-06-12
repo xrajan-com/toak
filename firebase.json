@@ -11,7 +11,11 @@
       }
     }
   },
+  "firestore": {
+    "rules": "firestore.rules"
+  },
   "hosting": {
+    "site": "ten-of-a-kind-poker",
     "public": "website/frontend",
     "ignore": [
       "firebase.json",
@@ -20,6 +24,30 @@
     ],
     "cleanUrls": true,
     "headers": [
+      {
+        "source": "/",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache" }
+        ]
+      },
+      {
+        "source": "/index.html",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache" }
+        ]
+      },
+      {
+        "source": "/web",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache" }
+        ]
+      },
+      {
+        "source": "/web/",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache" }
+        ]
+      },
       {
         "source": "/web/index.html",
         "headers": [

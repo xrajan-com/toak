@@ -1,0 +1,3 @@
+eval7==0.1.10
+rlcard==1.2.0
+torch

@@ -2,6 +2,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
+enum DayDateClockDisplayMode {
+  full,
+  timeOnly,
+  dayDateOnly,
+}
+
 /// DayDateClock
 /// Displays venue time using a region bucket or a fixed offset.
 /// Supports DST for Washington (US Eastern) and Cairo (Egypt).
@@ -25,6 +31,8 @@ class DayDateClock extends StatefulWidget {
   final EdgeInsets padding;
   final bool pillStyle;
   final Color? backgroundColor;
+  final TextStyle? textStyle;
+  final DayDateClockDisplayMode displayMode;
 
   const DayDateClock({
     super.key,
@@ -34,6 +42,8 @@ class DayDateClock extends StatefulWidget {
     this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     this.pillStyle = true,
     this.backgroundColor,
+    this.textStyle,
+    this.displayMode = DayDateClockDisplayMode.full,
   });
 
   @override
@@ -46,8 +56,18 @@ class _DayDateClockState extends State<DayDateClock> {
 
   static const _wk = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   static const _mon = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec'
   ];
 
   @override
@@ -88,7 +108,8 @@ class _DayDateClockState extends State<DayDateClock> {
       case 'africa':
         // Cairo with DST (since 2023): UTC+2 → +3 (last Fri Apr to last Thu Oct)
         final lastFriApr = _lastWeekdayOfMonth(utcNow.year, 4, DateTime.friday);
-        final lastThuOct = _lastWeekdayOfMonth(utcNow.year, 10, DateTime.thursday);
+        final lastThuOct =
+            _lastWeekdayOfMonth(utcNow.year, 10, DateTime.thursday);
         final inDst = utcNow.isAfter(lastFriApr) && utcNow.isBefore(lastThuOct);
         return inDst ? 180 : 120;
       case 'europe':
@@ -102,7 +123,8 @@ class _DayDateClockState extends State<DayDateClock> {
         return 180;
       case 'australia':
         // Sydney (AEST +10, DST +11: starts 1st Sun Oct, ends 1st Sun Apr)
-        final dstStart = _nthWeekdayOfMonth(utcNow.year, 10, DateTime.sunday, 1);
+        final dstStart =
+            _nthWeekdayOfMonth(utcNow.year, 10, DateTime.sunday, 1);
         final dstEnd = _nthWeekdayOfMonth(utcNow.year, 4, DateTime.sunday, 1);
         final inDst = utcNow.isAfter(dstStart) || utcNow.isBefore(dstEnd);
         return inDst ? 660 : 600;
@@ -124,7 +146,9 @@ class _DayDateClockState extends State<DayDateClock> {
 
   /// Last weekday of month
   DateTime _lastWeekdayOfMonth(int year, int month, int weekday) {
-    final nextMonth = (month == 12) ? DateTime.utc(year + 1, 1, 1) : DateTime.utc(year, month + 1, 1);
+    final nextMonth = (month == 12)
+        ? DateTime.utc(year + 1, 1, 1)
+        : DateTime.utc(year, month + 1, 1);
     DateTime last = nextMonth.subtract(const Duration(days: 1));
     while (last.weekday != weekday) {
       last = last.subtract(const Duration(days: 1));
@@ -136,7 +160,7 @@ class _DayDateClockState extends State<DayDateClock> {
   DateTime _lastSundayOfMonth(int year, int month) =>
       _lastWeekdayOfMonth(year, month, DateTime.sunday);
 
-  String _fmt(DateTime t, {String? tzAbbr}) {
+  String _fmtFull(DateTime t, {String? tzAbbr}) {
     final weekday = _wk[(t.weekday - 1) % 7];
     final m = _mon[t.month - 1];
     final d = t.day.toString().padLeft(2, '0');
@@ -145,14 +169,34 @@ class _DayDateClockState extends State<DayDateClock> {
     final h12 = (h24 % 12 == 0) ? 12 : (h24 % 12);
     final mm = t.minute.toString().padLeft(2, '0');
     final base = '$weekday • $m $d • $h12:$mm $ampm';
-    return (tzAbbr != null && tzAbbr.isNotEmpty) ? '$base ${tzAbbr.toUpperCase()}' : base;
+    return (tzAbbr != null && tzAbbr.isNotEmpty)
+        ? '$base ${tzAbbr.toUpperCase()}'
+        : base;
+  }
+
+  String _fmtTime(DateTime t, {String? tzAbbr}) {
+    final h24 = t.hour;
+    final ampm = h24 >= 12 ? 'PM' : 'AM';
+    final h12 = (h24 % 12 == 0) ? 12 : (h24 % 12);
+    final mm = t.minute.toString().padLeft(2, '0');
+    final base = '$h12:$mm $ampm';
+    return (tzAbbr != null && tzAbbr.isNotEmpty)
+        ? '$base ${tzAbbr.toUpperCase()}'
+        : base;
+  }
+
+  String _fmtDayDate(DateTime t) {
+    final weekday = _wk[(t.weekday - 1) % 7];
+    final m = _mon[t.month - 1];
+    final d = t.day.toString().padLeft(2, '0');
+    return '$weekday • $m $d';
   }
 
   @override
   Widget build(BuildContext context) {
     final labelStyle = Theme.of(context).textTheme.labelLarge;
     final defaultFamily =
-        Theme.of(context).textTheme.bodyLarge?.fontFamily ?? 'BarlowCondensed';
+        Theme.of(context).textTheme.bodyLarge?.fontFamily ?? 'OpenSans';
     final Color resolvedColor = labelStyle?.color ?? Colors.white;
 
     final offset = widget.region != null
@@ -161,13 +205,30 @@ class _DayDateClockState extends State<DayDateClock> {
 
     final venueTime = _nowUtc.add(Duration(minutes: offset));
 
+    final TextStyle baseStyle = widget.textStyle ??
+        (labelStyle ?? const TextStyle()).copyWith(
+          fontWeight: FontWeight.w600,
+          color: resolvedColor,
+          fontFamily: defaultFamily,
+        );
+    final String displayText;
+    switch (widget.displayMode) {
+      case DayDateClockDisplayMode.timeOnly:
+        displayText = _fmtTime(venueTime, tzAbbr: widget.tzAbbr);
+        break;
+      case DayDateClockDisplayMode.dayDateOnly:
+        displayText = _fmtDayDate(venueTime);
+        break;
+      case DayDateClockDisplayMode.full:
+        displayText = _fmtFull(venueTime, tzAbbr: widget.tzAbbr);
+        break;
+    }
+
     final text = Text(
-      _fmt(venueTime, tzAbbr: widget.tzAbbr),
-      style: (labelStyle ?? const TextStyle()).copyWith(
-        fontWeight: FontWeight.w600,
-        color: resolvedColor,
-        fontFamily: defaultFamily,
-      ),
+      displayText,
+      style: baseStyle,
+      maxLines: 1,
+      softWrap: false,
       overflow: TextOverflow.ellipsis,
     );
 

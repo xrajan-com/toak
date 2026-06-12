@@ -5,7 +5,6 @@ import 'package:ten_of_a_kind_poker/config/kingdom_titles.dart';
 import 'package:ten_of_a_kind_poker/config/venues.dart';
 import 'package:ten_of_a_kind_poker/services/auth_service.dart';
 import 'package:ten_of_a_kind_poker/services/campaign_progress_service.dart';
-import 'package:ten_of_a_kind_poker/services/title_certificate_service.dart';
 import 'package:ten_of_a_kind_poker/ui/theme/colors.dart';
 
 class TitlesScreen extends StatelessWidget {
@@ -48,7 +47,7 @@ class _GuestEmpty extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 28),
         child: Text(
-          'Nothing to show.\nPlay Career to earn Titles and download certificates.',
+          'Nothing to show.\nPlay Career to earn Titles.',
           textAlign: TextAlign.center,
           style: TextStyle(
             color: Colors.white70,
@@ -96,12 +95,6 @@ class _TitlesList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final progress = context.watch<CampaignProgressService>();
-    final auth = context.watch<AuthService>();
-    final user = auth.currentUser;
-
-    final playerId = (user?.uid ?? 'player').toString();
-    final playerName =
-        ((user?.displayName ?? user?.email) ?? 'Player').toString().trim();
 
     final india = _earnedForGroup(progress, VenueGroup.india, indianVenues);
     final intl =
@@ -133,8 +126,6 @@ class _TitlesList extends StatelessWidget {
           const _SectionHeader(title: 'India'),
           ...india.map((e) => _TitleTile(
                 entry: e,
-                playerName: playerName,
-                playerId: playerId,
               )),
           const SizedBox(height: 14),
         ],
@@ -142,8 +133,6 @@ class _TitlesList extends StatelessWidget {
           const _SectionHeader(title: 'International'),
           ...intl.map((e) => _TitleTile(
                 entry: e,
-                playerName: playerName,
-                playerId: playerId,
               )),
         ],
       ],
@@ -172,58 +161,15 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _TitleTile extends StatefulWidget {
+class _TitleTile extends StatelessWidget {
   final _TitleEntry entry;
-  final String playerName;
-  final String playerId;
-  const _TitleTile({
-    required this.entry,
-    required this.playerName,
-    required this.playerId,
-  });
-
-  @override
-  State<_TitleTile> createState() => _TitleTileState();
-}
-
-class _TitleTileState extends State<_TitleTile> {
-  bool _downloading = false;
-
-  Future<void> _download() async {
-    if (_downloading) return;
-    setState(() => _downloading = true);
-    try {
-      await TitleCertificateService.downloadTitleCertificate(
-        playerName: widget.playerName.isEmpty ? 'Player' : widget.playerName,
-        playerId: widget.playerId.isEmpty ? 'player' : widget.playerId,
-        kingdomName: widget.entry.venue.name,
-        titleName: widget.entry.titleName,
-      );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Certificate ready'),
-          duration: Duration(milliseconds: 900),
-        ),
-      );
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not download certificate'),
-          duration: Duration(milliseconds: 900),
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _downloading = false);
-    }
-  }
+  const _TitleTile({required this.entry});
 
   @override
   Widget build(BuildContext context) {
-    final v = widget.entry.venue;
+    final v = entry.venue;
     final border = v.felt.withValues(alpha: 0.9);
-    final subtitle = 'Title: ${widget.entry.titleName}';
+    final subtitle = 'Title: ${entry.titleName}';
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
@@ -265,25 +211,7 @@ class _TitleTileState extends State<_TitleTile> {
             fontSize: 12.5,
           ),
         ),
-        trailing: IconButton(
-          tooltip: 'Download certificate',
-          onPressed: _downloading ? null : _download,
-          icon: _downloading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.2,
-                    color: AppColors.blue,
-                  ),
-                )
-              : const Icon(
-                  Icons.download_rounded,
-                  color: AppColors.blue,
-                ),
-        ),
       ),
     );
   }
 }
-

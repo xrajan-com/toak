@@ -1,14 +1,51 @@
 import 'package:flutter/material.dart';
-import 'package:ten_of_a_kind_poker/services/stat_service.dart';
+import 'package:provider/provider.dart';
+import 'package:ten_of_a_kind_poker/services/aura_points_service.dart';
+import 'package:ten_of_a_kind_poker/services/leaderboard_firestore_service.dart';
 import 'package:ten_of_a_kind_poker/ui/theme/colors.dart';
 
-class LeaderboardScreen extends StatelessWidget {
+class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> leaderboard = StatService().getLeaderboard();
+  State<LeaderboardScreen> createState() => _LeaderboardScreenState();
+}
 
+class _LeaderboardScreenState extends State<LeaderboardScreen> {
+  late Future<List<LeaderboardEntry>> _entriesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _entriesFuture = _loadEntries();
+  }
+
+  Future<List<LeaderboardEntry>> _loadEntries() async {
+    try {
+      final aura = context.read<AuraPointsService>();
+      await aura.init();
+      await leaderboardFirestoreService.syncCurrentUserIfTop10(wallet: aura);
+    } catch (e) {
+      debugPrint('Leaderboard self-sync skipped: $e');
+    }
+    return leaderboardFirestoreService.fetchTop10();
+  }
+
+  void _refresh() {
+    setState(() {
+      _entriesFuture = _loadEntries();
+    });
+  }
+
+  String _formatAura(LeaderboardEntry entry) {
+    if (entry.auraMilli % 1000 == 0) {
+      return entry.aura.toStringAsFixed(0);
+    }
+    return entry.aura.toStringAsFixed(1);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.black,
       appBar: AppBar(
@@ -18,43 +55,59 @@ class LeaderboardScreen extends StatelessWidget {
           style: TextStyle(color: AppColors.white),
         ),
         iconTheme: const IconThemeData(color: AppColors.white),
+        actions: [
+          IconButton(
+            tooltip: 'Refresh leaderboard',
+            onPressed: _refresh,
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+        ],
       ),
-      body: leaderboard.isEmpty
-          ? const Center(
+      body: FutureBuilder<List<LeaderboardEntry>>(
+        future: _entriesFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(color: AppColors.white),
+            );
+          }
+
+          final entries = snapshot.data ?? const <LeaderboardEntry>[];
+          if (entries.isEmpty) {
+            return const Center(
               child: Text(
-                'No games played yet.',
+                'No ranked players yet.',
                 style: TextStyle(color: AppColors.white54),
               ),
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: leaderboard.length,
-              separatorBuilder: (_, __) => const Divider(color: AppColors.white24),
-              itemBuilder: (context, index) {
-                final entry = leaderboard[index];
-                final playerId = entry['playerId'] ?? 'Unknown';
-                final handsWon = entry['handsWon'] ?? 0;
-                final handsPlayed = entry['handsPlayed'] ?? 0;
-                final winRate = handsPlayed > 0
-                    ? (handsWon / handsPlayed * 100).toStringAsFixed(1)
-                    : '0.0';
+            );
+          }
 
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: AppColors.red,
-                    child: Text('${index + 1}'),
-                  ),
-                  title: Text(
-                    playerId,
-                    style: const TextStyle(color: AppColors.white),
-                  ),
-                  subtitle: Text(
-                    'Wins: $handsWon  |  Played: $handsPlayed  |  Win Rate: $winRate%',
-                    style: const TextStyle(color: AppColors.white70),
-                  ),
-                );
-              },
-            ),
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: entries.length,
+            separatorBuilder: (_, __) =>
+                const Divider(color: AppColors.white24),
+            itemBuilder: (context, index) {
+              final entry = entries[index];
+              return ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: AppColors.red,
+                  foregroundColor: AppColors.white,
+                  child: Text('${index + 1}'),
+                ),
+                title: Text(
+                  entry.displayName,
+                  style: const TextStyle(color: AppColors.white),
+                ),
+                subtitle: Text(
+                  'Aura: ${_formatAura(entry)}  |  AUP: ${entry.totalAup}  |  Activity: ${entry.activityScore}',
+                  style: const TextStyle(color: AppColors.white70),
+                ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }

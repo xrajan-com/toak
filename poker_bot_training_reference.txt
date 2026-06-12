@@ -1,0 +1,155 @@
+Since you’re building serious poker logic (and bots) for your game ecosystem, I’ll go deep — not surface-level advice, but structured tactical layers you can convert directly into bot decision trees.
+
+I’ll structure this into:
+	1.	Core Foundations
+	2.	Mathematical Layer
+	3.	Psychological Layer (including bluffing logic)
+	4.	Positional Strategy
+	5.	Bet Sizing Strategy
+	6.	Advanced Tactical Concepts
+	7.	Exploitative Adjustments
+	8.	Bot-Implementation Framework
+
+⸻
+
+1️⃣ Core Foundations of Strong Poker Play
+
+A good poker player:
+	•	Plays tight early, wider late
+	•	Understands position advantage
+	•	Thinks in ranges, not hands
+	•	Maximizes value when ahead
+	•	Minimizes losses when behind
+	•	Adjusts to opponents dynamically
+	•	Controls pot size intentionally
+	•	Understands fold equity
+
+Bots must not “play cards.”
+They must play ranges + EV + position + opponent tendencies.
+
+⸻
+
+2️⃣ Mathematical Layer (Essential for Bots)
+
+🧮 Pot Odds
+
+If:
+	•	Pot = 100
+	•	Opponent bets 50
+	•	You must call 50 to win 150
+
+You need 33% equity to call.
+Implied Odds
+
+Even if current pot odds are insufficient,
+future potential payout can justify call.
+
+Bots can simulate:
+	•	Probability of hitting draw
+	•	Estimated future opponent stack commitment
+
+⸻
+
+🧮 Equity Realization
+
+Strong players:
+	•	Don’t just calculate equity
+	•	They consider whether they can realize it
+
+Example:
+	•	Weak draw out of position vs aggressive player
+	•	Equity exists but hard to realize
+
+Bluff only if EV positive.
+
+⸻
+
+3️⃣ Bluffing (Deep Tactical Breakdown)
+
+Bluffing isn’t random aggression.
+
+🎭 Types of Bluffs
+
+1. Pure Bluff
+
+No showdown value.
+
+Example:
+Board: A♠ K♠ 7♦ 2♣ 9♥
+You have 6♣ 5♦
+
+Only bet if:
+	•	You represent credible range
+	•	Opponent folds often
+
+⸻
+
+2. Semi-Bluff
+
+Draw with equity.
+
+Example:
+Flush draw or straight draw.
+
+Best bluff type because:
+	•	You win if opponent folds
+	•	You still win if you hit
+
+Bots should prioritize semi-bluffs > pure bluffs.
+
+⸻
+
+3. Blocker Bluff
+
+Holding key card reduces opponent’s strong combos.
+
+Example:
+You hold A♠
+Board has 3 spades.
+You block nut flush.
+
+Bot logic:
+	•	Count opponent nut combos
+	•	Reduce bluff frequency if blockers absent
+
+⸻
+
+4. Polarized Bluff
+
+Large bet representing nuts or nothing.
+
+Used when:
+	•	Range advantage
+	•	Nut advantage
+	•	River
+
+⸻
+
+🧠 When NOT to Bluff
+	•	Multiway pots
+	•	Calling stations
+	•	Low-stakes recreational players
+	•	Wet boards where opponent range connects strongly
+	•	When you lack range credibility
+
+Bots must detect player archetype first.
+
+⸻
+
+4️⃣ Positional Strategy
+
+Position = most powerful advantage.
+
+Early Position
+	•	Play tight
+	•	Strong range only
+
+Middle Position
+	•	Slightly wider
+
+Late Position (Button/Cutoff)
+	•	Steal blinds
+	•	Wider opening range
+	•	More bluffs
+
+Bot rule:

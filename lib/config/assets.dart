@@ -12,7 +12,7 @@ class AppAssets {
   // 🔹 Avatars
   static const String defaultAvatar = 'assets/images/avatars/default.png';
 
-  // 🔹 Sounds (limited to the 8 clips currently available)
+  // 🔹 Sounds
   static const String shuffleSound = 'assets/sounds/shuffle.wav';
   static const String dealCardSound = shuffleSound; // reuse shuffle for deals
   static const String foldSound = 'assets/sounds/fold.wav';
@@ -24,6 +24,7 @@ class AppAssets {
   // - bet/raise uses coin.wav
   static const String callCoinSound = betSound;
   static const String raiseSound = coinSound;
+  static const String actionTapSound = 'assets/sounds/action.wav';
   static const String playerAllInSound = 'assets/sounds/all_in_warning.wav';
   static const String welcomeSound = 'assets/sounds/welcome.wav';
   static const String handWinSound = 'assets/sounds/hand winner.wav';
@@ -39,6 +40,16 @@ class AppAssets {
   static const String applauseSound = 'assets/sounds/applause.wav';
   static const String doorKnockSound = 'assets/sounds/door_knock.mp3';
   static const String knock1Sound = 'assets/sounds/knock1.wav';
+  static const String renoirFemaleCheckAnnouncer =
+      'assets/sounds/announcer/female/renoir_female_check.mp3';
+  static const String renoirFemaleCallAnnouncer =
+      'assets/sounds/announcer/female/renoir_female_call.mp3';
+  static const String renoirFemaleRaiseAnnouncer =
+      'assets/sounds/announcer/female/renoir_female_raise.mp3';
+  static const String renoirFemaleAllInAnnouncer =
+      'assets/sounds/announcer/female/renoir_female_all_in.mp3';
+  static const String renoirFemaleFoldAnnouncer =
+      'assets/sounds/announcer/female/renoir_female_fold.mp3';
 
   // 🔹 Backgrounds
   static const String tableBackground = 'assets/images/table_bg.png';

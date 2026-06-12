@@ -131,141 +131,159 @@ Future<void> showScoreboardSheet(
             final media = MediaQuery.of(sheetContext);
             final maxListHeight =
                 (media.size.height * 0.65).clamp(360.0, 780.0);
-            return Padding(
-              padding: EdgeInsets.fromLTRB(16, 12, 16, media.viewInsets.bottom + 24),
-              child: DecoratedBox(
-                decoration: go.renoirGlassPanelDecoration(radius: 18, opacity: 0.68),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Align(
-                        alignment: Alignment.center,
-                        child: Container(
-                          width: 44,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: Colors.white24,
-                            borderRadius: BorderRadius.circular(2),
+            return GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => Navigator.of(sheetContext).pop(),
+              child: Padding(
+                padding:
+                    EdgeInsets.fromLTRB(16, 12, 16, media.viewInsets.bottom + 24),
+                child: DecoratedBox(
+                  decoration:
+                      go.renoirGlassPanelDecoration(radius: 18, opacity: 0.68),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Align(
+                          alignment: Alignment.center,
+                          child: Container(
+                            width: 44,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Colors.white24,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 14),
-                      const Center(
-                        child: go.GoldenText(
-                          'Scoreboard',
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+                        const SizedBox(height: 14),
+                        const Center(
+                          child: go.GoldenText(
+                            'Scoreboard',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 14),
-                      ConstrainedBox(
-                        constraints: BoxConstraints(maxHeight: maxListHeight, maxWidth: 760),
-                        child: ListView.separated(
-                          shrinkWrap: true,
-                          physics: const BouncingScrollPhysics(),
-                          itemCount: sorted.length,
-                          separatorBuilder: (_, __) => const Divider(color: Colors.white12, height: 10),
-                          itemBuilder: (_, i) {
-                          final s = sorted[i];
-                          final kingdom = s.kingdom.trim();
-                          final about = s.about.trim();
-                          final aboutDisplay =
-                              about.isNotEmpty ? truncateNice(about, 40) : '—';
-                          final Color accentColor = go.feltColorForKingdom(
-                            kingdom.isNotEmpty ? kingdom : null,
-                          );
-                          final String chipsLabel = '${s.chips}';
-                          final String flagPath = flagForKingdom(kingdom);
-                          final bool hero = isHero(s);
-                          final bool busted = s.busted;
+                        const SizedBox(height: 14),
+                        ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxHeight: maxListHeight,
+                            maxWidth: 760,
+                          ),
+                          child: ListView.separated(
+                            shrinkWrap: true,
+                            physics: const BouncingScrollPhysics(),
+                            itemCount: sorted.length,
+                            separatorBuilder: (_, __) =>
+                                const Divider(color: Colors.white12, height: 10),
+                            itemBuilder: (_, i) {
+                              final s = sorted[i];
+                              final kingdom = s.kingdom.trim();
+                              final about = s.about.trim();
+                              final aboutDisplay =
+                                  about.isNotEmpty ? truncateNice(about, 40) : '—';
+                              final Color accentColor = go.feltColorForKingdom(
+                                kingdom.isNotEmpty ? kingdom : null,
+                              );
+                              final String chipsLabel = '${s.chips}';
+                              final String flagPath = flagForKingdom(kingdom);
+                              final bool hero = isHero(s);
+                              final bool busted = s.busted;
 
-                          return Container(
-                            decoration: BoxDecoration(
-                              color: hero
-                                  ? Colors.white.withValues(alpha: 0.06)
-                                  : busted
-                                      ? Colors.black.withValues(alpha: 0.28)
-                                      : Colors.transparent,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 6),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                _FlagTile(flagPath: flagPath, name: s.name),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  flex: 4,
-                                  child: Text.rich(
-                                    TextSpan(
-                                      children: [
+                              return Container(
+                                decoration: BoxDecoration(
+                                  color: hero
+                                      ? Colors.white.withValues(alpha: 0.06)
+                                      : busted
+                                          ? Colors.black.withValues(alpha: 0.28)
+                                          : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 3, horizontal: 6),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    _FlagTile(flagPath: flagPath, name: s.name),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      flex: 4,
+                                      child: Text.rich(
                                         TextSpan(
-                                          text: s.name,
-                                          style: TextStyle(
-                                            color: nameColor(s).withValues(
-                                                alpha: busted ? 0.42 : 1.0),
-                                            fontWeight: hero ? FontWeight.w900 : FontWeight.w700,
-                                            fontSize: 13.5,
-                                          ),
-                                        ),
-                                        if (kingdom.isNotEmpty)
-                                          TextSpan(
-                                            text: ' ($kingdom)',
-                                            style: TextStyle(
-                                              color: accentColor.withValues(
-                                                  alpha: busted ? 0.28 : 1.0),
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 13,
-                                              height: 1.05,
+                                          children: [
+                                            TextSpan(
+                                              text: s.name,
+                                              style: TextStyle(
+                                                color: nameColor(s).withValues(
+                                                    alpha: busted ? 0.42 : 1.0),
+                                                fontWeight: hero
+                                                    ? FontWeight.w900
+                                                    : FontWeight.w700,
+                                                fontSize: 13.5,
+                                              ),
                                             ),
-                                          ),
-                                      ],
+                                            if (kingdom.isNotEmpty)
+                                              TextSpan(
+                                                text: ' ($kingdom)',
+                                                style: TextStyle(
+                                                  color: accentColor.withValues(
+                                                      alpha: busted ? 0.28 : 1.0),
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 13,
+                                                  height: 1.05,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                auraBadge(s.aura),
-                                const SizedBox(width: 12),
-                                SizedBox(
-                                  width: 80,
-                                  child: Text(
-                                    chipsLabel,
-                                    textAlign: TextAlign.right,
-                                    style: TextStyle(
-                                      color: chipColor(s)
-                                          .withValues(alpha: busted ? 0.35 : 1.0),
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 12.5,
-                                      fontFeatures: const [FontFeature.tabularFigures()],
+                                    const SizedBox(width: 12),
+                                    auraBadge(s.aura),
+                                    const SizedBox(width: 12),
+                                    SizedBox(
+                                      width: 80,
+                                      child: Text(
+                                        chipsLabel,
+                                        textAlign: TextAlign.right,
+                                        style: TextStyle(
+                                          color: chipColor(s).withValues(
+                                              alpha: busted ? 0.35 : 1.0),
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 12.5,
+                                          fontFeatures: const [
+                                            FontFeature.tabularFigures()
+                                          ],
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  flex: 3,
-                                  child: Text(
-                                    aboutDisplay,
-                                    textAlign: TextAlign.right,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 12.5,
-                                      height: 1.05,
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      flex: 3,
+                                      child: Text(
+                                        aboutDisplay,
+                                        textAlign: TextAlign.right,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 12.5,
+                                          height: 1.05,
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          );
-                          },
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

@@ -1,6 +1,4 @@
-import 'dart:convert';
-
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart' show AssetManifest, rootBundle;
 
 class WatermarkResolver {
   static Set<String>? _keys;
@@ -17,16 +15,14 @@ class WatermarkResolver {
 
     final future = (() async {
       try {
-        final manifestJson = await rootBundle.loadString('AssetManifest.json');
-        final manifest =
-            json.decode(manifestJson) as Map<String, dynamic>? ?? const {};
-        _keys = manifest.keys.map(_fixDupAssets).toSet();
+        final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+        _keys = manifest.listAssets().map(_fixDupAssets).toSet();
       } catch (_) {
-        _keys = <String>{};
+        _keys = null;
       } finally {
         _loading = null;
       }
-      return _keys!;
+      return _keys ?? <String>{};
     })();
 
     _loading = future;

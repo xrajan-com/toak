@@ -1,13 +1,16 @@
 // lib/ui/screens/venue_screen.dart
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:ten_of_a_kind_poker/config/.env.dart';
+import 'package:ten_of_a_kind_poker/config/campaign_events.dart' as ce;
 import 'package:ten_of_a_kind_poker/config/kingdom_titles.dart';
+import 'package:ten_of_a_kind_poker/config/sub_kingdoms.dart'
+    show subKingdomCountFor;
 import 'package:ten_of_a_kind_poker/config/venues.dart';
+import 'package:ten_of_a_kind_poker/features/venue/game_mode.dart';
 import 'package:ten_of_a_kind_poker/ui/theme/colors.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/sub_kingdom_screen.dart';
@@ -15,8 +18,12 @@ import 'package:ten_of_a_kind_poker/ui/utils/deck_cache.dart';
 import 'package:ten_of_a_kind_poker/core/sound_fx.dart';
 import 'package:ten_of_a_kind_poker/config/assets.dart';
 import 'package:ten_of_a_kind_poker/services/auth_service.dart';
+import 'package:ten_of_a_kind_poker/services/aura_points_service.dart';
 import 'package:ten_of_a_kind_poker/services/campaign_progress_service.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:ten_of_a_kind_poker/services/profile_service.dart';
+import 'package:ten_of_a_kind_poker/core/aup.dart' as aup;
+import 'package:ten_of_a_kind_poker/ui/screens/profile_screen.dart';
+import 'package:ten_of_a_kind_poker/ui/widgets/stadium_banner.dart';
 
 const _red = AppColors.red;
 const _blue = AppColors.blue;
@@ -27,7 +34,8 @@ class _HeaderIcon extends StatelessWidget {
   final IconData icon;
   final String tooltip;
   final VoidCallback onTap;
-  const _HeaderIcon({required this.icon, required this.tooltip, required this.onTap});
+  const _HeaderIcon(
+      {required this.icon, required this.tooltip, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -35,15 +43,26 @@ class _HeaderIcon extends StatelessWidget {
       icon: Icon(icon, color: Colors.white, size: 22),
       tooltip: tooltip,
       onPressed: onTap,
+      constraints: const BoxConstraints.tightFor(width: 40, height: 48),
+      padding: EdgeInsets.zero,
       splashRadius: 22,
+      mouseCursor: SystemMouseCursors.click,
     );
   }
 }
 
 class _HeaderActions extends StatelessWidget {
-  static const double _w = 144; // keeps banner perfectly centered
+  static const double _w = 120; // keeps banner perfectly centered
   final bool mirrored;
-  const _HeaderActions({required this.mirrored});
+  final VoidCallback? onProfile;
+  final VoidCallback? onProgress;
+  final VoidCallback? onAup;
+  const _HeaderActions({
+    required this.mirrored,
+    this.onProfile,
+    this.onProgress,
+    this.onAup,
+  });
   @override
   Widget build(BuildContext context) {
     if (mirrored) return const SizedBox(width: _w, height: 48);
@@ -53,52 +72,24 @@ class _HeaderActions extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          _HeaderIcon(icon: Icons.emoji_events_outlined, tooltip: 'Leaderboard', onTap: () {}),
-          _HeaderIcon(icon: Icons.person_outline,         tooltip: 'My Profile',  onTap: () {}),
+          _HeaderIcon(
+            icon: Icons.person_outline,
+            tooltip: 'My Profile',
+            onTap: onProfile ?? () {},
+          ),
+          _HeaderIcon(
+            icon: Icons.auto_graph,
+            tooltip: 'Progress & Aura',
+            onTap: onProgress ?? () {},
+          ),
+          _HeaderIcon(
+            icon: Icons.account_balance_wallet_outlined,
+            tooltip: 'AUP Wallet',
+            onTap: onAup ?? () {},
+          ),
         ],
       ),
     );
-  }
-}
-
-/* ----------------------- STADIUM/CAPSULE BANNER ----------------------- */
-/* No glow, no background, tightly clipped to capsule. */
-class _StadiumBanner extends StatelessWidget {
-  final String asset;
-  const _StadiumBanner({required this.asset});
-
-  static const StadiumBorder _shape = StadiumBorder();
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, c) {
-      final maxW = math.min(c.maxWidth, 420.0);
-      const maxH = 88.0;
-
-      return Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxHeight: maxH),
-          child: ClipPath(
-            clipper: ShapeBorderClipper(shape: _shape),
-            clipBehavior: Clip.antiAlias,
-            child: SizedBox(
-              // Important: no padding/decoration so there’s zero border/glow
-              width: maxW,
-              child: FittedBox(
-                fit: BoxFit.fitHeight, // fit height so sides are never cropped
-                alignment: Alignment.center,
-                child: Image.asset(
-                  asset,
-                  isAntiAlias: true,
-                  filterQuality: FilterQuality.high,
-                  gaplessPlayback: true,
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-    });
   }
 }
 
@@ -106,13 +97,18 @@ class _StadiumBanner extends StatelessWidget {
 
 class VenueScreen extends StatefulWidget {
   static const routeName = '/venue';
+  final VenueEntryMode mode;
 
-  const VenueScreen({super.key});
+  const VenueScreen({
+    super.key,
+    this.mode = VenueEntryMode.career,
+  });
   @override
   State<VenueScreen> createState() => _VenueScreenState();
 }
 
-class _VenueScreenState extends State<VenueScreen> with SingleTickerProviderStateMixin {
+class _VenueScreenState extends State<VenueScreen>
+    with SingleTickerProviderStateMixin {
   late final TabController _tab;
   static const _bannerAsset = 'assets/images/banner.png';
   static const String _guestDocsHint =
@@ -142,10 +138,31 @@ class _VenueScreenState extends State<VenueScreen> with SingleTickerProviderStat
     super.dispose();
   }
 
+  Future<void> _pushQuickGame(VenueTheme venue) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => GameScreen.guestTable(
+          tableName: '${venue.name} — Quick Game',
+          venue: venue,
+          playIntroWelcome: false,
+          venueMode: VenueEntryMode.quickGame,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _enterQuickGame(VenueTheme venue) async {
+    await _pushQuickGame(venue);
+  }
+
   Future<void> _openVenue(VenueTheme venue, VenueGroup group) async {
-    await SoundFx.instance.unlock();
-    await DeckCache.ensureDeckReady();
+    unawaited(SoundFx.instance.unlock());
+    unawaited(DeckCache.ensureDeckReady());
     if (!mounted) return;
+    if (widget.mode == VenueEntryMode.quickGame) {
+      await _enterQuickGame(venue);
+      return;
+    }
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => SubKingdomScreen(
@@ -157,7 +174,7 @@ class _VenueScreenState extends State<VenueScreen> with SingleTickerProviderStat
     if (!mounted) return;
   }
 
-  Future<void> _openDocumentsPortal() async {
+  Future<void> _openLocalIdCard() async {
     final auth = context.read<AuthService>();
     final user = auth.currentUser;
     final bool isGuest = user == null || user.isAnonymous;
@@ -172,78 +189,527 @@ class _VenueScreenState extends State<VenueScreen> with SingleTickerProviderStat
       return;
     }
 
+    final profile = context.read<ProfileService>();
     final progress = context.read<CampaignProgressService>();
-    final titles = <Map<String, String>>[];
+    final titles = <String>[];
 
     void collect(VenueGroup group, List<VenueTheme> venues) {
       for (final v in venues) {
         if (!progress.hasTitle(group: group, kingdomName: v.name)) continue;
-        titles.add({
-          'group': group.name,
-          'kingdom': v.name,
-          'title': kingdomTitleFor(group: group, kingdomName: v.name),
-        });
+        titles.add(kingdomTitleFor(group: group, kingdomName: v.name));
       }
     }
 
     collect(VenueGroup.india, indianVenues);
     collect(VenueGroup.international, internationalVenues);
 
-    String displayName = (user?.displayName ?? '').toString().trim();
-    final String email = (user?.email ?? '').toString().trim();
+    String displayName = (profile.displayName ?? '').toString().trim();
+    if (displayName.isEmpty) {
+      displayName = (user?.displayName ?? '').toString().trim();
+    }
+    final String email = (profile.email ?? user?.email ?? '').toString().trim();
     if (displayName.isEmpty && email.contains('@')) {
       displayName = email.split('@').first.trim();
     }
     if (displayName.isEmpty) displayName = 'Player';
 
-    final Uri uri = Uri.parse(Env.documentsPortalUrl).replace(
-      queryParameters: <String, String>{
-        'uid': (user?.uid ?? '').toString(),
-        'name': displayName,
-        'email': email,
-        'titles': jsonEncode(titles),
-      },
-    );
+    final String about = ProfileService.normalizeAbout(profile.about);
+    final String kingdom = (profile.kingdom ?? '').trim();
 
-    try {
-      final ok = await canLaunchUrl(uri);
-      if (!ok) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not open website'),
-            duration: Duration(milliseconds: 900),
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => _PlayerIdCardScreen(
+          bannerAsset: _bannerAsset,
+          name: displayName,
+          email: email,
+          playerId: user?.uid ?? '',
+          about: about,
+          kingdom: kingdom,
+          titles: titles,
+          avatarBytes: profile.avatarBytes,
+          issuedAt: DateTime.now(),
+        ),
+      ),
+    );
+  }
+
+  int _totalSubKingdomsForGroup(VenueGroup group) {
+    final venues =
+        group == VenueGroup.india ? indianVenues : internationalVenues;
+    int total = 0;
+    for (final v in venues) {
+      total += subKingdomCountFor(group: group, kingdomName: v.name);
+    }
+    return total;
+  }
+
+  int _clearedSubKingdomsForGroup(
+    CampaignProgressService progress,
+    VenueGroup group,
+  ) {
+    final venues =
+        group == VenueGroup.india ? indianVenues : internationalVenues;
+    int total = 0;
+    for (final v in venues) {
+      total += progress.clearedCount(group: group, kingdomName: v.name);
+    }
+    return total;
+  }
+
+  void _openProfileEditor(BuildContext dialogContext) {
+    Navigator.pop(dialogContext);
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ProfileScreen()),
+    );
+  }
+
+  Future<void> _logoutFromProfileDialog(BuildContext dialogContext) async {
+    Navigator.pop(dialogContext);
+    await context.read<AuthService>().logout();
+    if (!mounted) return;
+    Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
+  void _showMyProfileDialog() {
+    final profile = context.read<ProfileService>();
+    final auth = context.read<AuthService>();
+    final user = auth.currentUser;
+
+    String name = profile.displayName ?? '';
+    if (name.isEmpty) {
+      name = (user?.displayName ?? '').toString().trim();
+    }
+    final email = (profile.email ?? user?.email ?? '').toString().trim();
+    if (name.isEmpty && email.contains('@')) {
+      name = email.split('@').first.trim();
+    }
+    if (name.isEmpty) name = 'Player';
+
+    final about = ProfileService.normalizeAbout(profile.about);
+    final kingdom = (profile.kingdom ?? '').trim();
+    final isGuest = user == null || user.isAnonymous;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black54,
+      builder: (ctx) {
+        final avatarBytes = profile.avatarBytes;
+        final ImageProvider<Object> avatarImage = avatarBytes != null
+            ? MemoryImage(avatarBytes) as ImageProvider<Object>
+            : const AssetImage('assets/images/default_profile.png');
+
+        return Dialog(
+          backgroundColor: const Color(0xFF101010),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.person_outline, color: AppColors.blue),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'My Profile',
+                      style: TextStyle(
+                        color: AppColors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      splashRadius: 18,
+                      icon: const Icon(Icons.close, color: Colors.white70),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Center(
+                  child: CircleAvatar(
+                    radius: 38,
+                    backgroundImage: avatarImage,
+                    backgroundColor: Colors.white10,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Center(
+                  child: Text(
+                    name,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Center(
+                  child: Text(
+                    isGuest
+                        ? 'Guest player'
+                        : (email.isNotEmpty ? email : 'Signed in player'),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white60,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _MetricRow(
+                  label: 'Kingdom',
+                  value: kingdom.isNotEmpty ? kingdom : 'Not set',
+                ),
+                _MetricRow(
+                  label: 'About',
+                  value: about.isNotEmpty ? about : ProfileService.defaultAbout,
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: isGuest
+                        ? () {
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(_guestDocsHint),
+                                duration: Duration(milliseconds: 1200),
+                              ),
+                            );
+                          }
+                        : () {
+                            Navigator.pop(ctx);
+                            unawaited(_openLocalIdCard());
+                          },
+                    icon: const Icon(Icons.badge_outlined),
+                    label: const Text('Player ID'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.blue,
+                      side: const BorderSide(color: AppColors.blue),
+                      minimumSize: const Size(double.infinity, 46),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _openProfileEditor(ctx),
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('Edit Profile'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.blue,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 46),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      unawaited(_logoutFromProfileDialog(ctx));
+                    },
+                    icon: const Icon(Icons.logout),
+                    label: const Text('Log Out'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.red,
+                      side: const BorderSide(color: AppColors.red),
+                      minimumSize: const Size(double.infinity, 46),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
-        return;
-      }
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not open website'),
-          duration: Duration(milliseconds: 900),
-        ),
-      );
+      },
+    );
+  }
+
+  void _showProgressDialog() {
+    final profile = context.read<ProfileService>();
+    final auth = context.read<AuthService>();
+    final progress = context.read<CampaignProgressService>();
+    final aura = context.read<AuraPointsService>();
+
+    final user = auth.currentUser;
+    String name = profile.displayName ?? '';
+    if (name.isEmpty) {
+      name = (user?.displayName ?? '').toString().trim();
     }
+    final email = (profile.email ?? user?.email ?? '').toString().trim();
+    if (name.isEmpty && email.contains('@')) {
+      name = email.split('@').first.trim();
+    }
+    if (name.isEmpty) name = 'Player';
+
+    final about = (profile.about ?? '').trim();
+    final kingdom = (profile.kingdom ?? '').trim();
+
+    final indiaTotal = _totalSubKingdomsForGroup(VenueGroup.india);
+    final intlTotal = _totalSubKingdomsForGroup(VenueGroup.international);
+    final indiaCleared =
+        _clearedSubKingdomsForGroup(progress, VenueGroup.india);
+    final intlCleared =
+        _clearedSubKingdomsForGroup(progress, VenueGroup.international);
+
+    final titlesIndia = progress.titlesEarned(VenueGroup.india);
+    final titlesIntl = progress.titlesEarned(VenueGroup.international);
+    final titlesTotal = titlesIndia + titlesIntl;
+    final titlesPossible = indianVenues.length + internationalVenues.length;
+
+    final double auraValue = aura.isLoaded ? aura.totalAura.clamp(0, 100) : 0;
+    final int auraInt = auraValue.round().clamp(0, 100);
+    final double auraProgress = auraInt / 100.0;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black54,
+      builder: (ctx) {
+        final avatarBytes = profile.avatarBytes;
+        final ImageProvider<Object> avatarImage = avatarBytes != null
+            ? MemoryImage(avatarBytes) as ImageProvider<Object>
+            : const AssetImage('assets/images/default_profile.png');
+        return Dialog(
+          backgroundColor: const Color(0xFF101010),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.auto_graph, color: AppColors.blue),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Progress & Aura',
+                      style: TextStyle(
+                        color: AppColors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      splashRadius: 18,
+                      icon: const Icon(Icons.close, color: Colors.white70),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundImage: avatarImage,
+                      backgroundColor: Colors.white10,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15.5,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            kingdom.isNotEmpty
+                                ? kingdom
+                                : 'Profile details not set',
+                            style: const TextStyle(
+                              color: Colors.white60,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12.5,
+                            ),
+                          ),
+                          if (about.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              about,
+                              style: const TextStyle(
+                                color: Colors.white54,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 11.5,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                _MetricRow(
+                  label: 'Sub‑Kingdoms cleared (India)',
+                  value: '$indiaCleared / $indiaTotal',
+                ),
+                _MetricRow(
+                  label: 'Sub‑Kingdoms cleared (International)',
+                  value: '$intlCleared / $intlTotal',
+                ),
+                _MetricRow(
+                  label: 'Titles earned',
+                  value: '$titlesTotal / $titlesPossible',
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(Icons.brightness_5,
+                        color: AppColors.blue, size: 16),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'Aura',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12.5,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: LinearProgressIndicator(
+                          value: aura.isLoaded ? auraProgress : null,
+                          minHeight: 6,
+                          backgroundColor: Colors.white12,
+                          color: AppColors.blue,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      aura.isLoaded ? '$auraInt / 100' : '…',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showAupDialog() {
+    final aura = context.read<AuraPointsService>();
+    final int total = aura.totalAup;
+    final int left = (aup.kAupMaxTotal - total).clamp(0, aup.kAupMaxTotal);
+    final india = aura.indiaAup;
+    final intl = aura.internationalAup;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black54,
+      builder: (ctx) {
+        return Dialog(
+          backgroundColor: const Color(0xFF101010),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.account_balance_wallet_outlined,
+                        color: AppColors.blue),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'AUP Wallet',
+                      style: TextStyle(
+                        color: AppColors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      splashRadius: 18,
+                      icon: const Icon(Icons.close, color: Colors.white70),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                _MetricRow(
+                  label: 'AUP won (total)',
+                  value: aup.formatAup(total),
+                ),
+                _MetricRow(
+                  label: 'AUP left to 100 Aura',
+                  value: aup.formatAup(left),
+                ),
+                const SizedBox(height: 6),
+                _MetricRow(
+                  label: 'India AUP',
+                  value: aup.formatAup(india),
+                ),
+                _MetricRow(
+                  label: 'International AUP',
+                  value: aup.formatAup(intl),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthService>();
-    final user = auth.currentUser;
-    final isGuest = user == null || user.isAnonymous;
+    final screenH = MediaQuery.of(context).size.height;
+    final compactHeader = screenH < 520;
+    const bannerScale = 0.75;
+    final bannerMaxH = (compactHeader ? 48.0 : 72.0) * bannerScale;
+    final bannerMaxW = (compactHeader ? 280.0 : 420.0) * bannerScale;
+    final appBarHeight = compactHeader ? 148.0 : 206.0;
+    final vPad = compactHeader ? 6.0 : 10.0;
+    final gapL = compactHeader ? 6.0 : 12.0;
+    final gapM = compactHeader ? 4.0 : 8.0;
+    final String modeSummary = widget.mode.venueSummary;
 
     return Scaffold(
       backgroundColor: AppColors.black,
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(190),
+        preferredSize: Size.fromHeight(appBarHeight),
         child: SafeArea(
           bottom: false,
           child: Container(
             color: AppColors.black,
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            padding: EdgeInsets.symmetric(vertical: vPad, horizontal: 12),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -252,18 +718,33 @@ class _VenueScreenState extends State<VenueScreen> with SingleTickerProviderStat
                   children: [
                     const _HeaderActions(mirrored: true), // keeps center true
                     const SizedBox(width: 8),
-                    const Expanded(child: _StadiumBanner(asset: _bannerAsset)),
+                    Expanded(
+                      child: StadiumBanner(
+                        asset: _bannerAsset,
+                        maxHeight: bannerMaxH,
+                        maxWidth: bannerMaxW,
+                      ),
+                    ),
                     const SizedBox(width: 8),
-                    const _HeaderActions(mirrored: false),
+                    _HeaderActions(
+                      mirrored: false,
+                      onProfile: _showMyProfileDialog,
+                      onProgress: _showProgressDialog,
+                      onAup: _showAupDialog,
+                    ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                _TitleAndTabs(controller: _tab),
-                const SizedBox(height: 8),
-                _DocsHint(
-                  isGuest: isGuest,
-                  onOpenWebsite: _openDocumentsPortal,
-                  guestHintText: _guestDocsHint,
+                SizedBox(height: gapL),
+                _TitleAndTabs(
+                  controller: _tab,
+                  title: widget.mode.venueHeading,
+                ),
+                SizedBox(height: gapM),
+                _ModeSummary(
+                  text: modeSummary,
+                  accent: widget.mode == VenueEntryMode.quickGame
+                      ? AppColors.red
+                      : AppColors.blue,
                 ),
               ],
             ),
@@ -276,13 +757,15 @@ class _VenueScreenState extends State<VenueScreen> with SingleTickerProviderStat
           controller: _tab,
           children: [
             _VenueGrid(
-              group: VenueGroup.india,
-              venues: indianVenues,
+              group: VenueGroup.international,
+              venues: internationalVenues,
+              mode: widget.mode,
               onOpen: _openVenue,
             ),
             _VenueGrid(
-              group: VenueGroup.international,
-              venues: internationalVenues,
+              group: VenueGroup.india,
+              venues: indianVenues,
+              mode: widget.mode,
               onOpen: _openVenue,
             ),
           ],
@@ -292,50 +775,373 @@ class _VenueScreenState extends State<VenueScreen> with SingleTickerProviderStat
   }
 }
 
-class _DocsHint extends StatelessWidget {
-  final bool isGuest;
-  final Future<void> Function() onOpenWebsite;
-  final String guestHintText;
+class _PlayerIdCardScreen extends StatelessWidget {
+  final String bannerAsset;
+  final String name;
+  final String email;
+  final String playerId;
+  final String about;
+  final String kingdom;
+  final List<String> titles;
+  final Uint8List? avatarBytes;
+  final DateTime issuedAt;
 
-  const _DocsHint({
-    required this.isGuest,
-    required this.onOpenWebsite,
-    required this.guestHintText,
+  const _PlayerIdCardScreen({
+    required this.bannerAsset,
+    required this.name,
+    required this.email,
+    required this.playerId,
+    required this.about,
+    required this.kingdom,
+    required this.titles,
+    required this.avatarBytes,
+    required this.issuedAt,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (isGuest) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: Text(
-          guestHintText,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.65),
-            fontWeight: FontWeight.w700,
-            fontSize: 12.5,
-            height: 1.15,
+    return Scaffold(
+      backgroundColor: AppColors.black,
+      appBar: AppBar(
+        backgroundColor: AppColors.black,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: const Text('Player ID'),
+        actions: [
+          IconButton(
+            tooltip: 'Edit Profile',
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
+              );
+            },
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(18),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: _PlayerLicenseCard(
+                bannerAsset: bannerAsset,
+                name: name,
+                email: email,
+                playerId: playerId,
+                about: about,
+                kingdom: kingdom,
+                titles: titles,
+                avatarBytes: avatarBytes,
+                issuedAt: issuedAt,
+              ),
+            ),
           ),
         ),
-      );
+      ),
+    );
+  }
+}
+
+class _PlayerLicenseCard extends StatelessWidget {
+  final String bannerAsset;
+  final String name;
+  final String email;
+  final String playerId;
+  final String about;
+  final String kingdom;
+  final List<String> titles;
+  final Uint8List? avatarBytes;
+  final DateTime issuedAt;
+
+  const _PlayerLicenseCard({
+    required this.bannerAsset,
+    required this.name,
+    required this.email,
+    required this.playerId,
+    required this.about,
+    required this.kingdom,
+    required this.titles,
+    required this.avatarBytes,
+    required this.issuedAt,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final titleLine =
+        titles.isEmpty ? 'Career titles pending' : titles.take(2).join(' / ');
+    return RepaintBoundary(
+      child: Container(
+        width: 760,
+        height: 480,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF4F1E8),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.black, width: 2.2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.38),
+              blurRadius: 28,
+              offset: const Offset(0, 14),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(21),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: CustomPaint(painter: _LicenseBackgroundPainter()),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: 270,
+                          height: 64,
+                          child: Image.asset(bannerAsset, fit: BoxFit.contain),
+                        ),
+                        const Spacer(),
+                        const Text(
+                          'PLAYER LICENSE',
+                          style: TextStyle(
+                            color: Color(0xFF141414),
+                            fontSize: 25,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    Expanded(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _LicenseField(
+                                  label: 'Name',
+                                  value: name,
+                                  large: true,
+                                ),
+                                const SizedBox(height: 14),
+                                _LicenseField(label: 'Email', value: email),
+                                const SizedBox(height: 14),
+                                _LicenseField(
+                                  label: 'Player ID',
+                                  value: playerId,
+                                ),
+                                const SizedBox(height: 14),
+                                _LicenseField(
+                                  label: 'Kingdom',
+                                  value: kingdom.isEmpty ? 'Not set' : kingdom,
+                                ),
+                                const SizedBox(height: 14),
+                                _LicenseField(
+                                  label: 'About',
+                                  value: about.isEmpty
+                                      ? ProfileService.defaultAbout
+                                      : about,
+                                ),
+                                const SizedBox(height: 14),
+                                _LicenseField(
+                                    label: 'Titles', value: titleLine),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 28),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Container(
+                                width: 166,
+                                height: 204,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  border: Border.all(
+                                    color: Colors.black.withValues(alpha: 0.72),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                clipBehavior: Clip.antiAlias,
+                                child: avatarBytes == null
+                                    ? Image.asset(
+                                        'assets/images/default_profile.png',
+                                        fit: BoxFit.cover,
+                                      )
+                                    : Image.memory(
+                                        avatarBytes!,
+                                        fit: BoxFit.cover,
+                                      ),
+                              ),
+                              const SizedBox(height: 12),
+                              Container(
+                                width: 166,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: Colors.black.withValues(alpha: 0.36),
+                                  ),
+                                  color: Colors.white.withValues(alpha: 0.58),
+                                ),
+                                child: Text(
+                                  _issuedLabel(issuedAt),
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: Color(0xFF2B2B2B),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                              const Spacer(),
+                              const Text(
+                                'LOCAL DEVICE COPY',
+                                style: TextStyle(
+                                  color: Color(0xFFB21818),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.6,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _issuedLabel(DateTime date) {
+    final d = date.toLocal();
+    final y = d.year.toString().padLeft(4, '0');
+    final m = d.month.toString().padLeft(2, '0');
+    final day = d.day.toString().padLeft(2, '0');
+    return 'ISSUED $y-$m-$day';
+  }
+}
+
+class _LicenseField extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool large;
+
+  const _LicenseField({
+    required this.label,
+    required this.value,
+    this.large = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label.toUpperCase(),
+          style: const TextStyle(
+            color: Color(0xFF6C6A66),
+            fontSize: 11,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.8,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          value.isEmpty ? '-' : value,
+          maxLines: large ? 1 : 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: large ? 30 : 17,
+            height: 1.05,
+            fontWeight: large ? FontWeight.w900 : FontWeight.w800,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LicenseBackgroundPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..color = Colors.black.withValues(alpha: 0.055);
+    for (double x = -size.height; x < size.width; x += 34) {
+      canvas.drawLine(
+          Offset(x, size.height), Offset(x + size.height, 0), paint);
     }
 
-    return Center(
-      child: TextButton.icon(
-        onPressed: () {
-          unawaited(onOpenWebsite());
-        },
-        icon: const Icon(Icons.open_in_new_rounded, size: 18),
-        label: const Text(
-          'Go to website',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
-        style: TextButton.styleFrom(
-          foregroundColor: AppColors.blue,
-          visualDensity: VisualDensity.compact,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        ),
+    final sealPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 8
+      ..color = const Color(0xFFB21818).withValues(alpha: 0.055);
+    canvas.drawCircle(
+        Offset(size.width * 0.47, size.height * 0.55), 104, sealPaint);
+    canvas.drawCircle(
+        Offset(size.width * 0.47, size.height * 0.55), 72, sealPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _LicenseBackgroundPainter oldDelegate) => false;
+}
+
+class _MetricRow extends StatelessWidget {
+  final String label;
+  final String value;
+  const _MetricRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontWeight: FontWeight.w600,
+                fontSize: 12.5,
+              ),
+            ),
+          ),
+          Flexible(
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 12.5,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -392,6 +1198,7 @@ class _KennyInterludeState extends State<_KennyInterlude>
           tableName: 'Guest Table',
           venue: widget.venue,
           playIntroWelcome: false,
+          venueMode: VenueEntryMode.quickGame,
         ),
       ),
     );
@@ -416,7 +1223,7 @@ class _KennyInterludeState extends State<_KennyInterlude>
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               const SizedBox(height: 20),
-              _StadiumBanner(asset: _KennyInterlude.bannerAsset),
+              StadiumBanner(asset: _KennyInterlude.bannerAsset),
               const SizedBox(height: 30),
               Expanded(
                 child: Center(
@@ -456,7 +1263,8 @@ class _KennyInterludeState extends State<_KennyInterlude>
                           children: [
                             for (final line in _lines)
                               Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 4),
                                 child: Text(
                                   line,
                                   textAlign: TextAlign.center,
@@ -464,7 +1272,7 @@ class _KennyInterludeState extends State<_KennyInterlude>
                                     color: Colors.white,
                                     fontSize: 21,
                                     fontWeight: FontWeight.w700,
-                                    fontFamily: 'Courier',
+                                    fontFamily: 'OpenSans',
                                   ),
                                 ),
                               ),
@@ -476,7 +1284,7 @@ class _KennyInterludeState extends State<_KennyInterlude>
                                 color: Colors.white70,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                fontFamily: 'Courier',
+                                fontFamily: 'OpenSans',
                               ),
                             ),
                           ],
@@ -508,7 +1316,11 @@ class _TranslateGradient extends GradientTransform {
 
 class _TitleAndTabs extends StatefulWidget {
   final TabController controller;
-  const _TitleAndTabs({required this.controller});
+  final String title;
+  const _TitleAndTabs({
+    required this.controller,
+    required this.title,
+  });
   @override
   State<_TitleAndTabs> createState() => _TitleAndTabsState();
 }
@@ -538,30 +1350,31 @@ class _TitleAndTabsState extends State<_TitleAndTabs> {
       spacing: 10,
       runSpacing: 8,
       children: [
-        const Text(
-          'Choose a Venue',
-          style: TextStyle(
+        Text(
+          widget.title,
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.3,
             fontSize: 16,
           ),
         ),
-        _chip(0, 'India', color: _red,  textOn: Colors.white),
-        _chip(1, 'International', color: _blue, textOn: Colors.black),
+        _chip(0, 'International', color: _red, textOn: Colors.white),
+        _chip(1, 'India', color: _blue, textOn: Colors.black),
       ],
     );
   }
 
-  Widget _chip(int index, String label, {required Color color, required Color textOn}) {
-    final hovered  = _hoveredIndex == index;
+  Widget _chip(int index, String label,
+      {required Color color, required Color textOn}) {
+    final hovered = _hoveredIndex == index;
     final selected = widget.controller.index == index;
     final bg = (hovered || selected) ? color : Colors.transparent;
     final fg = (hovered || selected) ? textOn : Colors.white70;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hoveredIndex = index),
-      onExit:  (_) => setState(() => _hoveredIndex = -1),
+      onExit: (_) => setState(() => _hoveredIndex = -1),
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: () => widget.controller.animateTo(index),
@@ -573,7 +1386,8 @@ class _TitleAndTabsState extends State<_TitleAndTabs> {
             shape: StadiumBorder(),
           ),
           child: Container(
-            decoration: ShapeDecoration(color: bg, shape: const StadiumBorder()),
+            decoration:
+                ShapeDecoration(color: bg, shape: const StadiumBorder()),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             child: Text(
               label,
@@ -591,15 +1405,49 @@ class _TitleAndTabsState extends State<_TitleAndTabs> {
   }
 }
 
+class _ModeSummary extends StatelessWidget {
+  final String text;
+  final Color accent;
+
+  const _ModeSummary({
+    required this.text,
+    required this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: accent.withValues(alpha: 0.45)),
+      ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: Colors.white.withValues(alpha: 0.82),
+          fontWeight: FontWeight.w700,
+          fontSize: 12.5,
+          height: 1.15,
+        ),
+      ),
+    );
+  }
+}
+
 /* ----------------------- VENUE GRID (2 × 5) ----------------------- */
 
 class _VenueGrid extends StatelessWidget {
   final VenueGroup group;
   final List<VenueTheme> venues;
+  final VenueEntryMode mode;
   final Future<void> Function(VenueTheme, VenueGroup) onOpen;
   const _VenueGrid({
     required this.group,
     required this.venues,
+    required this.mode,
     required this.onOpen,
   });
 
@@ -610,21 +1458,30 @@ class _VenueGrid extends StatelessWidget {
 
     return LayoutBuilder(builder: (context, c) {
       const rows = 5, cols = 2;
-      const hPad = 6.0, vPad = 6.0, hGap = 6.0, vGap = 6.0, bottomCushion = 8.0;
+      const hPad = 6.0, vPad = 6.0, hGap = 6.0, vGap = 6.0;
+      const bottomCushion = 8.0;
+      const bottomGuard = 16.0;
+      final double bottomInset = MediaQuery.of(context).padding.bottom;
+      final double bottomBuffer = bottomCushion + bottomGuard + bottomInset;
 
       final availW = c.maxWidth - hPad * 2 - hGap * (cols - 1);
-      final tileW  = availW / cols;
+      final tileW = availW / cols;
 
       final h = MediaQuery.of(context).size.height;
       final scale = h < 600 ? 0.94 : (h < 720 ? 0.975 : 1.0);
 
-      final availH = (c.maxHeight - vPad * 2 - vGap * (rows - 1) - bottomCushion) * scale;
-      final tileH  = availH / rows;
-      final scroll = tileH <= 64;
+      final availH =
+          (c.maxHeight - vPad * 2 - vGap * (rows - 1) - bottomBuffer) * scale;
+      const minTileH = 84.0;
+      final idealTileH = availH / rows;
+      final tileH = math.max(idealTileH, minTileH);
+      final scroll = tileH > idealTileH;
 
       final grid = GridView.builder(
-        physics: scroll ? const BouncingScrollPhysics() : const NeverScrollableScrollPhysics(),
-        padding: EdgeInsets.zero,
+        physics: scroll
+            ? const BouncingScrollPhysics()
+            : const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.only(bottom: bottomGuard + bottomInset),
         itemCount: math.min(items.length, rows * cols),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: cols,
@@ -633,6 +1490,8 @@ class _VenueGrid extends StatelessWidget {
           childAspectRatio: tileW / (tileH > 0 ? tileH : 1),
         ),
         itemBuilder: (_, i) => _VenueTile(
+          group: group,
+          mode: mode,
           venue: items[i],
           onTap: () => onOpen(items[i], group),
         ),
@@ -640,10 +1499,27 @@ class _VenueGrid extends StatelessWidget {
 
       final content = Padding(
         padding: const EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
-        child: ClipRect(child: grid),
+        child: grid,
       );
+      final Widget gridLayer =
+          scroll ? content : SizedBox(height: c.maxHeight, child: content);
 
-      return scroll ? content : SizedBox(height: c.maxHeight, child: content);
+      return Stack(
+        children: [
+          Positioned.fill(child: gridLayer),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: IgnorePointer(
+              child: Container(
+                height: bottomGuard + bottomInset,
+                color: AppColors.black,
+              ),
+            ),
+          ),
+        ],
+      );
     });
   }
 }
@@ -651,9 +1527,17 @@ class _VenueGrid extends StatelessWidget {
 /* ----------------------- VENUE TILE ----------------------- */
 
 class _VenueTile extends StatefulWidget {
+  final VenueGroup group;
+  final VenueEntryMode mode;
   final VenueTheme venue;
   final Future<void> Function() onTap;
-  const _VenueTile({required this.venue, required this.onTap, Key? key}) : super(key: key);
+  const _VenueTile({
+    required this.group,
+    required this.mode,
+    required this.venue,
+    required this.onTap,
+    Key? key,
+  }) : super(key: key);
 
   @override
   State<_VenueTile> createState() => _VenueTileState();
@@ -667,16 +1551,43 @@ class _VenueTileState extends State<_VenueTile> {
   @override
   Widget build(BuildContext context) {
     final v = widget.venue;
+    final String infoLine = () {
+      if (widget.mode == VenueEntryMode.quickGame) {
+        return 'FREE • Quick Game';
+      }
+      try {
+        final int freeIdx = ce.freeSubKingdomIndexFor(
+          group: widget.group,
+          kingdomName: v.name,
+        );
+        final spec = ce.subKingdomEventSpec(
+          group: widget.group,
+          kingdomName: v.name,
+          subKingdomIndex: freeIdx,
+        );
+        return 'FREE • ${spec.prizePoolLabel}';
+      } catch (_) {
+        try {
+          final main = ce.kingdomMainEventSpec(
+            group: widget.group,
+            kingdomName: v.name,
+          );
+          return main.prizePoolLabel;
+        } catch (_) {
+          return '';
+        }
+      }
+    }();
 
     // Stronger border color
-    final borderColor = (_hover || _pressed)
-        ? v.felt
-        : v.felt.withValues(alpha: 0.95);
+    final borderColor =
+        (_hover || _pressed) ? v.felt : v.felt.withValues(alpha: 0.95);
 
     final bg = _pressed
         ? Colors.black.withValues(alpha: 0.45)
-        : (_hover ? Colors.black.withValues(alpha: 0.36)
-                  : Colors.black.withValues(alpha: 0.28));
+        : (_hover
+            ? Colors.black.withValues(alpha: 0.36)
+            : Colors.black.withValues(alpha: 0.28));
 
     // Stronger border width
     final borderWidth = _pressed ? 4.0 : (_hover ? 3.6 : 3.2);
@@ -684,12 +1595,19 @@ class _VenueTileState extends State<_VenueTile> {
     // Stronger text scaling
     final textScale = MediaQuery.textScaleFactorOf(context).clamp(1.0, 1.25);
 
+    final double flagW = 36 * 0.6;
+    final double flagH = 24 * 0.6;
+    final int flagCacheW = (flagW * 2).round();
+
     return Semantics(
       button: true,
-      label: 'Open ${v.name} venue',
+      label: widget.mode == VenueEntryMode.quickGame
+          ? 'Start quick game at ${v.name}'
+          : 'Open ${v.name} kingdom career',
       child: MouseRegion(
         onEnter: (_) => setState(() => _hover = true),
-        onExit:  (_) => setState(() => _hover = false),
+        onExit: (_) => setState(() => _hover = false),
+        cursor: SystemMouseCursors.click,
         child: Material(
           type: MaterialType.transparency,
           shape: _shape,
@@ -723,7 +1641,8 @@ class _VenueTileState extends State<_VenueTile> {
               ),
               child: Center(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 190),
                     child: Row(
@@ -731,42 +1650,63 @@ class _VenueTileState extends State<_VenueTile> {
                       children: [
                         Image.asset(
                           v.flagAsset,
-                          width: 36,
-                          height: 24,
+                          width: flagW,
+                          height: flagH,
                           fit: BoxFit.cover,
-                          cacheWidth: 72,
+                          cacheWidth: flagCacheW,
                           gaplessPlayback: true,
                           filterQuality: FilterQuality.high,
                           errorBuilder: (_, __, ___) => Container(
-                            width: 36,
-                            height: 24,
+                            width: flagW,
+                            height: flagH,
                             color: Colors.white12,
                             alignment: Alignment.center,
                             child: const Icon(Icons.flag_outlined,
                                 color: Colors.white70, size: 12),
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 6),
                         Flexible(
-                          child: Text(
-                            v.name,
-                            softWrap: false,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 14 * textScale,
-                              letterSpacing: .35,
-                              height: 1.0,
-                              shadows: const [
-                                Shadow(
-                                  blurRadius: 8,
-                                  offset: Offset(0, 1),
-                                  color: Colors.black54,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                v.name,
+                                softWrap: false,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.start,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 14 * textScale,
+                                  letterSpacing: .35,
+                                  height: 1.0,
+                                  shadows: const [
+                                    Shadow(
+                                      blurRadius: 8,
+                                      offset: Offset(0, 1),
+                                      color: Colors.black54,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (infoLine.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  infoLine,
+                                  softWrap: false,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.72),
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 10.5 * textScale,
+                                    letterSpacing: 0.25,
+                                    height: 1.0,
+                                  ),
                                 ),
                               ],
-                            ),
+                            ],
                           ),
                         ),
                       ],

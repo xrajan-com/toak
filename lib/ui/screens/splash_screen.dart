@@ -6,11 +6,11 @@ import 'package:flutter/services.dart'; // ✅ for SystemChrome + rootBundle
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:ten_of_a_kind_poker/ui/screens/auth_screen.dart';
-import 'package:ten_of_a_kind_poker/ui/screens/game_screen.dart';
+import 'package:ten_of_a_kind_poker/features/venue/game_mode.dart';
+import 'package:ten_of_a_kind_poker/ui/screens/game_mode_screen.dart';
+import 'package:ten_of_a_kind_poker/ui/screens/venue_screen.dart';
 import 'package:ten_of_a_kind_poker/config/card_backs.dart';
 import 'package:ten_of_a_kind_poker/ui/theme/colors.dart';
-import 'package:ten_of_a_kind_poker/config/venues.dart'
-    show VenueTheme, internationalVenues;
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -51,7 +51,6 @@ class _SplashScreenState extends State<SplashScreen>
     super.initState();
 
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
       statusBarBrightness: Brightness.dark,
     ));
@@ -126,20 +125,12 @@ class _SplashScreenState extends State<SplashScreen>
     if (_navigated || !mounted) return;
     _navigated = true;
 
-    final isLoggedIn = FirebaseAuth.instance.currentUser != null;
-
-    final Widget next = isLoggedIn
-        ? (() {
-            final VenueTheme indiaVenue = internationalVenues.firstWhere(
-              (v) => v.name.toLowerCase() == 'india',
-              orElse: () => internationalVenues.first,
-            );
-            return GameScreen(
-              tableName: '${indiaVenue.name} — Guest Table',
-              venue: indiaVenue,
-            );
-          })()
-        : const AuthScreen();
+    final user = FirebaseAuth.instance.currentUser;
+    final Widget next = user == null
+        ? const AuthScreen()
+        : user.isAnonymous
+            ? const GameModeScreen()
+            : const VenueScreen(mode: VenueEntryMode.career);
 
     if (!mounted) return;
     Navigator.pushReplacement(

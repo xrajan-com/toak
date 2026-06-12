@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 class AppTheme {
   static ThemeData get darkTheme {
     final baseTextTheme = ThemeData(brightness: Brightness.dark).textTheme;
-    // Use bundled BarlowCondensed (light) as the primary face.
+    // Use bundled Open Sans as the single app-wide face.
     final barlowTextTheme = baseTextTheme
         .apply(
-          fontFamily: 'BarlowCondensed',
+          fontFamily: 'OpenSans',
           bodyColor: Colors.white,
           displayColor: Colors.white,
         )
@@ -34,8 +34,7 @@ class AppTheme {
     return ThemeData(
       brightness: Brightness.dark,
       scaffoldBackgroundColor: Colors.black,
-      fontFamily: 'BarlowCondensed',
-      fontFamilyFallback: const ['SF Pro Text', 'Roboto', 'sans-serif'],
+      fontFamily: 'OpenSans',
       colorScheme: const ColorScheme.dark(
         primary: primaryAccent,
         secondary: secondaryAccent,

@@ -1,0 +1,9 @@
+# Copy this file to `android/key.properties` and fill in real values.
+#
+# Keep `android/key.properties` and your keystore OUT of git.
+# (They are already ignored by `android/.gitignore`.)
+storePassword=YOUR_STORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=upload
+# Path is resolved from `android/app/` (the app module).
+storeFile=upload-keystore.jks

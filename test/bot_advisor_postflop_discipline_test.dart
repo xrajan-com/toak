@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ten_of_a_kind_poker/game/game_engine.dart' as eng;
 
 void main() {
-  test('High-aura champion folds Ace-high facing big flop bet', () {
+  test('Rock folds Ace-high facing big flop bet', () {
     final e = eng.GameEngine(
       config: const eng.GameConfig(
         tableSeed: 2,
@@ -17,11 +17,12 @@ void main() {
         id: 'P$i',
         name: 'P$i',
         chips: 8000,
-        enduranceMinutes: 30,
-        aura: i == 1 ? 90 : 61, // 90 => champion mindset
+        aura: i == 1 ? 90 : 61, // 90 => world-champ profile
         isBot: true,
       ));
     }
+    e.players[1].temperament = eng.BotTemperament.worldChamp;
+    e.players[1].skill = eng.BotSkill.killer;
 
     e.phase = eng.GamePhase.flop;
     e.pot = 4000;
@@ -46,4 +47,3 @@ void main() {
     expect(advice.action, eng.ActionType.fold);
   });
 }
-

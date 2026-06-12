@@ -1,8 +1,16 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- Force merged manifests to drop Advertising ID if any dependency contributes it. -->
+    <uses-permission
+        android:name="com.google.android.gms.permission.AD_ID"
+        tools:node="remove" />
+
     <application
-        android:label="ten_of_a_kind_poker"
+        android:label="@string/app_name"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:appCategory="game"
+        android:resizeableActivity="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

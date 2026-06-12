@@ -1,9 +1,20 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService extends ChangeNotifier {
   FirebaseAuth? _auth;
+  StreamSubscription<User?>? _authSub;
+
+  AuthService() {
+    final auth = _authOrNull();
+    _authSub = auth?.authStateChanges().listen((_) {
+      notifyListeners();
+    });
+  }
 
   FirebaseAuth? _authOrNull() {
     try {
@@ -88,6 +99,16 @@ class AuthService extends ChangeNotifier {
   // 🔐 Sign in with Google
   Future<User?> signInWithGoogle() async {
     try {
+      final auth = _authOrNull();
+      if (auth == null) return null;
+
+      if (kIsWeb) {
+        final provider = GoogleAuthProvider();
+        final userCredential = await auth.signInWithPopup(provider);
+        notifyListeners();
+        return userCredential.user;
+      }
+
       final googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) return null;
 
@@ -98,12 +119,12 @@ class AuthService extends ChangeNotifier {
         idToken: googleAuth.idToken,
       );
 
-      final auth = _authOrNull();
-      if (auth == null) return null;
-
       final userCredential = await auth.signInWithCredential(credential);
       notifyListeners();
       return userCredential.user;
+    } on FirebaseAuthException catch (e) {
+      debugPrint('Google sign-in failed (${e.code}): ${e.message}');
+      return null;
     } catch (e) {
       debugPrint('Google sign-in failed: $e');
       return null;
@@ -122,5 +143,11 @@ class AuthService extends ChangeNotifier {
       debugPrint('Anonymous sign-in failed: $e');
       return null;
     }
+  }
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
   }
 }

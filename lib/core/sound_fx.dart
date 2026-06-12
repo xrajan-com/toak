@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
@@ -12,17 +11,27 @@ class SoundFx {
   SoundFx._();
 
   static final SoundFx instance = SoundFx._();
-  final Random _rand = Random();
 
   final Map<String, List<AudioPlayer>> _players = <String, List<AudioPlayer>>{};
   final Set<AudioPlayer> _busyPlayers = <AudioPlayer>{};
-  AudioPlayer? _callCoinPlayer;
-  int _queuedCallCoins = 0;
-  bool _drainingCallCoins = false;
+  final Set<String> _announcerAssets = <String>{
+    AppAssets.renoirFemaleCheckAnnouncer,
+    AppAssets.renoirFemaleCallAnnouncer,
+    AppAssets.renoirFemaleRaiseAnnouncer,
+    AppAssets.renoirFemaleAllInAnnouncer,
+    AppAssets.renoirFemaleFoldAnnouncer,
+  };
+  final Map<AudioPlayer, DateTime> _activeAnnouncerPlayers =
+      <AudioPlayer, DateTime>{};
+  static const int _kMaxAnnouncerOverlap = 2;
+  static const Duration _kDuplicateAnnouncerCooldown =
+      Duration(milliseconds: 520);
   bool _muted = false;
   bool _unlocked = !kIsWeb;
   DateTime? _lastHandWinAt;
   DateTime? _lastShuffleAt;
+  DateTime? _lastAnnouncerAt;
+  String? _lastAnnouncerAsset;
   bool _shufflePlaying = false;
 
   bool get _enabled => Env.soundEnabled && !_muted && _unlocked;
@@ -52,23 +61,21 @@ class SoundFx {
       AppAssets.heroBustSound,
       AppAssets.raiseSound,
       AppAssets.callCoinSound,
+      AppAssets.actionTapSound,
       AppAssets.heroTurnSound,
       AppAssets.applauseSound,
       AppAssets.doorKnockSound,
       AppAssets.knock1Sound,
+      ..._announcerAssets,
     };
     await Future.wait(assets.map(_ensurePlayer));
   }
 
   Future<void> playDeal() => _play(AppAssets.dealCardSound, volume: 0.85);
-  Future<void> playFold() => _play(AppAssets.foldSound, volume: 0.75);
-  Future<void> playCheck() {
-    // 15% door knock, 85% knock1 to mix variety on checks.
-    final bool useDoor = _rand.nextDouble() < 0.15;
-    final String clip =
-        useDoor ? AppAssets.doorKnockSound : AppAssets.knock1Sound;
-    return _play(clip, volume: 0.75);
-  }
+  Future<void> playFold() =>
+      _playAnnouncer(AppAssets.renoirFemaleFoldAnnouncer, volume: 0.46);
+  Future<void> playCheck() =>
+      _playAnnouncer(AppAssets.renoirFemaleCheckAnnouncer, volume: 0.54);
 
   Future<void> playShuffle() async {
     // Prevent accidental double-trigger (observed when shuffle fires twice).
@@ -112,16 +119,39 @@ class SoundFx {
   Future<void> playPlayerBusted() =>
       _play(AppAssets.playerBustedSound, volume: 0.85, allowOverlap: false);
   Future<void> playPlayerAllIn() =>
-      _play(AppAssets.playerAllInSound, volume: 0.9, allowOverlap: false);
+      _playAnnouncer(AppAssets.renoirFemaleAllInAnnouncer, volume: 0.47);
   Future<void> playHeroBust() =>
       _play(AppAssets.heroBustSound, volume: 0.92, allowOverlap: false);
-  Future<void> playRaiseAtm() => _play(AppAssets.raiseSound, volume: 0.95);
-  Future<void> playCallCoin() => _playCallCoin();
+  Future<void> playRaiseAtm() =>
+      _playAnnouncer(AppAssets.renoirFemaleRaiseAnnouncer, volume: 0.46);
+  Future<void> playActionTap() => _play(AppAssets.actionTapSound, volume: 0.7);
+  Future<void> playCallCoin() =>
+      _playAnnouncer(AppAssets.renoirFemaleCallAnnouncer, volume: 0.46);
   Future<void> playPotIncrease() =>
       _play(AppAssets.potIncreaseSound, volume: 0.9);
   Future<void> playHeroTurn() => _maybePlayHeroTurn();
   Future<void> playApplause() =>
       _play(AppAssets.applauseSound, volume: 0.4, allowOverlap: false);
+
+  Future<void> stopAnnouncer() async {
+    for (final String announcerAsset in _announcerAssets) {
+      await _stopPlayers(announcerAsset);
+    }
+    _activeAnnouncerPlayers.clear();
+    _lastAnnouncerAsset = null;
+    _lastAnnouncerAt = null;
+  }
+
+  Future<void> stopAll() async {
+    for (final asset in _players.keys.toList(growable: false)) {
+      await _stopPlayers(asset);
+    }
+    _busyPlayers.clear();
+    _activeAnnouncerPlayers.clear();
+    _lastAnnouncerAsset = null;
+    _lastAnnouncerAt = null;
+    _shufflePlaying = false;
+  }
 
   Future<void> dispose() async {
     for (final pool in _players.values) {
@@ -134,9 +164,6 @@ class SoundFx {
     }
     _players.clear();
     _busyPlayers.clear();
-    await _callCoinPlayer?.stop();
-    await _callCoinPlayer?.dispose();
-    _callCoinPlayer = null;
   }
 
   Future<void> _play(String asset,
@@ -155,11 +182,59 @@ class SoundFx {
       unawaited(
         playFuture.catchError((_) {}).whenComplete(() {
           _busyPlayers.remove(player);
+          _activeAnnouncerPlayers.remove(player);
         }),
       );
     } catch (err, stack) {
       debugPrint('🔇 SoundFx error for $asset → $err');
       debugPrint('$stack');
+    }
+  }
+
+  Future<void> _playAnnouncer(String asset, {double volume = 1.0}) async {
+    if (!_enabled) return;
+    final now = DateTime.now();
+    if (_lastAnnouncerAsset == asset &&
+        _lastAnnouncerAt != null &&
+        now.difference(_lastAnnouncerAt!) < _kDuplicateAnnouncerCooldown) {
+      return;
+    }
+    _lastAnnouncerAsset = asset;
+    _lastAnnouncerAt = now;
+    await _trimAnnouncerOverlap();
+    final AudioPlayer? player = await _ensurePlayer(asset, allowOverlap: true);
+    if (player == null) return;
+    _activeAnnouncerPlayers[player] = now;
+    _busyPlayers.add(player);
+    try {
+      await player.stop();
+    } catch (_) {}
+    await player.setVolume(volume.clamp(0, 1));
+    await player.seek(Duration.zero);
+    final playFuture = player.play();
+    unawaited(
+      playFuture.catchError((_) {}).whenComplete(() {
+        _busyPlayers.remove(player);
+        _activeAnnouncerPlayers.remove(player);
+      }),
+    );
+  }
+
+  Future<void> _trimAnnouncerOverlap() async {
+    final List<MapEntry<AudioPlayer, DateTime>> active = _activeAnnouncerPlayers
+        .entries
+        .where((entry) => _busyPlayers.contains(entry.key))
+        .toList()
+      ..sort(
+        (a, b) => a.value.compareTo(b.value),
+      );
+    while (active.length >= _kMaxAnnouncerOverlap) {
+      final AudioPlayer player = active.removeAt(0).key;
+      try {
+        await player.stop();
+      } catch (_) {}
+      _busyPlayers.remove(player);
+      _activeAnnouncerPlayers.remove(player);
     }
   }
 
@@ -187,38 +262,6 @@ class SoundFx {
     return player;
   }
 
-  Future<void> _playCallCoin() async {
-    if (!_enabled) return;
-    _queuedCallCoins++;
-    if (_drainingCallCoins) return;
-    _drainingCallCoins = true;
-    try {
-      final player = await _ensureCallCoinPlayer();
-      while (_queuedCallCoins > 0) {
-        _queuedCallCoins--;
-        try {
-          await player.stop();
-        } catch (_) {}
-        await player.setVolume(0.11875);
-        await player.seek(Duration.zero);
-        await player.play().catchError((_) {});
-      }
-    } catch (err, stack) {
-      debugPrint('🔇 Call coin sound error → $err');
-      debugPrint('$stack');
-    } finally {
-      _drainingCallCoins = false;
-    }
-  }
-
-  Future<AudioPlayer> _ensureCallCoinPlayer() async {
-    if (_callCoinPlayer != null) return _callCoinPlayer!;
-    final player = AudioPlayer();
-    await player.setAsset(AppAssets.callCoinSound);
-    _callCoinPlayer = player;
-    return player;
-  }
-
   Future<void> _maybePlayHeroTurn() async {
     // Always play the turn notification when requested; no cooldown.
     await _play(
@@ -236,6 +279,7 @@ class SoundFx {
         await player.stop();
       } catch (_) {}
       _busyPlayers.remove(player);
+      _activeAnnouncerPlayers.remove(player);
     }
   }
 }

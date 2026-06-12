@@ -461,16 +461,12 @@ Future<void> showRenoirCongratsForMatch(
   int? winnings,
   Duration? duration, // ignored: persistent modal now
   VoidCallback? onExitToVenue,
-  Future<void> Function()? onDownloadCertificate,
-  String certificateButtonLabel = 'Download Certificate',
 }) async {
   final Seat? seat = winnerSeat;
   final String displayName =
       (seat?.name ?? winnerName).toString().trim().isNotEmpty
           ? (seat?.name ?? winnerName).toString().trim()
           : 'Winner';
-  final String kingdom = (seat?.kingdom ?? '').toString().trim();
-  final String kingdomFlagPath = _flagForKingdom(kingdom);
   final String vName = venueName.trim();
   final String vFlag = venueFlagAsset.trim();
 
@@ -480,7 +476,6 @@ Future<void> showRenoirCongratsForMatch(
 
   bool closedFired = false;
   bool firedOnShown = false;
-  bool downloading = false;
   await showDialog<void>(
     context: context,
     useRootNavigator: true,
@@ -497,64 +492,95 @@ Future<void> showRenoirCongratsForMatch(
 
       return StatefulBuilder(
         builder: (ctx, setLocalState) {
+          void exitNow() {
+            try {
+              onExitToVenue?.call();
+            } catch (_) {}
+            Navigator.of(ctx, rootNavigator: true).maybePop();
+            if (!closedFired) {
+              closedFired = true;
+              WinnersBus.fireClosed();
+            }
+          }
+
           return AlertDialog(
             backgroundColor: _kDialogBg,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16)),
-            title: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const GoldenText(
-                  'Match Winner',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 10),
-                if (vName.isNotEmpty || vFlag.isNotEmpty)
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 8,
-                    children: [
-                      if (vFlag.isNotEmpty)
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: Image.asset(
-                            vFlag,
-                            width: 40,
-                            height: 24,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                              width: 40,
-                              height: 24,
-                              color: Colors.white12,
-                              alignment: Alignment.center,
-                              child: const Icon(
-                                Icons.flag_outlined,
-                                color: Colors.white54,
-                                size: 16,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: SizedBox(
+              width: double.infinity,
+              child: Stack(
+                children: [
+                  Align(
+                    alignment: Alignment.center,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const GoldenText(
+                          'Match Winner',
+                          style: TextStyle(
+                              fontSize: 22, fontWeight: FontWeight.w900),
+                        ),
+                        const SizedBox(height: 10),
+                        if (vName.isNotEmpty || vFlag.isNotEmpty)
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 8,
+                            children: [
+                              if (vFlag.isNotEmpty)
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: Image.asset(
+                                    vFlag,
+                                    width: 40,
+                                    height: 24,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      width: 40,
+                                      height: 24,
+                                      color: Colors.white12,
+                                      alignment: Alignment.center,
+                                      child: const Icon(
+                                        Icons.flag_outlined,
+                                        color: Colors.white54,
+                                        size: 16,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              else
+                                const Icon(
+                                  Icons.flag_outlined,
+                                  color: Colors.white54,
+                                  size: 16,
+                                ),
+                              Text(
+                                vName.isNotEmpty ? vName : 'Venue',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                  height: 1.05,
+                                ),
                               ),
-                            ),
+                            ],
                           ),
-                        )
-                      else
-                        const Icon(
-                          Icons.flag_outlined,
-                          color: Colors.white54,
-                          size: 16,
-                        ),
-                      Text(
-                        vName.isNotEmpty ? vName : 'Venue',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
-                          height: 1.05,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-              ],
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white70),
+                      tooltip: 'Exit',
+                      onPressed: exitNow,
+                    ),
+                  ),
+                ],
+              ),
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -593,52 +619,6 @@ Future<void> showRenoirCongratsForMatch(
                     height: 1.05,
                   ),
                 ),
-                const SizedBox(height: 10),
-                if (kingdom.isNotEmpty && kingdom != '-')
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 8,
-                    children: [
-                      if (kingdomFlagPath.isNotEmpty)
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: Image.asset(
-                            kingdomFlagPath,
-                            width: 36,
-                            height: 24,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                              width: 36,
-                              height: 24,
-                              color: Colors.white12,
-                              alignment: Alignment.center,
-                              child: const Icon(
-                                Icons.flag_outlined,
-                                color: Colors.white54,
-                                size: 14,
-                              ),
-                            ),
-                          ),
-                        )
-                      else
-                        const Icon(
-                          Icons.flag_outlined,
-                          color: Colors.white54,
-                          size: 14,
-                        ),
-                      Text(
-                        kingdom,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
-                          height: 1.05,
-                        ),
-                      ),
-                    ],
-                  ),
                 const SizedBox(height: 14),
                 GoldenText(
                   'Prize $prizeLabel',
@@ -647,43 +627,6 @@ Future<void> showRenoirCongratsForMatch(
                 ),
               ],
             ),
-            actionsAlignment: MainAxisAlignment.center,
-            actions: [
-              if (onDownloadCertificate != null)
-                TextButton(
-                  onPressed: downloading
-                      ? null
-                      : () async {
-                          setLocalState(() => downloading = true);
-                          try {
-                            await onDownloadCertificate();
-                          } catch (_) {
-                            // ignore
-                          } finally {
-                            if (ctx.mounted) {
-                              setLocalState(() => downloading = false);
-                            }
-                          }
-                        },
-                  child: Text(
-                    downloading ? 'Preparing…' : certificateButtonLabel,
-                    style: _kBodyStyle,
-                  ),
-                ),
-              TextButton(
-                onPressed: () {
-                  try {
-                    onExitToVenue?.call();
-                  } catch (_) {}
-                  Navigator.of(ctx, rootNavigator: true).maybePop();
-                  if (!closedFired) {
-                    closedFired = true;
-                    WinnersBus.fireClosed();
-                  }
-                },
-                child: const Text('Exit to Venue', style: _kBodyStyle),
-              ),
-            ],
           );
         },
       );
@@ -692,6 +635,768 @@ Future<void> showRenoirCongratsForMatch(
   if (!closedFired) {
     closedFired = true;
     WinnersBus.fireClosed();
+  }
+}
+
+Future<void> showHeroFinishOverlay(
+  BuildContext context, {
+  required Seat heroSeat,
+  required int rank,
+  required int totalPlayers,
+  required int handsPlayed,
+  required int finalChips,
+  required int winnings,
+  String venueName = '',
+  String venueFlagAsset = '',
+  Future<void> Function()? onBeforeExit,
+  String? rewardedAdLabel,
+  String rewardedAdUnavailableMessage = 'Rewarded ad is not ready yet.',
+  Future<int> Function()? onWatchRewardedAd,
+  VoidCallback? onExitToVenue,
+}) async {
+  final bool podiumFinish = rank > 0 && rank <= 3;
+  final bool champion = rank == 1;
+  final int playersBeaten = math.max(0, totalPlayers - math.max(rank, 1));
+  final int netChips = finalChips - heroSeat.startChips;
+  final String finishLabel = rank > 0 ? _ordinalRank(rank) : '—';
+  final String payoutLabel =
+      NumberFormat.decimalPattern('en_IN').format(math.max(0, winnings));
+  final String finalStackLabel =
+      NumberFormat.decimalPattern('en_IN').format(math.max(0, finalChips));
+  final String netLabel =
+      '${netChips >= 0 ? '+' : '-'}${NumberFormat.decimalPattern('en_IN').format(netChips.abs())}';
+  final String title = podiumFinish ? 'CONGRATULATIONS' : 'GAME OVER';
+  final String subtitle = champion
+      ? 'YOU WON THE TABLE.'
+      : rank > 0
+          ? 'YOU FINISHED $finishLabel OF $totalPlayers.'
+          : 'YOUR RUN ENDS HERE.';
+  final String summary = podiumFinish
+      ? (winnings > 0
+          ? 'PODIUM FINISH. YOU CASHED THIS RUN.'
+          : 'PODIUM FINISH. STRONG RUN TO THE END.')
+      : (winnings > 0
+          ? 'YOU STILL PICKED UP A PAYOUT.'
+          : 'NO PAYOUT THIS TIME. RESET AND COME AGAIN.');
+  final String vName = venueName.trim();
+  final String vFlag = venueFlagAsset.trim();
+  bool matchEndAdStarted = false;
+  Timer? matchEndAdTimer;
+
+  Future<void> runMatchEndAd() async {
+    if (matchEndAdStarted) return;
+    matchEndAdStarted = true;
+    try {
+      await onBeforeExit?.call();
+    } catch (_) {}
+  }
+
+  if (onBeforeExit != null) {
+    matchEndAdTimer = Timer(const Duration(seconds: 5), () {
+      unawaited(runMatchEndAd());
+    });
+  }
+
+  await showDialog<void>(
+    context: context,
+    useRootNavigator: true,
+    barrierDismissible: false,
+    barrierColor: Colors.black.withValues(alpha: 0.76),
+    builder: (dialogCtx) {
+      bool exiting = false;
+      bool rewarding = false;
+      String? rewardMessage;
+      bool rewardSuccess = false;
+
+      return StatefulBuilder(
+        builder: (dialogCtx, setState) {
+          Future<void> exitNow() async {
+            if (exiting || rewarding) return;
+            setState(() => exiting = true);
+            if (!dialogCtx.mounted) return;
+            Navigator.of(dialogCtx, rootNavigator: true).pop();
+            await Future<void>.delayed(Duration.zero);
+            onExitToVenue?.call();
+          }
+
+          Future<void> watchRewardedAd() async {
+            final action = onWatchRewardedAd;
+            if (action == null || rewarding || exiting) return;
+            setState(() {
+              rewarding = true;
+              rewardMessage = null;
+              rewardSuccess = false;
+            });
+
+            int credited = 0;
+            try {
+              credited = await action();
+            } catch (_) {
+              credited = 0;
+            }
+            if (!dialogCtx.mounted) return;
+
+            setState(() {
+              rewarding = false;
+              rewardSuccess = credited > 0;
+              rewardMessage = credited > 0
+                  ? 'AUP +${NumberFormat.decimalPattern('en_IN').format(credited)} added.'
+                  : rewardedAdUnavailableMessage;
+            });
+          }
+
+          final bool showRewardedAdButton = !podiumFinish &&
+              rewardedAdLabel != null &&
+              onWatchRewardedAd != null;
+          final Size overlaySize = MediaQuery.sizeOf(dialogCtx);
+          final bool compactFinishOverlay = overlaySize.height < 430;
+          final double dialogMaxWidth = compactFinishOverlay
+              ? math.min(760.0, math.max(280.0, overlaySize.width - 40.0))
+              : 560.0;
+          final double dialogMaxHeight =
+              math.max(260.0, overlaySize.height - 48.0);
+          final EdgeInsets contentPadding = compactFinishOverlay
+              ? const EdgeInsets.fromLTRB(20, 16, 20, 16)
+              : const EdgeInsets.fromLTRB(22, 22, 22, 20);
+          final double contentWidth =
+              math.max(260.0, dialogMaxWidth - contentPadding.horizontal);
+          final double avatarSize = compactFinishOverlay ? 96.0 : 136.0;
+
+          return WillPopScope(
+            onWillPop: () async => false,
+            child: Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: dialogMaxWidth,
+                  maxHeight: dialogMaxHeight,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: _FireworksBackdrop(
+                            celebratory: podiumFinish,
+                          ),
+                        ),
+                      ),
+                      Positioned.fill(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: podiumFinish
+                                  ? <Color>[
+                                      const Color(0xE6111111),
+                                      const Color(0xC9141414),
+                                      const Color(0xF10C0C0C),
+                                    ]
+                                  : <Color>[
+                                      const Color(0xEE180A0A),
+                                      const Color(0xD6141010),
+                                      const Color(0xF20A0A0A),
+                                    ],
+                            ),
+                            border: Border.all(
+                              color: podiumFinish
+                                  ? Colors.white.withValues(alpha: 0.26)
+                                  : const Color(0x66FF2800),
+                              width: 1.4,
+                            ),
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0xAA000000),
+                                blurRadius: 28,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: contentPadding,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.topCenter,
+                          child: SizedBox(
+                            width: contentWidth,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: Stack(
+                                    alignment: Alignment.topCenter,
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 28),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
+                                          children: [
+                                            if (podiumFinish)
+                                              GoldenText(
+                                                title,
+                                                textAlign: TextAlign.center,
+                                                style: const TextStyle(
+                                                  fontSize: 26,
+                                                  fontWeight: FontWeight.w900,
+                                                  letterSpacing: 0.6,
+                                                ),
+                                              )
+                                            else
+                                              Text(
+                                                title,
+                                                textAlign: TextAlign.center,
+                                                style: _kTitleStyle.copyWith(
+                                                  fontSize: 26,
+                                                  letterSpacing: 0.6,
+                                                ),
+                                              ),
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              subtitle,
+                                              textAlign: TextAlign.center,
+                                              style: _kSubtitleStyle.copyWith(
+                                                fontSize: 15.5,
+                                                color: podiumFinish
+                                                    ? Colors.white
+                                                    : Colors.white.withValues(
+                                                        alpha: 0.92),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              summary,
+                                              textAlign: TextAlign.center,
+                                              style: _kBodyStyle.copyWith(
+                                                color: Colors.white70,
+                                                fontSize: 13.5,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Align(
+                                        alignment: Alignment.topRight,
+                                        child: SizedBox(
+                                          width: 42,
+                                          height: 42,
+                                          child: DecoratedBox(
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: Colors.white
+                                                  .withValues(alpha: 0.08),
+                                              border: Border.all(
+                                                  color: Colors.white24),
+                                            ),
+                                            child: IconButton(
+                                              onPressed: (exiting || rewarding)
+                                                  ? null
+                                                  : exitNow,
+                                              padding: EdgeInsets.zero,
+                                              iconSize: 20,
+                                              icon: const Icon(
+                                                Icons.close,
+                                                color: Colors.white70,
+                                              ),
+                                              tooltip: 'Exit',
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                if (vName.isNotEmpty || vFlag.isNotEmpty)
+                                  Wrap(
+                                    alignment: WrapAlignment.center,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: [
+                                      if (vFlag.isNotEmpty)
+                                        ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                          child: Image.asset(
+                                            vFlag,
+                                            width: 34,
+                                            height: 20,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) =>
+                                                Container(
+                                              width: 34,
+                                              height: 20,
+                                              color: Colors.white12,
+                                              alignment: Alignment.center,
+                                              child: const Icon(
+                                                Icons.flag_outlined,
+                                                size: 14,
+                                                color: Colors.white54,
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                      else
+                                        const Icon(
+                                          Icons.flag_outlined,
+                                          size: 16,
+                                          color: Colors.white54,
+                                        ),
+                                      Text(
+                                        vName.isNotEmpty ? vName : 'Venue',
+                                        textAlign: TextAlign.center,
+                                        style: _kBodyStyle.copyWith(
+                                          fontSize: 13,
+                                          color: Colors.white70,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                const SizedBox(height: 18),
+                                Container(
+                                  width: avatarSize,
+                                  height: avatarSize,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: podiumFinish
+                                          ? const Color(0x99FFD76E)
+                                          : Colors.white24,
+                                      width: 2.4,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: podiumFinish
+                                            ? const Color(0x55FFD76E)
+                                            : const Color(0x44FF2800),
+                                        blurRadius: 22,
+                                        spreadRadius: 2,
+                                      ),
+                                    ],
+                                  ),
+                                  child: ClipOval(
+                                    child: BotAvatar(
+                                      avatarKey: heroSeat.avatarKey,
+                                      mood: podiumFinish
+                                          ? AvatarMood.win
+                                          : AvatarMood.idle,
+                                      assetFolder: heroSeat.avatarAssetFolder,
+                                      fallbackAsset:
+                                          'assets/images/default_profile.png',
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                Text(
+                                  heroSeat.name.trim().isEmpty
+                                      ? 'Hero'
+                                      : heroSeat.name,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 24,
+                                    height: 1.05,
+                                  ),
+                                ),
+                                if (winnings > 0) ...[
+                                  const SizedBox(height: 10),
+                                  GoldenText(
+                                    'WINNINGS $payoutLabel',
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ],
+                                const SizedBox(height: 18),
+                                Wrap(
+                                  alignment: WrapAlignment.center,
+                                  spacing: 10,
+                                  runSpacing: 10,
+                                  children: [
+                                    OverlayStatChip(
+                                      label: 'Rank',
+                                      value: finishLabel,
+                                      icon: Icons.emoji_events_outlined,
+                                    ),
+                                    OverlayStatChip(
+                                      label: 'Hands',
+                                      value: '${math.max(1, handsPlayed)}',
+                                      icon: Icons.style_outlined,
+                                    ),
+                                    OverlayStatChip(
+                                      label: 'Beat',
+                                      value: '$playersBeaten',
+                                      icon: Icons.groups_2_outlined,
+                                    ),
+                                    OverlayStatChip(
+                                      label: 'Stack',
+                                      value: finalStackLabel,
+                                      icon: Icons.stacked_bar_chart_outlined,
+                                    ),
+                                    OverlayStatChip(
+                                      label: 'Net',
+                                      value: netLabel,
+                                      icon: netChips >= 0
+                                          ? Icons.trending_up
+                                          : Icons.trending_down,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 22),
+                                if (showRewardedAdButton) ...[
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: OutlinedButton.icon(
+                                      onPressed: (exiting || rewarding)
+                                          ? null
+                                          : watchRewardedAd,
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: Colors.white,
+                                        side: BorderSide(
+                                          color: Colors.white
+                                              .withValues(alpha: 0.26),
+                                        ),
+                                        minimumSize: const Size.fromHeight(52),
+                                        shape: const StadiumBorder(),
+                                        textStyle: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 0.2,
+                                        ),
+                                      ),
+                                      icon: rewarding
+                                          ? const SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            )
+                                          : const Icon(
+                                              Icons.play_circle_outline),
+                                      label: Text(
+                                        rewarding
+                                            ? 'LOADING AD...'
+                                            : rewardedAdLabel!,
+                                      ),
+                                    ),
+                                  ),
+                                  if (rewardMessage != null) ...[
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      rewardMessage!,
+                                      textAlign: TextAlign.center,
+                                      style: _kBodyStyle.copyWith(
+                                        color: rewardSuccess
+                                            ? const Color(0xFF9DE8B1)
+                                            : Colors.white70,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                  const SizedBox(height: 10),
+                                ],
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: FilledButton(
+                                    onPressed:
+                                        (exiting || rewarding) ? null : exitNow,
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: Colors.white,
+                                      foregroundColor: Colors.black,
+                                      minimumSize: const Size.fromHeight(54),
+                                      shape: const StadiumBorder(),
+                                      textStyle: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      exiting
+                                          ? 'PLEASE WAIT'
+                                          : podiumFinish
+                                              ? 'COLLECT AND EXIT'
+                                              : 'EXIT TO VENUE',
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
+  matchEndAdTimer?.cancel();
+}
+
+String _ordinalRank(int value) {
+  if (value <= 0) return '—';
+  final int mod100 = value % 100;
+  if (mod100 >= 11 && mod100 <= 13) return '${value}TH';
+  switch (value % 10) {
+    case 1:
+      return '${value}ST';
+    case 2:
+      return '${value}ND';
+    case 3:
+      return '${value}RD';
+    default:
+      return '${value}TH';
+  }
+}
+
+class _FireworksBackdrop extends StatefulWidget {
+  final bool celebratory;
+
+  const _FireworksBackdrop({
+    required this.celebratory,
+  });
+
+  @override
+  State<_FireworksBackdrop> createState() => _FireworksBackdropState();
+}
+
+class _FireworksBackdropState extends State<_FireworksBackdrop>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 3200),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RepaintBoundary(
+      child: CustomPaint(
+        painter: _FireworksPainter(
+          progress: _controller,
+          celebratory: widget.celebratory,
+        ),
+        child: const SizedBox.expand(),
+      ),
+    );
+  }
+}
+
+class _FireworksPainter extends CustomPainter {
+  final Animation<double> progress;
+  final bool celebratory;
+
+  _FireworksPainter({
+    required this.progress,
+    required this.celebratory,
+  }) : super(repaint: progress);
+
+  static const List<Offset> _anchors = <Offset>[
+    Offset(0.16, 0.22),
+    Offset(0.82, 0.18),
+    Offset(0.30, 0.62),
+    Offset(0.72, 0.58),
+    Offset(0.52, 0.32),
+  ];
+
+  static const List<Color> _celebrationPalette = <Color>[
+    Color(0xFFFFD100),
+    Color(0xFF24B6FF),
+    Color(0xFFFF5A36),
+    Color(0xFF8CFF66),
+    Color(0xFFFFF4C2),
+  ];
+
+  static const List<Color> _gameOverPalette = <Color>[
+    Color(0xFFFF2800),
+    Color(0xFFFF6A3D),
+    Color(0xFF24B6FF),
+    Color(0xFFFFD100),
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Rect rect = Offset.zero & size;
+    final List<Color> bg = celebratory
+        ? const <Color>[
+            Color(0xFF180F04),
+            Color(0xFF090909),
+            Color(0xFF140A02),
+          ]
+        : const <Color>[
+            Color(0xFF180606),
+            Color(0xFF090909),
+            Color(0xFF120707),
+          ];
+    final Paint fill = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: bg,
+      ).createShader(rect);
+    canvas.drawRect(rect, fill);
+
+    final List<Color> palette =
+        celebratory ? _celebrationPalette : _gameOverPalette;
+
+    final double t = progress.value.clamp(0.0, 1.0);
+    final double shortSide = math.min(size.width, size.height);
+
+    _paintConfetti(
+      canvas,
+      size,
+      shortSide,
+      t,
+      palette,
+    );
+
+    for (int i = 0; i < _anchors.length; i++) {
+      final Offset anchor = Offset(
+        size.width * _anchors[i].dx,
+        size.height * _anchors[i].dy,
+      );
+      final double cycle = ((t + (i * 0.19)) % 1.0).clamp(0.0, 1.0).toDouble();
+      final double appear = ((cycle - 0.08) / 0.72).clamp(0.0, 1.0).toDouble();
+      if (appear <= 0.0 || appear >= 1.0) continue;
+
+      final double explode = Curves.easeOutCubic.transform(appear);
+      final double fade =
+          (1.0 - Curves.easeIn.transform(appear)).clamp(0.0, 1.0).toDouble();
+      final double radius = shortSide * (0.08 + (0.12 * explode));
+      final Color color = palette[i % palette.length];
+
+      final Paint glow = Paint()
+        ..style = PaintingStyle.fill
+        ..color = color.withValues(
+          alpha: (celebratory ? 0.12 : 0.09) * fade,
+        )
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 22);
+      canvas.drawCircle(anchor, radius * 0.56, glow);
+
+      final int rays = celebratory ? 18 : 14;
+      for (int ray = 0; ray < rays; ray++) {
+        final double theta =
+            ((math.pi * 2) / rays) * ray + (i.isEven ? 0.0 : 0.16);
+        final Offset dir = Offset(math.cos(theta), math.sin(theta));
+        final double inner = radius * 0.12;
+        final double outer = radius * (0.72 + ((ray % 3) * 0.08));
+        final Offset p1 = anchor + dir * inner;
+        final Offset p2 = anchor + dir * outer;
+        final Paint streak = Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round
+          ..strokeWidth = celebratory ? 2.2 : 1.8
+          ..color = color.withValues(alpha: (0.68 * fade).clamp(0.0, 1.0));
+        canvas.drawLine(p1, p2, streak);
+        canvas.drawCircle(
+          p2,
+          celebratory ? 2.4 : 2.0,
+          Paint()
+            ..color = color.withValues(alpha: (0.92 * fade).clamp(0.0, 1.0)),
+        );
+      }
+    }
+  }
+
+  void _paintConfetti(
+    Canvas canvas,
+    Size size,
+    double shortSide,
+    double t,
+    List<Color> palette,
+  ) {
+    final int pieceCount = celebratory ? 40 : 18;
+    for (int i = 0; i < pieceCount; i++) {
+      final double laneSeed = _hash(i, 0);
+      final double speedSeed = _hash(i, 1);
+      final double swaySeed = _hash(i, 2);
+      final double sizeSeed = _hash(i, 3);
+      final double angleSeed = _hash(i, 4);
+      final double cycle =
+          ((t * (0.64 + (speedSeed * 0.72))) + laneSeed).remainder(1.0);
+      final double fade =
+          (0.28 + (math.sin(cycle * math.pi) * 0.56)).clamp(0.0, 0.9);
+      final double xBase = size.width * laneSeed;
+      final double sway = math.sin(
+            (cycle * math.pi * 2.0 * (1.2 + swaySeed)) +
+                (angleSeed * math.pi * 2.0),
+          ) *
+          (12 + (26 * swaySeed));
+      final double x = xBase + sway;
+      final double y = (-size.height * 0.24) + (cycle * (size.height * 1.42));
+      final double width = shortSide * (0.012 + (sizeSeed * 0.01));
+      final double height = width * (0.72 + (_hash(i, 5) * 2.2));
+      final double rotation =
+          (cycle * math.pi * (1.4 + (speedSeed * 2.8))) + (angleSeed * 6.0);
+      final Color color =
+          palette[i % palette.length].withValues(alpha: fade.toDouble());
+
+      canvas.save();
+      canvas.translate(x, y);
+      canvas.rotate(rotation);
+
+      final RRect piece = RRect.fromRectAndRadius(
+        Rect.fromCenter(
+          center: Offset.zero,
+          width: width,
+          height: height,
+        ),
+        Radius.circular(width * 0.28),
+      );
+      canvas.drawRRect(piece, Paint()..color = color);
+
+      if (celebratory && i.isEven) {
+        final Paint trail = Paint()
+          ..color = color.withValues(alpha: fade * 0.42)
+          ..strokeWidth = math.max(1.2, width * 0.18)
+          ..strokeCap = StrokeCap.round;
+        canvas.drawLine(
+          Offset(0, height * 0.45),
+          Offset(0, height * 1.55),
+          trail,
+        );
+      }
+
+      canvas.restore();
+    }
+  }
+
+  double _hash(int index, int salt) {
+    final double value =
+        math.sin(((index + 1) * 12.9898) + ((salt + 1) * 78.233)) * 43758.5453;
+    return value - value.floorToDouble();
+  }
+
+  @override
+  bool shouldRepaint(covariant _FireworksPainter oldDelegate) {
+    return oldDelegate.celebratory != celebratory ||
+        oldDelegate.progress.value != progress.value;
   }
 }
 
@@ -1115,6 +1820,7 @@ class RenoirWelcomePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final shown = players.take(10).toList();
+    final controller = ScrollController();
     return Material(
       color: Colors.transparent,
       child: ConstrainedBox(
@@ -1150,8 +1856,10 @@ class RenoirWelcomePanel extends StatelessWidget {
               const SizedBox(height: 8),
               Flexible(
                 child: Scrollbar(
+                  controller: controller,
                   thumbVisibility: true,
                   child: ListView.separated(
+                    controller: controller,
                     shrinkWrap: true,
                     physics: const BouncingScrollPhysics(),
                     itemCount: shown.length,
@@ -2036,6 +2744,7 @@ Future<void> showWinnersDialog(
   required int totalPot,
   Duration? duration,
   bool barrierDismissible = true,
+  bool tapAnywhereToDismiss = false,
   bool showLegacyTitle = true,
   VoidCallback? onShown, // fires as soon as dialog first renders
   VoidCallback? onClosed, // fires after dialog closes
@@ -2067,6 +2776,9 @@ Future<void> showWinnersDialog(
       heroLine != null && winners.any((w) => _sameWinner(w, heroLine!));
   final bool showHeroBest =
       heroHasShowableHand && heroLine != null && !heroWonPot;
+
+  final String? heroSlug =
+      heroLine != null ? Seat.slugForName(heroLine!.playerName) : null;
 
   final List<WinnerLine> winnersForUi = showHeroBest && heroLine != null
       ? [
@@ -2118,7 +2830,7 @@ Future<void> showWinnersDialog(
         });
       }
 
-      final dialog = WillPopScope(
+      Widget dialog = WillPopScope(
         onWillPop: () async => !lockInput,
         child: IgnorePointer(
           ignoring: lockInput,
@@ -2144,21 +2856,19 @@ Future<void> showWinnersDialog(
                     : (useLegacyLayout
                         ? Column(
                             children: [
-                              ...winnersForUi
-                                  .map((w) => _WinnerHandBlock(line: w)),
+                              ...winnersForUi.map((w) => _WinnerHandBlock(
+                                    line: w,
+                                    heroSlug: heroSlug,
+                                  )),
                               if (showHeroBest && heroLine != null) ...[
                                 const SizedBox(height: 12),
                                 _HeroBestHandBlock(line: heroLine!),
                               ],
                             ],
                           )
-                        : _WinnerRevealContent(
-                            winners: winnersForUi,
-                            board: board,
-                            pillBackground: pillBackground,
-                            showCommunity: showCommunity,
-                            showArcCongrats: showArcCongrats,
-                          ));
+                        : (showArcCongrats
+                            ? const _ArcCongratsText()
+                            : const SizedBox.shrink()));
 
                 // Previous-hand “info” overlay: flexible panel that shrink-wraps.
                 if (isInfoOverlay) {
@@ -2209,6 +2919,19 @@ Future<void> showWinnersDialog(
           ),
         ),
       );
+      if (tapAnywhereToDismiss && !lockInput) {
+        dialog = GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () {
+            try {
+              final route = ModalRoute.of(dialogCtx);
+              if (route == null || !route.isActive) return;
+              Navigator.of(dialogCtx, rootNavigator: true).pop();
+            } catch (_) {}
+          },
+          child: dialog,
+        );
+      }
       return dialog;
     },
   );
@@ -2245,6 +2968,7 @@ Future<void> showPreviousHandOverlay(
     totalPot: snap.totalPot,
     duration: null, // ⬅️ persistent; user must dismiss
     barrierDismissible: barrierDismissible,
+    tapAnywhereToDismiss: true,
     onShown: onShown,
     onClosed: onClosed,
     heroLine: snap.hero,
@@ -2299,7 +3023,13 @@ Future<void> showLastHandOrToast(
 class _MiniCard extends StatelessWidget {
   final UiCard card;
   final bool highlight;
-  const _MiniCard(this.card, {super.key, this.highlight = false});
+  final Color highlightColor;
+  const _MiniCard(
+    this.card, {
+    super.key,
+    this.highlight = false,
+    this.highlightColor = _kBestHandOutline,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -2307,9 +3037,9 @@ class _MiniCard extends StatelessWidget {
     final isRed = s.contains('♥') || s.contains('♦');
     final Color suitColor =
         isRed ? (Colors.red[700] ?? Colors.red) : Colors.black;
-    final borderColor = highlight ? _kBestHandOutline : Colors.black12;
+    final borderColor = highlight ? highlightColor : Colors.black12;
     final shadowColor =
-        highlight ? _kBestHandOutline.withValues(alpha: 0.4) : Colors.black26;
+        highlight ? highlightColor.withValues(alpha: 0.4) : Colors.black26;
     return Container(
       width: 46,
       height: 64,
@@ -2337,162 +3067,13 @@ class _MiniCard extends StatelessWidget {
   }
 }
 
-class _WinnerFaceUpContent extends StatelessWidget {
-  final List<WinnerLine> winners;
-  final List<UiCard> board;
-  final bool pillBackground;
-  final bool showCommunity;
-  final bool showArcCongrats;
-  const _WinnerFaceUpContent({
-    required this.winners,
-    required this.board,
-    this.pillBackground = false,
-    this.showCommunity = true,
-    this.showArcCongrats = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (showArcCongrats) const _ArcCongratsText(),
-        for (final w in winners)
-          _WinnerRevealBlock(
-            line: w,
-            board: board,
-            pillBackground: pillBackground,
-            showCommunity: showCommunity,
-          ),
-      ],
-    );
-  }
-}
-
-// New minimal reveal layout: about text + cards only (no labels/names)
-class _WinnerRevealContent extends StatelessWidget {
-  final List<WinnerLine> winners;
-  final List<UiCard> board;
-  final bool pillBackground;
-  final bool showCommunity;
-  final bool showArcCongrats;
-  const _WinnerRevealContent({
-    required this.winners,
-    required this.board,
-    required this.pillBackground,
-    required this.showCommunity,
-    required this.showArcCongrats,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (showArcCongrats) const _ArcCongratsText(),
-        for (final w in winners)
-          _WinnerRevealBlock(
-            line: w,
-            board: board,
-            pillBackground: pillBackground,
-            showCommunity: showCommunity,
-          ),
-      ],
-    );
-  }
-}
-
-class _WinnerRevealBlock extends StatelessWidget {
-  final WinnerLine line;
-  final List<UiCard> board;
-  final bool pillBackground;
-  final bool showCommunity;
-  const _WinnerRevealBlock(
-      {required this.line,
-      required this.board,
-      required this.pillBackground,
-      required this.showCommunity});
-
-  @override
-  Widget build(BuildContext context) {
-    final highlightKeys = _cardKeySet(winningHandHighlightCards(line.bestFive));
-
-    final List<UiCard> community = board;
-    final Size cardSize = _heroCardSize(context);
-    const double gap = 8.0;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (showCommunity && community.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Align(
-              alignment: Alignment.center,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (int i = 0; i < community.length; i++)
-                      Padding(
-                        padding: EdgeInsets.only(
-                            right: i == community.length - 1 ? 0 : gap),
-                        child: _FaceUpCard(
-                          card: community[i],
-                          size: cardSize,
-                          highlight: highlightKeys.contains(
-                              _WinnerRevealBlock._cardKey(community[i])),
-                          pill: pillBackground,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        const SizedBox(height: 6),
-      ],
-    );
-  }
-
-  static Set<String> _cardKeySet(List<UiCard> cards) =>
-      {for (final c in cards) _cardKey(c)};
-
-  static String _cardKey(UiCard c) =>
-      '${c.rank.trim().toUpperCase()}|${_normalizeSuit(c.suit)}';
-
-  static String _normalizeSuit(String raw) {
-    final s = raw.trim();
-    switch (s) {
-      case '♠':
-      case 'S':
-      case 'SPADES':
-      case 'Spades':
-      case 'spades':
-        return 'S';
-      case '♥':
-      case 'H':
-      case 'HEARTS':
-      case 'Hearts':
-      case 'hearts':
-        return 'H';
-      case '♦':
-      case 'D':
-      case 'DIAMONDS':
-      case 'Diamonds':
-      case 'diamonds':
-        return 'D';
-      case '♣':
-      case 'C':
-      case 'CLUBS':
-      case 'Clubs':
-      case 'clubs':
-        return 'C';
-      default:
-        return s.toUpperCase();
-    }
-  }
+Color _winnerHighlightColor({
+  required WinnerLine line,
+  String? heroSlug,
+}) {
+  if (heroSlug == null || heroSlug.isEmpty) return _kBestHandOutline;
+  final winnerSlug = Seat.slugForName(line.playerName);
+  return winnerSlug == heroSlug ? _kBlue : _kRed;
 }
 
 class _AboutBanner extends StatelessWidget {
@@ -2541,12 +3122,14 @@ class _FaceUpCard extends StatelessWidget {
   final Size size;
   final bool highlight;
   final bool pill;
+  final Color highlightColor;
 
   const _FaceUpCard({
     required this.card,
     required this.size,
     required this.highlight,
     this.pill = false,
+    this.highlightColor = _kBestHandOutline,
   });
 
   @override
@@ -2575,13 +3158,13 @@ class _FaceUpCard extends StatelessWidget {
         color: pill ? Colors.grey.shade200.withOpacity(0.35) : null,
         borderRadius: borderRadius,
         border: Border.all(
-          color: highlight ? _kBestHandOutline : Colors.white24,
+          color: highlight ? highlightColor : Colors.white24,
           width: highlight ? 3.6 : 1.4,
         ),
         boxShadow: [
           if (highlight)
             BoxShadow(
-              color: _kBestHandOutline.withValues(alpha: 0.35),
+              color: highlightColor.withValues(alpha: 0.35),
               blurRadius: 14,
               spreadRadius: 1.5,
             ),
@@ -2756,7 +3339,8 @@ Size _heroCardSize(BuildContext context) {
 
 class _WinnerHandBlock extends StatelessWidget {
   final WinnerLine line;
-  const _WinnerHandBlock({required this.line});
+  final String? heroSlug;
+  const _WinnerHandBlock({required this.line, this.heroSlug});
 
   static const Map<String, int> _rankStrength = {
     'A': 14,
@@ -2791,6 +3375,8 @@ class _WinnerHandBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color highlightColor =
+        _winnerHighlightColor(line: line, heroSlug: heroSlug);
     final highlightKeys = {
       for (final c in winningHandHighlightCards(line.bestFive))
         '${c.rank}|${c.suit}',
@@ -2841,6 +3427,7 @@ class _WinnerHandBlock extends StatelessWidget {
                         child: _MiniCard(
                           displayCards[i].card,
                           highlight: displayCards[i].highlight,
+                          highlightColor: highlightColor,
                         ),
                       ),
                   ],

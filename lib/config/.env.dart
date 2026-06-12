@@ -3,8 +3,11 @@ class Env {
   static const String apiBaseUrl = 'https://api.tenofakind.com';
 
   /// Public website (documents/ID card portal).
-  static const String websiteBaseUrl = 'https://tenofakind.com';
+  /// Use the live Firebase Hosting URL until the custom domain is configured.
+  static const String websiteBaseUrl = 'https://ten-of-a-kind-poker.web.app';
   static const String documentsPortalUrl = '$websiteBaseUrl/documents.html';
+  static const String privacyPolicyUrl = '$websiteBaseUrl/privacy.html';
+  static const String deleteAccountUrl = '$websiteBaseUrl/delete-account.html';
 
   /// Enable or disable AI players (for testing)
   static const bool enableAI = true;

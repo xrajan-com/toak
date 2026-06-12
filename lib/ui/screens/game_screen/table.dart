@@ -1,5 +1,4 @@
 // lib/ui/screens/game_screen/table_felt.dart
-import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
@@ -76,48 +75,20 @@ extension KingdomMarkX on KingdomMark {
   }
 }
 
-/*───────────────────────────────────────────────
- 📦 Asset Manifest Utils
-───────────────────────────────────────────────*/
-class _AssetIndex {
-  static Set<String>? _keys;
-  static final Map<String, Future<bool>> _existsCache =
-      <String, Future<bool>>{};
+String _normaliseAssetPath(String raw) {
+  String p = raw.trim().replaceFirst(RegExp(r'^(assets/)+'), 'assets/');
+  return p.replaceFirst(
+    RegExp(r'^assets/images/monuments/'),
+    'assets/images/watermarks/',
+  );
+}
 
-  static Future<void> _ensure() async {
-    if (_keys != null) return;
-    try {
-      final manifestJson = await rootBundle.loadString('AssetManifest.json');
-      final Map<String, dynamic> manifest = json.decode(manifestJson);
-      _keys = manifest.keys.map(_fixDupAssets).toSet();
-    } catch (_) {
-      _keys = <String>{};
-    }
-  }
-
-  static String _fixDupAssets(String p) =>
-      p.replaceFirst(RegExp(r'^(assets/)+'), 'assets/');
-
-  static String normalise(String raw) {
-    String p = _fixDupAssets(raw.trim());
-    return p.replaceFirst(
-      RegExp(r'^assets/images/monuments/'),
-      'assets/images/watermarks/',
-    );
-  }
-
-  static Future<bool> exists(String raw) {
-    final normalised = normalise(raw);
-    final cached = _existsCache[normalised];
-    if (cached != null) return cached;
-    final future = (() async {
-      await _ensure();
-      final keys = _keys;
-      if (keys == null || keys.isEmpty) return false;
-      return keys.contains(normalised);
-    })();
-    _existsCache[normalised] = future;
-    return future;
+Future<bool> _assetLoadable(String asset) async {
+  try {
+    await rootBundle.load(asset);
+    return true;
+  } catch (_) {
+    return false;
   }
 }
 
@@ -188,37 +159,77 @@ class RacetrackTablePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
     final innerRect = rect.deflate(railWidth);
+    final innerInsetRect = innerRect.deflate(math.max(6.0, railWidth * 0.18));
 
     final outer = _stadiumPath(rect);
     final inner = _stadiumPath(innerRect);
+    final innerInset = _stadiumPath(innerInsetRect);
     final railPath = Path.combine(PathOperation.difference, outer, inner);
     final pal = wood.palette;
+
+    final Color feltEdge = Color.lerp(felt, Colors.black, 0.24)!;
+    final Color feltCenter = Color.lerp(felt, Colors.white, 0.06)!;
 
     // 🌲 Wood rail
     final railShader = LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [pal.light, pal.mid, pal.dark],
-      stops: const [0.0, 0.5, 1.0],
+      colors: [
+        Color.lerp(pal.light, Colors.white, 0.06)!,
+        pal.light,
+        pal.mid,
+        pal.dark,
+      ],
+      stops: const [0.0, 0.22, 0.58, 1.0],
     ).createShader(rect);
     final railPaint = Paint()..shader = railShader;
     final porePaint = Paint()
       ..color = pal.pore
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
+    final railGlossPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          Colors.white.withValues(alpha: 0.22),
+          Colors.white.withValues(alpha: 0.05),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.28, 0.62],
+      ).createShader(
+        Rect.fromLTWH(rect.left, rect.top, rect.width, rect.height * 0.46),
+      );
 
     // 🕳️ Shadow
     final shadowPaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.4)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.outer, 18);
+      ..color = Colors.black.withValues(alpha: 0.52)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.outer, 24);
+    final railDropShadowPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.34)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18);
 
     // 🟢 Felt
     final feltPaint = Paint()
       ..shader = RadialGradient(
         center: const Alignment(0, -0.12),
         radius: 1.15,
-        colors: [felt.withValues(alpha: 0.92), felt],
+        colors: [feltCenter.withValues(alpha: 0.96), felt, feltEdge],
+        stops: const [0.0, 0.56, 1.0],
       ).createShader(innerRect);
+    final innerRimPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = math.max(2.2, railWidth * 0.085)
+      ..color = Colors.white.withValues(alpha: 0.12);
+    final feltBandPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4
+      ..color = Colors.white.withValues(alpha: 0.08);
+    final feltShadowPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = math.max(6.0, railWidth * 0.22)
+      ..color = Colors.black.withValues(alpha: 0.16)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
 
     // 💡 Lip + Stripe
     final lipPaint = Paint()
@@ -231,10 +242,15 @@ class RacetrackTablePainter extends CustomPainter {
       ..color = Colors.white.withValues(alpha: 0.09);
 
     // Draw sequence
-    canvas.drawPath(railPath, railPaint);
-    canvas.drawPath(railPath, porePaint);
     canvas.drawPath(outer, shadowPaint);
+    canvas.drawPath(railPath, railDropShadowPaint);
+    canvas.drawPath(railPath, railPaint);
+    canvas.drawPath(railPath, railGlossPaint);
+    canvas.drawPath(railPath, porePaint);
     canvas.drawPath(inner, feltPaint);
+    canvas.drawPath(inner, feltShadowPaint);
+    canvas.drawPath(inner, innerRimPaint);
+    canvas.drawPath(innerInset, feltBandPaint);
     if (lipHighlight > 0) {
       canvas.drawPath(inner, lipPaint);
       canvas.drawPath(_stadiumPath(innerRect.deflate(16)), stripePaint);
@@ -430,8 +446,8 @@ class _SafeWatermarkState extends State<_SafeWatermark> {
       _existsFuture = null;
       return;
     }
-    _normalisedAsset = _AssetIndex.normalise(raw);
-    _existsFuture = _AssetIndex.exists(_normalisedAsset!);
+    _normalisedAsset = _normaliseAssetPath(raw);
+    _existsFuture = _assetLoadable(_normalisedAsset!);
   }
 
   @override

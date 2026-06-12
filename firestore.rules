@@ -1,0 +1,159 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isValidStringList(field, maxItems) {
+      return !(field in request.resource.data)
+        || (
+          request.resource.data[field] is list
+          && request.resource.data[field].size() <= maxItems
+        );
+    }
+
+    function isOptionalString(field, minLen, maxLen) {
+      return !(field in request.resource.data)
+        || (
+          request.resource.data[field] is string
+          && request.resource.data[field].size() >= minLen
+          && request.resource.data[field].size() <= maxLen
+        );
+    }
+
+    function isOptionalNumber(field, minValue, maxValue) {
+      return !(field in request.resource.data)
+        || (
+          request.resource.data[field] is number
+          && request.resource.data[field] >= minValue
+          && request.resource.data[field] <= maxValue
+        );
+    }
+
+    function isOptionalInt(field, minValue, maxValue) {
+      return !(field in request.resource.data)
+        || (
+          request.resource.data[field] is int
+          && request.resource.data[field] >= minValue
+          && request.resource.data[field] <= maxValue
+        );
+    }
+
+    function isOptionalTimestamp(field) {
+      return !(field in request.resource.data)
+        || request.resource.data[field] is timestamp;
+    }
+
+    function isOptionalBool(field) {
+      return !(field in request.resource.data)
+        || request.resource.data[field] is bool;
+    }
+
+    function isValidCampaignDoc() {
+      return request.resource.data.schemaVersion is int
+        && request.resource.data.schemaVersion == 1
+        && isValidStringList('cleared', 500)
+        && isValidStringList('mainEventsCleared', 200)
+        && isValidStringList('awardedEventIds', 500)
+        && isOptionalInt('indiaAup', 0, 50000000)
+        && isOptionalInt('internationalAup', 0, 50000000)
+        && isOptionalInt('lastActiveAtMs', 0, 9999999999999)
+        && isOptionalInt('prevActiveAtMs', 0, 9999999999999)
+        && isOptionalString('lastActiveDayKey', 0, 16)
+        && isOptionalInt('activityScore', 0, 10000)
+        && isOptionalInt('lastLowFreqDecayAtMs', 0, 9999999999999)
+        && isOptionalInt('abandonedGames', 0, 2000000000)
+        && isOptionalInt('matchesPlayed', 0, 2000000000)
+        && isOptionalInt('finishPermilleSum', 0, 2000000000)
+        && (
+          !('updatedAt' in request.resource.data)
+          || request.resource.data.updatedAt is timestamp
+        );
+    }
+
+    function isValidUserDoc() {
+        return request.resource.data.keys().hasOnly([
+          'email',
+          'username',
+          'displayName',
+          'photoURL',
+          'about',
+          'kingdom',
+          'profileComplete',
+          'prizeMoney',
+          'createdAt',
+          'updatedAt',
+          'schemaVersion'
+        ])
+        && isOptionalString('email', 3, 254)
+        && isOptionalString('username', 3, 40)
+        && isOptionalString('displayName', 1, 40)
+        && isOptionalString('photoURL', 0, 1024)
+        && isOptionalString('about', 0, 30)
+        && isOptionalString('kingdom', 0, 40)
+        && isOptionalBool('profileComplete')
+        && isOptionalNumber('prizeMoney', 0, 1000000000)
+        && (
+          !('schemaVersion' in request.resource.data)
+          || (
+            request.resource.data.schemaVersion is int
+            && request.resource.data.schemaVersion >= 1
+            && request.resource.data.schemaVersion <= 10
+          )
+        )
+        && isOptionalTimestamp('createdAt')
+        && isOptionalTimestamp('updatedAt');
+    }
+
+    function isValidAuraDoc() {
+      return request.resource.data.schemaVersion is int
+        && request.resource.data.schemaVersion == 1
+        && isValidStringList('awardedEventIds', 500)
+        && isOptionalInt('indiaAup', 0, 50000000)
+        && isOptionalInt('internationalAup', 0, 50000000)
+        && isOptionalInt('lastActiveAtMs', 0, 9999999999999)
+        && isOptionalInt('prevActiveAtMs', 0, 9999999999999)
+        && isOptionalString('lastActiveDayKey', 0, 16)
+        && isOptionalInt('activityScore', 0, 10000)
+        && isOptionalInt('lastLowFreqDecayAtMs', 0, 9999999999999)
+        && isOptionalInt('abandonedGames', 0, 2000000000)
+        && isOptionalInt('matchesPlayed', 0, 2000000000)
+        && isOptionalInt('finishPermilleSum', 0, 2000000000)
+        && isOptionalTimestamp('updatedAt');
+    }
+
+    match /leaderboard/{uid} {
+      allow read: if true;
+      allow create, update, delete: if false;
+    }
+
+    match /server_progress/{uid} {
+      allow read: if isSelf(uid);
+      allow create, update, delete: if false;
+    }
+
+    match /users/{uid} {
+      allow read: if isSelf(uid);
+      allow create, update: if isSelf(uid) && isValidUserDoc();
+      allow delete: if isSelf(uid);
+    }
+
+    match /campaign_progress/{uid} {
+      allow read: if isSelf(uid);
+      allow create, update: if isSelf(uid) && isValidCampaignDoc();
+      allow delete: if isSelf(uid);
+    }
+
+    match /aura_wallets/{uid} {
+      allow read: if isSelf(uid);
+      allow create, update: if isSelf(uid) && isValidAuraDoc();
+      allow delete: if isSelf(uid);
+    }
+  }
+}

@@ -7,12 +7,25 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:96098527170:android:a93b62f7c15462d898185b",
+        "mobilesdk_app_id": "1:96098527170:android:c090765217c5aded98185b",
         "android_client_info": {
-          "package_name": "com.example.ten_of_a_kind_poker"
+          "package_name": "com.tenofakind.poker"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "96098527170-bkk0qtjrjgkkbhb8iumc2c4lbrttfirb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tenofakind.poker",
+            "certificate_hash": "3f131c7d72a54a55910528e735450f7b8c4ddc50"
+          }
+        },
+        {
+          "client_id": "96098527170-rlqt0f9uqct9kep0jab74p7ni14d63mk.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCIK0qZsBtW3A6WloakH2svx0wwx7OmEx4"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "96098527170-rlqt0f9uqct9kep0jab74p7ni14d63mk.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "96098527170-tpm5tn7shhkpmhkqg9d8g8m3e059jqh4.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "Poker-Ten-of-a-Kind"
+              }
+            }
+          ]
         }
       }
     }

@@ -2,8 +2,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-const Duration _kBurstDuration = Duration(milliseconds: 1040);
-const double _kBurstFireworkAndConfettiAlphaScale = 0.5;
+const Duration _kBurstDuration = Duration(milliseconds: 1160);
+const double _kBurstConfettiAlphaScale = 0.68;
+const double _kBurstFireworkAlphaScale = 1.0;
 
 class ActionBurstOverlay extends StatefulWidget {
   const ActionBurstOverlay({super.key});
@@ -59,7 +60,7 @@ class ActionBurstOverlayState extends State<ActionBurstOverlay>
     int scaledCount(int base, int min, int max) =>
         (base * density).round().clamp(min, max);
 
-    // Light on UI: a small mixed burst (vertical fireworks + confetti).
+    // Keep the confetti light, but let the pyro read clearly above the bar.
     final List<Color> confettiPalette = <Color>[
       const Color(0xFFFFD100),
       const Color(0xFF24B6FF),
@@ -70,17 +71,16 @@ class ActionBurstOverlayState extends State<ActionBurstOverlay>
       const Color(0xFFFFFFFF),
     ];
     final List<Color> fireworkPalette = <Color>[
+      const Color(0xFFFFF7C2),
       const Color(0xFFFFD100),
-      const Color(0xFF24B6FF),
-      const Color(0xFFFF2800),
-      const Color(0xFF3BB143),
-      const Color(0xFFB000FF),
-      const Color(0xFFFF4FD8),
+      const Color(0xFFFFB300),
+      const Color(0xFFFF8A00),
+      const Color(0xFFFF5A1F),
     ];
 
     final int smokeCount = scaledCount(10, 4, 10);
     final int confettiCount = scaledCount(30, 12, 30);
-    final int fireworkCount = scaledCount(24, 10, 24);
+    final int fireworkCount = scaledCount(30, 14, 30);
 
     for (final origin in origins) {
       for (int i = 0; i < smokeCount; i++) {
@@ -125,14 +125,14 @@ class ActionBurstOverlayState extends State<ActionBurstOverlay>
         // Mostly vertical launch with a small sideways variance.
         final vx = (rng.nextDouble() - 0.5) * 140;
         final vy = -(640 + rng.nextDouble() * 520);
-        final len = 18.0 + rng.nextDouble() * 22.0;
+        final len = 24.0 + rng.nextDouble() * 28.0;
         parts.add(_BurstParticle(
           origin: origin,
           velocity: Offset(vx, vy),
           color: fireworkPalette[rng.nextInt(fireworkPalette.length)]
-              .withValues(alpha: 0.85 - rng.nextDouble() * 0.25),
+              .withValues(alpha: 0.96 - rng.nextDouble() * 0.10),
           size: len,
-          thickness: 1.7 + rng.nextDouble() * 0.5,
+          thickness: 2.4 + rng.nextDouble() * 0.9,
           spin: 0.0,
           kind: _ParticleKind.firework,
         ));
@@ -239,8 +239,11 @@ class _ActionBurstPainter extends CustomPainter {
       final dy = p.velocity.dy * time + 0.5 * gravity * time * time;
       final Offset pos = p.origin + Offset(dx, dy);
 
-      // Keep smoke as-is; make fireworks + confetti lighter.
-      final double kindAlphaScale = _kBurstFireworkAndConfettiAlphaScale;
+      final double kindAlphaScale = switch (p.kind) {
+        _ParticleKind.confetti => _kBurstConfettiAlphaScale,
+        _ParticleKind.firework => _kBurstFireworkAlphaScale,
+        _ParticleKind.smoke => 1.0,
+      };
       final paint = Paint()
         ..color = p.color.withValues(alpha: p.color.a * fade * kindAlphaScale)
         ..style = PaintingStyle.fill;
@@ -271,29 +274,42 @@ class _ActionBurstPainter extends CustomPainter {
           final Offset unit = dir / dir.distance;
           final Offset tail = pos - unit * p.size;
           final Color c = paint.color;
-          // Soft glow pass (gives "firework" pop on dark felt).
+          // Stronger fire glow so the pyro reads above the winner bar.
           final glowPaint = Paint()
-            ..color = c.withValues(alpha: c.a * 0.55)
+            ..color = c.withValues(alpha: c.a * 0.82)
             ..style = PaintingStyle.stroke
-            ..strokeWidth = p.thickness * 3.0
+            ..strokeWidth = p.thickness * 4.8
             ..strokeCap = StrokeCap.round
-            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
           canvas.drawLine(tail, pos, glowPaint);
           canvas.drawCircle(
             pos,
-            p.thickness * 2.0,
+            p.thickness * 3.0,
             Paint()
-              ..color = c.withValues(alpha: c.a * 0.35)
-              ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+              ..color = c.withValues(alpha: c.a * 0.5)
+              ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
           );
+
+          final hotCorePaint = Paint()
+            ..color = const Color(0xFFFFFBE6)
+                .withValues(alpha: (0.9 * fade).clamp(0.0, 0.9))
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = p.thickness * 1.3
+            ..strokeCap = StrokeCap.round;
+          canvas.drawLine(tail, pos, hotCorePaint);
 
           final sparkPaint = Paint()
             ..color = c
             ..style = PaintingStyle.stroke
-            ..strokeWidth = p.thickness
+            ..strokeWidth = p.thickness * 1.15
             ..strokeCap = StrokeCap.round;
           canvas.drawLine(tail, pos, sparkPaint);
-          canvas.drawCircle(pos, p.thickness * 0.85, Paint()..color = c);
+          canvas.drawCircle(
+            pos,
+            p.thickness * 1.45,
+            Paint()..color = const Color(0xFFFFF7C2).withValues(alpha: c.a),
+          );
+          canvas.drawCircle(pos, p.thickness * 0.9, Paint()..color = c);
           break;
       }
     }

@@ -1,12 +1,11 @@
 {
-    "name": "ten_of_a_kind_poker",
-    "short_name": "ten_of_a_kind_poker",
+    "name": "Ten of a Kind Poker",
+    "short_name": "Ten of a Kind",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "background_color": "#7a0000",
+    "theme_color": "#7a0000",
+    "description": "Battle across ten kingdoms in a cinematic Texas Hold'em poker experience.",
     "prefer_related_applications": false,
     "icons": [
         {

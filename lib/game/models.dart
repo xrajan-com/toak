@@ -3,6 +3,27 @@ import 'dart:math' as math;
 import 'core.dart' show Card, GamePhase;
 import 'hand_evaluator.dart' show HandRank;
 
+/* ===================== Bot difficulty ===================== */
+
+/// Difficulty tiers for bot behavior.
+///
+/// This is currently used by campaign configuration metadata and can be wired
+/// into bot strategy selection as needed.
+enum BotDifficulty { easy, normal, hard, brutal }
+
+/* ===================== Bot traits ===================== */
+
+/// Temperament influences pacing and decision style.
+///
+/// Legacy enum ids are kept for compatibility with the rest of the app:
+/// - `aggressive` behaves as a maniac
+/// - `stoic` behaves as a calling station
+/// - `worldChamp` behaves as a rock
+enum BotTemperament { aggressive, stoic, worldChamp }
+
+/// Skill influences decision accuracy and variance.
+enum BotSkill { killer, fluke }
+
 /* ===================== Payout helpers ===================== */
 
 class PayoutTable {
@@ -147,9 +168,10 @@ class Player {
   final String id;
   final String name;
   int chips;
-  int enduranceMinutes;
   int aura;
   final bool isBot;
+  BotTemperament? temperament;
+  BotSkill? skill;
 
   // Hand state
   bool folded = false;
@@ -171,9 +193,10 @@ class Player {
     required this.id,
     required this.name,
     required this.chips,
-    this.enduranceMinutes = 15,
     this.aura = 60,
     this.isBot = false,
+    this.temperament,
+    this.skill,
   });
 
   void resetForNewHand() {
@@ -222,7 +245,6 @@ class PlayerSnapshot {
   final int contributedThisHand;
   final List<Card> hole;
   final HandRank? best;
-  final int enduranceMinutes;
   final int aura;
   const PlayerSnapshot({
     required this.id,
@@ -235,7 +257,6 @@ class PlayerSnapshot {
     required this.contributedThisHand,
     required this.hole,
     required this.best,
-    required this.enduranceMinutes,
     required this.aura,
   });
 }
