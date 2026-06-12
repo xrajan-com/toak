@@ -56,3 +56,6 @@ app.*.map.json
 
 # Flutter web build output copied into the hosting site
 website/frontend/web/
+
+# Legacy/nested website checkout. Clean or merge it deliberately as a separate repo.
+website/
