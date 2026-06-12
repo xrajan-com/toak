@@ -1,0 +1,46 @@
+<svg width="1400" height="800" viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="world-bg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#050505"/>
+      <stop offset="60%" stop-color="#03030a"/>
+      <stop offset="100%" stop-color="#080808"/>
+    </linearGradient>
+    <g id="world-shapes">
+      <path d="M120 120 C80 220 90 330 140 430 C170 490 230 540 300 510 C350 490 360 430 340 380 C320 330 300 310 320 250 C350 200 370 150 360 120 C330 80 260 70 200 90 Z" />
+      <path d="M420 140 C460 100 520 90 600 120 C660 150 720 190 770 230 C820 270 860 320 900 380 C940 440 960 500 940 560 C920 600 860 610 820 580 C780 550 760 520 720 500 C680 490 640 520 600 520 C560 520 520 500 500 460 C480 420 460 380 440 340 C420 300 410 260 410 220 C410 190 420 160 420 140 Z" />
+      <path d="M780 520 C820 500 860 520 890 560 C910 600 880 640 840 640 C800 640 770 590 780 520 Z" />
+      <path d="M360 40 C380 30 400 50 410 70 C420 90 400 110 370 110 C350 110 340 90 350 60 Z" />
+    </g>
+    <clipPath id="world-clip">
+      <use href="#world-shapes" />
+    </clipPath>
+  </defs>
+  <rect width="1000" height="600" fill="url(#world-bg)"/>
+  <circle cx="500" cy="260" r="360" fill="#0a0a12" opacity="0.7"/>
+  <g clip-path="url(#world-clip)">
+    <rect width="1000" height="600" fill="#050505" opacity="0.9"/>
+    <path d="M120 150 L260 140 L260 280 L140 300 Z" fill="#24247A" opacity="0.9"/>
+    <path d="M160 300 L300 280 L320 380 L200 430 Z" fill="#013220" opacity="0.9"/>
+    <path d="M520 260 L600 260 L620 360 L540 380 Z" fill="#556B2F" opacity="0.9"/>
+    <path d="M620 230 L700 220 L720 280 L640 300 Z" fill="#DC53DC" opacity="0.85"/>
+    <path d="M660 160 L820 150 L820 240 L660 240 Z" fill="#761EB4" opacity="0.8"/>
+    <path d="M710 250 L860 260 L860 360 L720 340 Z" fill="#8B0000" opacity="0.8"/>
+    <path d="M780 360 L900 360 L920 440 L800 440 Z" fill="#FF6B01" opacity="0.85"/>
+    <path d="M640 300 L720 300 L720 360 L660 380 Z" fill="#5F413A" opacity="0.85"/>
+    <path d="M600 320 L660 320 L660 380 L610 400 Z" fill="#00A6E8" opacity="0.9"/>
+    <path d="M780 500 L880 520 L900 580 L800 600 Z" fill="#CBA014" opacity="0.9"/>
+  </g>
+  <use href="#world-shapes" fill="none" stroke="#ffffff" stroke-width="4" stroke-linejoin="round"/>
+  <g font-family="'Inter','SF Pro Display',sans-serif" font-size="22" fill="#ffffff" stroke="#000000" stroke-width="4" paint-order="stroke" text-anchor="middle">
+    <text x="210" y="190">America</text>
+    <text x="240" y="360">Amazon</text>
+    <text x="580" y="340">Africa</text>
+    <text x="670" y="260">Europe</text>
+    <text x="740" y="200">Russia</text>
+    <text x="790" y="320">China</text>
+    <text x="840" y="410">Southeast</text>
+    <text x="650" y="360">Arabia</text>
+    <text x="630" y="390">India</text>
+    <text x="840" y="560">Australia</text>
+  </g>
+</svg>

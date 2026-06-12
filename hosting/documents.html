@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Documents • Ten of a Kind Poker</title>
+    <link rel="icon" href="favicon.png" type="image/png" />
+    <link rel="stylesheet" href="documents.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header class="topbar">
+        <a class="brand" href="index.html" aria-label="Back to Ten of a Kind Poker home">
+          <img src="Logo.png" alt="Ten of a Kind Poker" />
+          <span>Documents</span>
+        </a>
+        <span class="pill" id="statusPill">Ready</span>
+      </header>
+
+      <section class="panel">
+        <div class="userRow">
+          <img class="renoir" src="Renoir.png" alt="Renoir" />
+          <div class="userMeta">
+            <div class="userName" id="userName">Player</div>
+            <div class="userLine">
+              <span class="k">Email</span>
+              <span class="v" id="userEmail">—</span>
+            </div>
+            <div class="userLine">
+              <span class="k">UID</span>
+              <span class="v mono" id="userUid">—</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="h2">Available downloads</h2>
+        <p class="sub">
+          This page is designed to open from the mobile app. Download your ID card and any title certificates.
+        </p>
+
+        <div id="emptyState" class="emptyState" hidden>
+          <div class="emptyTitle">Nothing to show</div>
+          <div class="emptyBody" id="emptyBody">
+            Open this page from the app to view your documents.
+          </div>
+        </div>
+
+        <div id="docsList"></div>
+      </section>
+    </div>
+
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="documents.js"></script>
+  </body>
+</html>

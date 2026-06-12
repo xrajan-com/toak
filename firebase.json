@@ -16,7 +16,7 @@
   },
   "hosting": {
     "site": "ten-of-a-kind-poker",
-    "public": "website/frontend",
+    "public": "hosting",
     "ignore": [
       "firebase.json",
       "**/.*",

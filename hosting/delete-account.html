@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ten of a Kind Poker | Delete Account</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body { max-width: 900px; margin: 0 auto; padding: 32px 20px 60px; }
+    h1 { margin-bottom: 12px; }
+    h2 { margin-top: 28px; margin-bottom: 10px; }
+    p { margin-bottom: 12px; line-height: 1.6; }
+    ul { margin: 0 0 16px 18px; line-height: 1.6; }
+    .panel { background: #111; border: 1px solid #2a2a2a; border-radius: 12px; padding: 16px; margin: 12px 0; }
+    .row { display: flex; gap: 12px; align-items: baseline; margin-bottom: 8px; }
+    .label { color: #b8b8b8; min-width: 90px; }
+    .value { color: #fff; word-break: break-all; }
+    .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; background: #1f2b33; color: #8dd1ff; font-size: 12px; }
+    a { color: inherit; text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Delete Account</h1>
+    <p>Use this page to request deletion of your Ten of a Kind Poker account and associated data.</p>
+    <span class="pill">Request form</span>
+  </header>
+
+  <main>
+    <h2>How to request deletion</h2>
+    <ol>
+      <li>Send an email to <strong>xrajan.com@gmail.com</strong> with the subject line "Delete my Ten of a Kind Poker account".</li>
+      <li>Include the account email and user ID (UID). If available, include your display name.</li>
+      <li>We will process the request and delete your account data.</li>
+    </ol>
+
+    <div class="panel">
+      <div class="row">
+        <div class="label">Email</div>
+        <div class="value" id="accountEmail">N/A</div>
+      </div>
+      <div class="row">
+        <div class="label">UID</div>
+        <div class="value" id="accountUid">N/A</div>
+      </div>
+      <div class="row">
+        <div class="label">Name</div>
+        <div class="value" id="accountName">N/A</div>
+      </div>
+      <p id="guestNote" style="display:none; color:#b8b8b8; margin: 8px 0 0;">
+        It looks like you are using guest mode. If you never signed in, you can remove local data by clearing app storage or uninstalling the app.
+      </p>
+      <p style="margin: 12px 0 0;">
+        <a id="emailLink" href="mailto:xrajan.com@gmail.com">Email support</a>
+      </p>
+    </div>
+
+    <h2>What we delete</h2>
+    <ul>
+      <li>Your authentication account (email/Google sign-in).</li>
+      <li>Profile data such as display name, bio, kingdom selection, and avatar metadata.</li>
+      <li>Gameplay progress, aura points, and leaderboard entries tied to your UID.</li>
+    </ul>
+
+    <h2>Retention</h2>
+    <p>Deletion requests are typically processed within 7-30 days. If you use guest mode only, data may be stored locally on your device and can be removed by uninstalling the app.</p>
+
+    <h2>Contact</h2>
+    <p>If you have questions, contact us at xrajan.com@gmail.com.</p>
+  </main>
+
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var email = params.get('email') || '';
+      var uid = params.get('uid') || '';
+      var name = params.get('name') || '';
+      var guest = params.get('guest') === '1';
+
+      var emailEl = document.getElementById('accountEmail');
+      var uidEl = document.getElementById('accountUid');
+      var nameEl = document.getElementById('accountName');
+      if (email) emailEl.textContent = email;
+      if (uid) uidEl.textContent = uid;
+      if (name) nameEl.textContent = name;
+
+      var guestNote = document.getElementById('guestNote');
+      if (guest) guestNote.style.display = 'block';
+
+      var bodyLines = [
+        'Please delete my Ten of a Kind Poker account.',
+        '',
+        'Email: ' + (email || 'N/A'),
+        'UID: ' + (uid || 'N/A'),
+        'Name: ' + (name || 'N/A')
+      ];
+      var mailto = 'mailto:xrajan.com@gmail.com' +
+        '?subject=' + encodeURIComponent('Delete my Ten of a Kind Poker account') +
+        '&body=' + encodeURIComponent(bodyLines.join('\\n'));
+      var link = document.getElementById('emailLink');
+      link.setAttribute('href', mailto);
+    })();
+  </script>
+</body>
+</html>

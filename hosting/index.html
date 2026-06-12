@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ten of a Kind Poker - Winner Takes All</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" href="favicon.png" type="image/png">
+  <link rel="icon" href="favicon-32x32.png" type="image/png" sizes="32x32">
+  <link rel="icon" href="favicon-16x16.png" type="image/png" sizes="16x16">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
+  <link rel="manifest" href="site.webmanifest">
+  <link rel="canonical" href="https://tenofakind.com/">
+</head>
+<body>
+  <div class="demo-loader" id="demoLoader">
+    <div class="demo-loader-box">
+      <img src="Logo.png" alt="Ten of a Kind Poker Logo" class="demo-loader-logo" />
+      <p class="demo-loader-text">Loading demo&hellip;</p>
+    </div>
+  </div>
+  <header role="banner">
+    <a href="/" class="site-logo-link" aria-label="Return to Ten of a Kind Poker homepage">
+      <img src="images/banner.png" alt="Ten of a Kind Poker" class="site-logo" />
+    </a>
+    <nav role="navigation">
+      <a href="#venues">Kingdom Atlas</a>
+      <a href="#features">Game Modes</a>
+      <a href="#footer-section">Support</a>
+      <a href="#" id="leaderboardLink">Leaderboard</a>
+      <a href="#" class="profile-icon-link">
+        <div class="profile-icon"></div>
+      </a>
+    </nav>
+  </header>
+  <section class="download-strip" aria-label="Download Ten of a Kind Poker for Android">
+    <div class="download-strip-copy">
+      <span class="download-kicker">Android app</span>
+      <strong>Take Ten of a Kind Poker with you.</strong>
+    </div>
+    <a
+      class="play-store-badge"
+      href="https://play.google.com/store/apps/details?id=com.tenofakind.poker"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Download Ten of a Kind Poker on Google Play"
+    >
+      <svg class="android-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M7.6 8.4h8.8c.7 0 1.3.6 1.3 1.3v6.5c0 .7-.6 1.3-1.3 1.3h-.7v2.1c0 .5-.4.9-.9.9s-.9-.4-.9-.9v-2.1h-3.8v2.1c0 .5-.4.9-.9.9s-.9-.4-.9-.9v-2.1h-.7c-.7 0-1.3-.6-1.3-1.3V9.7c0-.7.6-1.3 1.3-1.3Zm-3 1.2c.5 0 .9.4.9.9v4.4c0 .5-.4.9-.9.9s-.9-.4-.9-.9v-4.4c0-.5.4-.9.9-.9Zm14.8 0c.5 0 .9.4.9.9v4.4c0 .5-.4.9-.9.9s-.9-.4-.9-.9v-4.4c0-.5.4-.9.9-.9ZM8.1 4.4l-1-1.7c-.1-.2 0-.5.2-.6.2-.1.5 0 .6.2l1 1.8c.9-.4 1.9-.6 3.1-.6s2.2.2 3.1.6l1-1.8c.1-.2.4-.3.6-.2.2.1.3.4.2.6l-1 1.7c1.1.8 1.8 1.9 1.9 3.1H6.2c.1-1.2.8-2.3 1.9-3.1Zm1.5 1.4c-.3 0-.6.3-.6.6s.3.6.6.6.6-.3.6-.6-.3-.6-.6-.6Zm4.8 0c-.3 0-.6.3-.6.6s.3.6.6.6.6-.3.6-.6-.3-.6-.6-.6Z"/>
+      </svg>
+      <span class="play-store-copy">
+        <span>GET IT ON</span>
+        <strong>Google Play</strong>
+      </span>
+      <svg class="play-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M4.4 3.3c-.3.3-.4.7-.4 1.2v15c0 .5.1.9.4 1.2l.1.1 8.4-8.4v-.8L4.5 3.2l-.1.1Z" fill="#24b6ff"/>
+        <path d="m15.7 9.6-2.8 2.8v.2l2.8 2.8.1-.1 3.3-1.9c.9-.5.9-1.3 0-1.8l-3.3-1.9-.1-.1Z" fill="#ffd400"/>
+        <path d="m15.8 15.3-2.9-2.9-8.5 8.5c.5.5 1.2.5 2.1 0l9.3-5.6Z" fill="#00d084"/>
+        <path d="M15.8 9.7 6.5 4.1c-.9-.5-1.6-.5-2.1 0l8.5 8.5 2.9-2.9Z" fill="#ff3b30"/>
+      </svg>
+    </a>
+  </section>
+  <a
+    href="/web/"
+    class="demo-banner"
+    target="_blank"
+    rel="noopener"
+    aria-label="Launch the Ten of a Kind Poker browser demo in a new tab"
+  >
+    <span class="banner-title">Play Demo</span>
+  </a>
+
+  <main>
+    <div class="modal-overlay" id="leaderboardModal">
+      <div class="modal-content leaderboard-modal">
+  <button class="modal-close-button" id="closeLeaderboardModal">&times;</button>
+  <h2 class="modal-title">Likely Qualifiers for Main Event</h2>
+
+  <div class="table-scroll-wrapper">
+    <table class="leaderboard-table">
+      <thead>
+        <tr>
+          <th>Photo</th>
+          <th>Username</th>
+          <th>Kingdom</th>
+          <th>Winnings</th>
+        </tr>
+      </thead>
+      <tbody id="leaderboardTableBody">
+        <!-- JS will populate this -->
+      </tbody>
+    </table>
+  </div>
+</div>
+    </div>
+    <section class="hero">
+      <div class="hero-grid">
+        <div class="hero-content">
+          <p class="eyebrow hero-eyebrow">Winner Takes All • Since 2023</p>
+          <h2>Ten legendary kingdoms. One neon rail.</h2>
+          <p class="hero-subtext">
+            Ten of a Kind Poker lets you spar with AI kings forged from historic dynasties and global poker meccas.
+            Every felt is custom built, every anthem remixed, every showdown cinematic.
+          </p>
+          <div class="hero-actions">
+            <a
+              href="/web/"
+              class="modal-trigger primary"
+              target="_blank"
+              rel="noopener"
+            >Play Now</a>
+            <a href="#venues" class="modal-trigger ghost">Meet the Kingdoms</a>
+          </div>
+          <div class="hero-stats">
+            <div class="hero-stat">
+              <span class="stat-label">Kingdoms Live</span>
+              <span class="stat-value">20</span>
+            </div>
+            <div class="hero-stat">
+              <span class="stat-label">Seats per Table</span>
+              <span class="stat-value">10</span>
+            </div>
+            <div class="hero-stat">
+              <span class="stat-label">Format</span>
+              <span class="stat-value">Winner Takes All</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="venue-showcase" id="venues">
+      <div class="section-heading center">
+        <p class="eyebrow">Choose Your Kingdom</p>
+        <h3>Same tabs, same tiles as the in-game Venue Screen.</h3>
+        <p>Flip between the International Circuit and the Royal Indian Circuit: every felt keeps its flag, glow, and time zone.</p>
+      </div>
+      <div class="venue-tabs" role="tablist">
+        <button class="venue-tab active" data-target="world" role="tab" aria-selected="true">International Circuit</button>
+        <button class="venue-tab" data-target="india" role="tab" aria-selected="false">Royal Indian Circuit</button>
+      </div>
+      <div class="venue-grids">
+        <div class="venue-grid" data-group="india" role="tabpanel">
+          <article class="venue-card" style="--felt:#CBA014">
+            <div class="venue-card-flag">
+              <img src="images/venues/baroda.png" alt="Baroda flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+            <h4>Baroda</h4>
+            <p>Gaekwad palaces bankroll legends</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#761EB4">
+            <div class="venue-card-flag">
+              <img src="images/venues/hyderabad.png" alt="Hyderabad flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+            <h4>Hyderabad</h4>
+            <p>Pearl bazaar bluffs over chai</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#8B0000">
+            <div class="venue-card-flag">
+              <img src="images/venues/indore.png" alt="Indore flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+            <h4>Indore</h4>
+            <p>Rajwada night markets call raises</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#DC53DC">
+            <div class="venue-card-flag">
+              <img src="images/venues/jaipur.png" alt="Jaipur flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+            <h4>Jaipur</h4>
+            <p>Amber forts script palace traps</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#FF6B01">
+            <div class="venue-card-flag">
+              <img src="images/venues/maratha-empire.png" alt="Maratha Empire flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+            <h4>Maratha Empire</h4>
+            <p>War drums cue cavalry squeezes</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#5F413A">
+            <div class="venue-card-flag">
+              <img src="images/venues/mysore.png" alt="Mysore flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+            <h4>Mysore</h4>
+            <p>Sandalwood palaces sharpen reads</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#00A6E8">
+            <div class="venue-card-flag">
+              <img src="images/venues/new-delhi.png" alt="New Delhi flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+            <h4>New Delhi</h4>
+            <p>Cabinet hallways script hero calls</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#24247A">
+            <div class="venue-card-flag">
+              <img src="images/venues/sikh-empire.png" alt="Sikh Empire flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+            <h4>Sikh Empire</h4>
+            <p>Khalsa steel steadies ice bluffs</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#013220">
+            <div class="venue-card-flag">
+              <img src="images/venues/sikkim.png" alt="Sikkim flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+            <h4>Sikkim</h4>
+            <p>Kanchen winds cool mountain reads</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#556B2F">
+            <div class="venue-card-flag">
+              <img src="images/venues/travancore.png" alt="Travancore flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+            <h4>Travancore</h4>
+            <p>Backwater spices fuel slowrolls</p>
+            </div>
+          </article>
+        </div>
+        <div class="venue-grid active" data-group="world" role="tabpanel">
+          <article class="venue-card" style="--felt:#556B2F">
+            <div class="venue-card-flag">
+              <img src="images/venues/africa.png" alt="Africa flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+            <h4>Africa</h4>
+            <p>Savanna drums pace deep stacks</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#013220">
+            <div class="venue-card-flag">
+              <img src="images/venues/amazon.png" alt="Amazon flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+            <h4>Amazon</h4>
+            <p>Jungle riverboats host showdowns</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#24247A">
+            <div class="venue-card-flag">
+              <img src="images/venues/america.png" alt="America flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+            <h4>America</h4>
+            <p>Route 66 roadshows crown champs</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#5F413A">
+            <div class="venue-card-flag">
+              <img src="images/venues/arabia.png" alt="Arabia flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+            <h4>Arabia</h4>
+            <p>Souk falcons guard desert pots</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#CBA014">
+            <div class="venue-card-flag">
+              <img src="images/venues/australia.png" alt="Australia flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+            <h4>Australia</h4>
+            <p>Harbour lights meet outback grit</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#8B0000">
+            <div class="venue-card-flag">
+              <img src="images/venues/china.png" alt="China flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+            <h4>China</h4>
+            <p>Dragon parades mask river jams</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#DC53DC">
+            <div class="venue-card-flag">
+              <img src="images/venues/europe.png" alt="Europe flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+            <h4>Europe</h4>
+            <p>Alpine salons crown velvet kings</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#00A6E8">
+            <div class="venue-card-flag">
+              <img src="images/venues/india.png" alt="Global India flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+            <h4>India (Global)</h4>
+            <p>Diaspora anthems fuel wildcards</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#761EB4">
+            <div class="venue-card-flag">
+              <img src="images/venues/russia.png" alt="Russia flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+            <h4>Russia</h4>
+            <p>Aurora rails keep bluffs glacial</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#FF6B01">
+            <div class="venue-card-flag">
+              <img src="images/venues/southeast.png" alt="Southeast flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+            <h4>Southeast</h4>
+            <p>Monsoon bazaars spark snap calls</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="feature-panel" id="features">
+      <div class="section-heading center">
+        <p class="eyebrow">Everything synced with the app</p>
+        <h3>Jump into the circuit however you like.</h3>
+        <p>Guest mode, careers, hosts, and Texas Hold’em rules mirror the in-game experience.</p>
+      </div>
+      <div class="features" id="about-content">
+        <div class="feature" data-feature="play" tabindex="0">
+          <div class="feature-inner">
+            <div class="feature-face feature-front">
+              <h4>Play</h4>
+              <p>Guest</p>
+            </div>
+            <div class="feature-face feature-back">
+              <h4>Play as Guest</h4>
+              <p>Train yourself before the big game.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="feature" data-feature="career" tabindex="0">
+          <div class="feature-inner">
+            <div class="feature-face feature-front">
+              <h4>Start</h4>
+              <p>Career</p>
+            </div>
+            <div class="feature-face feature-back">
+              <h4>Start Your Career</h4>
+              <p>Compete like a true poker king.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="feature" data-feature="host" tabindex="0">
+          <div class="feature-inner">
+            <div class="feature-face feature-front">
+              <h4>Host An Event</h4>
+              <p>Invite Your Pals</p>
+            </div>
+            <div class="feature-face feature-back">
+              <h4>Host an Event</h4>
+              <p>Host your own table and invite friends.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="feature" data-feature="free" tabindex="0">
+          <div class="feature-inner">
+            <div class="feature-face feature-front">
+              <h4>It's Free!</h4>
+              <p>For Now</p>
+            </div>
+            <div class="feature-face feature-back">
+              <h4>It's Free!</h4>
+              <p>Yes, it’s free — but maybe not forever.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="feature" data-feature="rules" tabindex="0">
+          <div class="feature-inner">
+            <div class="feature-face feature-front">
+              <h4>Rules</h4>
+              <p>Texas Hold'em</p>
+            </div>
+            <div class="feature-face feature-back">
+              <h4>Texas Hold'em Rules</h4>
+              <p>We follow tournament-standard Texas Hold’em rules.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer id="footer-section">
+    <div class="footer-left">
+        &copy; 2025 Ten of a Kind Poker. All rights reserved.
+    </div>
+    <div class="footer-right">
+        <div class="footer-link-container">
+            <a href="#" id="aboutLink">About Us</a>
+            <div class="popup-message" id="aboutPopup">
+                <h2>About Us</h2>
+                <p>Just a passion project</p>
+                <p>The Author would like to stay anonymous.</p>
+                <button class="close-popup">&times;</button>
+            </div>
+        </div>
+         <div class="footer-link-container">
+            <a href="#" id="supportLink">Support</a>
+            <div class="popup-message" id="supportPopup">
+                <img src="Renoir.png" alt="Support" class="support-image">
+                <h2>"THE WILD DOESN'T FOLD"</h2>
+                <p>Hey there!</p>
+                <p>Meet Renoir</p>
+                <p>The Dealer</p>
+                <p>💌: xrajan.com@gmail.com</p>
+                <button class="close-popup">&times;</button>
+            </div>
+        </div>
+        <div class="footer-link-container">
+            <a href="disclaimer.html" id="disclaimerLink" target="_blank" rel="noopener noreferrer">Disclaimer</a>
+            <div class="popup-message" id="disclaimerPopup">
+                <h2>Disclaimer</h2>
+                <p>This experience is for entertainment and skill-building only.</p>
+                <p>No real-money gambling, prizes, or wagering.</p>
+                <p>Players must be 18+ and comply with local laws.</p>
+                <p>See full disclaimer for details.</p>
+                <p><a href="disclaimer.html" target="_blank" rel="noopener noreferrer">Read full disclaimer</a></p>
+                <button class="close-popup">&times;</button>
+            </div>
+        </div>
+        <div class="footer-link-container">
+            <a href="privacy.html" id="privacyLink" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+        </div>
+        <div class="footer-link-container">
+            <a href="delete-account.html" id="deleteAccountLink" target="_blank" rel="noopener noreferrer">Account Deletion</a>
+        </div>
+    </div>
+  </footer>
+
+  <div class="modal-overlay" id="loginRegisterModal">
+      <div class="modal-content">
+        <button class="modal-close-button" id="closeModal">&times;</button>
+        <h2 id="modalTitle">Login</h2>
+        <form id="loginForm">
+          <label for="loginEmail">Email:</label>
+          <input type="email" id="loginEmail" name="loginEmail" required><br>
+          <label for="loginPassword">Password:</label>
+          <input type="password" id="loginPassword" name="loginPassword" required><br>
+          <p><div class="forgot-password-container">
+    <a href="#" id="forgotPasswordLink">Forgot Password?</a>
+  </div>
+</p>
+          <button type="submit">Login</button>
+          <p class="modal-switch-text">Don't have an account? <a href="#" id="switchToRegister">Register here</a></p>
+        </form>
+        <form id="registerForm" style="display: none;">
+          <label for="userPhoto">Upload Photo:</label>
+          <input type="file" id="userPhoto" name="userPhoto" accept="image/*"><br>
+          <label for="registerUsername">Username:</label>
+          <input type="text" id="registerUsername" name="registerUsername" required><br>
+          <label for="registerKingdom">Choose Your Kingdom:</label>
+          <select id="registerKingdom" name="registerKingdom" required>
+          <option value="" disabled selected>-- Select Kingdom --</option>
+  <optgroup label="Indian Kingdoms">
+    <option value="Baroda">Baroda</option>
+    <option value="Hyderabad">Hyderabad</option>
+    <option value="Indore">Indore</option>
+    <option value="Jaipur">Jaipur</option>
+    <option value="Maratha Empire">Maratha Empire</option>
+    <option value="Mysore">Mysore</option>
+    <option value="New Delhi">New Delhi</option>
+    <option value="Sikh Empire">Sikh Empire</option>
+    <option value="Sikkim">Sikkim</option>
+    <option value="Travancore">Travancore</option>
+  </optgroup>
+  <optgroup label="International Venues">
+    <option value="Africa">Africa</option>
+    <option value="Amazon">Amazon</option>
+    <option value="America">America</option>
+    <option value="Arabia">Arabia</option>
+    <option value="Australia">Australia</option>
+    <option value="China">China</option>
+    <option value="Europe">Europe</option>
+    <option value="India">India</option>
+    <option value="Russia">Russia</option>
+    <option value="Southeast">Southeast</option>
+  </optgroup>
+</select><br>
+          <label for="registerEmail">Email:</label>
+          <input type="email" id="registerEmail" name="registerEmail" required><br>
+          <label for="registerPassword">Password:</label>
+          <input type="password" id="registerPassword" name="registerPassword" required><br>
+          <label for="confirmPassword">Confirm Password:</label>
+          <input type="password" id="confirmPassword" name="confirmPassword" required><br>
+          <label for="aboutUser">About (max 30 chars):</label>
+          <input type="text" id="aboutUser" name="aboutUser" maxlength="30"><br>
+          <button type="submit">Register</button>
+          <p class="modal-switch-text">Already have an account? <a href="#" id="switchToLogin">Login here</a></p>
+<div class="g-recaptcha" data-sitekey="YOUR_SITE_KEY_HERE"></div>
+</form>
+        </div>
+    </div>
+    <div class="modal-overlay" id="profileModal">
+      <div class="modal-content">
+        <button class="modal-close-button" id="closeProfileModal">&times;</button>
+        <h2 id="profileModalTitle">My Profile</h2>
+        <div class="profile-details">
+          <div class="profile-avatar-container">
+              <img id="profileAvatar" src="placeholder.jpg" alt="User Avatar">
+          </div>
+          <p><strong>Username:</strong> <span id="profileUsername">JohnDoe</span></p>
+          <p><strong>Email:</strong> <span id="profileEmail">johndoe@example.com</span></p>
+          <p><strong>Kingdom:</strong> <span id="profileKingdom">Not Set</span></p>
+          <p><strong>Total Prize Money:</strong> <span id="profilePrizeMoney">$0.00</span></p>
+        </div>
+        <div class="profile-actions">
+          <button id="editProfileBtn">Edit Profile</button>
+          <button id="logoutBtn">Logout</button>
+          <button id="viewIdCardBtn">View ID Card</button> </div>
+
+          <form id="editProfileForm" style="display: none; margin-top: 20px;">
+  <label for="editUsername">Username:</label>
+  <input type="text" id="editUsername" required><br>
+
+  <label for="editEmail">Email:</label>
+  <input type="email" id="editEmail" required><br>
+
+  <label for="editKingdom">Kingdom:</label>
+  <select id="editKingdom" required>
+    <option value="" disabled selected>-- Select Kingdom --</option>
+    <optgroup label="Indian Kingdoms">
+      <option value="Baroda">Baroda</option>
+      <option value="Hyderabad">Hyderabad</option>
+      <option value="Indore">Indore</option>
+      <option value="Jaipur">Jaipur</option>
+      <option value="Maratha Empire">Maratha Empire</option>
+      <option value="Mysore">Mysore</option>
+      <option value="New Delhi">New Delhi</option>
+      <option value="Sikh Empire">Sikh Empire</option>
+      <option value="Sikkim">Sikkim</option>
+      <option value="Travancore">Travancore</option>
+    </optgroup>
+    <optgroup label="International Venues">
+      <option value="Africa">Africa</option>
+      <option value="Amazon">Amazon</option>
+      <option value="America">America</option>
+      <option value="Arabia">Arabia</option>
+      <option value="Australia">Australia</option>
+      <option value="China">China</option>
+      <option value="Europe">Europe</option>
+      <option value="India">India</option>
+      <option value="Russia">Russia</option>
+      <option value="Southeast">Southeast</option>
+    </optgroup>
+  </select><br>
+
+  <label for="editAbout">About (max 30 chars):</label>
+  <input type="text" id="editAbout" maxlength="30"><br>
+
+  <button type="submit">Save Changes</button>
+</form>
+
+        <div class="id-card-display" style="display: none;">
+          <h3>YourOfficial ID Card</h3>
+          <div class="id-card">
+            <div class="id-card-header">
+              <h4>Player ID</h4>
+            </div>
+            <div class="id-card-body">
+              <div class="id-card-photo-container">
+                <img id="idCardPhoto" src="placeholder.jpg" alt="User Photo">
+              </div>
+              <div class="id-card-info">
+                <p><strong>Username:</strong> <span id="idCardUsername"></span></p>
+                <p><strong>Kingdom:</strong> <span id="idCardKingdom"></span></p>
+                <div class="id-card-flag-container">
+                  <img id="idCardKingdomFlag" src="" alt="Kingdom Flag">
+                </div>
+                <p class="id-card-about">"<span id="idCardAbout"></span>"</p>
+              </div>
+            </div>
+          </div>
+          <button id="closeIdCardBtn">Close ID Card</button>
+        </div>
+      </div>
+  </div>
+<div class="modal-overlay" id="featureModal">
+  <div class="modal-content">
+    <button class="modal-close-button" id="closeFeatureModal">&times;</button>
+    <h2 id="featureModalTitle">Feature Info</h2>
+    <p id="featureModalMessage"></p>
+  </div>
+</div>
+<div class="modal-overlay" id="venueDetailModal">
+  <div class="modal-content venue-detail-modal">
+    <button class="modal-close-button" id="closeVenueModal">&times;</button>
+    <p class="eyebrow" id="venueModalGroup">Kingdom Atlas</p>
+    <h2 id="venueModalTitle">Venue Forts</h2>
+    <p class="venue-modal-history" id="venueModalHistory"></p>
+    <div class="venue-fort-list" id="venueFortList"></div>
+  </div>
+</div>
+<div class="popup-message" id="featurePopup">
+  <h2 id="featurePopupTitle">Feature Info</h2>
+  <p id="featurePopupText"></p>
+  <button class="close-popup" id="closeFeaturePopup">&times;</button>
+</div>
+
+<!-- Firebase Auth (Web) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script>
+  firebase.initializeApp({
+    apiKey: "AIzaSyBDxo0Cz8BH8jomP0zsmkl9UBLDC2SS8L4",
+    authDomain: "ten-of-a-kind-poker.firebaseapp.com",
+    projectId: "ten-of-a-kind-poker",
+    storageBucket: "ten-of-a-kind-poker.firebasestorage.app",
+    messagingSenderId: "96098527170",
+    appId: "1:96098527170:web:ed0a4eb6867a11ee98185b",
+    measurementId: "G-TFF4CPM2J6",
+  });
+</script>
+
+  <script src="scripts.js" defer></script>
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+</body>
+</html>

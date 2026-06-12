@@ -2,12 +2,12 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-hosting_public_dir="$repo_root/website/frontend"
+hosting_public_dir="$repo_root/hosting"
 hosting_web_dir="$hosting_public_dir/web"
 
 if [[ ! -d "$hosting_public_dir" ]]; then
   echo "ERROR: Expected hosting public dir at: $hosting_public_dir" >&2
-  echo "       If you don't have the website repo checked out, update firebase.json or create this folder." >&2
+  echo "       The tracked hosting/ directory is required for Firebase Hosting deploys." >&2
   exit 1
 fi
 

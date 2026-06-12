@@ -55,6 +55,7 @@ app.*.map.json
 /android/app/release
 
 # Flutter web build output copied into the hosting site
+hosting/web/
 website/frontend/web/
 
 # Legacy/nested website checkout. Clean or merge it deliberately as a separate repo.
