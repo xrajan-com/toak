@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "intercept": {
+    "callBias": 0.0,
+    "raiseBias": 0.0,
+    "bluffBias": 0.0,
+    "valueBias": 0.0,
+    "sizeFactor": 1.0
+  },
+  "featureWeights": {}
+}
