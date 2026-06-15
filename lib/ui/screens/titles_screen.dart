@@ -31,9 +31,7 @@ class TitlesScreen extends StatelessWidget {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: isGuest
-          ? const _GuestEmpty()
-          : const _TitlesList(),
+      body: isGuest ? const _GuestEmpty() : const _TitlesList(),
     );
   }
 }
@@ -96,11 +94,11 @@ class _TitlesList extends StatelessWidget {
   Widget build(BuildContext context) {
     final progress = context.watch<CampaignProgressService>();
 
-    final india = _earnedForGroup(progress, VenueGroup.india, indianVenues);
-    final intl =
-        _earnedForGroup(progress, VenueGroup.international, internationalVenues);
-
-    final all = [...india, ...intl];
+    final earnedByGroup = <VenueGroup, List<_TitleEntry>>{
+      for (final group in kVenueGroups)
+        group: _earnedForGroup(progress, group, venuesForGroup(group)),
+    };
+    final all = earnedByGroup.values.expand((entries) => entries).toList();
     if (all.isEmpty) {
       return const Center(
         child: Padding(
@@ -122,19 +120,12 @@ class _TitlesList extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 18),
       children: [
-        if (india.isNotEmpty) ...[
-          const _SectionHeader(title: 'India'),
-          ...india.map((e) => _TitleTile(
-                entry: e,
-              )),
-          const SizedBox(height: 14),
-        ],
-        if (intl.isNotEmpty) ...[
-          const _SectionHeader(title: 'International'),
-          ...intl.map((e) => _TitleTile(
-                entry: e,
-              )),
-        ],
+        for (final group in kVenueGroups)
+          if (earnedByGroup[group]!.isNotEmpty) ...[
+            _SectionHeader(title: venueGroupLabel(group)),
+            ...earnedByGroup[group]!.map((e) => _TitleTile(entry: e)),
+            const SizedBox(height: 14),
+          ],
       ],
     );
   }

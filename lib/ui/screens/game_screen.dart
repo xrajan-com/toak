@@ -65,102 +65,60 @@ class _BotSpec {
   });
 }
 
-// 30 Indian bots (3 per kingdom)
+// 25 Indian bots
 const List<_BotSpec> _indianBotSpecs = <_BotSpec>[
   // Maratha Empire
   _BotSpec('Arjun Deshmukh', 'Maratha Empire', 'Fort-born legend, no punts'),
-  _BotSpec('Vidya Patil', 'Maratha Empire', 'Chai jokes, tight folds',
-      female: true),
-  _BotSpec('Sameer Pawar', 'Maratha Empire', 'Warhorse legend, pure value'),
-  // Mysore
-  _BotSpec('Kaveri Rao', 'Mysore', 'Palace queen, trophy hunter', female: true),
-  _BotSpec('Rohan Iyengar', 'Mysore', 'Silk smile, savage shove'),
-  _BotSpec('Meenakshi Gowda', 'Mysore', 'Sandalwood sweet, snap rage',
-      female: true),
-  // Sikh Empire
-  _BotSpec('Gurdeep Singh', 'Sikh Empire', 'Turban jokes, iron patience'),
-  _BotSpec('Amrita Kaur', 'Sikh Empire', 'Langar laughs, sneaky traps',
-      female: true),
-  _BotSpec('Harjit Sandhu', 'Sikh Empire', 'Bhangra heat, mean barrels'),
-  // Jaipur
-  _BotSpec('Rajvi Rathore', 'Jaipur', 'Pink city, sharp tongue bets',
-      female: true),
-  _BotSpec('Pratap Singh', 'Jaipur', 'Amber chill, fold like art'),
-  _BotSpec('Smriti Vyas', 'Jaipur', 'Reads you, roasts you, repeats',
-      female: true),
-  // Baroda
-  _BotSpec('Neel Patel', 'Baroda', 'Laxmi luck, legend hands'),
-  _BotSpec('Bhavna Joshi', 'Baroda', 'Garbha grin, spicy 3-bet', female: true),
-  _BotSpec('Kishor Mehta', 'Baroda', 'Statue-still, river surgeon'),
-  // Hyderabad
-  _BotSpec('Arjun Reddy', 'Hyderabad', 'Charminar fire, no mercy'),
-  _BotSpec('Ayesha Qureshi', 'Hyderabad', 'Pearl smile, sharp elbows',
-      female: true),
-  _BotSpec('Jay Naidu', 'Hyderabad', 'Biryani hot, temper hotter'),
-  // Indore
-  _BotSpec('Tarun Malhotra', 'Indore', 'Sarafa swagger, shove first'),
-  _BotSpec('Pooja Sharma', 'Indore', 'Poha polite, river vicious',
-      female: true),
-  _BotSpec('Devansh Agrawal', 'Indore', 'Rajwada chill, fold with flair'),
-  // Sikkim
-  _BotSpec('Geeta Chhetri', 'Sikkim', 'Peak zen, giggles at bluffs',
-      female: true),
-  _BotSpec('Sonu Biswas', 'Sikkim', 'Ridge-run rager, snap jams'),
-  _BotSpec('Karan Bhutia', 'Sikkim', 'Yak stare, insta-overbet'),
-  // New Delhi
-  _BotSpec('Arvind Chundawat', 'New Delhi', 'Metro timing, meme machine'),
-  _BotSpec('Farhan Siddiqui', 'New Delhi', 'Ring-road rage, rejam ready'),
-  _BotSpec('Meera Luthra', 'New Delhi', 'Monsoon mood, mean raises',
-      female: true),
-  // Travancore
-  _BotSpec('Anil Nair', 'Travancore', 'Backwater zen, laughs at tilts'),
-  _BotSpec('Lekha Pillai', 'Travancore', 'Peppery reads, burn stacks',
-      female: true),
-  _BotSpec('Mohan Menon', 'Travancore', 'Coconut grin, snapcall savage'),
-
-  // --- Super-bots ---
-  // Maratha Empire
   _BotSpec('Bajirao Kale', 'Maratha Empire', 'ICM emperor, final boss'),
   _BotSpec('Savitri Shinde', 'Maratha Empire', 'Fortress queen, flawless KO',
       female: true),
   // Mysore
-  _BotSpec('Veerendra Wodeyar', 'Mysore', 'Palace prince, zero punts'),
+  _BotSpec('Kaveri Rao', 'Mysore', 'Palace queen, trophy hunter', female: true),
   _BotSpec('Anvika Nayak', 'Mysore', 'Trap legend, clean execution',
       female: true),
   // Sikh Empire
+  _BotSpec('Amrita Kaur', 'Sikh Empire', 'Langar laughs, sneaky traps',
+      female: true),
   _BotSpec('Jaspreet Dhillon', 'Sikh Empire', 'Grit GOAT, river royalty'),
   _BotSpec('Harleen Kaur', 'Sikh Empire', 'Steel nerves, mythic runouts',
       female: true),
   // Jaipur
+  _BotSpec('Rajvi Rathore', 'Jaipur', 'Pink city, sharp tongue bets',
+      female: true),
   _BotSpec('Kunal Rathore', 'Jaipur', 'Desert king, unbluffable'),
-  _BotSpec('Ishita Shekhawat', 'Jaipur', 'Pink-city legend, ice cold',
-      female: true),
   // Baroda
+  _BotSpec('Neel Patel', 'Baroda', 'Laxmi luck, legend hands'),
   _BotSpec('Siddharth Gaekwad', 'Baroda', 'Edge finder, crown collector'),
-  _BotSpec('Rupa Desai', 'Baroda', 'Temple calm, ruthless legend',
-      female: true),
   // Hyderabad
+  _BotSpec('Ayesha Qureshi', 'Hyderabad', 'Pearl smile, sharp elbows',
+      female: true),
   _BotSpec('Faizan Ali', 'Hyderabad', 'Bazaar boss, squeeze machine'),
   _BotSpec('Zoya Begum', 'Hyderabad', 'Razor thin, queen of jams',
       female: true),
   // Indore
-  _BotSpec('Naveen Rajput', 'Indore', 'Sarafa shark, silent KO'),
+  _BotSpec('Pooja Sharma', 'Indore', 'Poha polite, river vicious',
+      female: true),
   _BotSpec('Kriti Jain', 'Indore', 'Turn pressure, trophy hunter',
       female: true),
   // Sikkim
+  _BotSpec('Geeta Chhetri', 'Sikkim', 'Peak zen, giggles at bluffs',
+      female: true),
   _BotSpec('Tenzin Lama', 'Sikkim', 'Snowline sage, no mistakes'),
-  _BotSpec('Pema Sherpa', 'Sikkim', 'Ridge queen, nuts only', female: true),
   // New Delhi
+  _BotSpec('Meera Luthra', 'New Delhi', 'Monsoon mood, mean raises',
+      female: true),
   _BotSpec('Kabir Verma', 'New Delhi', 'Ring-road ruler, no leaks'),
   _BotSpec('Ananya Khanna', 'New Delhi', 'Metro queen, stone-cold ICM',
       female: true),
   // Travancore
+  _BotSpec('Lekha Pillai', 'Travancore', 'Peppery reads, burn stacks',
+      female: true),
   _BotSpec('Hari Krishnan', 'Travancore', 'Backwater boss, value surgeon'),
   _BotSpec('Nila Varma', 'Travancore', 'Coconut crown, river tyrant',
       female: true),
 ];
 
-// 30 International bots (3 per kingdom)
+// 75 shared International, Euro, and Oceania bots.
 const List<_BotSpec> _intlBotSpecs = <_BotSpec>[
   // N. America
   _BotSpec('Jordan Walker', 'N. America', 'Route 66 legend, no brakes'),
@@ -209,6 +167,35 @@ const List<_BotSpec> _intlBotSpecs = <_BotSpec>[
   _BotSpec('Somchai Prasert', 'Asia', 'Monsoon rage, barrels rain'),
   _BotSpec('Putri Dewi', 'Asia', 'Temple trapper, trophy shelf', female: true),
 
+  // Southeast Asia
+  _BotSpec('Anong Srisai', 'Asia', 'Bangkok calm, snap steals', female: true),
+  _BotSpec('Chaiwat Rattan', 'Asia', 'Chiang Mai pressure lines'),
+  _BotSpec('Linh Pham', 'Asia', 'Saigon river, clean calls', female: true),
+  _BotSpec('Minh Tran', 'Asia', 'Hanoi grind, cold 4-bets'),
+  _BotSpec('Sari Wijaya', 'Asia', 'Jakarta tempo, thin value', female: true),
+  _BotSpec('Bima Santoso', 'Asia', 'Bali smile, brutal jams'),
+  _BotSpec('Nur Aisyah', 'Asia', 'KL lights, tricky barrels', female: true),
+  _BotSpec('Hakim Rahman', 'Asia', 'Penang read, quiet traps'),
+  _BotSpec('Mei Lin Tan', 'Asia', 'Marina solver, no leaks', female: true),
+  _BotSpec('Darren Lim', 'Asia', 'Lion City, clean pressure'),
+  _BotSpec('Rosa Delgado', 'Asia', 'Manila rhythm, hero calls', female: true),
+  _BotSpec('Miguel Santos', 'Asia', 'Cebu heat, fearless shoves'),
+  _BotSpec('Thandar Hlaing', 'Asia', 'Yangon patience, sharp traps',
+      female: true),
+  _BotSpec('Ko Aung Min', 'Asia', 'Mandalay steel, slow burn'),
+  _BotSpec('Sreymom Vann', 'Asia', 'Phnom Penh calm, river sting',
+      female: true),
+  _BotSpec('Dara Sok', 'Asia', 'Angkor focus, clean folds'),
+  _BotSpec('Kanya Vong', 'Asia', 'Vientiane quiet, value cuts', female: true),
+  _BotSpec('Somphone Keo', 'Asia', 'Mekong grind, crisp calls'),
+  _BotSpec('Liyana Salleh', 'Asia', 'Bandar poise, soft smiles', female: true),
+  _BotSpec('Azim Mahmud', 'Asia', 'Borneo patience, cold jams'),
+  _BotSpec('Ana Soares', 'Asia', 'Dili breeze, sharp calls', female: true),
+  _BotSpec('Mateus da Costa', 'Asia', 'Timor grit, fearless value'),
+  _BotSpec('Fitri Halim', 'Asia', 'Surabaya snap, turn heat', female: true),
+  _BotSpec('Van Nguyen', 'Asia', 'Da Nang pressure, neat traps'),
+  _BotSpec('Nattida Kwan', 'Asia', 'Phuket charm, hard reads', female: true),
+
   // --- Super-bots ---
   // Africa
   _BotSpec('Kofi Adeyemi', 'Africa', 'Savanna GOAT, pounce mode'),
@@ -251,35 +238,30 @@ const List<_BotSpec> _intlBotSpecs = <_BotSpec>[
 const Map<String, int> _botAuraByName = {
   // Indian roster
   'Arjun Deshmukh': 94,
-  'Vidya Patil': 88,
-  'Sameer Pawar': 80,
   'Kaveri Rao': 95,
-  'Rohan Iyengar': 79,
-  'Meenakshi Gowda': 85,
-  'Gurdeep Singh': 82,
   'Amrita Kaur': 92,
-  'Harjit Sandhu': 81,
   'Rajvi Rathore': 83,
-  'Pratap Singh': 76,
-  'Smriti Vyas': 85,
   'Neel Patel': 90,
-  'Bhavna Joshi': 83,
-  'Kishor Mehta': 80,
-  'Arjun Reddy': 89,
   'Ayesha Qureshi': 85,
-  'Jay Naidu': 77,
-  'Tarun Malhotra': 85,
   'Pooja Sharma': 85,
-  'Devansh Agrawal': 84,
   'Geeta Chhetri': 82,
-  'Sonu Biswas': 79,
-  'Karan Bhutia': 85,
-  'Arvind Chundawat': 92,
-  'Farhan Siddiqui': 85,
   'Meera Luthra': 85,
-  'Anil Nair': 88,
   'Lekha Pillai': 85,
-  'Mohan Menon': 75,
+  'Bajirao Kale': 99,
+  'Savitri Shinde': 96,
+  'Anvika Nayak': 96,
+  'Jaspreet Dhillon': 99,
+  'Harleen Kaur': 97,
+  'Kunal Rathore': 97,
+  'Siddharth Gaekwad': 98,
+  'Faizan Ali': 97,
+  'Zoya Begum': 95,
+  'Kriti Jain': 95,
+  'Tenzin Lama': 98,
+  'Kabir Verma': 97,
+  'Ananya Khanna': 95,
+  'Hari Krishnan': 96,
+  'Nila Varma': 95,
 
   // International roster
   'Jordan Walker': 93,
@@ -312,31 +294,33 @@ const Map<String, int> _botAuraByName = {
   'Mahe Nguyen': 85,
   'Somchai Prasert': 77,
   'Putri Dewi': 80,
+  'Anong Srisai': 86,
+  'Chaiwat Rattan': 82,
+  'Linh Pham': 88,
+  'Minh Tran': 84,
+  'Sari Wijaya': 87,
+  'Bima Santoso': 83,
+  'Nur Aisyah': 89,
+  'Hakim Rahman': 81,
+  'Mei Lin Tan': 95,
+  'Darren Lim': 86,
+  'Rosa Delgado': 87,
+  'Miguel Santos': 82,
+  'Thandar Hlaing': 85,
+  'Ko Aung Min': 80,
+  'Sreymom Vann': 84,
+  'Dara Sok': 79,
+  'Kanya Vong': 83,
+  'Somphone Keo': 78,
+  'Liyana Salleh': 86,
+  'Azim Mahmud': 81,
+  'Ana Soares': 82,
+  'Mateus da Costa': 80,
+  'Fitri Halim': 85,
+  'Van Nguyen': 84,
+  'Nattida Kwan': 88,
 
-  // Added super-bots (no custom avatars yet)
-  // India
-  'Bajirao Kale': 99,
-  'Savitri Shinde': 96,
-  'Veerendra Wodeyar': 99,
-  'Anvika Nayak': 96,
-  'Jaspreet Dhillon': 99,
-  'Harleen Kaur': 97,
-  'Kunal Rathore': 97,
-  'Ishita Shekhawat': 96,
-  'Siddharth Gaekwad': 98,
-  'Rupa Desai': 95,
-  'Faizan Ali': 97,
-  'Zoya Begum': 95,
-  'Naveen Rajput': 96,
-  'Kriti Jain': 95,
-  'Tenzin Lama': 98,
-  'Pema Sherpa': 96,
-  'Kabir Verma': 97,
-  'Ananya Khanna': 95,
-  'Hari Krishnan': 96,
-  'Nila Varma': 95,
-
-  // International
+  // International super-bots
   'Kofi Adeyemi': 97,
   'Amara Ndlovu': 96,
   'Rafael Mendes': 95,
@@ -511,9 +495,13 @@ class _GameScreenState extends State<GameScreen>
     if (v.contains('n. america') || v.contains('north america')) {
       return DealerAvatarStyle.northAmerica;
     }
-    if (v.contains('arabia')) return DealerAvatarStyle.arabia;
+    if (v.contains('arabia') || v.contains('persia')) {
+      return DealerAvatarStyle.arabia;
+    }
     if (v.contains('australia')) return DealerAvatarStyle.australia;
-    if (v.contains('china')) return DealerAvatarStyle.china;
+    if (v.contains('china') || v.contains('far east')) {
+      return DealerAvatarStyle.china;
+    }
     if (v.contains('europe')) return DealerAvatarStyle.europe;
     if (v == 'india') return DealerAvatarStyle.india;
     if (v.contains('russia')) return DealerAvatarStyle.russia;
@@ -633,13 +621,39 @@ class _GameScreenState extends State<GameScreen>
     'australia': 'assets/images/watermarks/australia.svg',
     'russia': 'assets/images/watermarks/russia.svg',
     'arabia': 'assets/images/watermarks/arabia.svg',
+    'persia': 'assets/images/watermarks/arabia.svg',
     'africa': 'assets/images/watermarks/africa.svg',
     'amazon': 'assets/images/watermarks/amazon.svg',
     'europe': 'assets/images/watermarks/europe.svg',
+    'far east': 'assets/images/watermarks/china.svg',
     'n. america': 'assets/images/watermarks/america.svg',
     's. america': 'assets/images/watermarks/amazon.svg',
+    'asia rest': 'assets/images/watermarks/southeast.svg',
     'asia': 'assets/images/watermarks/southeast.svg',
     'southeast': 'assets/images/watermarks/southeast.svg',
+    'britain': 'assets/images/watermarks/Britain/britain.svg',
+    'france': 'assets/images/watermarks/France/france.svg',
+    'italy': 'assets/images/watermarks/Italy/italy.svg',
+    'spain': 'assets/images/watermarks/Spain/spain.svg',
+    'portugal': 'assets/images/watermarks/Portugal/portugal.svg',
+    'north sea': 'assets/images/watermarks/North Sea/north_sea.svg',
+    'scandinavia': 'assets/images/watermarks/Scandinavia/scandinavia.svg',
+    'baltic marches':
+        'assets/images/watermarks/Baltic Marches/baltic_marches.svg',
+    'russia & siberia':
+        'assets/images/watermarks/Russia & Siberia/russia_siberia.svg',
+    'mediterranean': 'assets/images/watermarks/Mediterranean/mediterranean.svg',
+    'alaska': 'assets/images/watermarks/Alaska/alaska.svg',
+    'caribbean': 'assets/images/watermarks/Caribbean/caribbean.svg',
+    'dragonland': 'assets/images/watermarks/Dragonland/dragonland.svg',
+    'straits': 'assets/images/watermarks/Straits/straits.svg',
+    'indian ocean': 'assets/images/watermarks/Indian Ocean/indian_ocean.svg',
+    'pacific': 'assets/images/watermarks/Pacific/pacific.svg',
+    'british isles': 'assets/images/watermarks/British Isles/british_isles.svg',
+    'french isles': 'assets/images/watermarks/French Isles/french_isles.svg',
+    'dutch isles': 'assets/images/watermarks/Dutch Isles/dutch_isles.svg',
+    'american isles':
+        'assets/images/watermarks/American Isles/american_isles.svg',
   };
 
   bool get _useSubKingdomWatermark {
@@ -676,46 +690,29 @@ class _GameScreenState extends State<GameScreen>
     return _monumentForVenue[vn] ?? 'assets/images/watermarks/india.svg';
   }
 
-  Future<void> _pickRandomSubKingdomWatermarkIfAny() async {
+  Future<void> _pickSubKingdomWatermarkIfAny() async {
     if (!_useSubKingdomWatermark) return;
 
     final kingdomName = (widget.venue?.name ?? '').toString().trim();
     if (kingdomName.isEmpty) return;
 
-    final candidates = await WatermarkResolver.listKingdomFolderWatermarks(
+    final idx = widget.campaignSubKingdomIndex;
+    if (idx == null) return;
+
+    final path = await WatermarkResolver.subKingdomWatermarkFor(
       kingdomName: kingdomName,
+      subKingdomIndex: idx,
     );
-    if (candidates.isEmpty) return;
+    if (path == null) return;
 
-    final safe = _preferSafeWatermarks(candidates);
-    final pool = safe.isNotEmpty ? safe : candidates;
-    final String? path = await _firstLoadableWatermark(pool);
-    if (path == null || !mounted) return;
+    try {
+      await rootBundle.load(path);
+    } catch (_) {
+      return;
+    }
+
+    if (!mounted) return;
     setState(() => _monumentPathOverride = path);
-  }
-
-  List<String> _preferSafeWatermarks(List<String> candidates) {
-    final safe = <String>[];
-    for (final c in candidates) {
-      if (_isSafeAssetPath(c)) safe.add(c);
-    }
-    return safe;
-  }
-
-  Future<String?> _firstLoadableWatermark(List<String> candidates) async {
-    final pool = List<String>.from(candidates)..shuffle(_rng);
-    for (final path in pool) {
-      try {
-        await rootBundle.load(path);
-        return path;
-      } catch (_) {}
-    }
-    return pool.isNotEmpty ? pool.first : null;
-  }
-
-  bool _isSafeAssetPath(String path) {
-    // Avoid characters that break web asset URL loading (spaces, parentheses).
-    return RegExp(r'^[A-Za-z0-9_./-]+$').hasMatch(path);
   }
 
   // ---- Hero helpers
@@ -1820,7 +1817,7 @@ class _GameScreenState extends State<GameScreen>
     _bindProfileListener(profileService);
     _botFixedThinkDelays.clear();
 
-    unawaited(_pickRandomSubKingdomWatermarkIfAny());
+    unawaited(_pickSubKingdomWatermarkIfAny());
 
     // Start with hidden cards; mirror Renoir’s reveal signal
     _showSeatCards = false;

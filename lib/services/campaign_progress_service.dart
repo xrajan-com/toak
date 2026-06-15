@@ -34,9 +34,9 @@ class CampaignProgressService extends ChangeNotifier {
     if (db == null) return;
     final doc = db.collection('campaign_progress').doc(uid);
     _sub = doc.snapshots().listen(
-      _applySnapshot,
-      onError: (e) => debugPrint('Campaign progress stream error: $e'),
-    );
+          _applySnapshot,
+          onError: (e) => debugPrint('Campaign progress stream error: $e'),
+        );
   }
 
   void _applySnapshot(DocumentSnapshot<Map<String, dynamic>> snap) {
@@ -252,8 +252,7 @@ class CampaignProgressService extends ChangeNotifier {
   }
 
   int titlesEarned(VenueGroup group) {
-    final venues =
-        group == VenueGroup.india ? indianVenues : internationalVenues;
+    final venues = venuesForGroup(group);
     int count = 0;
     for (final v in venues) {
       if (hasTitle(group: group, kingdomName: v.name)) count++;

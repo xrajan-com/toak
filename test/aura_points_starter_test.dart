@@ -19,13 +19,15 @@ void main() {
     service.bindUserId('registered-user', registeredUser: true);
     final paid = await service.payEntryFee(
       group: VenueGroup.india,
-      amount: 3000,
+      amount: 2000,
     );
 
     expect(paid, isTrue);
-    expect(service.totalAup, aup.kRegisteredStarterAup - 3000);
-    expect(service.indiaAup, 2000);
-    expect(service.internationalAup, 5000);
+    expect(service.totalAup, aup.kRegisteredStarterAup - 2000);
+    expect(service.indiaAup, 500);
+    expect(service.internationalAup, 2500);
+    expect(service.euroAup, 2500);
+    expect(service.oceaniaAup, 2500);
   });
 
   test('anonymous users do not receive starter AUP', () async {

@@ -105,7 +105,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Player ID copied'),
+        content: Text('Account ID copied'),
         duration: Duration(milliseconds: 900),
       ),
     );
@@ -219,10 +219,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             if (hasPlayerId) ...[
               _ProfileInfoTile(
                 icon: Icons.badge_outlined,
-                label: 'Player ID',
+                label: 'Account ID',
                 value: playerId,
                 trailing: IconButton(
-                  tooltip: 'Copy Player ID',
+                  tooltip: 'Copy Account ID',
                   icon: const Icon(Icons.copy, color: AppColors.blue, size: 18),
                   onPressed: () => _copyPlayerId(playerId),
                 ),

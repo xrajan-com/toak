@@ -1,11 +1,9 @@
 // lib/ui/screens/venue_screen.dart
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:ten_of_a_kind_poker/config/campaign_events.dart' as ce;
 import 'package:ten_of_a_kind_poker/config/kingdom_titles.dart';
 import 'package:ten_of_a_kind_poker/config/sub_kingdoms.dart'
     show subKingdomCountFor;
@@ -111,20 +109,20 @@ class _VenueScreenState extends State<VenueScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tab;
   static const _bannerAsset = 'assets/images/banner.png';
-  static const String _guestDocsHint =
-      'Sign-up to generate ID card — play Career to win Titles.';
 
   @override
   void initState() {
     super.initState();
-    _tab = TabController(length: 2, vsync: this);
+    _tab = TabController(length: kVenueGroups.length, vsync: this);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await DeckCache.ensureDeckReady();
       if (!mounted) return;
       final ctx = context;
-      for (final v in [...indianVenues, ...internationalVenues]) {
-        precacheImage(AssetImage(v.flagAsset), ctx);
+      for (final group in kVenueGroups) {
+        for (final v in venuesForGroup(group)) {
+          precacheImage(AssetImage(v.flagAsset), ctx);
+        }
       }
       precacheImage(const AssetImage(_bannerAsset), ctx);
       if (!mounted) return;
@@ -174,69 +172,8 @@ class _VenueScreenState extends State<VenueScreen>
     if (!mounted) return;
   }
 
-  Future<void> _openLocalIdCard() async {
-    final auth = context.read<AuthService>();
-    final user = auth.currentUser;
-    final bool isGuest = user == null || user.isAnonymous;
-    if (isGuest) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(_guestDocsHint),
-          duration: Duration(milliseconds: 1200),
-        ),
-      );
-      return;
-    }
-
-    final profile = context.read<ProfileService>();
-    final progress = context.read<CampaignProgressService>();
-    final titles = <String>[];
-
-    void collect(VenueGroup group, List<VenueTheme> venues) {
-      for (final v in venues) {
-        if (!progress.hasTitle(group: group, kingdomName: v.name)) continue;
-        titles.add(kingdomTitleFor(group: group, kingdomName: v.name));
-      }
-    }
-
-    collect(VenueGroup.india, indianVenues);
-    collect(VenueGroup.international, internationalVenues);
-
-    String displayName = (profile.displayName ?? '').toString().trim();
-    if (displayName.isEmpty) {
-      displayName = (user?.displayName ?? '').toString().trim();
-    }
-    final String email = (profile.email ?? user?.email ?? '').toString().trim();
-    if (displayName.isEmpty && email.contains('@')) {
-      displayName = email.split('@').first.trim();
-    }
-    if (displayName.isEmpty) displayName = 'Player';
-
-    final String about = ProfileService.normalizeAbout(profile.about);
-    final String kingdom = (profile.kingdom ?? '').trim();
-
-    if (!mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => _PlayerIdCardScreen(
-          bannerAsset: _bannerAsset,
-          name: displayName,
-          email: email,
-          playerId: user?.uid ?? '',
-          about: about,
-          kingdom: kingdom,
-          titles: titles,
-          avatarBytes: profile.avatarBytes,
-          issuedAt: DateTime.now(),
-        ),
-      ),
-    );
-  }
-
   int _totalSubKingdomsForGroup(VenueGroup group) {
-    final venues =
-        group == VenueGroup.india ? indianVenues : internationalVenues;
+    final venues = venuesForGroup(group);
     int total = 0;
     for (final v in venues) {
       total += subKingdomCountFor(group: group, kingdomName: v.name);
@@ -248,8 +185,7 @@ class _VenueScreenState extends State<VenueScreen>
     CampaignProgressService progress,
     VenueGroup group,
   ) {
-    final venues =
-        group == VenueGroup.india ? indianVenues : internationalVenues;
+    final venues = venuesForGroup(group);
     int total = 0;
     for (final v in venues) {
       total += progress.clearedCount(group: group, kingdomName: v.name);
@@ -377,22 +313,9 @@ class _VenueScreenState extends State<VenueScreen>
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: isGuest
-                        ? () {
-                            Navigator.pop(ctx);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(_guestDocsHint),
-                                duration: Duration(milliseconds: 1200),
-                              ),
-                            );
-                          }
-                        : () {
-                            Navigator.pop(ctx);
-                            unawaited(_openLocalIdCard());
-                          },
-                    icon: const Icon(Icons.badge_outlined),
-                    label: const Text('Player ID'),
+                    onPressed: () => _openProfileEditor(ctx),
+                    icon: const Icon(Icons.dashboard_customize_outlined),
+                    label: const Text('Dashboard'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.blue,
                       side: const BorderSide(color: AppColors.blue),
@@ -458,17 +381,21 @@ class _VenueScreenState extends State<VenueScreen>
     final about = (profile.about ?? '').trim();
     final kingdom = (profile.kingdom ?? '').trim();
 
-    final indiaTotal = _totalSubKingdomsForGroup(VenueGroup.india);
-    final intlTotal = _totalSubKingdomsForGroup(VenueGroup.international);
-    final indiaCleared =
-        _clearedSubKingdomsForGroup(progress, VenueGroup.india);
-    final intlCleared =
-        _clearedSubKingdomsForGroup(progress, VenueGroup.international);
-
-    final titlesIndia = progress.titlesEarned(VenueGroup.india);
-    final titlesIntl = progress.titlesEarned(VenueGroup.international);
-    final titlesTotal = titlesIndia + titlesIntl;
-    final titlesPossible = indianVenues.length + internationalVenues.length;
+    final subProgress = <VenueGroup, ({int cleared, int total})>{
+      for (final group in kVenueGroups)
+        group: (
+          cleared: _clearedSubKingdomsForGroup(progress, group),
+          total: _totalSubKingdomsForGroup(group),
+        ),
+    };
+    final titlesTotal = kVenueGroups.fold<int>(
+      0,
+      (sum, group) => sum + progress.titlesEarned(group),
+    );
+    final titlesPossible = kVenueGroups.fold<int>(
+      0,
+      (sum, group) => sum + venuesForGroup(group).length,
+    );
 
     final double auraValue = aura.isLoaded ? aura.totalAura.clamp(0, 100) : 0;
     final int auraInt = auraValue.round().clamp(0, 100);
@@ -562,14 +489,12 @@ class _VenueScreenState extends State<VenueScreen>
                   ],
                 ),
                 const SizedBox(height: 14),
-                _MetricRow(
-                  label: 'Sub‑Kingdoms cleared (India)',
-                  value: '$indiaCleared / $indiaTotal',
-                ),
-                _MetricRow(
-                  label: 'Sub‑Kingdoms cleared (International)',
-                  value: '$intlCleared / $intlTotal',
-                ),
+                for (final group in kVenueGroups)
+                  _MetricRow(
+                    label: 'Sub‑Kingdoms cleared (${venueGroupLabel(group)})',
+                    value:
+                        '${subProgress[group]!.cleared} / ${subProgress[group]!.total}',
+                  ),
                 _MetricRow(
                   label: 'Titles earned',
                   value: '$titlesTotal / $titlesPossible',
@@ -680,6 +605,14 @@ class _VenueScreenState extends State<VenueScreen>
                   label: 'International AUP',
                   value: aup.formatAup(intl),
                 ),
+                _MetricRow(
+                  label: 'Euro AUP',
+                  value: aup.formatAup(aura.euroAup),
+                ),
+                _MetricRow(
+                  label: 'Oceania AUP',
+                  value: aup.formatAup(aura.oceaniaAup),
+                ),
               ],
             ),
           ),
@@ -756,355 +689,18 @@ class _VenueScreenState extends State<VenueScreen>
         child: TabBarView(
           controller: _tab,
           children: [
-            _VenueGrid(
-              group: VenueGroup.international,
-              venues: internationalVenues,
-              mode: widget.mode,
-              onOpen: _openVenue,
-            ),
-            _VenueGrid(
-              group: VenueGroup.india,
-              venues: indianVenues,
-              mode: widget.mode,
-              onOpen: _openVenue,
-            ),
+            for (final group in kVenueGroups)
+              _VenueGrid(
+                group: group,
+                venues: venuesForGroup(group),
+                mode: widget.mode,
+                onOpen: _openVenue,
+              ),
           ],
         ),
       ),
     );
   }
-}
-
-class _PlayerIdCardScreen extends StatelessWidget {
-  final String bannerAsset;
-  final String name;
-  final String email;
-  final String playerId;
-  final String about;
-  final String kingdom;
-  final List<String> titles;
-  final Uint8List? avatarBytes;
-  final DateTime issuedAt;
-
-  const _PlayerIdCardScreen({
-    required this.bannerAsset,
-    required this.name,
-    required this.email,
-    required this.playerId,
-    required this.about,
-    required this.kingdom,
-    required this.titles,
-    required this.avatarBytes,
-    required this.issuedAt,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.black,
-      appBar: AppBar(
-        backgroundColor: AppColors.black,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        title: const Text('Player ID'),
-        actions: [
-          IconButton(
-            tooltip: 'Edit Profile',
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ProfileScreen()),
-              );
-            },
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(18),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: _PlayerLicenseCard(
-                bannerAsset: bannerAsset,
-                name: name,
-                email: email,
-                playerId: playerId,
-                about: about,
-                kingdom: kingdom,
-                titles: titles,
-                avatarBytes: avatarBytes,
-                issuedAt: issuedAt,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PlayerLicenseCard extends StatelessWidget {
-  final String bannerAsset;
-  final String name;
-  final String email;
-  final String playerId;
-  final String about;
-  final String kingdom;
-  final List<String> titles;
-  final Uint8List? avatarBytes;
-  final DateTime issuedAt;
-
-  const _PlayerLicenseCard({
-    required this.bannerAsset,
-    required this.name,
-    required this.email,
-    required this.playerId,
-    required this.about,
-    required this.kingdom,
-    required this.titles,
-    required this.avatarBytes,
-    required this.issuedAt,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final titleLine =
-        titles.isEmpty ? 'Career titles pending' : titles.take(2).join(' / ');
-    return RepaintBoundary(
-      child: Container(
-        width: 760,
-        height: 480,
-        decoration: BoxDecoration(
-          color: const Color(0xFFF4F1E8),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.black, width: 2.2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.38),
-              blurRadius: 28,
-              offset: const Offset(0, 14),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(21),
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: CustomPaint(painter: _LicenseBackgroundPainter()),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      children: [
-                        SizedBox(
-                          width: 270,
-                          height: 64,
-                          child: Image.asset(bannerAsset, fit: BoxFit.contain),
-                        ),
-                        const Spacer(),
-                        const Text(
-                          'PLAYER LICENSE',
-                          style: TextStyle(
-                            color: Color(0xFF141414),
-                            fontSize: 25,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    Expanded(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _LicenseField(
-                                  label: 'Name',
-                                  value: name,
-                                  large: true,
-                                ),
-                                const SizedBox(height: 14),
-                                _LicenseField(label: 'Email', value: email),
-                                const SizedBox(height: 14),
-                                _LicenseField(
-                                  label: 'Player ID',
-                                  value: playerId,
-                                ),
-                                const SizedBox(height: 14),
-                                _LicenseField(
-                                  label: 'Kingdom',
-                                  value: kingdom.isEmpty ? 'Not set' : kingdom,
-                                ),
-                                const SizedBox(height: 14),
-                                _LicenseField(
-                                  label: 'About',
-                                  value: about.isEmpty
-                                      ? ProfileService.defaultAbout
-                                      : about,
-                                ),
-                                const SizedBox(height: 14),
-                                _LicenseField(
-                                    label: 'Titles', value: titleLine),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 28),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Container(
-                                width: 166,
-                                height: 204,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  border: Border.all(
-                                    color: Colors.black.withValues(alpha: 0.72),
-                                    width: 1.5,
-                                  ),
-                                ),
-                                clipBehavior: Clip.antiAlias,
-                                child: avatarBytes == null
-                                    ? Image.asset(
-                                        'assets/images/default_profile.png',
-                                        fit: BoxFit.cover,
-                                      )
-                                    : Image.memory(
-                                        avatarBytes!,
-                                        fit: BoxFit.cover,
-                                      ),
-                              ),
-                              const SizedBox(height: 12),
-                              Container(
-                                width: 166,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    color: Colors.black.withValues(alpha: 0.36),
-                                  ),
-                                  color: Colors.white.withValues(alpha: 0.58),
-                                ),
-                                child: Text(
-                                  _issuedLabel(issuedAt),
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    color: Color(0xFF2B2B2B),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ),
-                              const Spacer(),
-                              const Text(
-                                'LOCAL DEVICE COPY',
-                                style: TextStyle(
-                                  color: Color(0xFFB21818),
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.6,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  static String _issuedLabel(DateTime date) {
-    final d = date.toLocal();
-    final y = d.year.toString().padLeft(4, '0');
-    final m = d.month.toString().padLeft(2, '0');
-    final day = d.day.toString().padLeft(2, '0');
-    return 'ISSUED $y-$m-$day';
-  }
-}
-
-class _LicenseField extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool large;
-
-  const _LicenseField({
-    required this.label,
-    required this.value,
-    this.large = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label.toUpperCase(),
-          style: const TextStyle(
-            color: Color(0xFF6C6A66),
-            fontSize: 11,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0.8,
-          ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          value.isEmpty ? '-' : value,
-          maxLines: large ? 1 : 2,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: large ? 30 : 17,
-            height: 1.05,
-            fontWeight: large ? FontWeight.w900 : FontWeight.w800,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _LicenseBackgroundPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2
-      ..color = Colors.black.withValues(alpha: 0.055);
-    for (double x = -size.height; x < size.width; x += 34) {
-      canvas.drawLine(
-          Offset(x, size.height), Offset(x + size.height, 0), paint);
-    }
-
-    final sealPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 8
-      ..color = const Color(0xFFB21818).withValues(alpha: 0.055);
-    canvas.drawCircle(
-        Offset(size.width * 0.47, size.height * 0.55), 104, sealPaint);
-    canvas.drawCircle(
-        Offset(size.width * 0.47, size.height * 0.55), 72, sealPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _LicenseBackgroundPainter oldDelegate) => false;
 }
 
 class _MetricRow extends StatelessWidget {
@@ -1361,6 +957,8 @@ class _TitleAndTabsState extends State<_TitleAndTabs> {
         ),
         _chip(0, 'International', color: _red, textOn: Colors.white),
         _chip(1, 'India', color: _blue, textOn: Colors.black),
+        _chip(2, 'Euro', color: Colors.green, textOn: Colors.white),
+        _chip(3, 'Oceania', color: Colors.yellow, textOn: Colors.black),
       ],
     );
   }
@@ -1551,33 +1149,16 @@ class _VenueTileState extends State<_VenueTile> {
   @override
   Widget build(BuildContext context) {
     final v = widget.venue;
-    final String infoLine = () {
-      if (widget.mode == VenueEntryMode.quickGame) {
-        return 'FREE • Quick Game';
-      }
-      try {
-        final int freeIdx = ce.freeSubKingdomIndexFor(
-          group: widget.group,
-          kingdomName: v.name,
-        );
-        final spec = ce.subKingdomEventSpec(
-          group: widget.group,
-          kingdomName: v.name,
-          subKingdomIndex: freeIdx,
-        );
-        return 'FREE • ${spec.prizePoolLabel}';
-      } catch (_) {
-        try {
-          final main = ce.kingdomMainEventSpec(
-            group: widget.group,
-            kingdomName: v.name,
-          );
-          return main.prizePoolLabel;
-        } catch (_) {
-          return '';
-        }
-      }
-    }();
+    final int fortCount = subKingdomCountFor(
+      group: widget.group,
+      kingdomName: v.name,
+    );
+    final String fortLabel = fortCount == 1 ? 'Fort' : 'Forts';
+    final String titleName = kingdomTitleFor(
+      group: widget.group,
+      kingdomName: v.name,
+    );
+    final String infoLine = '$fortCount $fortLabel, Title: $titleName';
 
     // Stronger border color
     final borderColor =

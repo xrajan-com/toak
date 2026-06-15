@@ -133,12 +133,6 @@ const Map<String, CurrencySpec> _intlCurrencyByKingdom = <String, CurrencySpec>{
     locale: 'zh_CN',
     baseKingdomPrizePool: 18000,
   ),
-  'Europe': CurrencySpec(
-    code: 'EUR',
-    prefix: '€ ',
-    locale: 'en_IE',
-    baseKingdomPrizePool: 2800,
-  ),
   'India': kCurrencyINR,
   'Russia': CurrencySpec(
     code: 'RUB',
@@ -151,6 +145,36 @@ const Map<String, CurrencySpec> _intlCurrencyByKingdom = <String, CurrencySpec>{
     prefix: 'S\$ ',
     locale: 'en_SG',
     baseKingdomPrizePool: 3200,
+  ),
+  'Far East': CurrencySpec(
+    code: 'JPY',
+    prefix: '¥ ',
+    locale: 'ja_JP',
+    baseKingdomPrizePool: 450000,
+  ),
+  'Asia Rest': CurrencySpec(
+    code: 'SGD',
+    prefix: 'S\$ ',
+    locale: 'en_SG',
+    baseKingdomPrizePool: 3200,
+  ),
+  'Central Asia': CurrencySpec(
+    code: 'USD',
+    prefix: '\$',
+    locale: 'en_US',
+    baseKingdomPrizePool: 3000,
+  ),
+  'Persia': CurrencySpec(
+    code: 'USD',
+    prefix: '\$',
+    locale: 'en_US',
+    baseKingdomPrizePool: 3000,
+  ),
+  'Europe': CurrencySpec(
+    code: 'EUR',
+    prefix: '€ ',
+    locale: 'en_IE',
+    baseKingdomPrizePool: 2800,
   ),
 };
 
@@ -195,7 +219,20 @@ String canonicalKingdomName({
         lower == 'n. america') {
       return 'N. America';
     }
-    if (lower == 'southeast') return 'Asia';
+    if (lower == 'far east' || lower == 'east asia') return 'Far East';
+    if (lower == 'asia rest' ||
+        lower == 'mainland asia' ||
+        lower == 'southeast' ||
+        lower == 'asia') {
+      return 'Asia Rest';
+    }
+    if (lower == 'europe' || lower == 'europe kingdom') return 'Europe';
+    if (lower == 'persia' ||
+        lower == 'persia & mesopotamia' ||
+        lower == 'persia and mesopotamia' ||
+        lower == 'mesopotamia') {
+      return 'Persia';
+    }
   }
   return t;
 }
@@ -382,10 +419,6 @@ List<int> _subKingdomTableSizesForKingdom({
   if (group == VenueGroup.india && canonicalKingdomName == 'Mysore') {
     forceSubKingdomTableSize('Bengaluru', 8);
   }
-  if (group == VenueGroup.international && canonicalKingdomName == 'Europe') {
-    forceSubKingdomTableSize('Helsinki', 8);
-  }
-
   byGroup[canonicalKingdomName] = List<int>.unmodifiable(sizes);
   return byGroup[canonicalKingdomName]!;
 }
@@ -415,9 +448,8 @@ Map<String, int> _kingdomGoldMultipliersForGroup(VenueGroup group) {
   final cached = _kingdomMultiplierCache[group];
   if (cached != null) return cached;
 
-  final List<String> kingdoms = (group == VenueGroup.india
-          ? indianVenues.map((v) => v.name)
-          : internationalVenues.map((v) => v.name))
+  final List<String> kingdoms = venuesForGroup(group)
+      .map((v) => v.name)
       .map((n) => n.trim())
       .where((n) => n.isNotEmpty)
       .toSet()

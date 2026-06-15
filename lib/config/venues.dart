@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum VenueGroup { india, international }
+enum VenueGroup { international, india, euro, oceania }
 
 class VenueTheme {
   final String name;
@@ -160,14 +160,6 @@ const List<VenueTheme> internationalVenues = [
       flagAsset: 'assets/images/flags/arabia.png',
       timezoneOffsetMinutes: 180),
   VenueTheme(
-      name: 'Australia',
-      background: _bg,
-      felt: kFeltTurmeric,
-      accent: _red,
-      accentAlt: _blue,
-      flagAsset: 'assets/images/flags/australia.png',
-      timezoneOffsetMinutes: 600),
-  VenueTheme(
       name: 'China',
       background: _bg,
       felt: kFeltRed,
@@ -176,35 +168,230 @@ const List<VenueTheme> internationalVenues = [
       flagAsset: 'assets/images/flags/china.png',
       timezoneOffsetMinutes: 480),
   VenueTheme(
-      name: 'Europe',
+      name: 'Far East',
       background: _bg,
       felt: kFeltMagenta,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/europe.png',
-      timezoneOffsetMinutes: 120),
+      flagAsset: 'assets/images/flags/china.png',
+      timezoneOffsetMinutes: 540),
   VenueTheme(
-      name: 'India',
+      name: 'Asia Rest',
       background: _bg,
       felt: kFeltSkyBlue,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/india.png',
-      timezoneOffsetMinutes: 330),
+      flagAsset: 'assets/images/flags/asean.png',
+      timezoneOffsetMinutes: 420),
   VenueTheme(
-      name: 'Russia',
+      name: 'Central Asia',
       background: _bg,
       felt: kFeltDeepPurple,
       accent: _red,
       accentAlt: _blue,
       flagAsset: 'assets/images/flags/russia.png',
-      timezoneOffsetMinutes: 180),
+      timezoneOffsetMinutes: 300),
   VenueTheme(
-      name: 'Asia',
+      name: 'Persia',
       background: _bg,
       felt: kFeltOrange,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/asean.png',
-      timezoneOffsetMinutes: 420),
+      flagAsset: 'assets/images/flags/arabia.png',
+      timezoneOffsetMinutes: 210),
+  VenueTheme(
+      name: 'Europe',
+      background: _bg,
+      felt: kFeltTurmeric,
+      accent: _red,
+      accentAlt: _blue,
+      flagAsset: 'assets/images/flags/europe.png',
+      timezoneOffsetMinutes: 120),
 ];
+
+const List<VenueTheme> euroVenues = [
+  VenueTheme(
+      name: 'Britain',
+      background: _bg,
+      felt: kFeltNavyBlue,
+      accent: _red,
+      accentAlt: _blue,
+      flagAsset: 'assets/images/flags/euro/britain.png',
+      timezoneOffsetMinutes: 0),
+  VenueTheme(
+      name: 'France',
+      background: _bg,
+      felt: kFeltSkyBlue,
+      accent: _red,
+      accentAlt: _blue,
+      flagAsset: 'assets/images/flags/euro/france.png',
+      timezoneOffsetMinutes: 60),
+  VenueTheme(
+      name: 'Italy',
+      background: _bg,
+      felt: kFeltOliveGreen,
+      accent: _red,
+      accentAlt: _blue,
+      flagAsset: 'assets/images/flags/euro/italy.png',
+      timezoneOffsetMinutes: 60),
+  VenueTheme(
+      name: 'Spain',
+      background: _bg,
+      felt: kFeltRed,
+      accent: _red,
+      accentAlt: _blue,
+      flagAsset: 'assets/images/flags/euro/spain.png',
+      timezoneOffsetMinutes: 60),
+  VenueTheme(
+      name: 'Portugal',
+      background: _bg,
+      felt: kFeltTurmeric,
+      accent: _red,
+      accentAlt: _blue,
+      flagAsset: 'assets/images/flags/euro/portugal.png',
+      timezoneOffsetMinutes: 0),
+  VenueTheme(
+      name: 'North Sea',
+      background: _bg,
+      felt: kFeltDeepPurple,
+      accent: _red,
+      accentAlt: _blue,
+      flagAsset: 'assets/images/flags/euro/north_sea.png',
+      timezoneOffsetMinutes: 60),
+  VenueTheme(
+      name: 'Scandinavia',
+      background: _bg,
+      felt: kFeltDarkGreen,
+      accent: _red,
+      accentAlt: _blue,
+      flagAsset: 'assets/images/flags/euro/scandinavia.png',
+      timezoneOffsetMinutes: 60),
+  VenueTheme(
+      name: 'Baltic Marches',
+      background: _bg,
+      felt: kFeltOrange,
+      accent: _red,
+      accentAlt: _blue,
+      flagAsset: 'assets/images/flags/euro/baltic_marches.png',
+      timezoneOffsetMinutes: 120),
+  VenueTheme(
+      name: 'Russia & Siberia',
+      background: _bg,
+      felt: kFeltMagenta,
+      accent: _red,
+      accentAlt: _blue,
+      flagAsset: 'assets/images/flags/euro/russia_siberia.png',
+      timezoneOffsetMinutes: 180),
+  VenueTheme(
+      name: 'Mediterranean',
+      background: _bg,
+      felt: kFeltDarkBrown,
+      accent: _red,
+      accentAlt: _blue,
+      flagAsset: 'assets/images/flags/euro/mediterranean.png',
+      timezoneOffsetMinutes: 120),
+];
+
+const List<VenueTheme> oceaniaVenues = [
+  VenueTheme(
+      name: 'Alaska',
+      background: _bg,
+      felt: kFeltNavyBlue,
+      accent: _red,
+      accentAlt: _blue,
+      flagAsset: 'assets/images/flags/oceania/alaska.png',
+      timezoneOffsetMinutes: -540),
+  VenueTheme(
+      name: 'Caribbean',
+      background: _bg,
+      felt: kFeltTurmeric,
+      accent: _red,
+      accentAlt: _blue,
+      flagAsset: 'assets/images/flags/oceania/caribbean.png',
+      timezoneOffsetMinutes: -240),
+  VenueTheme(
+      name: 'Dragonland',
+      background: _bg,
+      felt: kFeltRed,
+      accent: _red,
+      accentAlt: _blue,
+      flagAsset: 'assets/images/flags/oceania/dragonland.png',
+      timezoneOffsetMinutes: 480),
+  VenueTheme(
+      name: 'Straits',
+      background: _bg,
+      felt: kFeltSkyBlue,
+      accent: _red,
+      accentAlt: _blue,
+      flagAsset: 'assets/images/flags/oceania/straits.png',
+      timezoneOffsetMinutes: 480),
+  VenueTheme(
+      name: 'Indian Ocean',
+      background: _bg,
+      felt: kFeltDarkGreen,
+      accent: _red,
+      accentAlt: _blue,
+      flagAsset: 'assets/images/flags/oceania/indian_ocean.png',
+      timezoneOffsetMinutes: 330),
+  VenueTheme(
+      name: 'Pacific',
+      background: _bg,
+      felt: kFeltOliveGreen,
+      accent: _red,
+      accentAlt: _blue,
+      flagAsset: 'assets/images/flags/oceania/pacific.png',
+      timezoneOffsetMinutes: 720),
+  VenueTheme(
+      name: 'British Isles',
+      background: _bg,
+      felt: kFeltDeepPurple,
+      accent: _red,
+      accentAlt: _blue,
+      flagAsset: 'assets/images/flags/oceania/british_isles.png',
+      timezoneOffsetMinutes: -240),
+  VenueTheme(
+      name: 'French Isles',
+      background: _bg,
+      felt: kFeltMagenta,
+      accent: _red,
+      accentAlt: _blue,
+      flagAsset: 'assets/images/flags/oceania/french_isles.png',
+      timezoneOffsetMinutes: -240),
+  VenueTheme(
+      name: 'Dutch Isles',
+      background: _bg,
+      felt: kFeltOrange,
+      accent: _red,
+      accentAlt: _blue,
+      flagAsset: 'assets/images/flags/oceania/dutch_isles.png',
+      timezoneOffsetMinutes: -240),
+  VenueTheme(
+      name: 'American Isles',
+      background: _bg,
+      felt: kFeltDarkBrown,
+      accent: _red,
+      accentAlt: _blue,
+      flagAsset: 'assets/images/flags/oceania/american_isles.png',
+      timezoneOffsetMinutes: -600),
+];
+
+List<VenueTheme> venuesForGroup(VenueGroup group) => switch (group) {
+      VenueGroup.international => internationalVenues,
+      VenueGroup.india => indianVenues,
+      VenueGroup.euro => euroVenues,
+      VenueGroup.oceania => oceaniaVenues,
+    };
+
+const List<VenueGroup> kVenueGroups = <VenueGroup>[
+  VenueGroup.international,
+  VenueGroup.india,
+  VenueGroup.euro,
+  VenueGroup.oceania,
+];
+
+String venueGroupLabel(VenueGroup group) => switch (group) {
+      VenueGroup.international => 'International Circuit',
+      VenueGroup.india => 'Indian Circuit',
+      VenueGroup.euro => 'Euro Circuit',
+      VenueGroup.oceania => 'Oceania Circuit',
+    };

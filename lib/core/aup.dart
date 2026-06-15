@@ -5,12 +5,12 @@ import 'package:ten_of_a_kind_poker/config/campaign_events.dart' as ce;
 import 'package:ten_of_a_kind_poker/config/sub_kingdoms.dart'
     show subKingdomCountFor;
 import 'package:ten_of_a_kind_poker/config/venues.dart'
-    show VenueGroup, indianVenues, internationalVenues;
+    show VenueGroup, venuesForGroup;
 
 const int kAupPerAura = 1000000;
 const int kAuraMilliPerAura = 1000;
 const int kAupMaxAuraPerCircuit = 50;
-const int kAupMaxAuraTotal = 100;
+const int kAupMaxAuraTotal = 200;
 
 const int kAupPerCircuit = 50000000;
 
@@ -20,7 +20,7 @@ const int kAupRewardUnit = 1000;
 /// Entry fees are also quantized to keep numbers easy to remember.
 const int kAupEntryFeeUnit = kAupRewardUnit;
 
-const int kAupMaxTotal = kAupPerCircuit * 2;
+const int kAupMaxTotal = kAupPerCircuit * 4;
 const int kRegisteredStarterAup = 10000;
 const int kRewardedAdAupBonus = 2000;
 
@@ -283,7 +283,7 @@ Map<String, int> _kingdomTotalsForGroup(VenueGroup group) {
   final cached = _kingdomTotalsCache[group];
   if (cached != null) return cached;
 
-  final venues = group == VenueGroup.india ? indianVenues : internationalVenues;
+  final venues = venuesForGroup(group);
   final names = <String>{
     for (final v in venues)
       ce.canonicalKingdomName(group: group, kingdomName: v.name),

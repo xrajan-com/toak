@@ -2,7 +2,7 @@ name: ten_of_a_kind_poker
 description: A Flutter app for Ten Of A Kind poker tournament
 publish_to: 'none'
 
-version: 1.2.8+58
+version: 1.2.8+60
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -59,29 +59,51 @@ flutter:
     # Main images
     - assets/images/
     - assets/images/flags/
+    - assets/images/flags/euro/
     - assets/images/flags/indian/
     - assets/images/flags/international/
+    - assets/images/flags/oceania/
     - assets/images/cards/
     - assets/images/watermarks/
     - assets/images/watermarks/Africa/
     - assets/images/watermarks/Arabia/
     - assets/images/watermarks/Asia/
     - assets/images/watermarks/Australia/
+    - assets/images/watermarks/Alaska/
+    - assets/images/watermarks/American Isles/
+    - assets/images/watermarks/Baltic Marches/
     - assets/images/watermarks/Baroda/
+    - assets/images/watermarks/Britain/
+    - assets/images/watermarks/British Isles/
+    - assets/images/watermarks/Caribbean/
     - assets/images/watermarks/China/
+    - assets/images/watermarks/Dragonland/
+    - assets/images/watermarks/Dutch Isles/
     - assets/images/watermarks/Europe/
+    - assets/images/watermarks/France/
+    - assets/images/watermarks/French Isles/
     - assets/images/watermarks/Hyderabad/
     - assets/images/watermarks/India/
+    - assets/images/watermarks/Indian Ocean/
     - assets/images/watermarks/Indore/
+    - assets/images/watermarks/Italy/
     - assets/images/watermarks/Jaipur/
     - assets/images/watermarks/Maratha Empire/
+    - assets/images/watermarks/Mediterranean/
     - assets/images/watermarks/Mysore/
     - assets/images/watermarks/N. America/
     - assets/images/watermarks/New Delhi/
+    - assets/images/watermarks/North Sea/
+    - assets/images/watermarks/Pacific/
+    - assets/images/watermarks/Portugal/
     - assets/images/watermarks/Russia/
+    - assets/images/watermarks/Russia & Siberia/
     - assets/images/watermarks/S. America/
+    - assets/images/watermarks/Scandinavia/
     - assets/images/watermarks/Sikh Empire/
     - assets/images/watermarks/Sikkim/
+    - assets/images/watermarks/Spain/
+    - assets/images/watermarks/Straits/
     - assets/images/watermarks/Travancore/
     - assets/images/avatars/bots/
     - assets/ml/

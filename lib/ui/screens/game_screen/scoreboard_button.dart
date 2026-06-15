@@ -11,11 +11,11 @@ Future<void> showScoreboardSheet(
 }) async {
   // Sort: playing first, then chips desc; busted at bottom
   final sorted = [...seats]..sort((a, b) {
-    final ax = a.busted ? 0 : 1;
-    final bx = b.busted ? 0 : 1;
-    if (ax != bx) return bx.compareTo(ax);
-    return b.chips.compareTo(a.chips);
-  });
+      final ax = a.busted ? 0 : 1;
+      final bx = b.busted ? 0 : 1;
+      if (ax != bx) return bx.compareTo(ax);
+      return b.chips.compareTo(a.chips);
+    });
 
   int? maxChips;
   for (final s in seats) {
@@ -87,6 +87,29 @@ Future<void> showScoreboardSheet(
       'russia': 'assets/images/flags/russia.png',
       'asia': 'assets/images/flags/asean.png',
       'southeast': 'assets/images/flags/asean.png',
+      // Euro circuit
+      'britain': 'assets/images/flags/euro/britain.png',
+      'france': 'assets/images/flags/euro/france.png',
+      'italy': 'assets/images/flags/euro/italy.png',
+      'spain': 'assets/images/flags/euro/spain.png',
+      'portugal': 'assets/images/flags/euro/portugal.png',
+      'north sea': 'assets/images/flags/euro/north_sea.png',
+      'scandinavia': 'assets/images/flags/euro/scandinavia.png',
+      'baltic marches': 'assets/images/flags/euro/baltic_marches.png',
+      'russia & siberia': 'assets/images/flags/euro/russia_siberia.png',
+      'russia and siberia': 'assets/images/flags/euro/russia_siberia.png',
+      'mediterranean': 'assets/images/flags/euro/mediterranean.png',
+      // Oceania circuit
+      'alaska': 'assets/images/flags/oceania/alaska.png',
+      'caribbean': 'assets/images/flags/oceania/caribbean.png',
+      'dragonland': 'assets/images/flags/oceania/dragonland.png',
+      'straits': 'assets/images/flags/oceania/straits.png',
+      'indian ocean': 'assets/images/flags/oceania/indian_ocean.png',
+      'pacific': 'assets/images/flags/oceania/pacific.png',
+      'british isles': 'assets/images/flags/oceania/british_isles.png',
+      'french isles': 'assets/images/flags/oceania/french_isles.png',
+      'dutch isles': 'assets/images/flags/oceania/dutch_isles.png',
+      'american isles': 'assets/images/flags/oceania/american_isles.png',
     };
     return flags[k] ?? '';
   }
@@ -135,8 +158,8 @@ Future<void> showScoreboardSheet(
               behavior: HitTestBehavior.opaque,
               onTap: () => Navigator.of(sheetContext).pop(),
               child: Padding(
-                padding:
-                    EdgeInsets.fromLTRB(16, 12, 16, media.viewInsets.bottom + 24),
+                padding: EdgeInsets.fromLTRB(
+                    16, 12, 16, media.viewInsets.bottom + 24),
                 child: DecoratedBox(
                   decoration:
                       go.renoirGlassPanelDecoration(radius: 18, opacity: 0.68),
@@ -177,14 +200,15 @@ Future<void> showScoreboardSheet(
                             shrinkWrap: true,
                             physics: const BouncingScrollPhysics(),
                             itemCount: sorted.length,
-                            separatorBuilder: (_, __) =>
-                                const Divider(color: Colors.white12, height: 10),
+                            separatorBuilder: (_, __) => const Divider(
+                                color: Colors.white12, height: 10),
                             itemBuilder: (_, i) {
                               final s = sorted[i];
                               final kingdom = s.kingdom.trim();
                               final about = s.about.trim();
-                              final aboutDisplay =
-                                  about.isNotEmpty ? truncateNice(about, 40) : '—';
+                              final aboutDisplay = about.isNotEmpty
+                                  ? truncateNice(about, 40)
+                                  : '—';
                               final Color accentColor = go.feltColorForKingdom(
                                 kingdom.isNotEmpty ? kingdom : null,
                               );
@@ -230,7 +254,8 @@ Future<void> showScoreboardSheet(
                                                 text: ' ($kingdom)',
                                                 style: TextStyle(
                                                   color: accentColor.withValues(
-                                                      alpha: busted ? 0.28 : 1.0),
+                                                      alpha:
+                                                          busted ? 0.28 : 1.0),
                                                   fontWeight: FontWeight.w600,
                                                   fontSize: 13,
                                                   height: 1.05,

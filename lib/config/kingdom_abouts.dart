@@ -19,12 +19,36 @@ const Map<VenueGroup, Map<String, String>> kKingdomAbouts = {
     'S. America': 'Jungle Fury, River Authority',
     'N. America': 'Continental Edge, Bold Value',
     'Arabia': 'Desert Honor, Dagger Bluffs',
-    'Australia': 'Stoic Tablecraft, True Value',
     'China': 'Dragon Order, Impeccable Lines',
-    'Europe': 'Measured Ranges, Noble Pots',
-    'India': 'Ancient Skill, Modern Value',
-    'Russia': 'Winter Discipline, Iron Lines',
-    'Asia': 'Eastern Poise, Surgical Rivers',
+    'Far East': 'Castle Calm, Samurai Value',
+    'Asia Rest': 'River Citadels, Sharp Lines',
+    'Central Asia': 'Steppe Steel, Cold Pressure',
+    'Persia': 'Shah Walls, Desert Reads',
+    'Europe': 'Imperial Keeps, Noble Pots',
+  },
+  VenueGroup.euro: <String, String>{
+    'Britain': 'Crown Walls, Iron Calls',
+    'France': 'Chateau Grace, River Bite',
+    'Italy': 'Rocca Nerves, Clean Value',
+    'Spain': 'Alcazar Pride, Bold Lines',
+    'Portugal': 'Atlantic Forts, Steady Pots',
+    'North Sea': 'Lowland Walls, Deep Reads',
+    'Scandinavia': 'Nordic Calm, Sharp Steel',
+    'Baltic Marches': 'Border Keeps, Hard Pressure',
+    'Russia & Siberia': 'Winter Forts, Iron Lines',
+    'Mediterranean': 'Sea Citadels, Old Power',
+  },
+  VenueGroup.oceania: <String, String>{
+    'Alaska': 'Northern Posts, Cold Nerves',
+    'Caribbean': 'Island Forts, Hot Rivers',
+    'Dragonland': 'Harbor Walls, Dragon Value',
+    'Straits': 'Trade Lanes, Tight Reads',
+    'Indian Ocean': 'Monsoon Forts, Calm Value',
+    'Pacific': 'Ocean Posts, Brave Calls',
+    'British Isles': 'Colonial Keeps, Hard Lines',
+    'French Isles': 'Island Bastions, Clean Pots',
+    'Dutch Isles': 'Harbor Forts, Merchant Edge',
+    'American Isles': 'Pacific Batteries, Bold Play',
   },
 };
 
@@ -46,7 +70,20 @@ String _canonicalKingdomName(VenueGroup group, String kingdomName) {
         lower == 'n. america') {
       return 'N. America';
     }
-    if (lower == 'southeast') return 'Asia';
+    if (lower == 'far east' || lower == 'east asia') return 'Far East';
+    if (lower == 'asia rest' ||
+        lower == 'mainland asia' ||
+        lower == 'southeast' ||
+        lower == 'asia') {
+      return 'Asia Rest';
+    }
+    if (lower == 'europe' || lower == 'europe kingdom') return 'Europe';
+    if (lower == 'persia' ||
+        lower == 'persia & mesopotamia' ||
+        lower == 'persia and mesopotamia' ||
+        lower == 'mesopotamia') {
+      return 'Persia';
+    }
   }
 
   if (group == VenueGroup.india) {

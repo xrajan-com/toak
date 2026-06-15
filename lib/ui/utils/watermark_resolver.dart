@@ -51,4 +51,19 @@ class WatermarkResolver {
     list.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
     return list;
   }
+
+  static Future<String?> subKingdomWatermarkFor({
+    required String kingdomName,
+    required int subKingdomIndex,
+  }) async {
+    final kingdom = kingdomName.trim();
+    if (kingdom.isEmpty || subKingdomIndex < 1) return null;
+
+    final keys = await _ensureKeys();
+    if (keys.isEmpty) return null;
+
+    final suffix = subKingdomIndex.toString().padLeft(2, '0');
+    final asset = 'assets/images/watermarks/$kingdom/fort_$suffix.svg';
+    return keys.contains(asset) ? asset : null;
+  }
 }

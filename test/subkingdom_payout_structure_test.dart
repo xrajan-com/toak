@@ -3,7 +3,7 @@ import 'package:ten_of_a_kind_poker/config/campaign_events.dart' as ce;
 import 'package:ten_of_a_kind_poker/config/sub_kingdoms.dart'
     show subKingdomCountFor;
 import 'package:ten_of_a_kind_poker/config/venues.dart'
-    show VenueGroup, VenueTheme, indianVenues, internationalVenues;
+    show VenueGroup, VenueTheme, kVenueGroups, venuesForGroup;
 import 'package:ten_of_a_kind_poker/game/models.dart' show PayoutTable;
 
 void main() {
@@ -30,8 +30,9 @@ void main() {
       }
     }
 
-    checkGroup(VenueGroup.india, indianVenues);
-    checkGroup(VenueGroup.international, internationalVenues);
+    for (final group in kVenueGroups) {
+      checkGroup(group, venuesForGroup(group));
+    }
   });
 
   test('Main events remain winner-take-all', () {
@@ -50,7 +51,8 @@ void main() {
       }
     }
 
-    checkGroup(VenueGroup.india, indianVenues);
-    checkGroup(VenueGroup.international, internationalVenues);
+    for (final group in kVenueGroups) {
+      checkGroup(group, venuesForGroup(group));
+    }
   });
 }

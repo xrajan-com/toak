@@ -5,6 +5,8 @@ import 'package:ten_of_a_kind_poker/services/api_client.dart';
 class EconomyProgressSnapshot {
   final int indiaAup;
   final int internationalAup;
+  final int euroAup;
+  final int oceaniaAup;
   final List<String> awardedEventIds;
   final int lastActiveAtMs;
   final int prevActiveAtMs;
@@ -18,6 +20,8 @@ class EconomyProgressSnapshot {
   const EconomyProgressSnapshot({
     required this.indiaAup,
     required this.internationalAup,
+    this.euroAup = 0,
+    this.oceaniaAup = 0,
     required this.awardedEventIds,
     required this.lastActiveAtMs,
     required this.prevActiveAtMs,
@@ -33,6 +37,8 @@ class EconomyProgressSnapshot {
     return EconomyProgressSnapshot(
       indiaAup: _int(json['indiaAup']),
       internationalAup: _int(json['internationalAup']),
+      euroAup: _int(json['euroAup']),
+      oceaniaAup: _int(json['oceaniaAup']),
       awardedEventIds: (json['awardedEventIds'] as Iterable?)
               ?.whereType<String>()
               .toList(growable: false) ??

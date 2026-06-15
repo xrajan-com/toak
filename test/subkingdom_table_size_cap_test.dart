@@ -3,13 +3,12 @@ import 'package:ten_of_a_kind_poker/config/campaign_events.dart' as ce;
 import 'package:ten_of_a_kind_poker/config/sub_kingdoms.dart'
     show subKingdomCountFor;
 import 'package:ten_of_a_kind_poker/config/venues.dart'
-    show VenueGroup, indianVenues, internationalVenues;
+    show VenueGroup, venuesForGroup;
 
 void main() {
   test('Sub-kingdom table sizes stay onboarding-friendly', () {
     for (final group in VenueGroup.values) {
-      final venues =
-          group == VenueGroup.india ? indianVenues : internationalVenues;
+      final venues = venuesForGroup(group);
       for (final v in venues) {
         final rawName = v.name.trim();
         if (rawName.isEmpty) continue;

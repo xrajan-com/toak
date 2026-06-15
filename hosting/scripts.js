@@ -45,8 +45,6 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const DOM = {
-    viewIdCardBtn: document.getElementById("viewIdCardBtn"),
-    idCardDisplay: document.querySelector(".id-card-display"),
     editProfileBtn: document.getElementById("editProfileBtn"),
     editProfileForm: document.getElementById("editProfileForm"),
     loginModal: document.getElementById("loginRegisterModal"),
@@ -84,18 +82,31 @@ document.addEventListener("DOMContentLoaded", () => {
     "Europe": "europe.png",
     "India": "india.png",
     "Russia": "russia.png",
-    "Southeast": "southeast.png"
-  };
-
-  const kingdomFlagSrc = (kingdomName) => {
-    const key = (kingdomName || "").trim();
-    const file = flagByKingdom[key];
-    return file ? `images/venues/${file}` : "Logo.png";
+    "Southeast": "southeast.png",
+    "Britain": "euro/britain.png",
+    "France": "euro/france.png",
+    "Italy": "euro/italy.png",
+    "Spain": "euro/spain.png",
+    "Portugal": "euro/portugal.png",
+    "North Sea": "euro/north_sea.png",
+    "Scandinavia": "euro/scandinavia.png",
+    "Baltic Marches": "euro/baltic_marches.png",
+    "Russia & Siberia": "euro/russia_siberia.png",
+    "Mediterranean": "euro/mediterranean.png",
+    "Alaska": "oceania/alaska.png",
+    "Caribbean": "oceania/caribbean.png",
+    "Dragonland": "oceania/dragonland.png",
+    "Straits": "oceania/straits.png",
+    "Indian Ocean": "oceania/indian_ocean.png",
+    "Pacific": "oceania/pacific.png",
+    "British Isles": "oceania/british_isles.png",
+    "French Isles": "oceania/french_isles.png",
+    "Dutch Isles": "oceania/dutch_isles.png",
+    "American Isles": "oceania/american_isles.png"
   };
 
   const toggleModal = (el, show = true) => el.classList[show ? 'add' : 'remove']("active");
   const closeAllModals = () => document.querySelectorAll(".modal-overlay.active").forEach(el => toggleModal(el, false));
-  const demoLoader = document.getElementById("demoLoader");
 
   function switchView(showLogin) {
     document.getElementById("loginForm").style.display = showLogin ? "block" : "none";
@@ -125,15 +136,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const isSignedIn = Boolean(auth && auth.currentUser);
       toggleModal(isSignedIn ? DOM.profileModal : DOM.loginModal, true);
       if (!isSignedIn) switchView(true);
-    });
-  }
-
-  const leaderboardLink = document.getElementById("leaderboardLink");
-  if (leaderboardLink) {
-    leaderboardLink.addEventListener("click", (e) => {
-      e.preventDefault();
-      toggleModal(DOM.leaderboardModal, true);
-      populateLeaderboard();
     });
   }
 
@@ -600,292 +602,532 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const subVenueNames = {
-    "Baroda": [
-      "Bhadra Fort",
-      "Bhujia Fort",
-      "Dhoraji Fort",
-      "Diu Fort",
-      "Lakhota Fort",
-      "Pavagadh Fort",
-      "Surat Fort",
-      "Uparkot Fort"
-    ],
-    "Jaipur": [
-      "Achalgarh Fort",
-      "Chittorgarh Fort",
-      "Jalore Fort",
-      "Junagarh Fort",
-      "Kumbhalgarh Fort",
-      "Lohagarh Fort",
-      "Mehrangarh Fort",
-      "Sajjangarh Fort",
-      "Taragarh Fort"
-    ],
-    "Hyderabad": [
-      "Bhongir Fort",
-      "Golconda Fort",
-      "Konda Reddy Fort",
-      "Kondapalli Fort",
-      "Warangal Fort"
-    ],
-    "Mysore": [
-      "Bangalore Fort",
-      "Chitradurga Fort",
-      "Madikeri Fort",
-      "Manjarabad Fort",
-      "Srirangapatna Fort"
-    ],
-    "Travancore": [
-      "Dindigul Fort",
-      "East Fort",
-      "Pallippuram Fort",
-      "Tiruchirappalli Rock Fort",
-      "Udayagiri Fort",
-      "Vattakottai Fort"
-    ],
-    "Indore": [
-      "Asirgarh Fort",
-      "Dhar Fort",
-      "Gwalior Fort",
-      "Mandu Fort",
-      "Narwar Fort"
-    ],
-    "New Delhi": [
-      "Adilabad Fort",
-      "Agra Fort",
-      "Allahabad Fort",
-      "Ballabhgarh Fort",
-      "Chunar Fort",
-      "Firoz Shah Kotla",
-      "Panipat Fort",
-      "Purana Qila",
-      "Ramnagar Fort",
-      "Red Fort",
-      "Salimgarh Fort",
-      "Tughlaqabad Fort"
-    ],
-    "Maratha Empire": [
-      "Arnala Fort",
-      "Lohagad Fort",
-      "Pratapgad Fort",
-      "Raigad Fort",
-      "Shivneri Fort",
-      "Sindhudurg Fort",
-      "Sinhagad Fort",
-      "Vijaydurg Fort"
-    ],
-    "Sikh Empire": [
-      "Attock Fort",
-      "Bahadurgarh Fort",
-      "Bahu Fort",
-      "Bathinda Fort",
-      "Govindgarh Fort",
-      "Hari Parbat Fort",
-      "Jamrud Fort",
-      "Kangra Fort",
-      "Keshgarh Fort",
-      "Lahore Fort",
-      "Lodhi Fort",
-      "Manauli Fort",
-      "Multan Fort",
-      "Nabha Fort",
-      "Nandana Fort",
-      "Payal Fort",
-      "Pharwala Fort",
-      "Phillaur Fort",
-      "Qila Mubarak Patiala",
-      "Rohtas Fort",
-      "Sangni Fort",
-      "Shahpurkandi Fort",
-      "Sheikhupura Fort",
-      "Sialkot Fort"
-    ],
-    "Sikkim": [
-      "Barabati Fort",
-      "Bihu Loukon Fort",
-      "Budang Gadi Fort",
-      "Buxa Fort",
-      "Damsang Fort",
-      "Garh Doul",
-      "Ita Fort",
-      "Kangla Fort",
-      "Rabdentse",
-      "Sisupalgarh"
-    ],
-    "Africa": [
-      "Bastion de la Sqala",
-      "Cairo Citadel",
-      "Castle of Good Hope",
-      "Fort d'Estrees",
-      "Fort Dauphin",
-      "Fort Jesus",
-      "Old Fort Durban"
-    ],
-    "S. America": [
-      "Castillo del Morro",
-      "Fort Bueras",
-      "Fort Charles",
-      "Fort Copacabana",
-      "Fort of Buenos Aires",
-      "Fort San Lorenzo",
-      "Itaipu Fortress",
-      "San Juan de Ulua"
-    ],
-    "N. America": [
-      "Fort Charlotte",
-      "Fort Dallas",
-      "Fort Dearborn",
-      "Fort Independence",
-      "Fort McNair",
-      "Fort Moore",
-      "Fort Point",
-      "Fort Travis",
-      "Fort Wadsworth",
-      "Fort William H. Seward",
-      "Fort York",
-      "Old Las Vegas Fort",
-      "Saint Ann's Fort"
-    ],
-    "Arabia": [
-      "Al Jalali Fort",
-      "Al Koot Fort",
-      "Apollonia Fortress",
-      "Asfan Castle",
-      "Bahrain Fort",
-      "Citadel of Damascus",
-      "Kuwait Red Fort",
-      "Masmak Fort",
-      "Qasr Al Hosn",
-      "Sidon Sea Castle"
-    ],
-    "Australia": [
-      "Bare Island Fort",
-      "Fort Nepean",
-      "Fort Queenscliff",
-      "Fort Takapuna",
-      "Princess Royal Fortress",
-      "Tavuni Hill Fort"
-    ],
-    "China": [
-      "Dapeng Fortress",
-      "Guia Fortress",
-      "Juyong Pass Fortress",
-      "Tung Chung Fort",
-      "Weiyuan Fort",
-      "Wusong Fortress",
-      "Xi'an Fortifications"
-    ],
-    "Europe": [
-      "Acropolis Citadel",
-      "Akershus Fortress",
-      "Bellinzona Castles",
-      "Burghausen Castle",
-      "Castel Sant'Angelo",
-      "Chateau de Vincennes",
-      "Fort Pampus",
-      "Hohensalzburg Fortress",
-      "Kyiv Fortress",
-      "Lovrijenac Fortress",
-      "Manzanares Castle",
-      "Montjuic Castle",
-      "Munot Fortress",
-      "Poenari Citadel",
-      "Sforza Castle",
-      "Spandau Citadel",
-      "Suomenlinna Fortress",
-      "Tower of London",
-      "Vysehrad Fortress",
-      "Warsaw Citadel"
-    ],
-    "India": [
-      "Agra Fort",
-      "Bala Hissar",
-      "Bangalore Fort",
-      "Castella de Aguada",
-      "Chunar Fort",
-      "Fort Adelaide",
-      "Fort Emmanuel",
-      "Fort St. George",
-      "Fort William",
-      "Gobindgarh Fort",
-      "Itakhuli Fort",
-      "Kumbhalgarh Fort",
-      "Lalbagh Fort",
-      "Manora Fort",
-      "Miri Fort",
-      "Navratangarh Fort",
-      "Pavagadh Fort",
-      "Raisen Fort",
-      "Rohtasgarh Fort",
-      "Simtokha Dzong",
-      "Sindhuli Gadhi",
-      "Vizianagaram Fort"
-    ],
-    "Russia": [
-      "Godlik Fortress",
-      "Izborsk Fortress",
-      "Moscow Kremlin",
-      "Peter and Paul Fortress",
-      "Smolensk Fortress",
-      "Vladivostok Fortress"
-    ],
-    "Asia": [
-      "Edo Castle",
-      "Fort Canning",
-      "Fort Cornwallis",
-      "Fort Fredrick",
-      "Fort Rotterdam",
-      "Fort Santiago",
-      "Fort Santo Domingo",
-      "Gia Dinh Citadel",
-      "Imperial Citadel of Thang Long",
-      "Longvek Citadel",
-      "Nijo Castle",
-      "Phra Sumen Fort",
-      "Rawat Fort",
-      "Rumelihisari"
-    ],
-    "Amazon": [
-      "Castillo del Morro",
-      "Fort Bueras",
-      "Fort Charles",
-      "Fort Copacabana",
-      "Fort of Buenos Aires",
-      "Fort San Lorenzo",
-      "Itaipu Fortress",
-      "San Juan de Ulua"
-    ],
-    "America": [
-      "Fort Charlotte",
-      "Fort Dallas",
-      "Fort Dearborn",
-      "Fort Independence",
-      "Fort McNair",
-      "Fort Moore",
-      "Fort Point",
-      "Fort Travis",
-      "Fort Wadsworth",
-      "Fort William H. Seward",
-      "Fort York",
-      "Old Las Vegas Fort",
-      "Saint Ann's Fort"
-    ],
-    "Southeast": [
-      "Edo Castle",
-      "Fort Canning",
-      "Fort Cornwallis",
-      "Fort Fredrick",
-      "Fort Rotterdam",
-      "Fort Santiago",
-      "Fort Santo Domingo",
-      "Gia Dinh Citadel",
-      "Imperial Citadel of Thang Long",
-      "Longvek Citadel",
-      "Nijo Castle",
-      "Phra Sumen Fort",
-      "Rawat Fort",
-      "Rumelihisari"
-    ]
+  "Baroda": [
+    "Bhadra Fort (India)",
+    "Bhujia Fort (India)",
+    "Dhoraji Fort (India)",
+    "Diu Fort (India)",
+    "Lakhota Fort (India)",
+    "Pavagadh Fort (India)",
+    "Surat Fort (India)",
+    "Uparkot Fort (India)"
+  ],
+  "Hyderabad": [
+    "Bhongir Fort (India)",
+    "Golconda Fort (India)",
+    "Konda Reddy Fort (India)",
+    "Kondapalli Fort (India)",
+    "Warangal Fort (India)"
+  ],
+  "Indore": [
+    "Asirgarh Fort (India)",
+    "Dhar Fort (India)",
+    "Gwalior Fort (India)",
+    "Mandu Fort (India)",
+    "Narwar Fort (India)"
+  ],
+  "Jaipur": [
+    "Achalgarh Fort (India)",
+    "Chittorgarh Fort (India)",
+    "Jalore Fort (India)",
+    "Junagarh Fort (India)",
+    "Kumbhalgarh Fort (India)",
+    "Lohagarh Fort (India)",
+    "Mehrangarh Fort (India)",
+    "Sajjangarh Fort (India)",
+    "Taragarh Fort (India)"
+  ],
+  "Maratha Empire": [
+    "Arnala Fort (India)",
+    "Lohagad Fort (India)",
+    "Pratapgad Fort (India)",
+    "Raigad Fort (India)",
+    "Shivneri Fort (India)",
+    "Sindhudurg Fort (India)",
+    "Sinhagad Fort (India)",
+    "Vijaydurg Fort (India)"
+  ],
+  "Mysore": [
+    "Bangalore Fort (India)",
+    "Chitradurga Fort (India)",
+    "Madikeri Fort (India)",
+    "Manjarabad Fort (India)",
+    "Srirangapatna Fort (India)"
+  ],
+  "New Delhi": [
+    "Adilabad Fort (India)",
+    "Agra Fort (India)",
+    "Allahabad Fort (India)",
+    "Ballabhgarh Fort (India)",
+    "Chunar Fort (India)",
+    "Firoz Shah Kotla (India)",
+    "Panipat Fort (India)",
+    "Purana Qila (India)",
+    "Ramnagar Fort (India)",
+    "Red Fort (India)",
+    "Salimgarh Fort (India)",
+    "Tughlaqabad Fort (India)"
+  ],
+  "Sikh Empire": [
+    "Attock Fort (Pakistan)",
+    "Bahadurgarh Fort (India)",
+    "Bahu Fort (India)",
+    "Bathinda Fort (India)",
+    "Govindgarh Fort (India)",
+    "Hari Parbat Fort (India)",
+    "Jamrud Fort (Pakistan)",
+    "Kangra Fort (India)",
+    "Keshgarh Fort (India)",
+    "Multan Fort (Pakistan)",
+    "Nabha Fort (India)",
+    "Nandana Fort (Pakistan)",
+    "Payal Fort (India)",
+    "Pharwala Fort (Pakistan)",
+    "Phillaur Fort (India)",
+    "Qila Mubarak Patiala (India)",
+    "Rohtas Fort (Pakistan)",
+    "Sangni Fort (Pakistan)",
+    "Shahpurkandi Fort (India)",
+    "Sheikhupura Fort (Pakistan)",
+    "Sialkot Fort (Pakistan)"
+  ],
+  "Sikkim": [
+    "Rabdentse (India)",
+    "Damsang Fort (India)",
+    "Budang Gadi Fort (India)",
+    "Buxa Fort (India)",
+    "Barabati Fort (India)",
+    "Bihu Loukon Fort (India)",
+    "Garh Doul (India)",
+    "Ita Fort (India)",
+    "Kangla Fort (India)",
+    "Sisupalgarh (India)"
+  ],
+  "Travancore": [
+    "Dindigul Fort (India)",
+    "East Fort (India)",
+    "Pallippuram Fort (India)",
+    "Tiruchirappalli Rock Fort (India)",
+    "Udayagiri Fort (India)",
+    "Vattakottai Fort (India)"
+  ],
+  "Africa": [
+    "Bastion de la Sqala (Morocco)",
+    "Cairo Citadel (Egypt)",
+    "Castle of Good Hope (South Africa)",
+    "Fort d’Estrees (Senegal)",
+    "Fort Dauphin (Madagascar)",
+    "Fort Jesus (Kenya)",
+    "Old Fort Durban (South Africa)",
+    "Apollonia Fortress (Libya)"
+  ],
+  "S. America": [
+    "Fort Bueras (Chile)",
+    "Fort Copacabana (Brazil)",
+    "Fort of Buenos Aires (Argentina)",
+    "Itaipu Fortress (Brazil)",
+    "Real Felipe Fortress (Peru)",
+    "San Felipe de Barajas (Colombia)",
+    "Fortaleza de Santa Cruz da Barra (Brazil)",
+    "Fortaleza de São José de Macapá (Brazil)"
+  ],
+  "N. America": [
+    "San Juan de Ulúa (Mexico)",
+    "Fort Dallas (United States)",
+    "Fort Dearborn (United States)",
+    "Fort Independence (United States)",
+    "Fort McNair (United States)",
+    "Fort Point (United States)",
+    "Fort Travis (United States)",
+    "Fort Wadsworth (United States)",
+    "Fort York (Canada)",
+    "Old Las Vegas Fort (United States)",
+    "Castillo de San Marcos (United States)",
+    "Fort Ticonderoga (United States)"
+  ],
+  "Arabia": [
+    "Al Jalali Fort (Oman)",
+    "Al Koot Fort (Qatar)",
+    "Asfan Castle (Saudi Arabia)",
+    "Bahrain Fort (Bahrain)",
+    "Citadel of Damascus (Syria)",
+    "Kuwait Red Fort (Kuwait)",
+    "Masmak Fort (Saudi Arabia)",
+    "Qasr Al Hosn (United Arab Emirates)",
+    "Sidon Sea Castle (Lebanon)"
+  ],
+  "China": [
+    "Dapeng Fortress (China)",
+    "Juyong Pass Fortress (China)",
+    "Weiyuan Fort (China)",
+    "Wusong Fortress (China)",
+    "Xi’an City Wall (China)",
+    "Jiayu Pass Fortress (China)",
+    "Shanhai Pass Fortress (China)"
+  ],
+  "Far East": [
+    "Edo Castle (Japan)",
+    "Nijo Castle (Japan)",
+    "Himeji Castle (Japan)",
+    "Osaka Castle (Japan)",
+    "Kumamoto Castle (Japan)",
+    "Suwon Hwaseong Fortress (South Korea)",
+    "Namhansanseong Fortress (South Korea)",
+    "Hwaseong Haenggung (South Korea)"
+  ],
+  "Asia Rest": [
+    "Gia Dinh Citadel (Vietnam)",
+    "Imperial Citadel of Thang Long (Vietnam)",
+    "Longvek Citadel (Cambodia)",
+    "Phra Sumen Fort (Thailand)",
+    "Rawat Fort (Pakistan)",
+    "Mandalay Palace Fort (Myanmar)",
+    "Red Fort of Lahore / Lahore Fort (Pakistan)",
+    "Bala Hissar Peshawar (Pakistan)"
+  ],
+  "Central Asia": [
+    "Ark of Bukhara (Uzbekistan)",
+    "Itchan Kala (Uzbekistan)",
+    "Ayaz Kala (Uzbekistan)",
+    "Toprak Kala (Uzbekistan)",
+    "Kunya-Ark Citadel (Uzbekistan)",
+    "Gissar Fortress (Tajikistan)",
+    "Hulbuk Fortress (Tajikistan)",
+    "Nisa Fortress (Turkmenistan)",
+    "Merv Fortifications (Turkmenistan)",
+    "Sauran Fortress (Kazakhstan)",
+    "Otrar Fortress (Kazakhstan)"
+  ],
+  "Persia": [
+    "Arg-e Bam (Iran)",
+    "Rayen Castle (Iran)",
+    "Falak-ol-Aflak Castle (Iran)",
+    "Narin Castle (Iran)",
+    "Shush Castle (Iran)",
+    "Erbil Citadel (Iraq)",
+    "Al-Ukhaidir Fortress (Iraq)",
+    "Kirkuk Citadel (Iraq)"
+  ],
+  "Europe": [
+    "Acropolis of Athens (Greece)",
+    "Tower of London (United Kingdom)",
+    "Alhambra (Spain)",
+    "Edinburgh Castle (United Kingdom)",
+    "Windsor Castle (United Kingdom)",
+    "Castel Sant’Angelo (Italy)",
+    "Carcassonne Citadel (France)",
+    "Hohensalzburg Fortress (Austria)",
+    "Malbork Castle (Poland)",
+    "Bran Castle (Romania)",
+    "Suomenlinna Fortress (Finland)",
+    "Bellinzona Castles (Switzerland)",
+    "Château de Vincennes (France)",
+    "Sforza Castle (Italy)",
+    "Spandau Citadel (Germany)",
+    "Montjuic Castle (Spain)",
+    "Kyiv Fortress (Ukraine)"
+  ],
+  "Britain": [
+    "Bodiam Castle (United Kingdom)",
+    "Caernarfon Castle (United Kingdom)",
+    "Dover Castle (United Kingdom)",
+    "Eilean Donan Castle (United Kingdom)",
+    "Stirling Castle (United Kingdom)",
+    "Caerphilly Castle (United Kingdom)",
+    "Bamburgh Castle (United Kingdom)"
+  ],
+  "France": [
+    "Château de Chambord (France)",
+    "Fort Boyard (France)",
+    "Château de Pierrefonds (France)",
+    "Château de Chinon (France)",
+    "Château de Fougères (France)",
+    "Château de Saumur (France)"
+  ],
+  "Italy": [
+    "Rocca Calascio (Italy)",
+    "Castel del Monte (Italy)",
+    "Castello di Miramare (Italy)",
+    "Castello Estense (Italy)",
+    "Castel Nuovo (Italy)",
+    "Rocca Maggiore (Italy)"
+  ],
+  "Spain": [
+    "Alcázar of Segovia (Spain)",
+    "Manzanares Castle (Spain)",
+    "Castillo de Coca (Spain)",
+    "Castle of Loarre (Spain)",
+    "Castillo de Peñafiel (Spain)",
+    "Alcazaba of Málaga (Spain)"
+  ],
+  "Portugal": [
+    "Elvas Fortifications (Portugal)",
+    "Guimarães Castle (Portugal)",
+    "Pena Palace (Portugal)",
+    "Castle of the Moors (Portugal)",
+    "Belém Tower (Portugal)",
+    "São Jorge Castle (Portugal)"
+  ],
+  "North Sea": [
+    "Fort Pampus (Netherlands)",
+    "Muiderslot Castle (Netherlands)",
+    "Bourtange Fortress (Netherlands)",
+    "Naarden Fortress (Netherlands)",
+    "Gravensteen (Belgium)",
+    "Bouillon Castle (Belgium)"
+  ],
+  "Scandinavia": [
+    "Kronborg Castle (Denmark)",
+    "Bohus Fortress (Sweden)",
+    "Kalmar Castle (Sweden)",
+    "Olavinlinna Castle (Finland)",
+    "Vardøhus Fortress (Norway)",
+    "Bergenhus Fortress (Norway)"
+  ],
+  "Baltic Marches": [
+    "Kamianets-Podilskyi Castle (Ukraine)",
+    "Khotyn Fortress (Ukraine)",
+    "Akkerman Fortress (Ukraine)",
+    "Brest Fortress (Belarus)",
+    "Mir Castle (Belarus)",
+    "Nesvizh Castle (Belarus)",
+    "Trakai Island Castle (Lithuania)",
+    "Narva Castle (Estonia)",
+    "Turaida Castle (Latvia)",
+    "Kaunas Castle (Lithuania)"
+  ],
+  "Russia & Siberia": [
+    "Moscow Kremlin (Russia)",
+    "Peter and Paul Fortress (Russia)",
+    "Smolensk Fortress (Russia)",
+    "Izborsk Fortress (Russia)",
+    "Vladivostok Fortress (Russia)",
+    "Tobolsk Kremlin (Russia)",
+    "Omsk Fortress (Russia)",
+    "Kuznetsk Fortress (Russia)",
+    "Naryn-Kala Fortress (Russia)",
+    "Derbent Fortress (Russia)"
+  ],
+  "Mediterranean": [
+    "Acrocorinth (Greece)",
+    "Palamidi Fortress (Greece)",
+    "Castle of Mystras (Greece)",
+    "Methoni Castle (Greece)",
+    "Rumelihisarı (Turkey)",
+    "Yedikule Fortress (Turkey)",
+    "Predjama Castle (Slovenia)",
+    "Lovrijenac Fortress (Croatia)",
+    "Klis Fortress (Croatia)",
+    "St. Nicholas Fortress (Croatia)",
+    "Kamerlengo Castle (Croatia)",
+    "Golubac Fortress (Serbia)",
+    "Tsarevets Fortress (Bulgaria)"
+  ],
+  "Alaska": [
+    "Fort William H. Seward (United States)",
+    "Castle Hill / Baranof Castle Site (United States)",
+    "Fort Abercrombie (United States)",
+    "Fort Egbert (United States)",
+    "Fort Davis Nome (United States)",
+    "Fort Gibbon (United States)"
+  ],
+  "Caribbean": [
+    "Brimstone Hill Fortress (Saint Kitts and Nevis)",
+    "Castillo San Felipe del Morro (United States)",
+    "Castillo San Cristóbal (United States)",
+    "Castillo de San Pedro de la Roca (Cuba)",
+    "Fort Charles (Jamaica)",
+    "Fort Charlotte (The Bahamas)",
+    "Saint Ann’s Fort (Barbados)",
+    "Fort George Grenada (Grenada)",
+    "Fort King George Tobago (Trinidad and Tobago)",
+    "Fort Shirley (Dominica)"
+  ],
+  "Dragonland": [
+    "Guia Fortress (China)",
+    "Monte Fort (China)",
+    "Tung Chung Fort (China)",
+    "Kowloon Walled City Site (China)",
+    "Fort Santo Domingo (Taiwan)",
+    "Eternal Golden Castle (Taiwan)",
+    "Anping Fort (Taiwan)",
+    "Hobe Fort (Taiwan)"
+  ],
+  "Straits": [
+    "Fort Siloso (Singapore)",
+    "Fort Canning (Singapore)",
+    "Labrador Battery (Singapore)",
+    "Johore Battery (Singapore)",
+    "Fort Cornwallis (Malaysia)",
+    "A Famosa (Malaysia)",
+    "Fort Margherita (Malaysia)",
+    "Kuala Kedah Fort (Malaysia)",
+    "Fort Rotterdam (Indonesia)",
+    "Fort Belgica (Indonesia)",
+    "Fort Tolukko (Indonesia)",
+    "Fort Marlborough (Indonesia)"
+  ],
+  "Indian Ocean": [
+    "Galle Fort (Sri Lanka)",
+    "Jaffna Fort (Sri Lanka)",
+    "Batticaloa Fort (Sri Lanka)",
+    "Fort Fredrick (Sri Lanka)",
+    "Fort Adelaide (Mauritius)",
+    "Fort George Mauritius (Mauritius)",
+    "Utheemu Ganduvaru (Maldives)",
+    "Mulee’aage Palace (Maldives)",
+    "Addu Atoll British Loyalty Remains (Maldives)",
+    "Fort Victoria Seychelles Site (Seychelles)"
+  ],
+  "Pacific": [
+    "Fort Takapuna (New Zealand)",
+    "Fort Ballance (New Zealand)",
+    "Fort Jervois (New Zealand)",
+    "North Head Historic Reserve (New Zealand)",
+    "Tavuni Hill Fort (Fiji)",
+    "Fort Apugan (Guam / United States)",
+    "Fort Nuestra Señora de la Soledad (Guam / United States)",
+    "Fort Santa Agueda (Guam / United States)"
+  ],
+  "British Isles": [
+    "Fort Barrington (Antigua and Barbuda)",
+    "Fort James Antigua (Antigua and Barbuda)",
+    "The Garrison (Bermuda)",
+    "Fort St. Catherine (Bermuda)",
+    "Fort Hamilton (Bermuda)",
+    "Fort George Cayman (Cayman Islands)",
+    "Fort Burt (British Virgin Islands)",
+    "Fort Recovery (British Virgin Islands)",
+    "Fort George Montserrat (Montserrat)",
+    "High Knoll Fort (Saint Helena)"
+  ],
+  "French Isles": [
+    "Fort Napoléon des Saintes (Guadeloupe / France)",
+    "Fort Delgrès (Guadeloupe / France)",
+    "Fort Fleur d’Épée (Guadeloupe / France)",
+    "Fort Saint Louis (Martinique / France)",
+    "Fort Desaix (Martinique / France)",
+    "Fort Royal / Fort-de-France (Martinique / France)",
+    "Fort Teremba (New Caledonia / France)",
+    "Fort de la Reine (Réunion / France)",
+    "Dzaoudzi Fortifications (Mayotte / France)",
+    "Wallis & Futuna Royal Sites (Wallis and Futuna / France)"
+  ],
+  "Dutch Isles": [
+    "Fort Amsterdam (Curaçao / Netherlands)",
+    "Fort Nassau (Curaçao / Netherlands)",
+    "Fort Beekenburg (Curaçao / Netherlands)",
+    "Fort Oranje Sint Eustatius (Sint Eustatius / Netherlands)",
+    "Fort Zoutman (Aruba / Netherlands)",
+    "Fort Bay (Saba / Netherlands)",
+    "Fort Zeelandia Suriname (Suriname)",
+    "Fort Nieuw Amsterdam (Suriname)"
+  ],
+  "American Isles": [
+    "Fort Christian (United States)",
+    "Fort Frederik (United States)",
+    "Blackbeard’s Castle (United States)",
+    "Fort Segarra (United States)",
+    "Fort San Jose Guam (Guam / United States)",
+    "Fort Kamehameha (United States)",
+    "Fort DeRussy (United States)",
+    "Fort Armstrong (United States)",
+    "Fort Ruger (United States)",
+    "Fort Hase (United States)"
+  ]
+};
+
+  const venueTitles = {
+  "Baroda": "Patel",
+  "Hyderabad": "Nizam",
+  "Indore": "Subedar",
+  "Jaipur": "Rawal",
+  "Maratha Empire": "Peshwa",
+  "Mysore": "Sultan",
+  "New Delhi": "Raja",
+  "Sikh Empire": "Zaildar",
+  "Sikkim": "Sherpa",
+  "Travancore": "Thala",
+  "Africa": "Mansa",
+  "S. America": "Caudillo",
+  "N. America": "Chief",
+  "Arabia": "Sheikh",
+  "China": "Jiangjun",
+  "Far East": "Shogun",
+  "Asia Rest": "Mandala",
+  "Central Asia": "Emir",
+  "Persia": "Shah",
+  "Europe": "Duke",
+  "Britain": "Baron",
+  "France": "Marquis",
+  "Italy": "Conte",
+  "Spain": "Hidalgo",
+  "Portugal": "Infante",
+  "North Sea": "Stadtholder",
+  "Scandinavia": "Jarl",
+  "Baltic Marches": "Hetman",
+  "Russia & Siberia": "Ataman",
+  "Mediterranean": "Strategos",
+  "Alaska": "Chieftain",
+  "Caribbean": "Governor",
+  "Dragonland": "Taipan",
+  "Straits": "Laksamana",
+  "Indian Ocean": "Admiral",
+  "Pacific": "Tui",
+  "British Isles": "Warden",
+  "French Isles": "Seigneur",
+  "Dutch Isles": "Burgher",
+  "American Isles": "Marshal"
+};
+
+  const venueGroups = {
+  "Africa": "International Circuit",
+  "S. America": "International Circuit",
+  "N. America": "International Circuit",
+  "Arabia": "International Circuit",
+  "China": "International Circuit",
+  "Far East": "International Circuit",
+  "Asia Rest": "International Circuit",
+  "Central Asia": "International Circuit",
+  "Persia": "International Circuit",
+  "Europe": "International Circuit",
+  "Baroda": "Royal Indian Circuit",
+  "Hyderabad": "Royal Indian Circuit",
+  "Indore": "Royal Indian Circuit",
+  "Jaipur": "Royal Indian Circuit",
+  "Maratha Empire": "Royal Indian Circuit",
+  "Mysore": "Royal Indian Circuit",
+  "New Delhi": "Royal Indian Circuit",
+  "Sikh Empire": "Royal Indian Circuit",
+  "Sikkim": "Royal Indian Circuit",
+  "Travancore": "Royal Indian Circuit",
+  "Britain": "Euro Circuit",
+  "France": "Euro Circuit",
+  "Italy": "Euro Circuit",
+  "Spain": "Euro Circuit",
+  "Portugal": "Euro Circuit",
+  "North Sea": "Euro Circuit",
+  "Scandinavia": "Euro Circuit",
+  "Baltic Marches": "Euro Circuit",
+  "Russia & Siberia": "Euro Circuit",
+  "Mediterranean": "Euro Circuit",
+  "Alaska": "Oceania Circuit",
+  "Caribbean": "Oceania Circuit",
+  "Dragonland": "Oceania Circuit",
+  "Straits": "Oceania Circuit",
+  "Indian Ocean": "Oceania Circuit",
+  "Pacific": "Oceania Circuit",
+  "British Isles": "Oceania Circuit",
+  "French Isles": "Oceania Circuit",
+  "Dutch Isles": "Oceania Circuit",
+  "American Isles": "Oceania Circuit"
+};
+
+  const venueTileSummary = (key) => {
+    const count = (subVenueNames[key] || venueInfo[key]?.forts || []).length;
+    const fortLabel = count === 1 ? "Fort" : "Forts";
+    const title = venueTitles[key] || "N/A";
+    return `${count} ${fortLabel}, Title: ${title}`;
   };
 
   const subVenueThemes = {
@@ -1273,8 +1515,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const openVenueDetails = (venueName, updateHash = true) => {
     const key = normalizeVenueName(venueName);
-    const info = venueInfo[key];
-    if (!info || !DOM.venueModal) return;
+    const info = venueInfo[key] || {
+      group: venueGroups[key] || "Circuit",
+      history: `${key} is configured as an in-game kingdom in the ${venueGroups[key] || "current circuit"}, with its fort ladder drawn from the live game data.`
+    };
+    if (!DOM.venueModal) return;
 
     DOM.venueModalGroup.textContent = info.group;
     const subVenues = subVenueNames[key] || (info.forts || []).map((fort) => fort.name);
@@ -1303,8 +1548,12 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll(".venue-card").forEach((card) => {
       const heading = card.querySelector("h4");
       const key = normalizeVenueName(heading?.textContent);
-      const info = venueInfo[key];
-      if (!info) return;
+      const info = venueInfo[key] || {
+        group: venueGroups[key] || "Circuit",
+        history: `${key} is configured as an in-game kingdom in the ${venueGroups[key] || "current circuit"}, with its fort ladder drawn from the live game data.`
+      };
+      const summary = card.querySelector(".venue-card-body p");
+      if (summary) summary.textContent = venueTileSummary(key);
 
       card.tabIndex = 0;
       card.setAttribute("role", "link");
@@ -1374,40 +1623,8 @@ document.addEventListener("DOMContentLoaded", () => {
   openVenueFromHash();
   window.addEventListener("hashchange", openVenueFromHash);
 
-  // Demo banner overlay + launch
-  const demoBanner = document.querySelector(".demo-banner");
-  if (demoBanner && demoLoader) {
-    demoBanner.addEventListener("click", (e) => {
-      e.preventDefault();
-      const targetUrl = demoBanner.getAttribute("href");
-      demoLoader.classList.add("show");
-      setTimeout(() => {
-        window.open(targetUrl, "_blank", "noopener");
-        setTimeout(() => demoLoader.classList.remove("show"), 1800);
-      }, 30);
-    });
-  }
-
-  if (DOM.viewIdCardBtn) {
-    DOM.viewIdCardBtn.addEventListener("click", () => {
-      const showing = DOM.idCardDisplay.style.display === "block";
-      DOM.idCardDisplay.style.display = showing ? "none" : "block";
-      DOM.editProfileForm.style.display = "none";
-      DOM.editProfileBtn.innerText = "Edit Profile";
-
-      if (!showing) {
-        const kingdomName = document.getElementById("profileKingdom").innerText;
-        document.getElementById("idCardUsername").innerText = document.getElementById("profileUsername").innerText;
-        document.getElementById("idCardKingdom").innerText = kingdomName;
-        document.getElementById("idCardAbout").innerText ||= "Ready to win!";
-        document.getElementById("idCardKingdomFlag").src = kingdomFlagSrc(kingdomName);
-      }
-    });
-  }
-
   DOM.editProfileBtn?.addEventListener("click", () => {
     const isVisible = DOM.editProfileForm.style.display === "block";
-    DOM.idCardDisplay.style.display = "none";
     DOM.editProfileForm.style.display = isVisible ? "none" : "block";
     DOM.editProfileBtn.innerText = isVisible ? "Edit Profile" : "Cancel Edit";
 
@@ -1415,7 +1632,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ["Username", "Email", "Kingdom"].forEach(field => {
         document.getElementById(`edit${field}`).value = document.getElementById(`profile${field}`).innerText;
       });
-      document.getElementById("editAbout").value = document.getElementById("idCardAbout").innerText;
+      document.getElementById("editAbout").value = document.getElementById("dashboardAbout").innerText;
     }
   });
 
@@ -1577,11 +1794,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const logoutBtn = document.getElementById("logoutBtn");
     if (logoutBtn) logoutBtn.style.display = isSignedIn ? "" : "none";
     if (DOM.editProfileBtn) DOM.editProfileBtn.style.display = isSignedIn ? "" : "none";
-    if (DOM.viewIdCardBtn) DOM.viewIdCardBtn.style.display = isSignedIn ? "" : "none";
 
     if (!isSignedIn) {
       if (DOM.editProfileForm) DOM.editProfileForm.style.display = "none";
-      if (DOM.idCardDisplay) DOM.idCardDisplay.style.display = "none";
     }
 
     if (user) {
@@ -1591,28 +1806,40 @@ document.addEventListener("DOMContentLoaded", () => {
       const kingdom = extra.kingdom || "Not Set";
       const about = extra.about || "Ready to win!";
       const avatarUrl = user.photoURL || "Renoir.png";
+      const progress = extra.progress || {};
+      const joined = user.metadata && user.metadata.creationTime
+        ? new Date(user.metadata.creationTime).toLocaleDateString(undefined, {
+            year: "numeric",
+            month: "short",
+            day: "numeric"
+          })
+        : "Joined";
 
       document.getElementById("profileUsername").innerText = username;
       document.getElementById("profileEmail").innerText = email;
       document.getElementById("profileKingdom").innerText = kingdom;
-      document.getElementById("profilePrizeMoney").innerText = "$0.00";
-      document.getElementById("idCardAbout").innerText = about;
+      document.getElementById("dashboardAbout").innerText = about;
+      document.getElementById("dashboardJoined").innerText = joined;
+      document.getElementById("dashboardFortWins").innerText = String(progress.fortsWon || 0);
+      document.getElementById("dashboardKingdomWins").innerText = String(progress.kingdomsWon || 0);
+      document.getElementById("dashboardCircuitWins").innerText = String(progress.circuitsWon || 0);
+      document.getElementById("dashboardTitlesWon").innerText = String(progress.titlesWon || 0);
 
       const avatarEl = document.getElementById("profileAvatar");
       if (avatarEl) avatarEl.src = avatarUrl;
-      const idPhotoEl = document.getElementById("idCardPhoto");
-      if (idPhotoEl) idPhotoEl.src = avatarUrl;
     } else {
       document.getElementById("profileUsername").innerText = "Guest";
       document.getElementById("profileEmail").innerText = "guest@example.com";
       document.getElementById("profileKingdom").innerText = "Not Set";
-      document.getElementById("profilePrizeMoney").innerText = "$0.00";
-      document.getElementById("idCardAbout").innerText = "Ready to win!";
+      document.getElementById("dashboardAbout").innerText = "Ready to win!";
+      document.getElementById("dashboardJoined").innerText = "Guest session";
+      document.getElementById("dashboardFortWins").innerText = "0";
+      document.getElementById("dashboardKingdomWins").innerText = "0";
+      document.getElementById("dashboardCircuitWins").innerText = "0";
+      document.getElementById("dashboardTitlesWon").innerText = "0";
 
       const avatarEl = document.getElementById("profileAvatar");
       if (avatarEl) avatarEl.src = "Renoir.png";
-      const idPhotoEl = document.getElementById("idCardPhoto");
-      if (idPhotoEl) idPhotoEl.src = "Renoir.png";
     }
   }
 

@@ -53,7 +53,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFFF2800),
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -65,7 +66,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF24B6FF),
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -77,12 +79,13 @@ class _LobbyScreenState extends State<LobbyScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.deepPurple,
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          child: const Text("My ID Card"),
+                          child: const Text("Dashboard"),
                         ),
                       ],
                     ),
@@ -131,7 +134,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFFFF2800),
                                   foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 20, vertical: 10),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),

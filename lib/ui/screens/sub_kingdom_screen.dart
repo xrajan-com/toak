@@ -31,8 +31,7 @@ class SubKingdomScreen extends StatelessWidget {
 
   static const String _bannerAsset = 'assets/images/banner.png';
 
-  String get _circuitLabel =>
-      group == VenueGroup.india ? 'Indian Circuit' : 'International Circuit';
+  String get _circuitLabel => venueGroupLabel(group);
 
   Future<void> _showInsufficientAupDialog(
     BuildContext context, {
@@ -88,9 +87,7 @@ class SubKingdomScreen extends StatelessWidget {
     if (!auraService.isLoaded) {
       unawaited(auraService.init());
     }
-    final int walletAup = group == VenueGroup.india
-        ? auraService.indiaAup
-        : auraService.internationalAup;
+    final int walletAup = auraService.aupForGroup(group);
     final total = subKingdomCountFor(group: group, kingdomName: kingdom.name);
     final orderedSubKingdomIndices = ce.subKingdomIndicesByPrizePool(
       group: group,
@@ -215,9 +212,7 @@ class SubKingdomScreen extends StatelessWidget {
                 total: total,
                 titleValue: titleValue,
                 circuitProgress: titlesInCircuit,
-                circuitTotal: group == VenueGroup.india
-                    ? indianVenues.length
-                    : internationalVenues.length,
+                circuitTotal: venuesForGroup(group).length,
               ),
             ),
           ),

@@ -3,7 +3,7 @@ import 'package:ten_of_a_kind_poker/config/sub_kingdoms.dart'
     show subKingdomCountFor;
 import 'package:ten_of_a_kind_poker/config/campaign_events.dart' as ce;
 import 'package:ten_of_a_kind_poker/config/venues.dart'
-    show VenueGroup, VenueTheme, indianVenues, internationalVenues;
+    show VenueGroup, VenueTheme, kVenueGroups, venuesForGroup;
 import 'package:ten_of_a_kind_poker/core/aup.dart' as aup;
 
 void main() {
@@ -30,41 +30,24 @@ void main() {
   });
 
   test('Circuit kingdom totals sum to 50,000,000 AUP', () {
-    final indiaSum = indianVenues.fold<int>(
-      0,
-      (sum, v) =>
-          sum +
-          aup.aupForKingdomTotal(group: VenueGroup.india, kingdomName: v.name),
-    );
-    expect(indiaSum, aup.kAupPerCircuit);
-
-    final intlSum = internationalVenues.fold<int>(
-      0,
-      (sum, v) =>
-          sum +
-          aup.aupForKingdomTotal(
-            group: VenueGroup.international,
-            kingdomName: v.name,
-          ),
-    );
-    expect(intlSum, aup.kAupPerCircuit);
+    for (final group in kVenueGroups) {
+      final sum = venuesForGroup(group).fold<int>(
+        0,
+        (sum, v) =>
+            sum + aup.aupForKingdomTotal(group: group, kingdomName: v.name),
+      );
+      expect(sum, aup.kAupPerCircuit, reason: 'Mismatch for $group');
+    }
   });
 
   test('Kingdom totals are unique within each circuit', () {
-    final indiaTotals = <int>[
-      for (final v in indianVenues)
-        aup.aupForKingdomTotal(group: VenueGroup.india, kingdomName: v.name),
-    ];
-    expect(indiaTotals.toSet().length, indiaTotals.length);
-
-    final intlTotals = <int>[
-      for (final v in internationalVenues)
-        aup.aupForKingdomTotal(
-          group: VenueGroup.international,
-          kingdomName: v.name,
-        ),
-    ];
-    expect(intlTotals.toSet().length, intlTotals.length);
+    for (final group in kVenueGroups) {
+      final totals = <int>[
+        for (final v in venuesForGroup(group))
+          aup.aupForKingdomTotal(group: group, kingdomName: v.name),
+      ];
+      expect(totals.toSet().length, totals.length, reason: '$group');
+    }
   });
 
   test('Main + sub-kingdom event rewards equal kingdom total', () {
@@ -87,8 +70,9 @@ void main() {
       }
     }
 
-    checkGroup(VenueGroup.india, indianVenues);
-    checkGroup(VenueGroup.international, internationalVenues);
+    for (final group in kVenueGroups) {
+      checkGroup(group, venuesForGroup(group));
+    }
   });
 
   test('Kingdom rewards are rounded to thousands', () {
@@ -119,8 +103,9 @@ void main() {
       }
     }
 
-    checkGroup(VenueGroup.india, indianVenues);
-    checkGroup(VenueGroup.international, internationalVenues);
+    for (final group in kVenueGroups) {
+      checkGroup(group, venuesForGroup(group));
+    }
   });
 
   test('Entry fees are <= prizes and rounded to thousands', () {
@@ -178,22 +163,19 @@ void main() {
       }
     }
 
-    checkGroup(VenueGroup.india, indianVenues);
-    checkGroup(VenueGroup.international, internationalVenues);
+    for (final group in kVenueGroups) {
+      checkGroup(group, venuesForGroup(group));
+    }
   });
 
   test('Quick Game venue fees are varied and two ads can cover each entry', () {
     final fees = <int>[
-      for (final v in indianVenues)
-        aup.entryFeeForQuickGameVenue(
-          group: VenueGroup.india,
-          venueName: v.name,
-        ),
-      for (final v in internationalVenues)
-        aup.entryFeeForQuickGameVenue(
-          group: VenueGroup.international,
-          venueName: v.name,
-        ),
+      for (final group in kVenueGroups)
+        for (final v in venuesForGroup(group))
+          aup.entryFeeForQuickGameVenue(
+            group: group,
+            venueName: v.name,
+          ),
     ];
 
     expect(fees.toSet().length, greaterThan(1));

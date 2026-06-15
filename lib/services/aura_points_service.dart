@@ -12,6 +12,8 @@ class AuraPointsService extends ChangeNotifier {
   static const int _schemaVersion = 1;
   static const String _kIndiaKey = 'aup.india';
   static const String _kIntlKey = 'aup.international';
+  static const String _kEuroKey = 'aup.euro';
+  static const String _kOceaniaKey = 'aup.oceania';
   static const String _kAwardedKey = 'aup.awarded_events';
   static const String _kLastActiveAtKey = 'aup.last_active_at_ms';
   static const String _kPrevActiveAtKey = 'aup.prev_active_at_ms';
@@ -36,6 +38,8 @@ class AuraPointsService extends ChangeNotifier {
 
   int _indiaAup = 0;
   int _internationalAup = 0;
+  int _euroAup = 0;
+  int _oceaniaAup = 0;
   Set<String> _awardedEventIds = <String>{};
 
   int _lastActiveAtMs = 0;
@@ -65,13 +69,46 @@ class AuraPointsService extends ChangeNotifier {
 
   int get indiaAup => _indiaAup;
   int get internationalAup => _internationalAup;
-  int get totalAup => _indiaAup + _internationalAup;
+  int get euroAup => _euroAup;
+  int get oceaniaAup => _oceaniaAup;
+  int get totalAup => _indiaAup + _internationalAup + _euroAup + _oceaniaAup;
+
+  int aupForGroup(VenueGroup group) => switch (group) {
+        VenueGroup.india => _indiaAup,
+        VenueGroup.international => _internationalAup,
+        VenueGroup.euro => _euroAup,
+        VenueGroup.oceania => _oceaniaAup,
+      };
+
+  void _setAupForGroup(VenueGroup group, int value) {
+    final clamped = value.clamp(0, aup.kAupPerCircuit);
+    switch (group) {
+      case VenueGroup.india:
+        _indiaAup = clamped;
+        break;
+      case VenueGroup.international:
+        _internationalAup = clamped;
+        break;
+      case VenueGroup.euro:
+        _euroAup = clamped;
+        break;
+      case VenueGroup.oceania:
+        _oceaniaAup = clamped;
+        break;
+    }
+  }
 
   int get indiaAuraMilli => aup
       .auraMilliFromAup(_indiaAup)
       .clamp(0, aup.kAupMaxAuraPerCircuit * aup.kAuraMilliPerAura);
   int get internationalAuraMilli => aup
       .auraMilliFromAup(_internationalAup)
+      .clamp(0, aup.kAupMaxAuraPerCircuit * aup.kAuraMilliPerAura);
+  int get euroAuraMilli => aup
+      .auraMilliFromAup(_euroAup)
+      .clamp(0, aup.kAupMaxAuraPerCircuit * aup.kAuraMilliPerAura);
+  int get oceaniaAuraMilli => aup
+      .auraMilliFromAup(_oceaniaAup)
       .clamp(0, aup.kAupMaxAuraPerCircuit * aup.kAuraMilliPerAura);
   int get totalAuraMilli => aup
       .auraMilliFromAup(totalAup)
@@ -80,6 +117,8 @@ class AuraPointsService extends ChangeNotifier {
   double get indiaAura => indiaAuraMilli / aup.kAuraMilliPerAura;
   double get internationalAura =>
       internationalAuraMilli / aup.kAuraMilliPerAura;
+  double get euroAura => euroAuraMilli / aup.kAuraMilliPerAura;
+  double get oceaniaAura => oceaniaAuraMilli / aup.kAuraMilliPerAura;
   double get totalAura => totalAuraMilli / aup.kAuraMilliPerAura;
 
   int get activityScore => _activityScore.clamp(0, 10000);
@@ -187,6 +226,8 @@ class AuraPointsService extends ChangeNotifier {
   bool _hasRemoteAuraData(Map<String, dynamic> data) {
     return data.containsKey('indiaAup') ||
         data.containsKey('internationalAup') ||
+        data.containsKey('euroAup') ||
+        data.containsKey('oceaniaAup') ||
         data.containsKey('awardedEventIds') ||
         data.containsKey('matchesPlayed') ||
         data.containsKey('finishPermilleSum') ||
@@ -201,6 +242,12 @@ class AuraPointsService extends ChangeNotifier {
     if (data.containsKey('internationalAup')) {
       _internationalAup =
           _numInt(data['internationalAup'], fallback: _internationalAup);
+    }
+    if (data.containsKey('euroAup')) {
+      _euroAup = _numInt(data['euroAup'], fallback: _euroAup);
+    }
+    if (data.containsKey('oceaniaAup')) {
+      _oceaniaAup = _numInt(data['oceaniaAup'], fallback: _oceaniaAup);
     }
     if (data.containsKey('awardedEventIds')) {
       _awardedEventIds = _stringSetFrom(data['awardedEventIds']);
@@ -248,6 +295,8 @@ class AuraPointsService extends ChangeNotifier {
     _hydratingRemote = true;
     _indiaAup = snapshot.indiaAup;
     _internationalAup = snapshot.internationalAup;
+    _euroAup = snapshot.euroAup;
+    _oceaniaAup = snapshot.oceaniaAup;
     _awardedEventIds = snapshot.awardedEventIds.toSet();
     _lastActiveAtMs = snapshot.lastActiveAtMs;
     _prevActiveAtMs = snapshot.prevActiveAtMs;
@@ -291,6 +340,8 @@ class AuraPointsService extends ChangeNotifier {
   void _resetState() {
     _indiaAup = 0;
     _internationalAup = 0;
+    _euroAup = 0;
+    _oceaniaAup = 0;
     _awardedEventIds = <String>{};
     _lastActiveAtMs = 0;
     _prevActiveAtMs = 0;
@@ -333,6 +384,8 @@ class AuraPointsService extends ChangeNotifier {
       'schemaVersion': _schemaVersion,
       'indiaAup': _indiaAup,
       'internationalAup': _internationalAup,
+      'euroAup': _euroAup,
+      'oceaniaAup': _oceaniaAup,
       'awardedEventIds': awarded,
       'lastActiveAtMs': _lastActiveAtMs,
       'prevActiveAtMs': _prevActiveAtMs,
@@ -395,6 +448,8 @@ class AuraPointsService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       _indiaAup = prefs.getInt(_kIndiaKey) ?? 0;
       _internationalAup = prefs.getInt(_kIntlKey) ?? 0;
+      _euroAup = prefs.getInt(_kEuroKey) ?? 0;
+      _oceaniaAup = prefs.getInt(_kOceaniaKey) ?? 0;
       final list = prefs.getStringList(_kAwardedKey) ?? const <String>[];
       _awardedEventIds = list.toSet();
       _lastActiveAtMs = prefs.getInt(_kLastActiveAtKey) ?? 0;
@@ -411,6 +466,8 @@ class AuraPointsService extends ChangeNotifier {
       // Keep defaults; don't crash the app if prefs aren't available.
       _indiaAup = 0;
       _internationalAup = 0;
+      _euroAup = 0;
+      _oceaniaAup = 0;
       _awardedEventIds = <String>{};
       _lastActiveAtMs = 0;
       _prevActiveAtMs = 0;
@@ -432,11 +489,14 @@ class AuraPointsService extends ChangeNotifier {
     if (!_loaded) await init();
 
     if (totalAup <= 0) {
-      final int indiaGrant = aup.kRegisteredStarterAup ~/ 2;
-      final int internationalGrant = aup.kRegisteredStarterAup - indiaGrant;
-      _indiaAup = (_indiaAup + indiaGrant).clamp(0, aup.kAupPerCircuit);
-      _internationalAup =
-          (_internationalAup + internationalGrant).clamp(0, aup.kAupPerCircuit);
+      final groups = VenueGroup.values;
+      final int baseGrant = aup.kRegisteredStarterAup ~/ groups.length;
+      int remainder = aup.kRegisteredStarterAup - (baseGrant * groups.length);
+      for (final group in groups) {
+        final extra = remainder > 0 ? 1 : 0;
+        if (remainder > 0) remainder--;
+        _setAupForGroup(group, aupForGroup(group) + baseGrant + extra);
+      }
     }
     _registeredStarterGranted = true;
     await _persist();
@@ -462,14 +522,9 @@ class AuraPointsService extends ChangeNotifier {
     );
     if (server != null) return server.accepted;
 
-    if (group == VenueGroup.india) {
-      if (_indiaAup < amount) return false;
-      _indiaAup = (_indiaAup - amount).clamp(0, aup.kAupPerCircuit);
-    } else {
-      if (_internationalAup < amount) return false;
-      _internationalAup =
-          (_internationalAup - amount).clamp(0, aup.kAupPerCircuit);
-    }
+    final before = aupForGroup(group);
+    if (before < amount) return false;
+    _setAupForGroup(group, before - amount);
 
     await _persist();
     notifyListeners();
@@ -514,16 +569,10 @@ class AuraPointsService extends ChangeNotifier {
       return server.accepted ? server.delta.clamp(0, delta) : 0;
     }
 
-    final int before =
-        group == VenueGroup.india ? _indiaAup : _internationalAup;
-    if (group == VenueGroup.india) {
-      _indiaAup = (_indiaAup + delta).clamp(0, aup.kAupPerCircuit);
-    } else {
-      _internationalAup =
-          (_internationalAup + delta).clamp(0, aup.kAupPerCircuit);
-    }
+    final int before = aupForGroup(group);
+    _setAupForGroup(group, before + delta);
 
-    final int after = group == VenueGroup.india ? _indiaAup : _internationalAup;
+    final int after = aupForGroup(group);
     final int credited = (after - before).clamp(0, delta);
     _awardedEventIds.add(eventId); // still tracked for milestones/analytics
     await _persist();
@@ -547,16 +596,10 @@ class AuraPointsService extends ChangeNotifier {
     if (server != null)
       return server.accepted ? server.delta.clamp(0, amount) : 0;
 
-    final int before =
-        group == VenueGroup.india ? _indiaAup : _internationalAup;
-    if (group == VenueGroup.india) {
-      _indiaAup = (_indiaAup + amount).clamp(0, aup.kAupPerCircuit);
-    } else {
-      _internationalAup =
-          (_internationalAup + amount).clamp(0, aup.kAupPerCircuit);
-    }
+    final int before = aupForGroup(group);
+    _setAupForGroup(group, before + amount);
 
-    final int after = group == VenueGroup.india ? _indiaAup : _internationalAup;
+    final int after = aupForGroup(group);
     final int credited = (after - before).clamp(0, amount);
     await _persist();
     notifyListeners();
@@ -568,6 +611,8 @@ class AuraPointsService extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_kIndiaKey, _indiaAup);
       await prefs.setInt(_kIntlKey, _internationalAup);
+      await prefs.setInt(_kEuroKey, _euroAup);
+      await prefs.setInt(_kOceaniaKey, _oceaniaAup);
       await prefs.setStringList(
           _kAwardedKey, _awardedEventIds.toList()..sort());
       await prefs.setInt(_kLastActiveAtKey, _lastActiveAtMs);
@@ -645,30 +690,15 @@ class AuraPointsService extends ChangeNotifier {
     final int before = totalAup;
     int remaining = amount;
 
-    void takeFromIntlFirst() {
-      final int takeIntl = _internationalAup.clamp(0, remaining);
-      _internationalAup -= takeIntl;
-      remaining -= takeIntl;
-      if (remaining <= 0) return;
-      final int takeIndia = _indiaAup.clamp(0, remaining);
-      _indiaAup -= takeIndia;
-      remaining -= takeIndia;
-    }
-
-    void takeFromIndiaFirst() {
-      final int takeIndia = _indiaAup.clamp(0, remaining);
-      _indiaAup -= takeIndia;
-      remaining -= takeIndia;
-      if (remaining <= 0) return;
-      final int takeIntl = _internationalAup.clamp(0, remaining);
-      _internationalAup -= takeIntl;
-      remaining -= takeIntl;
-    }
-
-    if (_internationalAup >= _indiaAup) {
-      takeFromIntlFirst();
-    } else {
-      takeFromIndiaFirst();
+    while (remaining > 0) {
+      final groups = VenueGroup.values.toList()
+        ..sort((a, b) => aupForGroup(b).compareTo(aupForGroup(a)));
+      final group = groups.first;
+      final balance = aupForGroup(group);
+      if (balance <= 0) break;
+      final take = balance.clamp(0, remaining);
+      _setAupForGroup(group, balance - take);
+      remaining -= take;
     }
 
     return (before - totalAup).clamp(0, before);

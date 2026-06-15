@@ -115,13 +115,41 @@ const Map<String, String> _monumentForVenue = {
   'Australia': 'assets/images/watermarks/australia.svg',
   'Russia': 'assets/images/watermarks/russia.svg',
   'Arabia': 'assets/images/watermarks/arabia.svg',
+  'Persia': 'assets/images/watermarks/arabia.svg',
   'Africa': 'assets/images/watermarks/africa.svg',
   'Amazon': 'assets/images/watermarks/amazon.svg',
   'S. America': 'assets/images/watermarks/amazon.svg',
   'Europe': 'assets/images/watermarks/europe.svg',
+  'Far East': 'assets/images/watermarks/china.svg',
+  'Asia Rest': 'assets/images/watermarks/southeast.svg',
   'Asia': 'assets/images/watermarks/southeast.svg',
   // Backward-compat alias.
   'Southeast': 'assets/images/watermarks/southeast.svg',
+  // Euro
+  'Britain': 'assets/images/watermarks/Britain/britain.svg',
+  'France': 'assets/images/watermarks/France/france.svg',
+  'Italy': 'assets/images/watermarks/Italy/italy.svg',
+  'Spain': 'assets/images/watermarks/Spain/spain.svg',
+  'Portugal': 'assets/images/watermarks/Portugal/portugal.svg',
+  'North Sea': 'assets/images/watermarks/North Sea/north_sea.svg',
+  'Scandinavia': 'assets/images/watermarks/Scandinavia/scandinavia.svg',
+  'Baltic Marches':
+      'assets/images/watermarks/Baltic Marches/baltic_marches.svg',
+  'Russia & Siberia':
+      'assets/images/watermarks/Russia & Siberia/russia_siberia.svg',
+  'Mediterranean': 'assets/images/watermarks/Mediterranean/mediterranean.svg',
+  // Oceania
+  'Alaska': 'assets/images/watermarks/Alaska/alaska.svg',
+  'Caribbean': 'assets/images/watermarks/Caribbean/caribbean.svg',
+  'Dragonland': 'assets/images/watermarks/Dragonland/dragonland.svg',
+  'Straits': 'assets/images/watermarks/Straits/straits.svg',
+  'Indian Ocean': 'assets/images/watermarks/Indian Ocean/indian_ocean.svg',
+  'Pacific': 'assets/images/watermarks/Pacific/pacific.svg',
+  'British Isles': 'assets/images/watermarks/British Isles/british_isles.svg',
+  'French Isles': 'assets/images/watermarks/French Isles/french_isles.svg',
+  'Dutch Isles': 'assets/images/watermarks/Dutch Isles/dutch_isles.svg',
+  'American Isles':
+      'assets/images/watermarks/American Isles/american_isles.svg',
 };
 
 String _toSnake(String s) =>

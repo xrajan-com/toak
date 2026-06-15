@@ -2,7 +2,7 @@ class Env {
   /// Base URL for your backend API
   static const String apiBaseUrl = 'https://api.tenofakind.com';
 
-  /// Public website (documents/ID card portal).
+  /// Public website documents portal.
   /// Use the live Firebase Hosting URL until the custom domain is configured.
   static const String websiteBaseUrl = 'https://ten-of-a-kind-poker.web.app';
   static const String documentsPortalUrl = '$websiteBaseUrl/documents.html';

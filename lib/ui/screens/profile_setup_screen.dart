@@ -8,7 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import 'package:ten_of_a_kind_poker/config/venues.dart'
-    show indianVenues, internationalVenues;
+    show kVenueGroups, venueGroupLabel, venuesForGroup;
 import 'package:ten_of_a_kind_poker/features/venue/game_mode.dart';
 import 'package:ten_of_a_kind_poker/services/profile_service.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/venue_screen.dart';
@@ -96,8 +96,12 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       }
     }
 
-    addGroup('India', indianVenues.map((venue) => venue.name));
-    addGroup('International', internationalVenues.map((venue) => venue.name));
+    for (final group in kVenueGroups) {
+      addGroup(
+        venueGroupLabel(group).replaceAll(' Circuit', ''),
+        venuesForGroup(group).map((venue) => venue.name),
+      );
+    }
     return items;
   }
 
