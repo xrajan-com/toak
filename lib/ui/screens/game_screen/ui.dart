@@ -1539,9 +1539,9 @@ class _GameScreenUIState extends State<GameScreenUI>
 
   List<Widget> _buildSideInfoPills({required Size screenSize}) {
     final double leftMaxWidth =
-        (screenSize.width * 0.40).clamp(220.0, 430.0).toDouble();
+        (screenSize.width * 0.34).clamp(150.0, 330.0).toDouble();
     final double rightMaxWidth =
-        (screenSize.width * 0.24).clamp(160.0, 260.0).toDouble();
+        (screenSize.width * 0.36).clamp(220.0, 360.0).toDouble();
     final EdgeInsets cornerInset = EdgeInsets.fromLTRB(
       math.max(6.0, screenSize.width * 0.006),
       screenSize.height < 700 ? 2.0 : 6.0,
@@ -1561,7 +1561,6 @@ class _GameScreenUIState extends State<GameScreenUI>
               child: _VenueChip(
                 flagPath: widget.flagPath,
                 venueName: widget.venueName,
-                offsetMinutes: widget.venueOffsetMinutes,
                 glow: _heroPillGlow,
                 glowActive: _heroPillGlowActive,
               ),
@@ -1579,7 +1578,6 @@ class _GameScreenUIState extends State<GameScreenUI>
               constraints: BoxConstraints(maxWidth: rightMaxWidth),
               child: _ClockInfoPill(
                 offsetMinutes: widget.venueOffsetMinutes,
-                displayMode: DayDateClockDisplayMode.dayDateOnly,
                 glow: _heroPillGlow,
                 glowActive: _heroPillGlowActive,
               ),
@@ -3419,14 +3417,12 @@ String _normalizeSuit(String raw) {
 class _VenueChip extends StatelessWidget {
   final String flagPath;
   final String venueName;
-  final int offsetMinutes;
   final Animation<double>? glow;
   final bool glowActive;
   const _VenueChip({
     super.key,
     required this.flagPath,
     required this.venueName,
-    required this.offsetMinutes,
     this.glow,
     this.glowActive = false,
   });
@@ -3450,22 +3446,6 @@ class _VenueChip extends StatelessWidget {
                 maxLines: 1,
                 softWrap: false,
                 overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              '•',
-              style: _kSidePillTextStyle.copyWith(
-                color: Colors.white.withValues(alpha: 0.72),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: DayDateClock(
-                offsetMinutes: offsetMinutes,
-                pillStyle: false,
-                displayMode: DayDateClockDisplayMode.timeOnly,
-                textStyle: _kSidePillTextStyle,
               ),
             ),
           ],

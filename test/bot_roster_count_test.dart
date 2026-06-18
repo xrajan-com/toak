@@ -97,4 +97,22 @@ void main() {
       expect(source, isNot(contains(name)));
     }
   });
+
+  test('fixed bot aura values never exceed 99', () {
+    final source = File('lib/ui/screens/game_screen.dart').readAsStringSync();
+    final match = RegExp(
+      r'const Map<String, int> _botAuraByName = \{([\s\S]*?)\};',
+    ).firstMatch(source);
+    expect(match, isNotNull, reason: 'Missing bot aura catalog.');
+
+    final overCap = <String>[];
+    for (final auraMatch
+        in RegExp(r"'([^']+)':\s*(\d+),").allMatches(match!.group(1)!)) {
+      final name = auraMatch.group(1)!;
+      final aura = int.parse(auraMatch.group(2)!);
+      if (aura > 99) overCap.add('$name=$aura');
+    }
+
+    expect(overCap, isEmpty);
+  });
 }

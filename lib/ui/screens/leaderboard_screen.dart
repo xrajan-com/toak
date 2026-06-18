@@ -38,7 +38,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   }
 
   String _formatAura(LeaderboardEntry entry) {
-    if (entry.auraMilli % 1000 == 0) {
+    if (entry.cappedAuraMilli % 1000 == 0) {
       return entry.aura.toStringAsFixed(0);
     }
     return entry.aura.toStringAsFixed(1);

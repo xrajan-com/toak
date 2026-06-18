@@ -16,8 +16,9 @@ class DisclaimerSplash extends StatefulWidget {
 class _DisclaimerSplashState extends State<DisclaimerSplash>
     with SingleTickerProviderStateMixin {
   static const _paragraphs = [
-    'Ten of a Kind is a small passion project by a poker fan who prefers to stay anonymous. It is built for fun, polish, and learning - not as a business and not as a gambling product.',
+    'Ten of a Kind is just a passion project of a former poker player (prefer to stay anonymous). It is built for fun and learning - not as a gambling product.',
     'This game is free to play. There are no cash deposits, no cash-outs, and no rewards with real-world value. Treat it as a mental gym: practice patience, attention, probability, and decision-making under uncertainty.',
+    'Leave your valuable feedback here:- +91 953 7654321.',
     'Poker theory is about making the best decision with imperfect information. Instead of "Did I win this hand?", focus on whether your choices are profitable over time. Position, pot odds, equity, and ranges matter more than any single result.',
     'Game theory shows up everywhere in poker: balancing bluffs and value, mixing strategies, and staying unpredictable while still being fundamentally sound. Even a light exposure to expected value can sharpen how you think about risk, incentives, and discipline.',
     'In India, real-money gambling and many "real-money gaming" operations are tightly regulated, and some jurisdictions restrict or ban them due to consumer harm, addiction risk, and fraud. This app intentionally avoids real-money wagering - please follow your local laws, steer clear of illegal offerings, and report suspicious operations through the appropriate channels.',

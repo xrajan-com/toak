@@ -383,9 +383,9 @@ List<VenueTheme> venuesForGroup(VenueGroup group) => switch (group) {
     };
 
 const List<VenueGroup> kVenueGroups = <VenueGroup>[
-  VenueGroup.international,
-  VenueGroup.india,
   VenueGroup.euro,
+  VenueGroup.india,
+  VenueGroup.international,
   VenueGroup.oceania,
 ];
 
@@ -393,5 +393,5 @@ String venueGroupLabel(VenueGroup group) => switch (group) {
       VenueGroup.international => 'International Circuit',
       VenueGroup.india => 'Indian Circuit',
       VenueGroup.euro => 'Euro Circuit',
-      VenueGroup.oceania => 'Oceania Circuit',
+      VenueGroup.oceania => 'Micro Circuit',
     };

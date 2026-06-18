@@ -114,6 +114,48 @@ void main() {
     expect(find.text('AUP +2,000 added.'), findsOneWidget);
   });
 
+  testWidgets('Hero finish overlay labels winnings as AUP', (tester) async {
+    final heroSeat = Seat(
+      name: 'Hero',
+      chips: 0,
+      startChips: 10000,
+      bet: 0,
+      isHero: true,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) {
+            return Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () => go.showHeroFinishOverlay(
+                    context,
+                    heroSeat: heroSeat,
+                    rank: 1,
+                    totalPlayers: 10,
+                    handsPlayed: 8,
+                    finalChips: 0,
+                    winnings: 2300,
+                  ),
+                  child: const Text('Open winnings overlay'),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open winnings overlay'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('WINNINGS AUP 2,300'), findsOneWidget);
+    expect(find.text('PODIUM FINISH. AUP PAYOUT EARNED.'), findsOneWidget);
+  });
+
   testWidgets('Hero finish overlay runs match-end hook after five seconds', (
     tester,
   ) async {

@@ -25,11 +25,13 @@
       <img src="images/banner.png" alt="Ten of a Kind Poker" class="site-logo" />
     </a>
     <nav role="navigation">
-      <a href="#venues">Kingdom Atlas</a>
-      <a href="#features">Game Modes</a>
-      <a href="#footer-section">Support</a>
-      <a href="#" class="profile-icon-link" aria-label="Open player dashboard">
+      <a href="#" class="profile-icon-link profile-action-link" aria-label="Sign in to manage profile">
+        <span class="profile-icon-text">My Profile</span>
         <div class="profile-icon" aria-hidden="true"></div>
+      </a>
+      <a href="#" class="dashboard-icon-link profile-action-link" aria-label="Open player dashboard">
+        <span class="profile-icon-text">Dashboard</span>
+        <div class="dashboard-icon" aria-hidden="true"></div>
       </a>
     </nav>
   </header>
@@ -77,6 +79,25 @@
           <path d="M15.8 9.7 6.5 4.1c-.9-.5-1.6-.5-2.1 0l8.5 8.5 2.9-2.9Z" fill="#ff3b30"/>
         </svg>
       </a>
+      <a
+        class="download-pill app-store-badge"
+        href="https://apps.apple.com/us/search?term=Ten%20of%20a%20Kind%20Poker"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Download Ten of a Kind Poker on the App Store"
+      >
+        <svg class="apple-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M16.2 2.2c.1 1-.3 2-1 2.8-.7.8-1.8 1.4-2.8 1.3-.1-1 .3-2 1-2.7.7-.8 1.9-1.3 2.8-1.4Zm3.1 15.4c-.5 1.1-.8 1.6-1.5 2.6-1 1.5-2.4 3.3-4.1 3.3-1.5 0-1.9-1-3.9-1s-2.5 1-4 1c-1.7 0-3-1.7-4-3.2-2.8-4.2-3.1-9.1-1.4-11.7 1.2-1.8 3.1-2.9 4.9-2.9 1.8 0 2.9 1 4.4 1 1.4 0 2.3-1 4.4-1 1.6 0 3.3.9 4.5 2.3-4 2.2-3.3 7.9.7 9.6Z"/>
+        </svg>
+        <span class="play-store-copy">
+          <span>DOWNLOAD ON</span>
+          <strong>App Store</strong>
+        </span>
+        <svg class="app-store-arrow" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M5 12h12"/>
+          <path d="m13 6 6 6-6 6"/>
+        </svg>
+      </a>
     </div>
   </section>
   <main>
@@ -103,47 +124,11 @@
 </div>
     </div>
     <section class="venue-showcase" id="venues">
-      <div class="aura-leaderboard-strip" aria-label="Circuit Aura leaderboard">
-        <div class="aura-board-item aura-board-heading">
-          <span class="aura-board-label aura-board-label-spacer" aria-hidden="true">Leaderboard</span>
-          <div class="aura-board-pill aura-board-title">Leaderboard</div>
-        </div>
-        <div class="aura-board-item aura-board-circuit aura-board-world" tabindex="0">
-          <span class="aura-board-label">International Circuit</span>
-          <div class="aura-board-pill">Jordan Walker</div>
-          <ol class="aura-board-menu" aria-label="International Circuit top 10 Aura players">
-            <li><span>Jordan Walker</span><strong>99 AURA</strong></li>
-            <li><span>Ling Zhao</span><strong>98 AURA</strong></li>
-            <li><span>Casey Morgan</span><strong>97 AURA</strong></li>
-            <li><span>Kofi Adeyemi</span><strong>96 AURA</strong></li>
-            <li><span>Mei Chen</span><strong>95 AURA</strong></li>
-            <li><span>Hassan Al Noor</span><strong>94 AURA</strong></li>
-            <li><span>Rafael Mendes</span><strong>93 AURA</strong></li>
-            <li><span>Amara Ndlovu</span><strong>92 AURA</strong></li>
-            <li><span>Brianna Lee</span><strong>91 AURA</strong></li>
-            <li><span>Elena Rossi</span><strong>90 AURA</strong></li>
-          </ol>
-        </div>
-        <div class="aura-board-item aura-board-circuit aura-board-india" tabindex="0">
-          <span class="aura-board-label">Royal Indian Circuit</span>
-          <div class="aura-board-pill">Bajirao Kale</div>
-          <ol class="aura-board-menu" aria-label="Royal Indian Circuit top 10 Aura players">
-            <li><span>Bajirao Kale</span><strong>99 AURA</strong></li>
-            <li><span>Jaspreet Dhillon</span><strong>98 AURA</strong></li>
-            <li><span>Siddharth Gaekwad</span><strong>97 AURA</strong></li>
-            <li><span>Tenzin Lama</span><strong>96 AURA</strong></li>
-            <li><span>Kabir Verma</span><strong>95 AURA</strong></li>
-            <li><span>Kaveri Rao</span><strong>94 AURA</strong></li>
-            <li><span>Arjun Deshmukh</span><strong>93 AURA</strong></li>
-            <li><span>Savitri Shinde</span><strong>92 AURA</strong></li>
-            <li><span>Harleen Kaur</span><strong>91 AURA</strong></li>
-            <li><span>Hari Krishnan</span><strong>90 AURA</strong></li>
-          </ol>
-        </div>
-        <div class="aura-board-item aura-board-circuit aura-board-euro" tabindex="0">
-          <span class="aura-board-label">Euro Circuit</span>
-          <div class="aura-board-pill">Mei Lin Tan</div>
-          <ol class="aura-board-menu" aria-label="Euro Circuit top 10 Aura players">
+      <div class="venue-tabs" role="tablist">
+        <div class="venue-tab-item venue-tab-item-euro">
+          <button class="venue-tab active" data-target="euro" role="tab" aria-selected="true">Euro Circuit</button>
+          <ol class="venue-leaderboard-menu" aria-label="Euro Circuit leaderboard">
+            <li class="venue-leaderboard-heading">Leaderboard</li>
             <li><span>Mei Lin Tan</span><strong>99 AURA</strong></li>
             <li><span>Darren Lim</span><strong>98 AURA</strong></li>
             <li><span>Luca Bianchi</span><strong>97 AURA</strong></li>
@@ -156,10 +141,42 @@
             <li><span>Van Nguyen</span><strong>90 AURA</strong></li>
           </ol>
         </div>
-        <div class="aura-board-item aura-board-circuit aura-board-oceania" tabindex="0">
-          <span class="aura-board-label">Oceania Circuit</span>
-          <div class="aura-board-pill">Nur Aisyah</div>
-          <ol class="aura-board-menu" aria-label="Oceania Circuit top 10 Aura players">
+        <div class="venue-tab-item venue-tab-item-india">
+          <button class="venue-tab" data-target="india" role="tab" aria-selected="false">Indian Circuit</button>
+          <ol class="venue-leaderboard-menu" aria-label="Indian Circuit leaderboard">
+            <li class="venue-leaderboard-heading">Leaderboard</li>
+            <li><span>Bajirao Kale</span><strong>99 AURA</strong></li>
+            <li><span>Jaspreet Dhillon</span><strong>98 AURA</strong></li>
+            <li><span>Siddharth Gaekwad</span><strong>97 AURA</strong></li>
+            <li><span>Tenzin Lama</span><strong>96 AURA</strong></li>
+            <li><span>Kabir Verma</span><strong>95 AURA</strong></li>
+            <li><span>Kaveri Rao</span><strong>94 AURA</strong></li>
+            <li><span>Arjun Deshmukh</span><strong>93 AURA</strong></li>
+            <li><span>Savitri Shinde</span><strong>92 AURA</strong></li>
+            <li><span>Harleen Kaur</span><strong>91 AURA</strong></li>
+            <li><span>Hari Krishnan</span><strong>90 AURA</strong></li>
+          </ol>
+        </div>
+        <div class="venue-tab-item venue-tab-item-world">
+          <button class="venue-tab" data-target="world" role="tab" aria-selected="false">International Circuit</button>
+          <ol class="venue-leaderboard-menu" aria-label="International Circuit leaderboard">
+            <li class="venue-leaderboard-heading">Leaderboard</li>
+            <li><span>Jordan Walker</span><strong>99 AURA</strong></li>
+            <li><span>Ling Zhao</span><strong>98 AURA</strong></li>
+            <li><span>Casey Morgan</span><strong>97 AURA</strong></li>
+            <li><span>Kofi Adeyemi</span><strong>96 AURA</strong></li>
+            <li><span>Mei Chen</span><strong>95 AURA</strong></li>
+            <li><span>Hassan Al Noor</span><strong>94 AURA</strong></li>
+            <li><span>Rafael Mendes</span><strong>93 AURA</strong></li>
+            <li><span>Amara Ndlovu</span><strong>92 AURA</strong></li>
+            <li><span>Brianna Lee</span><strong>91 AURA</strong></li>
+            <li><span>Elena Rossi</span><strong>90 AURA</strong></li>
+          </ol>
+        </div>
+        <div class="venue-tab-item venue-tab-item-oceania">
+          <button class="venue-tab" data-target="oceania" role="tab" aria-selected="false">Micro Circuit</button>
+          <ol class="venue-leaderboard-menu" aria-label="Micro Circuit leaderboard">
+            <li class="venue-leaderboard-heading">Leaderboard</li>
             <li><span>Nur Aisyah</span><strong>99 AURA</strong></li>
             <li><span>Rosa Delgado</span><strong>98 AURA</strong></li>
             <li><span>Anong Srisai</span><strong>97 AURA</strong></li>
@@ -173,15 +190,9 @@
           </ol>
         </div>
       </div>
-      <div class="venue-tabs" role="tablist">
-        <button class="venue-tab active" data-target="world" role="tab" aria-selected="true">International Circuit</button>
-        <button class="venue-tab" data-target="india" role="tab" aria-selected="false">Royal Indian Circuit</button>
-        <button class="venue-tab" data-target="euro" role="tab" aria-selected="false">Euro Circuit</button>
-        <button class="venue-tab" data-target="oceania" role="tab" aria-selected="false">Oceania Circuit</button>
-      </div>
       <div class="venue-grids">
         <div class="venue-grid" data-group="india" role="tabpanel">
-          <article class="venue-card" style="--felt:#556B2F">
+          <article class="venue-card" style="--felt:#CBA014">
             <div class="venue-card-flag">
               <img src="images/venues/baroda.png" alt="Baroda flag" loading="lazy">
             </div>
@@ -190,7 +201,7 @@
               <p>8 Forts, Title: Patel</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#013220">
+          <article class="venue-card" style="--felt:#761EB4">
             <div class="venue-card-flag">
               <img src="images/venues/hyderabad.png" alt="Hyderabad flag" loading="lazy">
             </div>
@@ -199,7 +210,7 @@
               <p>5 Forts, Title: Nizam</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#24247A">
+          <article class="venue-card" style="--felt:#8B0000">
             <div class="venue-card-flag">
               <img src="images/venues/indore.png" alt="Indore flag" loading="lazy">
             </div>
@@ -208,7 +219,7 @@
               <p>5 Forts, Title: Subedar</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#5F413A">
+          <article class="venue-card" style="--felt:#DC53DC">
             <div class="venue-card-flag">
               <img src="images/venues/jaipur.png" alt="Jaipur flag" loading="lazy">
             </div>
@@ -217,7 +228,7 @@
               <p>9 Forts, Title: Rawal</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#CBA014">
+          <article class="venue-card" style="--felt:#FF6B01">
             <div class="venue-card-flag">
               <img src="images/venues/maratha-empire.png" alt="Maratha Empire flag" loading="lazy">
             </div>
@@ -226,7 +237,7 @@
               <p>8 Forts, Title: Peshwa</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#8B0000">
+          <article class="venue-card" style="--felt:#5F413A">
             <div class="venue-card-flag">
               <img src="images/venues/mysore.png" alt="Mysore flag" loading="lazy">
             </div>
@@ -235,7 +246,7 @@
               <p>5 Forts, Title: Sultan</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#DC53DC">
+          <article class="venue-card" style="--felt:#00A6E8">
             <div class="venue-card-flag">
               <img src="images/venues/new-delhi.png" alt="New Delhi flag" loading="lazy">
             </div>
@@ -244,7 +255,7 @@
               <p>12 Forts, Title: Raja</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#00A6E8">
+          <article class="venue-card" style="--felt:#24247A">
             <div class="venue-card-flag">
               <img src="images/venues/sikh-empire.png" alt="Sikh Empire flag" loading="lazy">
             </div>
@@ -253,7 +264,7 @@
               <p>21 Forts, Title: Zaildar</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#761EB4">
+          <article class="venue-card" style="--felt:#013220">
             <div class="venue-card-flag">
               <img src="images/venues/sikkim.png" alt="Sikkim flag" loading="lazy">
             </div>
@@ -262,7 +273,7 @@
               <p>10 Forts, Title: Sherpa</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#FF6B01">
+          <article class="venue-card" style="--felt:#556B2F">
             <div class="venue-card-flag">
               <img src="images/venues/travancore.png" alt="Travancore flag" loading="lazy">
             </div>
@@ -272,7 +283,7 @@
             </div>
           </article>
         </div>
-        <div class="venue-grid active" data-group="world" role="tabpanel">
+        <div class="venue-grid" data-group="world" role="tabpanel">
           <article class="venue-card" style="--felt:#556B2F">
             <div class="venue-card-flag">
               <img src="images/venues/africa.png" alt="Africa flag" loading="lazy">
@@ -309,7 +320,7 @@
               <p>9 Forts, Title: Sheikh</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#CBA014">
+          <article class="venue-card" style="--felt:#8B0000">
             <div class="venue-card-flag">
               <img src="images/venues/china.png" alt="China flag" loading="lazy">
             </div>
@@ -318,7 +329,7 @@
               <p>7 Forts, Title: Jiangjun</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#8B0000">
+          <article class="venue-card" style="--felt:#DC53DC">
             <div class="venue-card-flag">
               <img src="images/venues/china.png" alt="Far East flag" loading="lazy">
             </div>
@@ -327,7 +338,7 @@
               <p>8 Forts, Title: Shogun</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#DC53DC">
+          <article class="venue-card" style="--felt:#00A6E8">
             <div class="venue-card-flag">
               <img src="images/venues/southeast.png" alt="Asia Rest flag" loading="lazy">
             </div>
@@ -336,7 +347,7 @@
               <p>8 Forts, Title: Mandala</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#00A6E8">
+          <article class="venue-card" style="--felt:#761EB4">
             <div class="venue-card-flag">
               <img src="images/venues/russia.png" alt="Central Asia flag" loading="lazy">
             </div>
@@ -345,7 +356,7 @@
               <p>11 Forts, Title: Emir</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#761EB4">
+          <article class="venue-card" style="--felt:#FF6B01">
             <div class="venue-card-flag">
               <img src="images/venues/arabia.png" alt="Persia flag" loading="lazy">
             </div>
@@ -354,7 +365,7 @@
               <p>8 Forts, Title: Shah</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#FF6B01">
+          <article class="venue-card" style="--felt:#CBA014">
             <div class="venue-card-flag">
               <img src="images/venues/europe.png" alt="Europe flag" loading="lazy">
             </div>
@@ -364,8 +375,8 @@
             </div>
           </article>
         </div>
-        <div class="venue-grid" data-group="euro" role="tabpanel">
-          <article class="venue-card" style="--felt:#556B2F">
+        <div class="venue-grid active" data-group="euro" role="tabpanel">
+          <article class="venue-card" style="--felt:#24247A">
             <div class="venue-card-flag">
               <img src="images/venues/euro/britain.png" alt="Britain flag" loading="lazy">
             </div>
@@ -374,7 +385,7 @@
               <p>7 Forts, Title: Baron</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#013220">
+          <article class="venue-card" style="--felt:#00A6E8">
             <div class="venue-card-flag">
               <img src="images/venues/euro/france.png" alt="France flag" loading="lazy">
             </div>
@@ -383,7 +394,7 @@
               <p>6 Forts, Title: Marquis</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#24247A">
+          <article class="venue-card" style="--felt:#556B2F">
             <div class="venue-card-flag">
               <img src="images/venues/euro/italy.png" alt="Italy flag" loading="lazy">
             </div>
@@ -392,7 +403,7 @@
               <p>6 Forts, Title: Conte</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#5F413A">
+          <article class="venue-card" style="--felt:#8B0000">
             <div class="venue-card-flag">
               <img src="images/venues/euro/spain.png" alt="Spain flag" loading="lazy">
             </div>
@@ -410,7 +421,7 @@
               <p>6 Forts, Title: Infante</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#8B0000">
+          <article class="venue-card" style="--felt:#761EB4">
             <div class="venue-card-flag">
               <img src="images/venues/euro/north_sea.png" alt="North Sea flag" loading="lazy">
             </div>
@@ -419,7 +430,7 @@
               <p>6 Forts, Title: Stadtholder</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#DC53DC">
+          <article class="venue-card" style="--felt:#013220">
             <div class="venue-card-flag">
               <img src="images/venues/euro/scandinavia.png" alt="Scandinavia flag" loading="lazy">
             </div>
@@ -428,7 +439,7 @@
               <p>6 Forts, Title: Jarl</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#00A6E8">
+          <article class="venue-card" style="--felt:#FF6B01">
             <div class="venue-card-flag">
               <img src="images/venues/euro/baltic_marches.png" alt="Baltic Marches flag" loading="lazy">
             </div>
@@ -437,7 +448,7 @@
               <p>10 Forts, Title: Hetman</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#761EB4">
+          <article class="venue-card" style="--felt:#DC53DC">
             <div class="venue-card-flag">
               <img src="images/venues/euro/russia_siberia.png" alt="Russia and Siberia flag" loading="lazy">
             </div>
@@ -446,7 +457,7 @@
               <p>10 Forts, Title: Ataman</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#FF6B01">
+          <article class="venue-card" style="--felt:#5F413A">
             <div class="venue-card-flag">
               <img src="images/venues/euro/mediterranean.png" alt="Mediterranean flag" loading="lazy">
             </div>
@@ -457,7 +468,7 @@
           </article>
         </div>
         <div class="venue-grid" data-group="oceania" role="tabpanel">
-          <article class="venue-card" style="--felt:#556B2F">
+          <article class="venue-card" style="--felt:#24247A">
             <div class="venue-card-flag">
               <img src="images/venues/oceania/alaska.png" alt="Alaska flag" loading="lazy">
             </div>
@@ -466,7 +477,7 @@
               <p>6 Forts, Title: Chieftain</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#013220">
+          <article class="venue-card" style="--felt:#CBA014">
             <div class="venue-card-flag">
               <img src="images/venues/oceania/caribbean.png" alt="Caribbean flag" loading="lazy">
             </div>
@@ -475,7 +486,7 @@
               <p>10 Forts, Title: Governor</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#24247A">
+          <article class="venue-card" style="--felt:#8B0000">
             <div class="venue-card-flag">
               <img src="images/venues/oceania/dragonland.png" alt="Dragonland flag" loading="lazy">
             </div>
@@ -484,7 +495,7 @@
               <p>8 Forts, Title: Taipan</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#5F413A">
+          <article class="venue-card" style="--felt:#00A6E8">
             <div class="venue-card-flag">
               <img src="images/venues/oceania/straits.png" alt="Straits flag" loading="lazy">
             </div>
@@ -493,7 +504,7 @@
               <p>12 Forts, Title: Laksamana</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#CBA014">
+          <article class="venue-card" style="--felt:#013220">
             <div class="venue-card-flag">
               <img src="images/venues/oceania/indian_ocean.png" alt="Indian Ocean flag" loading="lazy">
             </div>
@@ -502,7 +513,7 @@
               <p>10 Forts, Title: Admiral</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#8B0000">
+          <article class="venue-card" style="--felt:#556B2F">
             <div class="venue-card-flag">
               <img src="images/venues/oceania/pacific.png" alt="Pacific flag" loading="lazy">
             </div>
@@ -511,7 +522,7 @@
               <p>8 Forts, Title: Tui</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#DC53DC">
+          <article class="venue-card" style="--felt:#761EB4">
             <div class="venue-card-flag">
               <img src="images/venues/oceania/british_isles.png" alt="British Isles flag" loading="lazy">
             </div>
@@ -520,7 +531,7 @@
               <p>10 Forts, Title: Warden</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#00A6E8">
+          <article class="venue-card" style="--felt:#DC53DC">
             <div class="venue-card-flag">
               <img src="images/venues/oceania/french_isles.png" alt="French Isles flag" loading="lazy">
             </div>
@@ -529,7 +540,7 @@
               <p>10 Forts, Title: Seigneur</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#761EB4">
+          <article class="venue-card" style="--felt:#FF6B01">
             <div class="venue-card-flag">
               <img src="images/venues/oceania/dutch_isles.png" alt="Dutch Isles flag" loading="lazy">
             </div>
@@ -538,7 +549,7 @@
               <p>8 Forts, Title: Burgher</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#FF6B01">
+          <article class="venue-card" style="--felt:#5F413A">
             <div class="venue-card-flag">
               <img src="images/venues/oceania/american_isles.png" alt="American Isles flag" loading="lazy">
             </div>
@@ -739,9 +750,9 @@
     <div class="modal-overlay" id="profileModal">
       <div class="modal-content">
         <button class="modal-close-button" id="closeProfileModal">&times;</button>
-        <h2 id="profileModalTitle">Dashboard</h2>
+        <h2 id="profileModalTitle">My Profile</h2>
         <div class="dashboard-panel">
-          <div class="dashboard-identity">
+          <div class="dashboard-identity" data-profile-section>
             <div class="profile-avatar-container">
                 <img id="profileAvatar" src="placeholder.jpg" alt="User Avatar">
             </div>
@@ -752,7 +763,7 @@
               <p><strong>Kingdom:</strong> <span id="profileKingdom">Not Set</span></p>
             </div>
           </div>
-          <div class="dashboard-stats" aria-label="Career progress">
+          <div class="dashboard-stats" aria-label="Career progress" data-dashboard-section>
             <div class="dashboard-stat">
               <span id="dashboardFortWins">0</span>
               <strong>Forts Won</strong>
@@ -769,18 +780,36 @@
               <span id="dashboardTitlesWon">0</span>
               <strong>Titles Won</strong>
             </div>
+            <div class="dashboard-stat">
+              <span id="dashboardAura">0</span>
+              <strong>Aura</strong>
+            </div>
+            <div class="dashboard-stat">
+              <span id="dashboardAupTotal">0</span>
+              <strong>AUP Won</strong>
+            </div>
+            <div class="dashboard-stat">
+              <span id="dashboardAupLeft">0</span>
+              <strong>AUP to 100 Aura</strong>
+            </div>
           </div>
-          <div class="dashboard-meta">
+          <div class="dashboard-meta" data-profile-section>
             <p><strong>Joined:</strong> <span id="dashboardJoined">Guest session</span></p>
             <p><strong>Info:</strong> <span id="dashboardAbout">Ready to win!</span></p>
           </div>
+          <div class="dashboard-meta" data-dashboard-section>
+            <p><strong>Euro AUP:</strong> <span id="dashboardAupEuro">0</span></p>
+            <p><strong>India AUP:</strong> <span id="dashboardAupIndia">0</span></p>
+            <p><strong>International AUP:</strong> <span id="dashboardAupInternational">0</span></p>
+            <p><strong>Micro AUP:</strong> <span id="dashboardAupOceania">0</span></p>
+          </div>
         </div>
-        <div class="profile-actions">
+        <div class="profile-actions" data-profile-section>
           <button id="editProfileBtn">Edit Profile</button>
           <button id="logoutBtn">Logout</button>
         </div>
 
-        <form id="editProfileForm" style="display: none; margin-top: 20px;">
+        <form id="editProfileForm" data-profile-section style="display: none; margin-top: 20px;">
   <label for="editUsername">Username:</label>
   <input type="text" id="editUsername" required><br>
 
@@ -848,6 +877,7 @@
 <!-- Firebase Auth (Web) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script>
   firebase.initializeApp({
     apiKey: "AIzaSyBDxo0Cz8BH8jomP0zsmkl9UBLDC2SS8L4",

@@ -91,7 +91,7 @@ enum DealerAvatarStyle {
   /// Slash-inspired custom-painted dealer. Premium-only.
   slash,
 
-  // Kingdom-specific free skins (20 total; 1 per venue).
+  // Kingdom-specific free skins (20 total; reused across the 40 kingdoms).
   baroda,
   hyderabad,
   indore,

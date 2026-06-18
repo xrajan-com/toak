@@ -621,7 +621,7 @@ Future<void> showRenoirCongratsForMatch(
                 ),
                 const SizedBox(height: 14),
                 GoldenText(
-                  'Prize $prizeLabel',
+                  'Prize AUP $prizeLabel',
                   style: const TextStyle(
                       fontSize: 18, fontWeight: FontWeight.w900),
                 ),
@@ -673,11 +673,11 @@ Future<void> showHeroFinishOverlay(
           : 'YOUR RUN ENDS HERE.';
   final String summary = podiumFinish
       ? (winnings > 0
-          ? 'PODIUM FINISH. YOU CASHED THIS RUN.'
+          ? 'PODIUM FINISH. AUP PAYOUT EARNED.'
           : 'PODIUM FINISH. STRONG RUN TO THE END.')
       : (winnings > 0
-          ? 'YOU STILL PICKED UP A PAYOUT.'
-          : 'NO PAYOUT THIS TIME. RESET AND COME AGAIN.');
+          ? 'YOU STILL PICKED UP AN AUP PAYOUT.'
+          : 'NO AUP PAYOUT THIS TIME. RESET AND COME AGAIN.');
   final String vName = venueName.trim();
   final String vFlag = venueFlagAsset.trim();
   bool matchEndAdStarted = false;
@@ -1015,7 +1015,7 @@ Future<void> showHeroFinishOverlay(
                                 if (winnings > 0) ...[
                                   const SizedBox(height: 10),
                                   GoldenText(
-                                    'WINNINGS $payoutLabel',
+                                    'WINNINGS AUP $payoutLabel',
                                     style: const TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.w900,

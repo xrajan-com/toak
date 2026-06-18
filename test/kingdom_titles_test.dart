@@ -3,6 +3,16 @@ import 'package:ten_of_a_kind_poker/config/kingdom_titles.dart';
 import 'package:ten_of_a_kind_poker/config/venues.dart';
 
 void main() {
+  test('venue circuits are ordered by visible label', () {
+    expect(kVenueGroups, const <VenueGroup>[
+      VenueGroup.euro,
+      VenueGroup.india,
+      VenueGroup.international,
+      VenueGroup.oceania,
+    ]);
+    expect(venueGroupLabel(VenueGroup.oceania), 'Micro Circuit');
+  });
+
   test('kingdom titles match the circuit title list', () {
     const expectedIndianTitles = <String, String>{
       'Baroda': 'Patel',

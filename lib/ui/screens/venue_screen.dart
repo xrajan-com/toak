@@ -11,6 +11,7 @@ import 'package:ten_of_a_kind_poker/config/venues.dart';
 import 'package:ten_of_a_kind_poker/features/venue/game_mode.dart';
 import 'package:ten_of_a_kind_poker/ui/theme/colors.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen.dart';
+import 'package:ten_of_a_kind_poker/ui/screens/auth_screen.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/sub_kingdom_screen.dart';
 import 'package:ten_of_a_kind_poker/ui/utils/deck_cache.dart';
 import 'package:ten_of_a_kind_poker/core/sound_fx.dart';
@@ -18,6 +19,7 @@ import 'package:ten_of_a_kind_poker/config/assets.dart';
 import 'package:ten_of_a_kind_poker/services/auth_service.dart';
 import 'package:ten_of_a_kind_poker/services/aura_points_service.dart';
 import 'package:ten_of_a_kind_poker/services/campaign_progress_service.dart';
+import 'package:ten_of_a_kind_poker/services/leaderboard_firestore_service.dart';
 import 'package:ten_of_a_kind_poker/services/profile_service.dart';
 import 'package:ten_of_a_kind_poker/core/aup.dart' as aup;
 import 'package:ten_of_a_kind_poker/ui/screens/profile_screen.dart';
@@ -50,16 +52,14 @@ class _HeaderIcon extends StatelessWidget {
 }
 
 class _HeaderActions extends StatelessWidget {
-  static const double _w = 120; // keeps banner perfectly centered
+  static const double _w = 96; // keeps banner perfectly centered
   final bool mirrored;
   final VoidCallback? onProfile;
-  final VoidCallback? onProgress;
-  final VoidCallback? onAup;
+  final VoidCallback? onDashboard;
   const _HeaderActions({
     required this.mirrored,
     this.onProfile,
-    this.onProgress,
-    this.onAup,
+    this.onDashboard,
   });
   @override
   Widget build(BuildContext context) {
@@ -76,14 +76,9 @@ class _HeaderActions extends StatelessWidget {
             onTap: onProfile ?? () {},
           ),
           _HeaderIcon(
-            icon: Icons.auto_graph,
-            tooltip: 'Progress & Aura',
-            onTap: onProgress ?? () {},
-          ),
-          _HeaderIcon(
-            icon: Icons.account_balance_wallet_outlined,
-            tooltip: 'AUP Wallet',
-            onTap: onAup ?? () {},
+            icon: Icons.dashboard_customize_outlined,
+            tooltip: 'Dashboard',
+            onTap: onDashboard ?? () {},
           ),
         ],
       ),
@@ -109,6 +104,8 @@ class _VenueScreenState extends State<VenueScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tab;
   static const _bannerAsset = 'assets/images/banner.png';
+  int? _activeLeaderboardIndex;
+  List<LeaderboardEntry> _leaderboardEntries = const <LeaderboardEntry>[];
 
   @override
   void initState() {
@@ -116,6 +113,7 @@ class _VenueScreenState extends State<VenueScreen>
     _tab = TabController(length: kVenueGroups.length, vsync: this);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      unawaited(_loadCircuitLeaderboardEntries());
       await DeckCache.ensureDeckReady();
       if (!mounted) return;
       final ctx = context;
@@ -136,7 +134,32 @@ class _VenueScreenState extends State<VenueScreen>
     super.dispose();
   }
 
-  Future<void> _pushQuickGame(VenueTheme venue) async {
+  void _showCircuitLeaderboard(int index) {
+    if (_activeLeaderboardIndex == index) return;
+    setState(() => _activeLeaderboardIndex = index);
+  }
+
+  void _hideCircuitLeaderboard() {
+    if (_activeLeaderboardIndex == null) return;
+    setState(() => _activeLeaderboardIndex = null);
+  }
+
+  Future<void> _loadCircuitLeaderboardEntries() async {
+    try {
+      final aura = context.read<AuraPointsService>();
+      await aura.init();
+      await leaderboardFirestoreService.syncCurrentUserIfTop10(wallet: aura);
+      final entries = await leaderboardFirestoreService.fetchTop10ByAura();
+      if (!mounted) return;
+      setState(() => _leaderboardEntries = entries);
+    } on ProviderNotFoundException {
+      return;
+    } catch (e) {
+      debugPrint('Venue leaderboard fetch skipped: $e');
+    }
+  }
+
+  Future<void> _pushQuickGame(VenueTheme venue, VenueGroup group) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => GameScreen.guestTable(
@@ -144,13 +167,14 @@ class _VenueScreenState extends State<VenueScreen>
           venue: venue,
           playIntroWelcome: false,
           venueMode: VenueEntryMode.quickGame,
+          campaignGroup: group,
         ),
       ),
     );
   }
 
-  Future<void> _enterQuickGame(VenueTheme venue) async {
-    await _pushQuickGame(venue);
+  Future<void> _enterQuickGame(VenueTheme venue, VenueGroup group) async {
+    await _pushQuickGame(venue, group);
   }
 
   Future<void> _openVenue(VenueTheme venue, VenueGroup group) async {
@@ -158,7 +182,7 @@ class _VenueScreenState extends State<VenueScreen>
     unawaited(DeckCache.ensureDeckReady());
     if (!mounted) return;
     if (widget.mode == VenueEntryMode.quickGame) {
-      await _enterQuickGame(venue);
+      await _enterQuickGame(venue, group);
       return;
     }
     await Navigator.of(context).push(
@@ -197,6 +221,20 @@ class _VenueScreenState extends State<VenueScreen>
     Navigator.pop(dialogContext);
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const ProfileScreen()),
+    );
+  }
+
+  void _openSignIn(BuildContext dialogContext) {
+    Navigator.pop(dialogContext);
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const AuthScreen(
+          requireRegisteredUser: true,
+          postAuthDestination: VenueScreen(mode: VenueEntryMode.career),
+          title: 'Login or Register',
+          message: 'Login or register to save Career progress.',
+        ),
+      ),
     );
   }
 
@@ -313,9 +351,13 @@ class _VenueScreenState extends State<VenueScreen>
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
-                    onPressed: () => _openProfileEditor(ctx),
-                    icon: const Icon(Icons.dashboard_customize_outlined),
-                    label: const Text('Dashboard'),
+                    onPressed: isGuest
+                        ? () => _openSignIn(ctx)
+                        : () => _openProfileEditor(ctx),
+                    icon: Icon(
+                      isGuest ? Icons.login_rounded : Icons.edit_outlined,
+                    ),
+                    label: Text(isGuest ? 'Sign In' : 'Edit Profile'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.blue,
                       side: const BorderSide(color: AppColors.blue),
@@ -323,36 +365,24 @@ class _VenueScreenState extends State<VenueScreen>
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _openProfileEditor(ctx),
-                    icon: const Icon(Icons.edit_outlined),
-                    label: const Text('Edit Profile'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.blue,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(double.infinity, 46),
+                if (!isGuest) ...[
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        unawaited(_logoutFromProfileDialog(ctx));
+                      },
+                      icon: const Icon(Icons.logout),
+                      label: const Text('Log Out'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.red,
+                        side: const BorderSide(color: AppColors.red),
+                        minimumSize: const Size(double.infinity, 46),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      unawaited(_logoutFromProfileDialog(ctx));
-                    },
-                    icon: const Icon(Icons.logout),
-                    label: const Text('Log Out'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.red,
-                      side: const BorderSide(color: AppColors.red),
-                      minimumSize: const Size(double.infinity, 46),
-                    ),
-                  ),
-                ),
+                ],
               ],
             ),
           ),
@@ -400,6 +430,9 @@ class _VenueScreenState extends State<VenueScreen>
     final double auraValue = aura.isLoaded ? aura.totalAura.clamp(0, 100) : 0;
     final int auraInt = auraValue.round().clamp(0, 100);
     final double auraProgress = auraInt / 100.0;
+    final int totalAup = aura.totalAup;
+    final int aupLeft =
+        (aup.kAupMaxTotal - totalAup).clamp(0, aup.kAupMaxTotal);
 
     showDialog<void>(
       context: context,
@@ -414,206 +447,160 @@ class _VenueScreenState extends State<VenueScreen>
           backgroundColor: const Color(0xFF101010),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.auto_graph, color: AppColors.blue),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Progress & Aura',
-                      style: TextStyle(
-                        color: AppColors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 18,
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      splashRadius: 18,
-                      icon: const Icon(Icons.close, color: Colors.white70),
-                      onPressed: () => Navigator.pop(ctx),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 24,
-                      backgroundImage: avatarImage,
-                      backgroundColor: Colors.white10,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            name,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 15.5,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            kingdom.isNotEmpty
-                                ? kingdom
-                                : 'Profile details not set',
-                            style: const TextStyle(
-                              color: Colors.white60,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12.5,
-                            ),
-                          ),
-                          if (about.isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              about,
-                              style: const TextStyle(
-                                color: Colors.white54,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 11.5,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                for (final group in kVenueGroups)
-                  _MetricRow(
-                    label: 'Sub‑Kingdoms cleared (${venueGroupLabel(group)})',
-                    value:
-                        '${subProgress[group]!.cleared} / ${subProgress[group]!.total}',
-                  ),
-                _MetricRow(
-                  label: 'Titles earned',
-                  value: '$titlesTotal / $titlesPossible',
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    const Icon(Icons.brightness_5,
-                        color: AppColors.blue, size: 16),
-                    const SizedBox(width: 6),
-                    const Text(
-                      'Aura',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12.5,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: LinearProgressIndicator(
-                          value: aura.isLoaded ? auraProgress : null,
-                          minHeight: 6,
-                          backgroundColor: Colors.white12,
-                          color: AppColors.blue,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 460,
+              maxHeight: MediaQuery.sizeOf(ctx).height * 0.86,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.auto_graph, color: AppColors.blue),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Dashboard',
+                        style: TextStyle(
+                          color: AppColors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 18,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      aura.isLoaded ? '$auraInt / 100' : '…',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12.5,
+                      const Spacer(),
+                      IconButton(
+                        splashRadius: 18,
+                        icon: const Icon(Icons.close, color: Colors.white70),
+                        onPressed: () => Navigator.pop(ctx),
                       ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _showAupDialog() {
-    final aura = context.read<AuraPointsService>();
-    final int total = aura.totalAup;
-    final int left = (aup.kAupMaxTotal - total).clamp(0, aup.kAupMaxTotal);
-    final india = aura.indiaAup;
-    final intl = aura.internationalAup;
-
-    showDialog<void>(
-      context: context,
-      barrierDismissible: true,
-      barrierColor: Colors.black54,
-      builder: (ctx) {
-        return Dialog(
-          backgroundColor: const Color(0xFF101010),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.account_balance_wallet_outlined,
-                        color: AppColors.blue),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'AUP Wallet',
-                      style: TextStyle(
-                        color: AppColors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 18,
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundImage: avatarImage,
+                        backgroundColor: Colors.white10,
                       ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              name,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15.5,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              kingdom.isNotEmpty
+                                  ? kingdom
+                                  : 'Profile details not set',
+                              style: const TextStyle(
+                                color: Colors.white60,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12.5,
+                              ),
+                            ),
+                            if (about.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                about,
+                                style: const TextStyle(
+                                  color: Colors.white54,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 11.5,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  for (final group in kVenueGroups)
+                    _MetricRow(
+                      label: 'Sub‑Kingdoms cleared (${venueGroupLabel(group)})',
+                      value:
+                          '${subProgress[group]!.cleared} / ${subProgress[group]!.total}',
                     ),
-                    const Spacer(),
-                    IconButton(
-                      splashRadius: 18,
-                      icon: const Icon(Icons.close, color: Colors.white70),
-                      onPressed: () => Navigator.pop(ctx),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                _MetricRow(
-                  label: 'AUP won (total)',
-                  value: aup.formatAup(total),
-                ),
-                _MetricRow(
-                  label: 'AUP left to 100 Aura',
-                  value: aup.formatAup(left),
-                ),
-                const SizedBox(height: 6),
-                _MetricRow(
-                  label: 'India AUP',
-                  value: aup.formatAup(india),
-                ),
-                _MetricRow(
-                  label: 'International AUP',
-                  value: aup.formatAup(intl),
-                ),
-                _MetricRow(
-                  label: 'Euro AUP',
-                  value: aup.formatAup(aura.euroAup),
-                ),
-                _MetricRow(
-                  label: 'Oceania AUP',
-                  value: aup.formatAup(aura.oceaniaAup),
-                ),
-              ],
+                  _MetricRow(
+                    label: 'Titles earned',
+                    value: '$titlesTotal / $titlesPossible',
+                  ),
+                  const SizedBox(height: 8),
+                  _MetricRow(
+                    label: 'AUP won (total)',
+                    value: aup.formatAup(totalAup),
+                  ),
+                  _MetricRow(
+                    label: 'AUP left to 100 Aura',
+                    value: aup.formatAup(aupLeft),
+                  ),
+                  _MetricRow(
+                    label: 'Euro AUP',
+                    value: aup.formatAup(aura.euroAup),
+                  ),
+                  _MetricRow(
+                    label: 'India AUP',
+                    value: aup.formatAup(aura.indiaAup),
+                  ),
+                  _MetricRow(
+                    label: 'International AUP',
+                    value: aup.formatAup(aura.internationalAup),
+                  ),
+                  _MetricRow(
+                    label: 'Micro AUP',
+                    value: aup.formatAup(aura.oceaniaAup),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Icon(Icons.brightness_5,
+                          color: AppColors.blue, size: 16),
+                      const SizedBox(width: 6),
+                      const Text(
+                        'Aura',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: LinearProgressIndicator(
+                            value: aura.isLoaded ? auraProgress : null,
+                            minHeight: 6,
+                            backgroundColor: Colors.white12,
+                            color: AppColors.blue,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        aura.isLoaded ? '$auraInt / 100' : '…',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -662,8 +649,7 @@ class _VenueScreenState extends State<VenueScreen>
                     _HeaderActions(
                       mirrored: false,
                       onProfile: _showMyProfileDialog,
-                      onProgress: _showProgressDialog,
-                      onAup: _showAupDialog,
+                      onDashboard: _showProgressDialog,
                     ),
                   ],
                 ),
@@ -671,6 +657,8 @@ class _VenueScreenState extends State<VenueScreen>
                 _TitleAndTabs(
                   controller: _tab,
                   title: widget.mode.venueHeading,
+                  onLeaderboardShown: _showCircuitLeaderboard,
+                  onLeaderboardHidden: _hideCircuitLeaderboard,
                 ),
                 SizedBox(height: gapM),
                 _ModeSummary(
@@ -686,17 +674,35 @@ class _VenueScreenState extends State<VenueScreen>
       ),
       body: SafeArea(
         top: false,
-        child: TabBarView(
-          controller: _tab,
-          children: [
-            for (final group in kVenueGroups)
-              _VenueGrid(
-                group: group,
-                venues: venuesForGroup(group),
-                mode: widget.mode,
-                onOpen: _openVenue,
+        child: Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: (_) => _hideCircuitLeaderboard(),
+          child: Stack(
+            children: [
+              TabBarView(
+                controller: _tab,
+                children: [
+                  for (final group in kVenueGroups)
+                    _VenueGrid(
+                      group: group,
+                      venues: venuesForGroup(group),
+                      mode: widget.mode,
+                      onOpen: _openVenue,
+                    ),
+                ],
               ),
-          ],
+              if (_activeLeaderboardIndex case final index?)
+                Positioned(
+                  top: 10,
+                  left: 12,
+                  right: 12,
+                  child: _CircuitLeaderboardPopover(
+                    spec: _circuitLeaderboards[index],
+                    entries: _leaderboardEntries,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -795,6 +801,7 @@ class _KennyInterludeState extends State<_KennyInterlude>
           venue: widget.venue,
           playIntroWelcome: false,
           venueMode: VenueEntryMode.quickGame,
+          campaignGroup: widget.group,
         ),
       ),
     );
@@ -913,9 +920,13 @@ class _TranslateGradient extends GradientTransform {
 class _TitleAndTabs extends StatefulWidget {
   final TabController controller;
   final String title;
+  final ValueChanged<int> onLeaderboardShown;
+  final VoidCallback onLeaderboardHidden;
   const _TitleAndTabs({
     required this.controller,
     required this.title,
+    required this.onLeaderboardShown,
+    required this.onLeaderboardHidden,
   });
   @override
   State<_TitleAndTabs> createState() => _TitleAndTabsState();
@@ -955,10 +966,10 @@ class _TitleAndTabsState extends State<_TitleAndTabs> {
             fontSize: 16,
           ),
         ),
-        _chip(0, 'International', color: _red, textOn: Colors.white),
+        _chip(0, 'Euro', color: Colors.green, textOn: Colors.white),
         _chip(1, 'India', color: _blue, textOn: Colors.black),
-        _chip(2, 'Euro', color: Colors.green, textOn: Colors.white),
-        _chip(3, 'Oceania', color: Colors.yellow, textOn: Colors.black),
+        _chip(2, 'International', color: _red, textOn: Colors.white),
+        _chip(3, 'Micro', color: Colors.yellow, textOn: Colors.black),
       ],
     );
   }
@@ -971,11 +982,20 @@ class _TitleAndTabsState extends State<_TitleAndTabs> {
     final fg = (hovered || selected) ? textOn : Colors.white70;
 
     return MouseRegion(
-      onEnter: (_) => setState(() => _hoveredIndex = index),
-      onExit: (_) => setState(() => _hoveredIndex = -1),
+      onEnter: (_) {
+        setState(() => _hoveredIndex = index);
+        widget.onLeaderboardShown(index);
+      },
+      onExit: (_) {
+        setState(() => _hoveredIndex = -1);
+        widget.onLeaderboardHidden();
+      },
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: () => widget.controller.animateTo(index),
+        onTap: () {
+          widget.controller.animateTo(index);
+          widget.onLeaderboardShown(index);
+        },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 140),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -998,6 +1018,318 @@ class _TitleAndTabsState extends State<_TitleAndTabs> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _CircuitLeaderboardSpec {
+  final String label;
+  final Color background;
+  final Color foreground;
+  final Color headingBackground;
+  final Color headingForeground;
+  final List<String> names;
+
+  const _CircuitLeaderboardSpec({
+    required this.label,
+    required this.background,
+    required this.foreground,
+    required this.headingBackground,
+    required this.headingForeground,
+    required this.names,
+  });
+}
+
+const _circuitLeaderboards = <_CircuitLeaderboardSpec>[
+  _CircuitLeaderboardSpec(
+    label: 'Euro Circuit',
+    background: Colors.green,
+    foreground: Colors.white,
+    headingBackground: Colors.white,
+    headingForeground: Colors.green,
+    names: [
+      'Mei Lin Tan',
+      'Darren Lim',
+      'Luca Bianchi',
+      'Nattida Kwan',
+      'Maximilian Keller',
+      'Sophie Dubois',
+      'Linh Pham',
+      'Nikos Papadakis',
+      'Sari Wijaya',
+      'Van Nguyen',
+    ],
+  ),
+  _CircuitLeaderboardSpec(
+    label: 'Indian Circuit',
+    background: _blue,
+    foreground: Colors.black,
+    headingBackground: Colors.black,
+    headingForeground: _blue,
+    names: [
+      'Bajirao Kale',
+      'Jaspreet Dhillon',
+      'Siddharth Gaekwad',
+      'Tenzin Lama',
+      'Kabir Verma',
+      'Kaveri Rao',
+      'Arjun Deshmukh',
+      'Savitri Shinde',
+      'Harleen Kaur',
+      'Hari Krishnan',
+    ],
+  ),
+  _CircuitLeaderboardSpec(
+    label: 'International Circuit',
+    background: _red,
+    foreground: Colors.white,
+    headingBackground: Colors.white,
+    headingForeground: _red,
+    names: [
+      'Jordan Walker',
+      'Ling Zhao',
+      'Casey Morgan',
+      'Kofi Adeyemi',
+      'Mei Chen',
+      'Hassan Al Noor',
+      'Rafael Mendes',
+      'Amara Ndlovu',
+      'Brianna Lee',
+      'Elena Rossi',
+    ],
+  ),
+  _CircuitLeaderboardSpec(
+    label: 'Micro Circuit',
+    background: Colors.yellow,
+    foreground: Colors.black,
+    headingBackground: Colors.black,
+    headingForeground: Colors.yellow,
+    names: [
+      'Nur Aisyah',
+      'Rosa Delgado',
+      'Anong Srisai',
+      'Fitri Halim',
+      'Thandar Hlaing',
+      'Kanya Vong',
+      'Liyana Salleh',
+      'Minh Tran',
+      'Sreymom Vann',
+      'Chaiwat Rattan',
+    ],
+  ),
+];
+
+class _CircuitLeaderboardPopover extends StatelessWidget {
+  final _CircuitLeaderboardSpec spec;
+  final List<LeaderboardEntry> entries;
+
+  const _CircuitLeaderboardPopover({
+    required this.spec,
+    required this.entries,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = _leaderboardRowsFor(spec, entries);
+
+    return Semantics(
+      label: '${spec.label} leaderboard',
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 300),
+          child: Material(
+            color: Colors.transparent,
+            elevation: 18,
+            shadowColor: spec.background.withValues(alpha: 0.42),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: spec.background,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: spec.headingBackground.withValues(alpha: 0.55),
+                  width: 1.2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.42),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
+                  ),
+                  BoxShadow(
+                    color: spec.background.withValues(alpha: 0.35),
+                    blurRadius: 22,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _LeaderboardHeadingRow(spec: spec),
+                    for (int i = 0; i < rows.length; i++)
+                      _LeaderboardNameRow(
+                        rank: i + 1,
+                        name: rows[i].name,
+                        auraText: rows[i].auraText,
+                        spec: spec,
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LeaderboardRowData {
+  final String name;
+  final int auraMilli;
+  final bool fallback;
+
+  const _LeaderboardRowData({
+    required this.name,
+    required this.auraMilli,
+    required this.fallback,
+  });
+
+  String get auraText {
+    if (auraMilli % 1000 == 0) return '${auraMilli ~/ 1000}';
+    final tenths = (auraMilli / 100).round() / 10;
+    return tenths.toStringAsFixed(tenths.truncateToDouble() == tenths ? 0 : 1);
+  }
+}
+
+List<_LeaderboardRowData> _leaderboardRowsFor(
+  _CircuitLeaderboardSpec spec,
+  List<LeaderboardEntry> entries,
+) {
+  final fallbackRows = <_LeaderboardRowData>[
+    for (int i = 0; i < spec.names.length; i++)
+      _LeaderboardRowData(
+        name: spec.names[i],
+        auraMilli: (99 - i) * 1000,
+        fallback: true,
+      ),
+  ];
+
+  final realRows = entries
+      .where((entry) => entry.auraMilli > 0)
+      .map(
+        (entry) => _LeaderboardRowData(
+          name: entry.displayName.trim().isEmpty
+              ? 'Player'
+              : entry.displayName.trim(),
+          auraMilli: entry.cappedAuraMilli,
+          fallback: false,
+        ),
+      )
+      .toList(growable: false);
+
+  final rows = <_LeaderboardRowData>[...fallbackRows, ...realRows]
+    ..sort((a, b) {
+      final aura = b.auraMilli.compareTo(a.auraMilli);
+      if (aura != 0) return aura;
+      if (a.fallback == b.fallback) return 0;
+      return a.fallback ? -1 : 1;
+    });
+
+  return rows.take(spec.names.length).toList(growable: false);
+}
+
+class _LeaderboardHeadingRow extends StatelessWidget {
+  final _CircuitLeaderboardSpec spec;
+
+  const _LeaderboardHeadingRow({required this.spec});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 28,
+      color: spec.headingBackground,
+      alignment: Alignment.center,
+      child: Text(
+        'LEADERBOARD',
+        style: TextStyle(
+          color: spec.headingForeground,
+          fontSize: 12,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.4,
+        ),
+      ),
+    );
+  }
+}
+
+class _LeaderboardNameRow extends StatelessWidget {
+  final int rank;
+  final String name;
+  final String auraText;
+  final _CircuitLeaderboardSpec spec;
+
+  const _LeaderboardNameRow({
+    required this.rank,
+    required this.name,
+    required this.auraText,
+    required this.spec,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor = spec.foreground.withValues(alpha: 0.18);
+
+    return Container(
+      height: 25,
+      decoration: BoxDecoration(
+        color: spec.background,
+        border: Border(
+          top: BorderSide(color: borderColor, width: 0.8),
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 13),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 24,
+            child: Text(
+              rank.toString().padLeft(2, '0'),
+              style: TextStyle(
+                color: spec.foreground.withValues(alpha: 0.66),
+                fontSize: 10.5,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              name.toUpperCase(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: spec.foreground,
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.25,
+              ),
+            ),
+          ),
+          Text(
+            '$auraText AURA',
+            style: TextStyle(
+              color: spec.foreground,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
       ),
     );
   }

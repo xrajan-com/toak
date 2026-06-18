@@ -2,7 +2,7 @@ name: ten_of_a_kind_poker
 description: A Flutter app for Ten Of A Kind poker tournament
 publish_to: 'none'
 
-version: 1.2.8+60
+version: 1.2.8+64
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -68,7 +68,6 @@ flutter:
     - assets/images/watermarks/Africa/
     - assets/images/watermarks/Arabia/
     - assets/images/watermarks/Asia/
-    - assets/images/watermarks/Australia/
     - assets/images/watermarks/Alaska/
     - assets/images/watermarks/American Isles/
     - assets/images/watermarks/Baltic Marches/
@@ -83,7 +82,6 @@ flutter:
     - assets/images/watermarks/France/
     - assets/images/watermarks/French Isles/
     - assets/images/watermarks/Hyderabad/
-    - assets/images/watermarks/India/
     - assets/images/watermarks/Indian Ocean/
     - assets/images/watermarks/Indore/
     - assets/images/watermarks/Italy/

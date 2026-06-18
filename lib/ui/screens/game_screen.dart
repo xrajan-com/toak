@@ -10,6 +10,7 @@ import 'package:flutter/services.dart'
 import 'package:provider/provider.dart';
 
 import 'package:ten_of_a_kind_poker/app/system_ui.dart';
+import 'package:ten_of_a_kind_poker/core/aup.dart' as aup;
 import 'package:ten_of_a_kind_poker/core/sound_fx.dart';
 import 'package:ten_of_a_kind_poker/config/app_build.dart';
 import 'package:ten_of_a_kind_poker/config/campaign_events.dart' as ce;
@@ -24,6 +25,7 @@ import 'package:ten_of_a_kind_poker/services/campaign_progress_service.dart';
 import 'package:ten_of_a_kind_poker/services/poker_bot_learning_service.dart';
 import 'package:ten_of_a_kind_poker/services/profile_service.dart';
 import 'package:ten_of_a_kind_poker/ui/theme/colors.dart';
+import 'package:ten_of_a_kind_poker/ui/utils/dealer_avatar_assignment.dart';
 import 'package:ten_of_a_kind_poker/ui/utils/deck_cache.dart';
 import 'package:ten_of_a_kind_poker/ui/utils/rewarded_aup.dart';
 import 'package:ten_of_a_kind_poker/ui/utils/watermark_resolver.dart';
@@ -31,6 +33,8 @@ import 'package:ten_of_a_kind_poker/ui/utils/author_flash_gate.dart';
 import 'package:ten_of_a_kind_poker/config/app_tier.dart';
 import 'game_screen/renoir_ui.dart' show RenoirSignals;
 import 'package:ten_of_a_kind_poker/game/game_engine.dart' as eng;
+import 'package:ten_of_a_kind_poker/game/models.dart' as game_models
+    show PayoutTable;
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen/overlays.dart' as go;
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen/models.dart'; // GCard
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen/players.dart'; // Seat
@@ -467,49 +471,12 @@ class _GameScreenState extends State<GameScreen>
     } catch (_) {}
   }
 
-  DealerAvatarStyle _dealerAvatarForVenue(String venueName) {
+  DealerAvatarStyle _dealerAvatarForVenue({
+    VenueGroup? group,
+    required String venueName,
+  }) {
     if (AppTier.isPremiumBuild) return DealerAvatarStyle.slash;
-
-    final String v = venueName.toLowerCase().trim();
-
-    if (v.contains('baroda')) return DealerAvatarStyle.baroda;
-    if (v.contains('hyderabad')) return DealerAvatarStyle.hyderabad;
-    if (v.contains('indore')) return DealerAvatarStyle.indore;
-    if (v.contains('jaipur')) return DealerAvatarStyle.jaipur;
-    if (v.contains('maratha')) return DealerAvatarStyle.marathaEmpire;
-    if (v.contains('mysore')) return DealerAvatarStyle.mysore;
-    if (v.contains('new delhi') || v.contains('delhi')) {
-      return DealerAvatarStyle.newDelhi;
-    }
-    if (v.contains('sikh')) return DealerAvatarStyle.sikhEmpire;
-    if (v.contains('sikkim')) return DealerAvatarStyle.sikkim;
-    if (v.contains('travancore')) return DealerAvatarStyle.travancore;
-
-    // International
-    if (v.contains('africa')) return DealerAvatarStyle.africa;
-    if (v.contains('s. america') ||
-        v.contains('south america') ||
-        v.contains('amazon')) {
-      return DealerAvatarStyle.southAmerica;
-    }
-    if (v.contains('n. america') || v.contains('north america')) {
-      return DealerAvatarStyle.northAmerica;
-    }
-    if (v.contains('arabia') || v.contains('persia')) {
-      return DealerAvatarStyle.arabia;
-    }
-    if (v.contains('australia')) return DealerAvatarStyle.australia;
-    if (v.contains('china') || v.contains('far east')) {
-      return DealerAvatarStyle.china;
-    }
-    if (v.contains('europe')) return DealerAvatarStyle.europe;
-    if (v == 'india') return DealerAvatarStyle.india;
-    if (v.contains('russia')) return DealerAvatarStyle.russia;
-    if (v.contains('asia') || v.contains('southeast'))
-      return DealerAvatarStyle.asia;
-
-    // Sensible default if a new venue is introduced.
-    return DealerAvatarStyle.india;
+    return dealerAvatarStyleForVenue(group: group, venueName: venueName);
   }
 
   // ---- Assets
@@ -621,39 +588,37 @@ class _GameScreenState extends State<GameScreen>
     'australia': 'assets/images/watermarks/australia.svg',
     'russia': 'assets/images/watermarks/russia.svg',
     'arabia': 'assets/images/watermarks/arabia.svg',
-    'persia': 'assets/images/watermarks/arabia.svg',
+    'persia': 'assets/images/watermarks/persia.svg',
     'africa': 'assets/images/watermarks/africa.svg',
     'amazon': 'assets/images/watermarks/amazon.svg',
     'europe': 'assets/images/watermarks/europe.svg',
-    'far east': 'assets/images/watermarks/china.svg',
-    'n. america': 'assets/images/watermarks/america.svg',
-    's. america': 'assets/images/watermarks/amazon.svg',
-    'asia rest': 'assets/images/watermarks/southeast.svg',
+    'far east': 'assets/images/watermarks/far_east.svg',
+    'n. america': 'assets/images/watermarks/n_america.svg',
+    's. america': 'assets/images/watermarks/s_america.svg',
+    'asia rest': 'assets/images/watermarks/asia_rest.svg',
+    'central asia': 'assets/images/watermarks/central_asia.svg',
     'asia': 'assets/images/watermarks/southeast.svg',
     'southeast': 'assets/images/watermarks/southeast.svg',
-    'britain': 'assets/images/watermarks/Britain/britain.svg',
-    'france': 'assets/images/watermarks/France/france.svg',
-    'italy': 'assets/images/watermarks/Italy/italy.svg',
-    'spain': 'assets/images/watermarks/Spain/spain.svg',
-    'portugal': 'assets/images/watermarks/Portugal/portugal.svg',
-    'north sea': 'assets/images/watermarks/North Sea/north_sea.svg',
-    'scandinavia': 'assets/images/watermarks/Scandinavia/scandinavia.svg',
-    'baltic marches':
-        'assets/images/watermarks/Baltic Marches/baltic_marches.svg',
-    'russia & siberia':
-        'assets/images/watermarks/Russia & Siberia/russia_siberia.svg',
-    'mediterranean': 'assets/images/watermarks/Mediterranean/mediterranean.svg',
-    'alaska': 'assets/images/watermarks/Alaska/alaska.svg',
-    'caribbean': 'assets/images/watermarks/Caribbean/caribbean.svg',
-    'dragonland': 'assets/images/watermarks/Dragonland/dragonland.svg',
-    'straits': 'assets/images/watermarks/Straits/straits.svg',
-    'indian ocean': 'assets/images/watermarks/Indian Ocean/indian_ocean.svg',
-    'pacific': 'assets/images/watermarks/Pacific/pacific.svg',
-    'british isles': 'assets/images/watermarks/British Isles/british_isles.svg',
-    'french isles': 'assets/images/watermarks/French Isles/french_isles.svg',
-    'dutch isles': 'assets/images/watermarks/Dutch Isles/dutch_isles.svg',
-    'american isles':
-        'assets/images/watermarks/American Isles/american_isles.svg',
+    'britain': 'assets/images/watermarks/britain.svg',
+    'france': 'assets/images/watermarks/france.svg',
+    'italy': 'assets/images/watermarks/italy.svg',
+    'spain': 'assets/images/watermarks/spain.svg',
+    'portugal': 'assets/images/watermarks/portugal.svg',
+    'north sea': 'assets/images/watermarks/north_sea.svg',
+    'scandinavia': 'assets/images/watermarks/scandinavia.svg',
+    'baltic marches': 'assets/images/watermarks/baltic_marches.svg',
+    'russia & siberia': 'assets/images/watermarks/russia_siberia.svg',
+    'mediterranean': 'assets/images/watermarks/mediterranean.svg',
+    'alaska': 'assets/images/watermarks/alaska.svg',
+    'caribbean': 'assets/images/watermarks/caribbean.svg',
+    'dragonland': 'assets/images/watermarks/dragonland.svg',
+    'straits': 'assets/images/watermarks/straits.svg',
+    'indian ocean': 'assets/images/watermarks/indian_ocean.svg',
+    'pacific': 'assets/images/watermarks/pacific.svg',
+    'british isles': 'assets/images/watermarks/british_isles.svg',
+    'french isles': 'assets/images/watermarks/french_isles.svg',
+    'dutch isles': 'assets/images/watermarks/dutch_isles.svg',
+    'american isles': 'assets/images/watermarks/american_isles.svg',
   };
 
   bool get _useSubKingdomWatermark {
@@ -699,9 +664,20 @@ class _GameScreenState extends State<GameScreen>
     final idx = widget.campaignSubKingdomIndex;
     if (idx == null) return;
 
+    String? subKingdomName;
+    final group = widget.campaignGroup;
+    if (group != null) {
+      subKingdomName = subKingdomDisplayName(
+        group: group,
+        kingdomName: kingdomName,
+        index: idx,
+      );
+    }
+
     final path = await WatermarkResolver.subKingdomWatermarkFor(
       kingdomName: kingdomName,
       subKingdomIndex: idx,
+      subKingdomName: subKingdomName,
     );
     if (path == null) return;
 
@@ -1809,8 +1785,10 @@ class _GameScreenState extends State<GameScreen>
 
     CardBackTheme.nextGame();
     _currentWood = WoodType.values[_rng.nextInt(WoodType.values.length)];
-    _dealerAvatarStyle =
-        _dealerAvatarForVenue((widget.venue?.name ?? '').toString());
+    _dealerAvatarStyle = _dealerAvatarForVenue(
+      group: widget.campaignGroup,
+      venueName: (widget.venue?.name ?? '').toString(),
+    );
     _heroTurnTimeoutSeconds = _computeHeroTurnTimeoutSeconds();
     seats = _buildTableFromBotPool();
     _bindAuraListener(auraService);
@@ -2063,9 +2041,41 @@ class _GameScreenState extends State<GameScreen>
     return <Seat>[picked[0], hero, ...picked.skip(1)];
   }
 
+  int? _campaignAupPrizePool() {
+    final group = widget.campaignGroup;
+    final String kingdom = (widget.venue?.name ?? '').toString().trim();
+    if (group == null || kingdom.isEmpty) return null;
+    if (widget.campaignMainEvent) {
+      return aup.aupForKingdomMainEvent(group: group, kingdomName: kingdom);
+    }
+    final idx = widget.campaignSubKingdomIndex;
+    if (idx == null) return null;
+    return aup.aupForSubKingdomEvent(
+      group: group,
+      kingdomName: kingdom,
+      subKingdomIndex: idx,
+    );
+  }
+
+  game_models.PayoutTable? _campaignAupPayoutTable() {
+    final prizePool = _campaignAupPrizePool();
+    if (prizePool == null || prizePool <= 0) return null;
+    if (widget.campaignMainEvent) {
+      return game_models.PayoutTable.fixed(<int>[prizePool]);
+    }
+    if (widget.campaignSubKingdomIndex != null) {
+      return game_models.PayoutTable.fromPercentages(
+        prizePool,
+        const <double>[0.60, 0.25, 0.15],
+      );
+    }
+    return null;
+  }
+
   /* ============================= Engine wiring ============================ */
   void _initEngineAndStart() {
-    final payoutTable = _campaignSpec?.payoutTable;
+    final campaignAupPrizePool = _campaignAupPrizePool();
+    final payoutTable = _campaignAupPayoutTable() ?? _campaignSpec?.payoutTable;
     final e = eng.GameEngine(
       config: eng.GameConfig(
         smallBlind: 100,
@@ -2082,8 +2092,9 @@ class _GameScreenState extends State<GameScreen>
           ],
         ),
         payoutTable: payoutTable,
-        payoutForRank: (rank) =>
-            rank == 1 ? (_campaignSpec?.prizePool ?? 100000) : 0,
+        payoutForRank: (rank) => rank == 1
+            ? (campaignAupPrizePool ?? _campaignSpec?.prizePool ?? 100000)
+            : 0,
       ),
     );
     _engine = e;

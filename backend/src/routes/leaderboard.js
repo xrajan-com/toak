@@ -13,8 +13,9 @@ const USERS_COLLECTION = 'users';
 
 const AUP_PER_AURA = 1000000;
 const AURA_MILLI_PER_AURA = 1000;
-const MAX_TOTAL_AUP = 100000000;
-const MAX_TOTAL_AURA_MILLI = 100000;
+const MAX_AUP_PER_CIRCUIT = 50000000;
+const MAX_TOTAL_AUP = MAX_AUP_PER_CIRCUIT * 4;
+const MAX_TOTAL_AURA_MILLI = 200000;
 
 const AURA_MILLI_MULTIPLIER = 2000000000;
 const ACTIVITY_MULTIPLIER = 100000;
@@ -65,12 +66,27 @@ function _rankScore({
 }
 
 function _progressStats(data) {
-  const indiaAup = _numInt(data?.indiaAup, { min: 0, max: 50000000 });
+  const indiaAup = _numInt(data?.indiaAup, {
+    min: 0,
+    max: MAX_AUP_PER_CIRCUIT,
+  });
   const internationalAup = _numInt(data?.internationalAup, {
     min: 0,
-    max: 50000000,
+    max: MAX_AUP_PER_CIRCUIT,
   });
-  const totalAup = _clamp(indiaAup + internationalAup, 0, MAX_TOTAL_AUP);
+  const euroAup = _numInt(data?.euroAup, {
+    min: 0,
+    max: MAX_AUP_PER_CIRCUIT,
+  });
+  const oceaniaAup = _numInt(data?.oceaniaAup, {
+    min: 0,
+    max: MAX_AUP_PER_CIRCUIT,
+  });
+  const totalAup = _clamp(
+    indiaAup + internationalAup + euroAup + oceaniaAup,
+    0,
+    MAX_TOTAL_AUP,
+  );
   const auraMilli = _auraMilliFromAup(totalAup);
 
   const matchesPlayed = _numInt(data?.matchesPlayed, {

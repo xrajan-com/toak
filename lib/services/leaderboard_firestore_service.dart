@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
+import 'package:ten_of_a_kind_poker/core/aup.dart' as aup;
 import 'package:ten_of_a_kind_poker/services/api_client.dart';
 import 'package:ten_of_a_kind_poker/services/aura_points_service.dart';
 
@@ -21,7 +22,12 @@ class LeaderboardEntry {
     required this.activityScore,
   });
 
-  double get aura => auraMilli / 1000.0;
+  int get cappedAuraMilli => auraMilli.clamp(
+        0,
+        aup.kAupMaxAuraTotal * aup.kAuraMilliPerAura,
+      );
+
+  double get aura => cappedAuraMilli / 1000.0;
 }
 
 class LeaderboardFirestoreService {
@@ -83,26 +89,47 @@ class LeaderboardFirestoreService {
           .limit(10)
           .get();
 
-      return snap.docs.map((doc) {
-        final data = doc.data();
-        final int legacyAura = _numToInt(data['aura']);
-        final int auraMilli =
-            _numToInt(data['auraMilli'], fallback: legacyAura * 1000);
-        return LeaderboardEntry(
-          uid: doc.id,
-          displayName:
-              (data['displayName'] as String?)?.trim().isNotEmpty == true
-                  ? (data['displayName'] as String).trim()
-                  : 'Player',
-          auraMilli: auraMilli,
-          totalAup: _numToInt(data['totalAup']),
-          activityScore: _numToInt(data['activityScore']),
-        );
-      }).toList(growable: false);
+      return snap.docs.map(_entryFromDoc).toList(growable: false);
     } catch (e) {
       debugPrint('Leaderboard fetch failed: $e');
       return const <LeaderboardEntry>[];
     }
+  }
+
+  Future<List<LeaderboardEntry>> fetchTop10ByAura() async {
+    final db = _firestoreOrNull();
+    if (db == null) return const <LeaderboardEntry>[];
+
+    try {
+      final snap = await db
+          .collection(kCollection)
+          .orderBy('auraMilli', descending: true)
+          .limit(10)
+          .get();
+
+      return snap.docs.map(_entryFromDoc).toList(growable: false);
+    } catch (e) {
+      debugPrint('Aura leaderboard fetch failed: $e');
+      return const <LeaderboardEntry>[];
+    }
+  }
+
+  LeaderboardEntry _entryFromDoc(
+    QueryDocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
+    final data = doc.data();
+    final int legacyAura = _numToInt(data['aura']);
+    final int auraMilli =
+        _numToInt(data['auraMilli'], fallback: legacyAura * 1000);
+    return LeaderboardEntry(
+      uid: doc.id,
+      displayName: (data['displayName'] as String?)?.trim().isNotEmpty == true
+          ? (data['displayName'] as String).trim()
+          : 'Player',
+      auraMilli: auraMilli,
+      totalAup: _numToInt(data['totalAup']),
+      activityScore: _numToInt(data['activityScore']),
+    );
   }
 }
 

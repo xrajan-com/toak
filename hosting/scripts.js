@@ -8,6 +8,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const auth =
     window.firebase && typeof firebase.auth === "function" ? firebase.auth() : null;
+  const db =
+    window.firebase && typeof firebase.firestore === "function" ? firebase.firestore() : null;
 
   const _profileKey = (uid) => `tok.profile.${uid}`;
   const readExtraProfile = (uid) => {
@@ -129,13 +131,40 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   const profileIconLink = document.querySelector(".profile-icon-link");
+  const dashboardIconLink = document.querySelector(".dashboard-icon-link");
+  const setProfileModalMode = (mode) => {
+    if (!DOM.profileModal) return;
+    const isDashboard = mode === "dashboard";
+    DOM.profileModal.classList.toggle("profile-modal-dashboard", isDashboard);
+    DOM.profileModal.classList.toggle("profile-modal-profile", !isDashboard);
+    const title = document.getElementById("profileModalTitle");
+    if (title) title.innerText = isDashboard ? "Dashboard" : "My Profile";
+    if (DOM.editProfileForm) {
+      DOM.editProfileForm.style.display = "none";
+      if (DOM.editProfileBtn) DOM.editProfileBtn.innerText = "Edit Profile";
+    }
+  };
+  const openProfileSurface = (mode) => {
+    closeAllModals();
+    const isSignedIn = Boolean(auth && auth.currentUser);
+    if (mode === "profile" && !isSignedIn) {
+      toggleModal(DOM.loginModal, true);
+      switchView(true);
+      return;
+    }
+    setProfileModalMode(mode);
+    toggleModal(DOM.profileModal, true);
+  };
   if (profileIconLink) {
     profileIconLink.addEventListener("click", (e) => {
       e.preventDefault();
-      closeAllModals();
-      const isSignedIn = Boolean(auth && auth.currentUser);
-      toggleModal(isSignedIn ? DOM.profileModal : DOM.loginModal, true);
-      if (!isSignedIn) switchView(true);
+      openProfileSurface("profile");
+    });
+  }
+  if (dashboardIconLink) {
+    dashboardIconLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      openProfileSurface("dashboard");
     });
   }
 
@@ -240,7 +269,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const venueInfo = {
     "Baroda": {
-      group: "Royal Indian Circuit",
+      group: "Indian Circuit",
       history: "Baroda grew under the Gaekwads into one of western India's most reform-minded princely states, known for public works, education, and a confident court culture.",
       forts: [
         {
@@ -258,7 +287,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ]
     },
     "Hyderabad": {
-      group: "Royal Indian Circuit",
+      group: "Indian Circuit",
       history: "Hyderabad was the seat of the Qutb Shahi rulers and later the Asaf Jahi nizams, joining Persianate court style with Deccan military power and a wealthy trading culture.",
       forts: [
         {
@@ -276,7 +305,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ]
     },
     "Indore": {
-      group: "Royal Indian Circuit",
+      group: "Indian Circuit",
       history: "Indore rose with the Holkars, a Maratha house that turned a trading town into a central Indian power base while patronizing temples, markets, and river cities.",
       forts: [
         {
@@ -294,7 +323,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ]
     },
     "Jaipur": {
-      group: "Royal Indian Circuit",
+      group: "Indian Circuit",
       history: "Jaipur was planned by Sawai Jai Singh II as a scientific, commercial, and royal capital, with Amber's older hill power feeding into the Pink City's urban design.",
       forts: [
         {
@@ -312,7 +341,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ]
     },
     "Maratha Empire": {
-      group: "Royal Indian Circuit",
+      group: "Indian Circuit",
       history: "The Maratha Empire grew from hill forts, mobile cavalry, and local revenue networks into a major early modern Indian power that challenged Mughal authority.",
       forts: [
         {
@@ -330,7 +359,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ]
     },
     "Mysore": {
-      group: "Royal Indian Circuit",
+      group: "Indian Circuit",
       history: "Mysore moved between Wodeyar kingship and the military reforms of Haidar Ali and Tipu Sultan, becoming a southern power known for rockets, diplomacy, and palace culture.",
       forts: [
         {
@@ -348,7 +377,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ]
     },
     "New Delhi": {
-      group: "Royal Indian Circuit",
+      group: "Indian Circuit",
       history: "Delhi's region has hosted many capitals, from Sultanate cities to Mughal Shahjahanabad and modern New Delhi, leaving a dense record of power changing hands.",
       forts: [
         {
@@ -366,7 +395,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ]
     },
     "Sikh Empire": {
-      group: "Royal Indian Circuit",
+      group: "Indian Circuit",
       history: "The Sikh Empire under Maharaja Ranjit Singh unified Punjab and surrounding regions through disciplined armies, diplomacy, and control of key frontier forts.",
       forts: [
         {
@@ -384,7 +413,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ]
     },
     "Sikkim": {
-      group: "Royal Indian Circuit",
+      group: "Indian Circuit",
       history: "Sikkim's Namgyal kingdom sat between Himalayan trade routes and powerful neighbors, with monasteries and hill settlements shaping its political identity.",
       forts: [
         {
@@ -402,7 +431,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ]
     },
     "Travancore": {
-      group: "Royal Indian Circuit",
+      group: "Indian Circuit",
       history: "Travancore became a strong southern kingdom through maritime trade, temple wealth, military reform, and careful diplomacy along the Kerala coast.",
       forts: [
         {
@@ -719,7 +748,9 @@ document.addEventListener("DOMContentLoaded", () => {
     "Fort Dauphin (Madagascar)",
     "Fort Jesus (Kenya)",
     "Old Fort Durban (South Africa)",
-    "Apollonia Fortress (Libya)"
+    "Apollonia Fortress (Libya)",
+    "Camp Lemonnier (Djibouti)",
+    "Fort James / Kunta Kinteh Island (Gambia)"
   ],
   "S. America": [
     "Fort Bueras (Chile)",
@@ -743,7 +774,38 @@ document.addEventListener("DOMContentLoaded", () => {
     "Fort York (Canada)",
     "Old Las Vegas Fort (United States)",
     "Castillo de San Marcos (United States)",
-    "Fort Ticonderoga (United States)"
+    "Fort Ticonderoga (United States)",
+    "Fort George (Belize)",
+    "Fort Sumter (United States)",
+    "Fort McHenry (United States)",
+    "Fort Monroe (United States)",
+    "Fort Pulaski (United States)",
+    "Fort Moultrie (United States)",
+    "Fort Matanzas (United States)",
+    "Fort Pickens (United States)",
+    "Fort Morgan (United States)",
+    "Fort Washington (United States)",
+    "Fort Niagara (United States)",
+    "Fort Stanwix (United States)",
+    "Fort Crown Point (United States)",
+    "Fort Pitt (United States)",
+    "Fort Necessity (United States)",
+    "Fort Frederica (United States)",
+    "The Alamo (United States)",
+    "Fort Davis (United States)",
+    "Fort Concho (United States)",
+    "Fort Laramie (United States)",
+    "Fort Bridger (United States)",
+    "Fort Vancouver (United States)",
+    "Fort Clatsop (United States)",
+    "Fort Snelling (United States)",
+    "Fort Leavenworth (United States)",
+    "Fort Sill (United States)",
+    "Fort Knox (United States)",
+    "Bent’s Old Fort (United States)",
+    "Fort Union (United States)",
+    "Fort Bowie (United States)",
+    "Fort Robinson (United States)"
   ],
   "Arabia": [
     "Al Jalali Fort (Oman)",
@@ -874,7 +936,9 @@ document.addEventListener("DOMContentLoaded", () => {
     "Bourtange Fortress (Netherlands)",
     "Naarden Fortress (Netherlands)",
     "Gravensteen (Belgium)",
-    "Bouillon Castle (Belgium)"
+    "Bouillon Castle (Belgium)",
+    "Bock Casemates (Luxembourg)",
+    "Gutenberg Castle (Liechtenstein)"
   ],
   "Scandinavia": [
     "Kronborg Castle (Denmark)",
@@ -882,7 +946,8 @@ document.addEventListener("DOMContentLoaded", () => {
     "Kalmar Castle (Sweden)",
     "Olavinlinna Castle (Finland)",
     "Vardøhus Fortress (Norway)",
-    "Bergenhus Fortress (Norway)"
+    "Bergenhus Fortress (Norway)",
+    "Skansinn Fort (Iceland)"
   ],
   "Baltic Marches": [
     "Kamianets-Podilskyi Castle (Ukraine)",
@@ -921,7 +986,11 @@ document.addEventListener("DOMContentLoaded", () => {
     "St. Nicholas Fortress (Croatia)",
     "Kamerlengo Castle (Croatia)",
     "Golubac Fortress (Serbia)",
-    "Tsarevets Fortress (Bulgaria)"
+    "Tsarevets Fortress (Bulgaria)",
+    "Fort Antoine (Monaco)",
+    "Fort St Elmo (Malta)",
+    "Moorish Castle (Gibraltar)",
+    "Kyrenia Castle (Cyprus)"
   ],
   "Alaska": [
     "Fort William H. Seward (United States)",
@@ -929,7 +998,8 @@ document.addEventListener("DOMContentLoaded", () => {
     "Fort Abercrombie (United States)",
     "Fort Egbert (United States)",
     "Fort Davis Nome (United States)",
-    "Fort Gibbon (United States)"
+    "Fort Gibbon (United States)",
+    "Camp Century (Greenland)"
   ],
   "Caribbean": [
     "Brimstone Hill Fortress (Saint Kitts and Nevis)",
@@ -965,7 +1035,8 @@ document.addEventListener("DOMContentLoaded", () => {
     "Fort Rotterdam (Indonesia)",
     "Fort Belgica (Indonesia)",
     "Fort Tolukko (Indonesia)",
-    "Fort Marlborough (Indonesia)"
+    "Fort Marlborough (Indonesia)",
+    "Kota Batu (Brunei)"
   ],
   "Indian Ocean": [
     "Galle Fort (Sri Lanka)",
@@ -987,7 +1058,10 @@ document.addEventListener("DOMContentLoaded", () => {
     "Tavuni Hill Fort (Fiji)",
     "Fort Apugan (Guam / United States)",
     "Fort Nuestra Señora de la Soledad (Guam / United States)",
-    "Fort Santa Agueda (Guam / United States)"
+    "Fort Santa Agueda (Guam / United States)",
+    "Arai-Te-Tonga (Cook Islands)",
+    "Peleliu Fortifications (Palau)",
+    "Espiritu Santo WWII Base (Vanuatu)"
   ],
   "British Isles": [
     "Fort Barrington (Antigua and Barbuda)",
@@ -999,7 +1073,8 @@ document.addEventListener("DOMContentLoaded", () => {
     "Fort Burt (British Virgin Islands)",
     "Fort Recovery (British Virgin Islands)",
     "Fort George Montserrat (Montserrat)",
-    "High Knoll Fort (Saint Helena)"
+    "High Knoll Fort (Saint Helena)",
+    "Peel Castle (Isle of Man)"
   ],
   "French Isles": [
     "Fort Napoléon des Saintes (Guadeloupe / France)",
@@ -1011,7 +1086,9 @@ document.addEventListener("DOMContentLoaded", () => {
     "Fort Teremba (New Caledonia / France)",
     "Fort de la Reine (Réunion / France)",
     "Dzaoudzi Fortifications (Mayotte / France)",
-    "Wallis & Futuna Royal Sites (Wallis and Futuna / France)"
+    "Wallis & Futuna Royal Sites (Wallis and Futuna / France)",
+    "Fort Gustaf (Saint Barthelemy)",
+    "Fort Taravao (French Polynesia)"
   ],
   "Dutch Isles": [
     "Fort Amsterdam (Curaçao / Netherlands)",
@@ -1091,16 +1168,16 @@ document.addEventListener("DOMContentLoaded", () => {
   "Central Asia": "International Circuit",
   "Persia": "International Circuit",
   "Europe": "International Circuit",
-  "Baroda": "Royal Indian Circuit",
-  "Hyderabad": "Royal Indian Circuit",
-  "Indore": "Royal Indian Circuit",
-  "Jaipur": "Royal Indian Circuit",
-  "Maratha Empire": "Royal Indian Circuit",
-  "Mysore": "Royal Indian Circuit",
-  "New Delhi": "Royal Indian Circuit",
-  "Sikh Empire": "Royal Indian Circuit",
-  "Sikkim": "Royal Indian Circuit",
-  "Travancore": "Royal Indian Circuit",
+  "Baroda": "Indian Circuit",
+  "Hyderabad": "Indian Circuit",
+  "Indore": "Indian Circuit",
+  "Jaipur": "Indian Circuit",
+  "Maratha Empire": "Indian Circuit",
+  "Mysore": "Indian Circuit",
+  "New Delhi": "Indian Circuit",
+  "Sikh Empire": "Indian Circuit",
+  "Sikkim": "Indian Circuit",
+  "Travancore": "Indian Circuit",
   "Britain": "Euro Circuit",
   "France": "Euro Circuit",
   "Italy": "Euro Circuit",
@@ -1111,16 +1188,16 @@ document.addEventListener("DOMContentLoaded", () => {
   "Baltic Marches": "Euro Circuit",
   "Russia & Siberia": "Euro Circuit",
   "Mediterranean": "Euro Circuit",
-  "Alaska": "Oceania Circuit",
-  "Caribbean": "Oceania Circuit",
-  "Dragonland": "Oceania Circuit",
-  "Straits": "Oceania Circuit",
-  "Indian Ocean": "Oceania Circuit",
-  "Pacific": "Oceania Circuit",
-  "British Isles": "Oceania Circuit",
-  "French Isles": "Oceania Circuit",
-  "Dutch Isles": "Oceania Circuit",
-  "American Isles": "Oceania Circuit"
+  "Alaska": "Micro Circuit",
+  "Caribbean": "Micro Circuit",
+  "Dragonland": "Micro Circuit",
+  "Straits": "Micro Circuit",
+  "Indian Ocean": "Micro Circuit",
+  "Pacific": "Micro Circuit",
+  "British Isles": "Micro Circuit",
+  "French Isles": "Micro Circuit",
+  "Dutch Isles": "Micro Circuit",
+  "American Isles": "Micro Circuit"
 };
 
   const venueTileSummary = (key) => {
@@ -1594,6 +1671,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const venueTabs = document.querySelectorAll(".venue-tab");
   const venueGrids = document.querySelectorAll(".venue-grid");
+  const leaderboardItems = document.querySelectorAll(".venue-tab-item");
+  const leaderboardTimers = new WeakMap();
+  const closeLeaderboardMenu = (item) => {
+    if (!item) return;
+    clearTimeout(leaderboardTimers.get(item));
+    item.classList.remove("leaderboard-open");
+    const tab = item.querySelector(".venue-tab");
+    if (tab) tab.setAttribute("aria-expanded", "false");
+  };
+  const openLeaderboardMenu = (item) => {
+    if (!item) return;
+    leaderboardItems.forEach(other => {
+      if (other !== item) closeLeaderboardMenu(other);
+    });
+    clearTimeout(leaderboardTimers.get(item));
+    item.classList.add("leaderboard-open");
+    const tab = item.querySelector(".venue-tab");
+    if (tab) tab.setAttribute("aria-expanded", "true");
+    leaderboardTimers.set(
+      item,
+      setTimeout(() => closeLeaderboardMenu(item), 3000)
+    );
+  };
   const setVenueGroup = (target) => {
     venueTabs.forEach(tab => {
       const isActive = tab.dataset.target === target;
@@ -1607,12 +1707,112 @@ document.addEventListener("DOMContentLoaded", () => {
   };
   if (venueTabs.length) {
     venueTabs.forEach(tab => {
-      tab.addEventListener("click", () => setVenueGroup(tab.dataset.target));
+      const item = tab.closest(".venue-tab-item");
+      tab.setAttribute("aria-haspopup", "true");
+      tab.setAttribute("aria-expanded", "false");
+      tab.addEventListener("click", () => {
+        setVenueGroup(tab.dataset.target);
+        openLeaderboardMenu(item);
+      });
+      tab.addEventListener("mouseenter", () => openLeaderboardMenu(item));
+      tab.addEventListener("focus", () => openLeaderboardMenu(item));
     });
     // ensure default
-    setVenueGroup(document.querySelector(".venue-tab.active")?.dataset.target || "world");
+    setVenueGroup(document.querySelector(".venue-tab.active")?.dataset.target || "euro");
   }
   setupVenueCards();
+
+  const parseAuraText = (raw) => {
+    const value = Number.parseFloat(String(raw || "").replace(/[^0-9.]/g, ""));
+    return Number.isFinite(value) ? value : 0;
+  };
+
+  const formatAuraText = (aura) => {
+    const rounded = Math.round(aura * 10) / 10;
+    return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+  };
+
+  const cleanLeaderboardName = (raw) => {
+    const name = String(raw || "").trim();
+    return name ? name.slice(0, 40) : "Player";
+  };
+
+  const leaderboardFallbacks = new Map();
+  document.querySelectorAll(".venue-tab-item").forEach(item => {
+    const target = item.querySelector(".venue-tab")?.dataset.target;
+    const menu = item.querySelector(".venue-leaderboard-menu");
+    if (!target || !menu) return;
+    const rows = Array.from(menu.querySelectorAll("li:not(.venue-leaderboard-heading)"));
+    leaderboardFallbacks.set(target, rows.map(row => ({
+      name: row.querySelector("span")?.textContent.trim() || "Player",
+      aura: parseAuraText(row.querySelector("strong")?.textContent),
+      source: "fallback"
+    })));
+  });
+
+  const applyLeaderboardRows = (target, realEntries) => {
+    const item = document.querySelector(`.venue-tab-item .venue-tab[data-target="${target}"]`)?.closest(".venue-tab-item");
+    const menu = item?.querySelector(".venue-leaderboard-menu");
+    const rows = menu ? Array.from(menu.querySelectorAll("li:not(.venue-leaderboard-heading)")) : [];
+    const fallbacks = leaderboardFallbacks.get(target) || [];
+    if (!menu || rows.length === 0 || fallbacks.length === 0) return;
+
+    const candidates = [
+      ...fallbacks,
+      ...realEntries.map(entry => ({ ...entry, source: "real" }))
+    ].sort((a, b) => {
+      const auraDelta = b.aura - a.aura;
+      if (auraDelta !== 0) return auraDelta;
+      if (a.source === b.source) return 0;
+      return a.source === "fallback" ? -1 : 1;
+    }).slice(0, rows.length);
+
+    rows.forEach((row, index) => {
+      const candidate = candidates[index] || fallbacks[index];
+      const nameEl = row.querySelector("span");
+      const auraEl = row.querySelector("strong");
+      if (nameEl) nameEl.textContent = candidate.name;
+      if (auraEl) auraEl.textContent = `${formatAuraText(candidate.aura)} AURA`;
+      row.dataset.source = candidate.source;
+    });
+  };
+
+  const applyLeaderboards = (entries) => {
+    const realEntries = entries
+      .filter(entry => entry.aura > 0 && entry.name)
+      .sort((a, b) => b.aura - a.aura)
+      .slice(0, 10);
+    for (const target of leaderboardFallbacks.keys()) {
+      applyLeaderboardRows(target, realEntries);
+    }
+  };
+
+  const loadAuraLeaderboards = async () => {
+    if (!db) return;
+    try {
+      const snap = await db
+        .collection("leaderboard")
+        .orderBy("auraMilli", "desc")
+        .limit(10)
+        .get();
+      const entries = snap.docs.map(doc => {
+        const data = doc.data() || {};
+        const legacyAura = Number(data.aura);
+        const auraMilli = Number.isFinite(Number(data.auraMilli))
+          ? Number(data.auraMilli)
+          : (Number.isFinite(legacyAura) ? legacyAura * 1000 : 0);
+        return {
+          name: cleanLeaderboardName(data.displayName || data.username),
+          aura: auraMilli / 1000
+        };
+      });
+      applyLeaderboards(entries);
+    } catch (err) {
+      console.warn("Leaderboard fetch skipped.", err);
+    }
+  };
+
+  loadAuraLeaderboards();
 
   const openVenueFromHash = () => {
     const match = window.location.hash.match(/^#forts-(.+)$/);
@@ -1794,6 +1994,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const logoutBtn = document.getElementById("logoutBtn");
     if (logoutBtn) logoutBtn.style.display = isSignedIn ? "" : "none";
     if (DOM.editProfileBtn) DOM.editProfileBtn.style.display = isSignedIn ? "" : "none";
+    if (profileIconLink) {
+      profileIconLink.setAttribute(
+        "aria-label",
+        isSignedIn ? "Open my profile" : "Sign in to manage profile",
+      );
+    }
+    if (dashboardIconLink) {
+      dashboardIconLink.setAttribute("aria-label", "Open player dashboard");
+    }
 
     if (!isSignedIn) {
       if (DOM.editProfileForm) DOM.editProfileForm.style.display = "none";
@@ -1807,6 +2016,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const about = extra.about || "Ready to win!";
       const avatarUrl = user.photoURL || "Renoir.png";
       const progress = extra.progress || {};
+      const totalAup = Number(progress.totalAup ?? progress.aupTotal ?? extra.totalAup ?? 0);
+      const maxAup = 1000000000;
+      const rawAura = Number(progress.aura ?? extra.aura ?? (totalAup / maxAup) * 100);
+      const aura = Math.max(0, Math.min(100, rawAura));
+      const aupLeft = Math.max(0, maxAup - totalAup);
       const joined = user.metadata && user.metadata.creationTime
         ? new Date(user.metadata.creationTime).toLocaleDateString(undefined, {
             year: "numeric",
@@ -1824,6 +2038,13 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("dashboardKingdomWins").innerText = String(progress.kingdomsWon || 0);
       document.getElementById("dashboardCircuitWins").innerText = String(progress.circuitsWon || 0);
       document.getElementById("dashboardTitlesWon").innerText = String(progress.titlesWon || 0);
+      document.getElementById("dashboardAura").innerText = Number.isFinite(aura) ? String(Math.round(aura)) : "0";
+      document.getElementById("dashboardAupTotal").innerText = Number.isFinite(totalAup) ? totalAup.toLocaleString() : "0";
+      document.getElementById("dashboardAupLeft").innerText = Number.isFinite(aupLeft) ? aupLeft.toLocaleString() : "0";
+      document.getElementById("dashboardAupOceania").innerText = Number(progress.oceaniaAup || 0).toLocaleString();
+      document.getElementById("dashboardAupEuro").innerText = Number(progress.euroAup || 0).toLocaleString();
+      document.getElementById("dashboardAupIndia").innerText = Number(progress.indiaAup || 0).toLocaleString();
+      document.getElementById("dashboardAupInternational").innerText = Number(progress.internationalAup || 0).toLocaleString();
 
       const avatarEl = document.getElementById("profileAvatar");
       if (avatarEl) avatarEl.src = avatarUrl;
@@ -1837,6 +2058,13 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("dashboardKingdomWins").innerText = "0";
       document.getElementById("dashboardCircuitWins").innerText = "0";
       document.getElementById("dashboardTitlesWon").innerText = "0";
+      document.getElementById("dashboardAura").innerText = "0";
+      document.getElementById("dashboardAupTotal").innerText = "0";
+      document.getElementById("dashboardAupLeft").innerText = "1,000,000,000";
+      document.getElementById("dashboardAupOceania").innerText = "0";
+      document.getElementById("dashboardAupEuro").innerText = "0";
+      document.getElementById("dashboardAupIndia").innerText = "0";
+      document.getElementById("dashboardAupInternational").innerText = "0";
 
       const avatarEl = document.getElementById("profileAvatar");
       if (avatarEl) avatarEl.src = "Renoir.png";

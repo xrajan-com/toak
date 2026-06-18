@@ -7,29 +7,17 @@ import 'package:ten_of_a_kind_poker/config/venues.dart'
 import 'package:ten_of_a_kind_poker/core/aup.dart' as aup;
 
 void main() {
-  test('Sikh Empire and N. America are fixed at 10,000,000 AUP', () {
-    expect(
-      aup.aupForKingdomTotal(
-          group: VenueGroup.india, kingdomName: 'Sikh Empire'),
-      10000000,
-    );
-    expect(
-      aup.aupForKingdomTotal(
-        group: VenueGroup.international,
-        kingdomName: 'N. America',
-      ),
-      10000000,
-    );
-    expect(
-      aup.aupForKingdomTotal(
-        group: VenueGroup.international,
-        kingdomName: 'USA',
-      ),
-      10000000,
-    );
+  test('AUP economy tops out at 100 Aura across four circuits', () {
+    expect(aup.kAupPerAura, 10000000);
+    expect(aup.kAupPerCircuit, 250000000);
+    expect(aup.kAupMaxTotal, 1000000000);
+    expect(aup.kAupMaxAuraPerCircuit, 25);
+    expect(aup.kAupMaxAuraTotal, 100);
+    expect(aup.auraValueFromAup(aup.kAupMaxTotal), 100);
+    expect(aup.auraValueFromAup(aup.kAupPerCircuit), 25);
   });
 
-  test('Circuit kingdom totals sum to 50,000,000 AUP', () {
+  test('Circuit kingdom totals sum to 250,000,000 AUP', () {
     for (final group in kVenueGroups) {
       final sum = venuesForGroup(group).fold<int>(
         0,
@@ -38,6 +26,21 @@ void main() {
       );
       expect(sum, aup.kAupPerCircuit, reason: 'Mismatch for $group');
     }
+  });
+
+  test('All circuit kingdom totals sum to 1,000,000,000 AUP', () {
+    final total = kVenueGroups.fold<int>(
+      0,
+      (sum, group) =>
+          sum +
+          venuesForGroup(group).fold<int>(
+            0,
+            (groupSum, v) =>
+                groupSum +
+                aup.aupForKingdomTotal(group: group, kingdomName: v.name),
+          ),
+    );
+    expect(total, aup.kAupMaxTotal);
   });
 
   test('Kingdom totals are unique within each circuit', () {

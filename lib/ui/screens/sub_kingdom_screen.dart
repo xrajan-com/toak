@@ -340,8 +340,14 @@ class SubKingdomScreen extends StatelessWidget {
                             kingdomName: kingdom.name,
                             subKingdomIndex: idx,
                           );
+                          final prizeAup = aup.aupForSubKingdomEvent(
+                            group: group,
+                            kingdomName: kingdom.name,
+                            subKingdomIndex: idx,
+                          );
+                          final prizeLabel = aup.formatAup(prizeAup);
                           final base =
-                              '${spec.tableSizeLabel()} • ${spec.prizePoolLabel}';
+                              '${spec.tableSizeLabel()} • AUP $prizeLabel';
                           if (entryFee <= 0 || idx == freeSubKingdomIndex) {
                             return 'FREE • $base';
                           }

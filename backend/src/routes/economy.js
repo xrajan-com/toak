@@ -11,12 +11,13 @@ const SERVER_PROGRESS_COLLECTION = 'server_progress';
 const LEGACY_PROGRESS_COLLECTION = 'campaign_progress';
 
 const MAX_AUP_PER_CIRCUIT = 50000000;
-const MAX_TOTAL_AUP = MAX_AUP_PER_CIRCUIT * 2;
+const MAX_TOTAL_AUP = MAX_AUP_PER_CIRCUIT * 4;
 const REGISTERED_STARTER_AUP = 10000;
 const REWARDED_AD_AUP_BONUS = 2000;
 const MAX_ENTRY_FEE = 10000000;
 const MAX_CAMPAIGN_WIN_AUP = 10000000;
 const MAX_REWARDED_ADS_PER_UTC_DAY = 30;
+const CIRCUIT_FIELDS = ['oceaniaAup', 'euroAup', 'indiaAup', 'internationalAup'];
 
 const QUIT_PENALTY_PERMILLE = 3;
 const LOSS_PENALTY_PERMILLE = 1;
@@ -39,7 +40,29 @@ function _int(value, { fallback = 0, min = 0, max = Number.MAX_SAFE_INTEGER } = 
 }
 
 function _group(raw) {
-  return raw === 'international' ? 'international' : 'india';
+  if (raw === 'international') return 'international';
+  if (raw === 'euro') return 'euro';
+  if (raw === 'oceania' || raw === '7seas' || raw === 'seven_seas') {
+    return 'oceania';
+  }
+  return 'india';
+}
+
+function _fieldForGroup(group) {
+  switch (group) {
+    case 'international':
+      return 'internationalAup';
+    case 'euro':
+      return 'euroAup';
+    case 'oceania':
+      return 'oceaniaAup';
+    default:
+      return 'indiaAup';
+  }
+}
+
+function _totalAup(progress) {
+  return CIRCUIT_FIELDS.reduce((sum, field) => sum + _int(progress[field]), 0);
 }
 
 function _dayKeyUtc(ms = Date.now()) {
@@ -68,6 +91,8 @@ function _baseProgress(data = {}) {
       min: 0,
       max: MAX_AUP_PER_CIRCUIT,
     }),
+    euroAup: _int(data.euroAup, { min: 0, max: MAX_AUP_PER_CIRCUIT }),
+    oceaniaAup: _int(data.oceaniaAup, { min: 0, max: MAX_AUP_PER_CIRCUIT }),
     awardedEventIds: Array.isArray(data.awardedEventIds)
       ? data.awardedEventIds.filter((v) => typeof v === 'string').slice(0, 500)
       : [],
@@ -99,6 +124,8 @@ function _snapshot(progress) {
     schemaVersion: 1,
     indiaAup: progress.indiaAup,
     internationalAup: progress.internationalAup,
+    euroAup: progress.euroAup,
+    oceaniaAup: progress.oceaniaAup,
     awardedEventIds: progress.awardedEventIds,
     registeredStarterGranted: progress.registeredStarterGranted,
     lastActiveAtMs: progress.lastActiveAtMs,
@@ -126,7 +153,7 @@ function _touchActivity(progress) {
 }
 
 function _addAup(progress, group, amount) {
-  const field = group === 'international' ? 'internationalAup' : 'indiaAup';
+  const field = _fieldForGroup(group);
   const before = progress[field];
   progress[field] = _clamp(progress[field] + amount, 0, MAX_AUP_PER_CIRCUIT);
   return progress[field] - before;
@@ -134,20 +161,16 @@ function _addAup(progress, group, amount) {
 
 function _grantRegisteredStarterAup(progress) {
   if (progress.registeredStarterGranted) return progress;
-  const total = progress.indiaAup + progress.internationalAup;
+  const total = _totalAup(progress);
   if (total <= 0) {
-    const indiaGrant = Math.trunc(REGISTERED_STARTER_AUP / 2);
-    const internationalGrant = REGISTERED_STARTER_AUP - indiaGrant;
-    progress.indiaAup = _clamp(
-      progress.indiaAup + indiaGrant,
-      0,
-      MAX_AUP_PER_CIRCUIT,
-    );
-    progress.internationalAup = _clamp(
-      progress.internationalAup + internationalGrant,
-      0,
-      MAX_AUP_PER_CIRCUIT,
-    );
+    let remaining = REGISTERED_STARTER_AUP;
+    CIRCUIT_FIELDS.forEach((field, index) => {
+      const grant = index === CIRCUIT_FIELDS.length - 1
+        ? remaining
+        : Math.trunc(REGISTERED_STARTER_AUP / CIRCUIT_FIELDS.length);
+      progress[field] = _clamp(progress[field] + grant, 0, MAX_AUP_PER_CIRCUIT);
+      remaining -= grant;
+    });
   }
   progress.registeredStarterGranted = true;
   return progress;
@@ -155,7 +178,7 @@ function _grantRegisteredStarterAup(progress) {
 
 function _deductAup(progress, group, amount) {
   if (amount <= 0) return 0;
-  const field = group === 'international' ? 'internationalAup' : 'indiaAup';
+  const field = _fieldForGroup(group);
   if (progress[field] < amount) return -1;
   progress[field] = _clamp(progress[field] - amount, 0, MAX_AUP_PER_CIRCUIT);
   return amount;
@@ -164,18 +187,18 @@ function _deductAup(progress, group, amount) {
 function _deductAupTotal(progress, amount) {
   let remaining = _int(amount, { min: 0, max: MAX_TOTAL_AUP });
   if (remaining <= 0) return 0;
-  const before = progress.indiaAup + progress.internationalAup;
-  for (const field of ['internationalAup', 'indiaAup']) {
+  const before = _totalAup(progress);
+  for (const field of CIRCUIT_FIELDS) {
     const take = Math.min(progress[field], remaining);
     progress[field] -= take;
     remaining -= take;
     if (remaining <= 0) break;
   }
-  return before - (progress.indiaAup + progress.internationalAup);
+  return before - _totalAup(progress);
 }
 
 function _deductPermille(progress, permille) {
-  const total = progress.indiaAup + progress.internationalAup;
+  const total = _totalAup(progress);
   const amount = Math.trunc((total * permille) / 1000);
   return _deductAupTotal(progress, amount);
 }

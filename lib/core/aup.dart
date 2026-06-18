@@ -3,16 +3,16 @@ import 'dart:math' as math;
 import 'package:intl/intl.dart';
 import 'package:ten_of_a_kind_poker/config/campaign_events.dart' as ce;
 import 'package:ten_of_a_kind_poker/config/sub_kingdoms.dart'
-    show subKingdomCountFor;
+    show subKingdomCountFor, subKingdomNamesFor;
 import 'package:ten_of_a_kind_poker/config/venues.dart'
     show VenueGroup, venuesForGroup;
 
-const int kAupPerAura = 1000000;
+const int kAupPerAura = 10000000;
 const int kAuraMilliPerAura = 1000;
-const int kAupMaxAuraPerCircuit = 50;
-const int kAupMaxAuraTotal = 200;
+const int kAupMaxAuraPerCircuit = 25;
+const int kAupMaxAuraTotal = 100;
 
-const int kAupPerCircuit = 50000000;
+const int kAupPerCircuit = 250000000;
 
 /// All kingdom/event rewards are quantized to keep numbers easy to remember.
 const int kAupRewardUnit = 1000;
@@ -58,15 +58,55 @@ const Map<VenueGroup, Map<String, int>> _kQuickGameEntryFees =
   },
 };
 
-const Map<VenueGroup, Map<String, int>> _kKingdomTotalOverrides =
+const Map<VenueGroup, Map<String, int>> _kKingdomPopularityWeights =
     <VenueGroup, Map<String, int>>{
   VenueGroup.india: <String, int>{
-    // Must be exactly 10 aura (10,000,000 AUP).
-    'Sikh Empire': 10000000,
+    'Sikh Empire': 150,
+    'Jaipur': 138,
+    'New Delhi': 134,
+    'Maratha Empire': 130,
+    'Mysore': 122,
+    'Hyderabad': 118,
+    'Baroda': 112,
+    'Indore': 108,
+    'Travancore': 102,
+    'Sikkim': 96,
   },
   VenueGroup.international: <String, int>{
-    // "USA" venue (canonical: N. America) — must be exactly 10 aura.
-    'N. America': 10000000,
+    'Europe': 150,
+    'N. America': 144,
+    'China': 136,
+    'Far East': 130,
+    'Arabia': 122,
+    'Persia': 116,
+    'Africa': 112,
+    'S. America': 108,
+    'Asia Rest': 104,
+    'Central Asia': 98,
+  },
+  VenueGroup.euro: <String, int>{
+    'Britain': 150,
+    'France': 142,
+    'Italy': 136,
+    'Spain': 132,
+    'Mediterranean': 128,
+    'Russia & Siberia': 118,
+    'Portugal': 114,
+    'Scandinavia': 110,
+    'Baltic Marches': 104,
+    'North Sea': 100,
+  },
+  VenueGroup.oceania: <String, int>{
+    'Caribbean': 142,
+    'British Isles': 136,
+    'Indian Ocean': 132,
+    'Pacific': 124,
+    'Alaska': 118,
+    'Straits': 114,
+    'French Isles': 110,
+    'Dragonland': 108,
+    'Dutch Isles': 104,
+    'American Isles': 102,
   },
 };
 
@@ -265,9 +305,16 @@ List<int> _subKingdomAupPrizesFor({
     return byGroup[canonicalKingdomName]!;
   }
 
+  final names =
+      subKingdomNamesFor(group: group, kingdomName: canonicalKingdomName);
   final weights = <int>[
     for (int i = 1; i <= count; i++)
-      20 + (_fnv1a32('aup|${group.name}|$canonicalKingdomName|$i|v1') % 81),
+      _fortPopularityWeight(
+        group: group,
+        kingdomName: canonicalKingdomName,
+        fortName: i <= names.length ? names[i - 1] : '',
+        index: i,
+      ),
   ];
   final amounts = _distributeByWeights(
     total: subTotal,
@@ -290,47 +337,122 @@ Map<String, int> _kingdomTotalsForGroup(VenueGroup group) {
   }.where((n) => n.trim().isNotEmpty).toList()
     ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
 
-  final overrides = _kKingdomTotalOverrides[group] ?? const <String, int>{};
-  final locked = <String>{};
   final out = <String, int>{};
-  int fixedSum = 0;
-  for (final k in names) {
-    final int? o = overrides[k];
-    if (o == null) continue;
-    out[k] = o.clamp(0, kAupPerCircuit);
-    fixedSum += out[k]!;
-    locked.add(k);
-  }
-
-  final remainingNames = names.where((n) => !locked.contains(n)).toList();
-  final remainingTotal = (kAupPerCircuit - fixedSum).clamp(0, kAupPerCircuit);
-
-  if (remainingNames.isNotEmpty && remainingTotal > 0) {
+  if (names.isNotEmpty) {
     final weights = <int>[
-      for (final k in remainingNames)
-        (ce.kingdomGoldMultiplier(group: group, kingdomName: k) * 1000) +
-            ((_fnv1a32('aup_kw|${group.name}|$k|v1') % 997) + 3),
+      for (final k in names) _kingdomPopularityWeight(group: group, name: k),
     ];
     final amounts = _distributeByWeights(
-      total: remainingTotal,
+      total: kAupPerCircuit,
       weights: weights,
       seed: _fnv1a32('aup_krem|${group.name}|v1'),
       unit: kAupRewardUnit,
     );
-    for (int i = 0; i < remainingNames.length; i++) {
-      out[remainingNames[i]] = amounts[i];
+    for (int i = 0; i < names.length; i++) {
+      out[names[i]] = amounts[i];
     }
   }
 
   final normalized = _makeKingdomTotalsUnique(
     group: group,
     totals: out,
-    locked: locked,
+    locked: const <String>{},
   );
 
   _kingdomTotalsCache[group] = Map<String, int>.unmodifiable(normalized);
   return _kingdomTotalsCache[group]!;
 }
+
+int _kingdomPopularityWeight({
+  required VenueGroup group,
+  required String name,
+}) {
+  final configured = _kKingdomPopularityWeights[group]?[name];
+  if (configured != null) return configured;
+  final multiplier = ce.kingdomGoldMultiplier(group: group, kingdomName: name);
+  final texture = (_fnv1a32('aup_kw|${group.name}|$name|v2') % 17);
+  return 90 + (multiplier * 4) + texture;
+}
+
+int _fortPopularityWeight({
+  required VenueGroup group,
+  required String kingdomName,
+  required String fortName,
+  required int index,
+}) {
+  final lower = fortName.toLowerCase();
+  int weight =
+      100 + (_fnv1a32('aup|${group.name}|$kingdomName|$index|v2') % 31);
+  for (final entry in _kFortPopularityBoosts.entries) {
+    if (lower.contains(entry.key)) weight += entry.value;
+  }
+  if (lower.contains('fort')) weight += 6;
+  if (lower.contains('castle')) weight += 10;
+  if (lower.contains('citadel') || lower.contains('fortress')) weight += 12;
+  if (lower.contains('palace')) weight += 8;
+  return weight.clamp(80, 360);
+}
+
+const Map<String, int> _kFortPopularityBoosts = <String, int>{
+  'red fort': 130,
+  'agra fort': 125,
+  'tower of london': 125,
+  'alhambra': 120,
+  'edinburgh castle': 112,
+  'windsor castle': 110,
+  'himeji castle': 115,
+  'osaka castle': 100,
+  'lahore fort': 108,
+  'galle fort': 105,
+  'golconda fort': 100,
+  'gwalior fort': 100,
+  'chittorgarh fort': 105,
+  'mehrangarh fort': 105,
+  'kumbhalgarh fort': 100,
+  'raigad fort': 98,
+  'srirangapatna fort': 92,
+  'san juan de ulua': 95,
+  'castillo de san marcos': 105,
+  'fort sumter': 98,
+  'fort mchenry': 95,
+  'the alamo': 110,
+  'brimstone hill': 92,
+  'fort jesus': 100,
+  'castle of good hope': 96,
+  'bahrain fort': 88,
+  'masmak fort': 90,
+  'erbil citadel': 86,
+  'jiayu pass': 86,
+  'xian city wall': 90,
+  'suwon hwaseong': 90,
+  'namhansanseong': 86,
+  'itachan kala': 85,
+  'itchan kala': 90,
+  'merv': 84,
+  'acropolis': 105,
+  'castel santangelo': 95,
+  'carcassonne': 100,
+  'hohensalzburg': 92,
+  'malbork': 105,
+  'bran castle': 100,
+  'suomenlinna': 88,
+  'chateau de chambord': 100,
+  'fort boyard': 92,
+  'castel del monte': 94,
+  'alcazar of segovia': 96,
+  'belem tower': 92,
+  'kronborg': 92,
+  'moscow kremlin': 115,
+  'peter and paul fortress': 95,
+  'derbent fortress': 90,
+  'acrocorinth': 88,
+  'yedikule': 88,
+  'predjama': 96,
+  'fort siloso': 86,
+  'fort cornwallis': 84,
+  'jaffna fort': 86,
+  'peel castle': 82,
+};
 
 Map<String, int> _makeKingdomTotalsUnique({
   required VenueGroup group,
