@@ -10,6 +10,23 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == uid;
     }
 
+    function accountIsActive(uid) {
+      return !exists(
+        /databases/$(database)/documents/account_deletions/$(uid)
+      );
+    }
+
+    // Secure by default. Admins may temporarily create
+    // /runtime_config/economy_authority with
+    // { legacyClientWritesEnabled: true } during a controlled Spark-mode
+    // migration. Backend-authoritative releases must leave it false/missing.
+    function legacyClientEconomyWritesEnabled() {
+      let configPath =
+        /databases/$(database)/documents/runtime_config/economy_authority;
+      return exists(configPath)
+        && get(configPath).data.legacyClientWritesEnabled == true;
+    }
+
     function isValidStringList(field, maxItems) {
       return !(field in request.resource.data)
         || (
@@ -55,16 +72,72 @@ service cloud.firestore {
         || request.resource.data[field] is bool;
     }
 
+    function campaignProgressFields() {
+      return [
+        'schemaVersion',
+        'cleared',
+        'mainEventsCleared',
+        'updatedAt',
+        'indiaAup',
+        'internationalAup',
+        'euroAup',
+        'oceaniaAup',
+        'northAmericaAup',
+        'awardedEventIds',
+        'registeredStarterGranted',
+        'appliedEventIds',
+        'lastActiveAtMs',
+        'prevActiveAtMs',
+        'lastActiveDayKey',
+        'activityScore',
+        'lastLowFreqDecayAtMs',
+        'abandonedGames',
+        'matchesPlayed',
+        'finishPermilleSum',
+        'rewardedAdDayKey',
+        'rewardedAdDayCount',
+        'migratedFrom'
+      ];
+    }
+
+    function auraWalletFields() {
+      return [
+        'schemaVersion',
+        'walletStorageVersion',
+        'walletRevision',
+        'indiaAup',
+        'internationalAup',
+        'euroAup',
+        'oceaniaAup',
+        'northAmericaAup',
+        'awardedEventIds',
+        'registeredStarterGranted',
+        'lastActiveAtMs',
+        'prevActiveAtMs',
+        'lastActiveDayKey',
+        'activityScore',
+        'lastLowFreqDecayAtMs',
+        'abandonedGames',
+        'matchesPlayed',
+        'finishPermilleSum',
+        'updatedAt'
+      ];
+    }
+
     function isValidCampaignDoc() {
-      return request.resource.data.schemaVersion is int
+      return request.resource.data.keys().hasOnly(campaignProgressFields())
+        && request.resource.data.schemaVersion is int
         && request.resource.data.schemaVersion == 1
         && isValidStringList('cleared', 500)
         && isValidStringList('mainEventsCleared', 200)
         && isValidStringList('awardedEventIds', 500)
-        && isOptionalInt('indiaAup', 0, 50000000)
-        && isOptionalInt('internationalAup', 0, 50000000)
-        && isOptionalInt('euroAup', 0, 50000000)
-        && isOptionalInt('oceaniaAup', 0, 50000000)
+        && isValidStringList('appliedEventIds', 500)
+        && isOptionalInt('indiaAup', 0, 200000000)
+        && isOptionalInt('internationalAup', 0, 200000000)
+        && isOptionalInt('euroAup', 0, 200000000)
+        && isOptionalInt('oceaniaAup', 0, 200000000)
+        && isOptionalInt('northAmericaAup', 0, 200000000)
+        && isOptionalBool('registeredStarterGranted')
         && isOptionalInt('lastActiveAtMs', 0, 9999999999999)
         && isOptionalInt('prevActiveAtMs', 0, 9999999999999)
         && isOptionalString('lastActiveDayKey', 0, 16)
@@ -73,10 +146,37 @@ service cloud.firestore {
         && isOptionalInt('abandonedGames', 0, 2000000000)
         && isOptionalInt('matchesPlayed', 0, 2000000000)
         && isOptionalInt('finishPermilleSum', 0, 2000000000)
+        && isOptionalString('rewardedAdDayKey', 0, 16)
+        && isOptionalInt('rewardedAdDayCount', 0, 100000)
+        && isOptionalString('migratedFrom', 0, 80)
         && (
           !('updatedAt' in request.resource.data)
           || request.resource.data.updatedAt is timestamp
         );
+    }
+
+    function isValidAuraDoc() {
+      return request.resource.data.keys().hasOnly(auraWalletFields())
+        && request.resource.data.schemaVersion is int
+        && request.resource.data.schemaVersion == 1
+        && isOptionalInt('walletStorageVersion', 2, 4)
+        && isOptionalInt('walletRevision', 0, 9007199254740991)
+        && isValidStringList('awardedEventIds', 500)
+        && isOptionalInt('indiaAup', 0, 200000000)
+        && isOptionalInt('internationalAup', 0, 200000000)
+        && isOptionalInt('euroAup', 0, 200000000)
+        && isOptionalInt('oceaniaAup', 0, 200000000)
+        && isOptionalInt('northAmericaAup', 0, 200000000)
+        && isOptionalBool('registeredStarterGranted')
+        && isOptionalInt('lastActiveAtMs', 0, 9999999999999)
+        && isOptionalInt('prevActiveAtMs', 0, 9999999999999)
+        && isOptionalString('lastActiveDayKey', 0, 16)
+        && isOptionalInt('activityScore', 0, 10000)
+        && isOptionalInt('lastLowFreqDecayAtMs', 0, 9999999999999)
+        && isOptionalInt('abandonedGames', 0, 2000000000)
+        && isOptionalInt('matchesPlayed', 0, 2000000000)
+        && isOptionalInt('finishPermilleSum', 0, 2000000000)
+        && isOptionalTimestamp('updatedAt');
     }
 
     function isValidUserDoc() {
@@ -113,51 +213,61 @@ service cloud.firestore {
         && isOptionalTimestamp('updatedAt');
     }
 
-    function isValidAuraDoc() {
-      return request.resource.data.schemaVersion is int
-        && request.resource.data.schemaVersion == 1
-        && isValidStringList('awardedEventIds', 500)
-        && isOptionalInt('indiaAup', 0, 50000000)
-        && isOptionalInt('internationalAup', 0, 50000000)
-        && isOptionalInt('euroAup', 0, 50000000)
-        && isOptionalInt('oceaniaAup', 0, 50000000)
-        && isOptionalInt('lastActiveAtMs', 0, 9999999999999)
-        && isOptionalInt('prevActiveAtMs', 0, 9999999999999)
-        && isOptionalString('lastActiveDayKey', 0, 16)
-        && isOptionalInt('activityScore', 0, 10000)
-        && isOptionalInt('lastLowFreqDecayAtMs', 0, 9999999999999)
-        && isOptionalInt('abandonedGames', 0, 2000000000)
-        && isOptionalInt('matchesPlayed', 0, 2000000000)
-        && isOptionalInt('finishPermilleSum', 0, 2000000000)
-        && isOptionalTimestamp('updatedAt');
-    }
-
-    match /leaderboard/{uid} {
+    match /leaderboard/{publicId} {
+      // Rows contain only the public leaderboard projection and use an opaque
+      // server-derived id. Firebase Admin performs every write and deletion;
+      // clients can only read the published rankings.
       allow read: if true;
       allow create, update, delete: if false;
     }
 
     match /server_progress/{uid} {
-      allow read: if isSelf(uid);
+      allow read: if isSelf(uid) && accountIsActive(uid);
       allow create, update, delete: if false;
     }
 
+    match /economy_receipts/{receiptId} {
+      allow read, create, update, delete: if false;
+    }
+
+    match /runtime_config/{documentId} {
+      allow read, create, update, delete: if false;
+    }
+
+    // A deletion tombstone is a durable server-only lock. Clients cannot read,
+    // create, alter, or remove it, including the user whose uid is in the path.
+    match /account_deletions/{uid} {
+      allow read, create, update, delete: if false;
+    }
+
     match /users/{uid} {
-      allow read: if isSelf(uid);
-      allow create, update: if isSelf(uid) && isValidUserDoc();
-      allow delete: if isSelf(uid);
+      allow read: if isSelf(uid) && accountIsActive(uid);
+      allow create, update: if isSelf(uid)
+        && accountIsActive(uid)
+        && isValidUserDoc();
+      allow delete: if isSelf(uid) && accountIsActive(uid);
     }
 
     match /campaign_progress/{uid} {
-      allow read: if isSelf(uid);
-      allow create, update: if isSelf(uid) && isValidCampaignDoc();
-      allow delete: if isSelf(uid);
+      allow read: if isSelf(uid) && accountIsActive(uid);
+      allow create, update: if legacyClientEconomyWritesEnabled()
+        && isSelf(uid)
+        && accountIsActive(uid)
+        && isValidCampaignDoc();
+      allow delete: if legacyClientEconomyWritesEnabled()
+        && isSelf(uid)
+        && accountIsActive(uid);
     }
 
     match /aura_wallets/{uid} {
-      allow read: if isSelf(uid);
-      allow create, update: if isSelf(uid) && isValidAuraDoc();
-      allow delete: if isSelf(uid);
+      allow read: if isSelf(uid) && accountIsActive(uid);
+      allow create, update: if legacyClientEconomyWritesEnabled()
+        && isSelf(uid)
+        && accountIsActive(uid)
+        && isValidAuraDoc();
+      allow delete: if legacyClientEconomyWritesEnabled()
+        && isSelf(uid)
+        && accountIsActive(uid);
     }
   }
 }

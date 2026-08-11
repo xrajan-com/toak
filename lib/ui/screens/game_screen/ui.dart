@@ -14,12 +14,22 @@ import 'package:ten_of_a_kind_poker/core/sound_fx.dart';
 
 import '../../../game/core.dart' as gc show Card, Rank, Suit, rankValue;
 import '../../../game/game_engine.dart' show GameEngine, GameEngineBotLogic;
+import '../../../game/equity/hero_equity.dart'
+    show
+        HeroEquityEngine,
+        HeroEquityEstimate,
+        HeroEquityRequest,
+        HeroEquitySeat,
+        VisibleOpponentRange;
+import '../../../game/equity/hero_action_guidance.dart'
+    show HeroActionRecommendation, HeroTablePosition, recommendHeroAction;
 import '../../../game/hand_evaluator.dart'
     show HandCategory, HandEvaluator, HandRank;
 import 'clock.dart' show DayDateClock, DayDateClockDisplayMode;
 import 'models.dart' show GCard;
-import 'seat_layout.dart' show balancedSeatArcFractions;
-import 'table.dart' show WoodType; // wood visuals
+import 'seat_layout.dart' show stadiumSeatTopLeftPositions;
+import 'table.dart'
+    show PlayerSafeFeltClipper, WoodType, playerSafeFeltRRect; // wood visuals
 import 'action_bar.dart';
 import 'action_burst.dart';
 import 'players.dart'
@@ -42,15 +52,25 @@ import 'table_ui.dart'
     show BlindChipPlacement, GameTableLayer, TableGeometry, buildBlindChips;
 import 'renoir_ui.dart' show RenoirLayer, RenoirSignals;
 import 'cards.dart' show ActionGate, PlayingCard, CardVisibilityGate;
-import 'hero_messages.dart'
-    show buildVisibleHeroGuidanceMessage, estimateVisibleHeroWinProbability;
-import 'package:playing_cards/playing_cards.dart' as pc;
+import 'hero_messages.dart' show buildVisibleHeroGuidanceMessage;
+import 'hand_hud.dart'
+    show HandHudSeatState, HandHudSnapshot, buildHandHudSnapshot;
+import 'seat_card_layout.dart'
+    show
+        SeatCardFanLayout,
+        centeredFanCardCenters,
+        fitHeroCardRow,
+        fitSeatCardFanBehindAvatar,
+        kHeroHoleCardScale,
+        kBotHoleCardScale,
+        seatAvatarVisualRect;
 import '../../../game/events.dart' show EngineEvent;
 
 /* ------------------------------ Tunables --------------------------------- */
 
 const double _kSeatScale = 0.85;
-const double _kTableScale = 0.95;
+const double _kTableScale = 0.94;
+const double _kTableVisualScale = 1.06;
 const double _kSeatMinW = kSeatDiameterPx * 0.7 * _kSeatScale;
 const double _kSeatMinH = kSeatDiameterPx * 0.7 * _kSeatScale;
 // Nudge seats off the wood rail so avatars just kiss the outer edge.
@@ -73,15 +93,13 @@ const Color _kActionCallColor = Color(0xFF3BB143);
 const Color _kActionRaiseColor = Color(0xFF007FFF);
 const Color _kActionFoldColor = Color(0xFFC41230);
 // Hero hole cards are intentionally larger than the base reveal size.
-const double _kSeatCardWinnerScale = 1.24;
-const double _kSeatCardHeroScale = 1.375;
-const double _kSeatCardOppShowScale = 1.25;
+const double _kSeatCardWinnerScale = 0.992;
+const double _kSeatCardHeroScale = kHeroHoleCardScale;
+const double _kSeatCardOppShowScale = 1.00;
 const double _kSeatCardFanOverlap = 0.50;
 const double _kSeatCardHeroFanDeg = 10.0;
 const double _kSeatCardOppFanDeg = 8.0;
 const double _kSeatCardHeroSideBySideGap = 1.05;
-const double _kSeatCardRailPadMin = 12.0;
-const double _kSeatCardAvatarTouchInsetPx = 2.0;
 const double _kSeatAvatarScale = 0.85;
 const Color _kHeroWinOutline = Color(0xFF24B6FF);
 const Color _kBotWinOutline = Color(0xFFFF2800);
@@ -139,10 +157,12 @@ class SeatActionSnapshot {
 }
 
 class _HeroAggressorInfo {
+  final int seatIndex;
   final String name;
   final String label;
 
   const _HeroAggressorInfo({
+    required this.seatIndex,
     required this.name,
     required this.label,
   });
@@ -164,63 +184,83 @@ class _HeroMessageContext {
   });
 }
 
-class _PausedCenterResumeButton extends StatelessWidget {
+class PausedResumeOverlay extends StatelessWidget {
   final VoidCallback onPressed;
 
-  const _PausedCenterResumeButton({required this.onPressed});
+  const PausedResumeOverlay({
+    super.key,
+    required this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: ColoredBox(
-              color: Colors.black.withValues(alpha: 0.22),
-            ),
-          ),
-          Center(
-            child: Semantics(
-              button: true,
-              label: 'Resume game',
-              child: Tooltip(
-                message: 'Resume game',
-                child: Material(
-                  color: Colors.transparent,
-                  shape: const CircleBorder(),
-                  child: InkWell(
-                    customBorder: const CircleBorder(),
-                    onTap: onPressed,
-                    child: Container(
-                      width: 116,
-                      height: 116,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.black.withValues(alpha: 0.72),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.50),
-                          width: 1.8,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.45),
-                            blurRadius: 24,
-                            spreadRadius: 2,
+    return Semantics(
+      button: true,
+      label: 'Tap anywhere to resume game',
+      onTap: onPressed,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          child: SafeArea(
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: ColoredBox(
+                    color: Colors.black.withValues(alpha: 0.22),
+                  ),
+                ),
+                Center(
+                  child: IgnorePointer(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 116,
+                          height: 116,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.black.withValues(alpha: 0.72),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.50),
+                              width: 1.8,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.45),
+                                blurRadius: 24,
+                                spreadRadius: 2,
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.play_arrow_rounded,
-                        color: Colors.white,
-                        size: 82,
-                      ),
+                          child: const Icon(
+                            Icons.play_arrow_rounded,
+                            color: Colors.white,
+                            size: 82,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'TAP ANYWHERE TO RESUME',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontFamily: _kPrimaryFontFamily,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
+                            letterSpacing: 0.8,
+                            shadows: <Shadow>[
+                              Shadow(color: Colors.black, blurRadius: 8),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -232,44 +272,56 @@ class _Ui {
   final double seatMaxW, seatH;
   final double cardW, cardH;
   final double renoirR;
+  final double tableVisualScale;
   final double tableVerticalShift;
 
   _Ui(double w, double h)
-      : // Stretch across the screen while keeping a thin horizontal margin.
-        // Phones get a slightly wider/taller table plus a small upward bias so
-        // the upper dead space shrinks without pushing Renoir into the top bar.
+      : // The logical viewport adapts to phone/web aspect ratios. A single
+        // visual transform then enlarges the complete table group, including
+        // every rail, seat, card, badge, effect, and dealer offset.
         tableW = (() {
-          final bool phoneLike = w < 560;
           final double adaptiveMargin =
-              (w * (phoneLike ? 0.020 : (w < 900 ? 0.030 : 0.020)))
-                  .clamp(phoneLike ? 12.0 : 16.0, 48.0);
-          final double widthScale = phoneLike ? 0.985 : _kTableScale;
-          final double raw = (w - adaptiveMargin * 2) * widthScale;
+              (w * 0.012).clamp(10.0, 30.0).toDouble();
+          final double raw = (w - adaptiveMargin * 2) * _kTableScale;
           final double minWidth = math.min(300.0, w);
-          final double maxWidth = math.min(1820.0, w);
+          final double maxWidth = math.max(minWidth, w - adaptiveMargin * 2);
           return raw.clamp(minWidth, maxWidth).toDouble();
         })(),
         tableH = (() {
-          final bool phoneLike = w < 560;
-          final double heightRatio =
-              h < 720 ? (phoneLike ? 0.66 : 0.62) : (phoneLike ? 0.68 : 0.64);
-          final double heightScale = phoneLike ? 0.985 : _kTableScale;
-          return (h * heightRatio * heightScale).clamp(260.0, 880.0).toDouble();
+          return (h * 0.59).clamp(260.0, 780.0).toDouble();
         })(),
-        cardW = (w / 1280 * 66).clamp(52.0, 88.0).toDouble(),
-        cardH = (w / 1280 * 92).clamp(76.0, 128.0).toDouble(),
-        seatH = kSeatDiameterPx * 0.7 * _kSeatScale * 1.2,
+        cardW = (() {
+          final double designScale =
+              math.min(w / 1024, h / 576).clamp(0.75, 1.75).toDouble();
+          return (52.8 * designScale).clamp(52.0, 96.0).toDouble();
+        })(),
+        cardH = (() {
+          final double designScale =
+              math.min(w / 1024, h / 576).clamp(0.75, 1.75).toDouble();
+          return (76.0 * designScale).clamp(76.0, 132.0).toDouble();
+        })(),
+        seatH = (() {
+          final double designScale =
+              math.min(w / 1024, h / 576).clamp(0.75, 1.75).toDouble();
+          return kSeatDiameterPx * 0.7 * _kSeatScale * 1.2 * designScale;
+        })(),
         seatMaxW = (() {
-          final double seatHeight = kSeatDiameterPx * 0.7 * _kSeatScale * 1.2;
-          final bool phoneLike = w < 560;
-          return (seatHeight * (phoneLike ? 1.92 : 2.12))
+          final double designScale =
+              math.min(w / 1024, h / 576).clamp(0.75, 1.75).toDouble();
+          final double seatHeight =
+              kSeatDiameterPx * 0.7 * _kSeatScale * 1.2 * designScale;
+          return (seatHeight * 2.12)
               .clamp(seatHeight * 1.72, seatHeight * 2.18)
               .toDouble();
         })(),
-        renoirR = (w / 1280 * 40).clamp(30.0, 52.0).toDouble(),
+        renoirR = (() {
+          final double designScale =
+              math.min(w / 1024, h / 576).clamp(0.75, 1.75).toDouble();
+          return (32.0 * designScale).clamp(30.0, 54.0).toDouble();
+        })(),
+        tableVisualScale = _kTableVisualScale,
         tableVerticalShift = (() {
-          final bool phoneLike = w < 560;
-          final double raw = h * (phoneLike ? 0.028 : 0.018);
+          final double raw = h * 0.024;
           return -raw.clamp(12.0, 24.0).toDouble();
         })();
 }
@@ -286,6 +338,9 @@ class GameScreenUI extends StatefulWidget {
   final VoidCallback onShowHandExamples;
   final VoidCallback onShowHandRankings;
   final VoidCallback onShowBotLearning;
+  final Future<void> Function()? onShowScoreboard;
+  final Future<void> Function()? onShowPreviousHand;
+  final Future<void> Function()? onShowSettings;
   final bool showBotLearning;
   final int startingStack;
 
@@ -307,7 +362,10 @@ class GameScreenUI extends StatefulWidget {
   final bool showActionFlash;
   final String actionFlashName;
   final String actionFlashLabel;
+  final String liveAnnouncement;
   final bool paused;
+  final bool showPauseOverlay;
+  final bool reduceMotion;
   final VoidCallback onTogglePause;
   final int toCall;
 
@@ -325,6 +383,7 @@ class GameScreenUI extends StatefulWidget {
 
   // Betting controls
   final double raiseAmount, minRaise, maxRaise;
+  final bool canCallOrCheck, canRaise, canAllIn, canFold;
   final ValueChanged<double> onRaiseAmountChanged;
 
   // Scripted laps (when no engine)
@@ -336,7 +395,7 @@ class GameScreenUI extends StatefulWidget {
   final double renoirLiftPx;
 
   // Chrome
-  final int venueOffsetMinutes;
+  final String venueTimeZoneId;
 
   // Engine (optional)
   final Stream<EngineEvent>? engineEvents;
@@ -355,6 +414,9 @@ class GameScreenUI extends StatefulWidget {
     required this.onShowHandExamples,
     required this.onShowHandRankings,
     required this.onShowBotLearning,
+    this.onShowScoreboard,
+    this.onShowPreviousHand,
+    this.onShowSettings,
     required this.showBotLearning,
     required this.felt,
     required this.wood,
@@ -381,7 +443,10 @@ class GameScreenUI extends StatefulWidget {
     this.showActionFlash = false,
     this.actionFlashName = '',
     this.actionFlashLabel = '',
+    this.liveAnnouncement = '',
     required this.paused,
+    this.showPauseOverlay = true,
+    this.reduceMotion = false,
     required this.onTogglePause,
     required this.toCall,
     required this.showShuffle,
@@ -392,6 +457,10 @@ class GameScreenUI extends StatefulWidget {
     required this.raiseAmount,
     required this.minRaise,
     required this.maxRaise,
+    this.canCallOrCheck = true,
+    this.canRaise = true,
+    this.canAllIn = true,
+    this.canFold = true,
     required this.onRaiseAmountChanged,
     required this.onCheckOrCall,
     required this.onFold,
@@ -400,7 +469,7 @@ class GameScreenUI extends StatefulWidget {
     required this.onToggleShow,
     required this.startingStack,
     this.renoirLiftPx = 0,
-    required this.venueOffsetMinutes,
+    required this.venueTimeZoneId,
     this.engineEvents,
     this.onScriptLap,
     this.engine,
@@ -460,8 +529,10 @@ class _GameScreenUIState extends State<GameScreenUI>
   String _heroIdleMessageProbabilityKey = '';
   String _heroMessageContextCacheKey = '';
   _HeroMessageContext? _heroMessageContextCache;
-  String _heroWinProbCacheKey = '';
-  double? _heroWinProbCache;
+  final HeroEquityEngine _heroEquityEngine = const HeroEquityEngine();
+  String _heroEquityRequestKey = '';
+  HeroEquityEstimate? _heroEquityEstimate;
+  int _heroEquityGeneration = 0;
 
   @override
   void initState() {
@@ -546,6 +617,7 @@ class _GameScreenUIState extends State<GameScreenUI>
   }
 
   void _syncHeroPillGlow(bool active) {
+    if (widget.reduceMotion) active = false;
     if (_heroPillGlowActive == active) return;
     _heroPillGlowActive = active;
     if (active) {
@@ -608,7 +680,11 @@ class _GameScreenUIState extends State<GameScreenUI>
     _winnerBlinkCount = 0;
     _winnerBlinkCtl.stop();
     _winnerBlinkCtl.value = 0.0;
-    if (!_handWinnerOverlayVisible || _winnerCycle.isEmpty) return;
+    if (widget.reduceMotion ||
+        !_handWinnerOverlayVisible ||
+        _winnerCycle.isEmpty) {
+      return;
+    }
     _winnerBlinkCtl.repeat(reverse: true);
   }
 
@@ -832,14 +908,22 @@ class _GameScreenUIState extends State<GameScreenUI>
   }
 
   void _burstWinnerCelebration() {
+    if (widget.reduceMotion) return;
     final burst = _actionBurstKey.currentState;
     if (burst == null) return;
     final root = context.findRenderObject();
     if (root is! RenderBox) return;
+    final int remainingPlayers =
+        widget.seats.where((seat) => !seat.busted && seat.chips > 0).length;
+    final double intensity =
+        winnerBurstIntensityForRemainingPlayers(remainingPlayers);
 
     final barRectG = _globalRectForKey(_actionBarKey);
     if (barRectG == null) {
-      burst.burstAt(Offset(root.size.width / 2, root.size.height - 140));
+      burst.burstAt(
+        Offset(root.size.width / 2, root.size.height - 140),
+        intensity: intensity,
+      );
       return;
     }
 
@@ -853,7 +937,7 @@ class _GameScreenUIState extends State<GameScreenUI>
       for (final f in xs)
         root.globalToLocal(Offset(barRectG.left + barRectG.width * f, y)),
     ];
-    burst.burstAtMany(origins);
+    burst.burstAtMany(origins, intensity: intensity);
   }
 
   List<Widget> _buildWinChipPops() {
@@ -911,29 +995,83 @@ class _GameScreenUIState extends State<GameScreenUI>
     return math.max(minCenterY, targetCenterY);
   }
 
-  double? _heroWinProbability(Seat? heroSeat) {
+  HeroEquityRequest? _heroEquityRequest(Seat? heroSeat) {
     if (widget.heroIndex < 0 || widget.heroIndex >= widget.seats.length) {
       return null;
     }
     final List<gc.Card> heroCards = _heroHoleEngineCards(heroSeat);
+    if (heroCards.length < 2) return null;
     final List<gc.Card> boardCards = _boardEngineCards();
-    final int livePlayers = _livePlayersInHandCount();
-    final String key = [
-      '$livePlayers',
-      ...heroCards.map(_cardKey).toList(growable: false)..sort(),
-      ...boardCards.map(_cardKey).toList(growable: false)..sort(),
-    ].join('|');
-    if (_heroWinProbCacheKey == key) {
-      return _heroWinProbCache;
+    final Map<int, String> publicActions = <int, String>{};
+    for (final action in widget.recentActions) {
+      publicActions.putIfAbsent(action.seatIndex, () => action.label);
     }
-    final double? value = estimateVisibleHeroWinProbability(
-      livePlayers: livePlayers,
+
+    return HeroEquityRequest(
+      heroSeatIndex: widget.heroIndex,
       heroHole: heroCards,
       revealedBoard: boardCards,
+      visiblePot: widget.pot,
+      seats: <HeroEquitySeat>[
+        for (int index = 0; index < widget.seats.length; index++)
+          HeroEquitySeat(
+            seatIndex: index,
+            active: !widget.seats[index].busted && !widget.seats[index].folded,
+            allIn: widget.seats[index].allIn,
+            contribution: math.max(0, widget.seats[index].contributedThisHand),
+            range: index == widget.heroIndex
+                ? const VisibleOpponentRange.neutral()
+                : VisibleOpponentRange.fromPublicAction(
+                    publicActions[index],
+                    allIn: widget.seats[index].allIn,
+                  ),
+          ),
+      ],
     );
-    _heroWinProbCacheKey = key;
-    _heroWinProbCache = value;
-    return value;
+  }
+
+  HeroEquityEstimate? _visibleHeroEquity(Seat? heroSeat) {
+    final HeroEquityRequest? request = _heroEquityRequest(heroSeat);
+    if (request == null) return null;
+    final String key = request.cacheKey;
+    if (_heroEquityRequestKey == key) return _heroEquityEstimate;
+
+    final int generation = ++_heroEquityGeneration;
+    _heroEquityRequestKey = key;
+    final HeroEquityEstimate? immediate =
+        _heroEquityEngine.immediateEstimate(request);
+    _heroEquityEstimate =
+        immediate ?? _heroEquityEngine.previewEstimate(request);
+    if (immediate == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || generation != _heroEquityGeneration) return;
+        unawaited(_calculateVisibleHeroEquity(request, key, generation));
+      });
+    }
+    return _heroEquityEstimate;
+  }
+
+  Future<void> _calculateVisibleHeroEquity(
+    HeroEquityRequest request,
+    String key,
+    int generation,
+  ) async {
+    final HeroEquityEstimate? estimate = await _heroEquityEngine.estimate(
+      request,
+      shouldCancel: () =>
+          !mounted ||
+          generation != _heroEquityGeneration ||
+          key != _heroEquityRequestKey,
+    );
+    if (!mounted ||
+        estimate == null ||
+        generation != _heroEquityGeneration ||
+        key != _heroEquityRequestKey) {
+      return;
+    }
+    setState(() {
+      _heroEquityEstimate = estimate;
+    });
   }
 
   gc.Rank? _rankFromSymbol(String raw) {
@@ -1027,6 +1165,7 @@ class _GameScreenUIState extends State<GameScreenUI>
       if (!aggressive) continue;
       if (snap.seatIndex < 0 || snap.seatIndex >= widget.seats.length) continue;
       return _HeroAggressorInfo(
+        seatIndex: snap.seatIndex,
         name: _shortSeatName(widget.seats[snap.seatIndex].name),
         label: label,
       );
@@ -1049,6 +1188,36 @@ class _GameScreenUIState extends State<GameScreenUI>
 
   int _livePlayersInHandCount() {
     return widget.seats.where((seat) => !seat.busted && !seat.folded).length;
+  }
+
+  HeroTablePosition _heroTablePosition() {
+    final int seatCount = widget.seats.length;
+    final int hero = widget.heroIndex;
+    if (seatCount < 2 || hero < 0 || hero >= seatCount) {
+      return HeroTablePosition.unknown;
+    }
+    if (hero == widget.dealerIndex) return HeroTablePosition.button;
+    if (hero == widget.sbIndex) return HeroTablePosition.smallBlind;
+    if (hero == widget.bbIndex) return HeroTablePosition.bigBlind;
+    if (widget.bbIndex < 0 || widget.bbIndex >= seatCount) {
+      return HeroTablePosition.unknown;
+    }
+
+    final List<int> fieldPositions = <int>[];
+    int index = (widget.bbIndex + 1) % seatCount;
+    for (int step = 0; step < seatCount; step++) {
+      if (index == widget.dealerIndex) break;
+      if (!widget.seats[index].busted) fieldPositions.add(index);
+      index = (index + 1) % seatCount;
+    }
+    final int ordinal = fieldPositions.indexOf(hero);
+    if (ordinal < 0) return HeroTablePosition.unknown;
+    if (fieldPositions.length == 1) return HeroTablePosition.late;
+
+    final double progress = ordinal / (fieldPositions.length - 1);
+    if (progress <= 0.25) return HeroTablePosition.early;
+    if (progress < 0.75) return HeroTablePosition.middle;
+    return HeroTablePosition.late;
   }
 
   bool _boardHasPair(List<gc.Card> boardCards) {
@@ -1412,18 +1581,22 @@ class _GameScreenUIState extends State<GameScreenUI>
     );
   }
 
-  String? _heroIdleActionBarMessage(bool heroTurnActive) {
+  ({
+    String message,
+    HeroEquityEstimate? equity,
+    HeroActionRecommendation? recommendation,
+  })? _heroActionBarGuidance() {
     if (_handWinnerOverlayVisible) {
       _resetHeroIdleMessageState();
       return null;
     }
     if (widget.paused) {
       _resetHeroIdleMessageState();
-      return 'GAME PAUSED. TAP PLAY TO RESUME.';
-    }
-    if (heroTurnActive) {
-      _resetHeroIdleMessageState();
-      return null;
+      return (
+        message: 'GAME PAUSED. TAP PLAY TO RESUME.',
+        equity: null,
+        recommendation: null,
+      );
     }
     final Seat? heroSeat =
         (widget.heroIndex >= 0 && widget.heroIndex < widget.seats.length)
@@ -1434,10 +1607,34 @@ class _GameScreenUIState extends State<GameScreenUI>
       return null;
     }
     final _HeroMessageContext context = _heroMessageContext(heroSeat);
-    final double? heroWinProb = _heroWinProbability(heroSeat);
+    final HeroEquityEstimate? heroEquity = _visibleHeroEquity(heroSeat);
+    final HeroActionRecommendation? recommendation = heroEquity == null
+        ? null
+        : recommendHeroAction(
+            equity: heroEquity.equity,
+            marginOfError95: heroEquity.marginOfError95,
+            potBeforeCall: widget.pot.round(),
+            toCall: widget.toCall,
+            heroStack: heroSeat?.chips ?? 0,
+            startingStack: widget.startingStack,
+            livePlayers: context.livePlayers,
+            heroHole: _heroHoleEngineCards(heroSeat),
+            revealedBoard: _boardEngineCards(),
+            tablePosition: _heroTablePosition(),
+            facingAggression: context.aggressor != null &&
+                context.aggressor!.seatIndex != widget.heroIndex,
+          );
     final String? heroRecentActionLabel = _latestHeroActionLabel();
     final String messageKey = <String>[
-      heroWinProb == null ? 'none' : heroWinProb.toStringAsFixed(6),
+      heroEquity == null
+          ? 'calculating'
+          : <String>[
+              heroEquity.winProbability.toStringAsFixed(6),
+              heroEquity.tieProbability.toStringAsFixed(6),
+              heroEquity.equity.toStringAsFixed(6),
+              heroEquity.expectedPotShare.toStringAsFixed(6),
+              heroEquity.method,
+            ].join(':'),
       'live:${context.livePlayers}',
       'check:${widget.toCall <= 0}',
       'board:${widget.board.length}',
@@ -1450,7 +1647,9 @@ class _GameScreenUIState extends State<GameScreenUI>
     final String message = buildVisibleHeroGuidanceMessage(
       livePlayers: context.livePlayers,
       canCheck: widget.toCall <= 0,
-      winProbability: heroWinProb,
+      winProbability: heroEquity?.equity,
+      equityEstimate: heroEquity,
+      useEquityBreakdown: true,
       revealedBoardCount: widget.board.length,
       variantSeed: messageKey.hashCode,
       aggressorName: context.aggressor?.name,
@@ -1460,9 +1659,13 @@ class _GameScreenUIState extends State<GameScreenUI>
       improvementHint: context.hopeHand,
       heroRecentActionLabel: heroRecentActionLabel,
     );
-    return _stabilizeHeroIdleMessage(
-      messageKey: messageKey,
-      candidate: message,
+    return (
+      message: _stabilizeHeroIdleMessage(
+        messageKey: messageKey,
+        candidate: message,
+      ),
+      equity: heroEquity,
+      recommendation: recommendation,
     );
   }
 
@@ -1538,49 +1741,65 @@ class _GameScreenUIState extends State<GameScreenUI>
   }
 
   List<Widget> _buildSideInfoPills({required Size screenSize}) {
-    final double leftMaxWidth =
-        (screenSize.width * 0.34).clamp(150.0, 330.0).toDouble();
-    final double rightMaxWidth =
-        (screenSize.width * 0.36).clamp(220.0, 360.0).toDouble();
-    final EdgeInsets cornerInset = EdgeInsets.fromLTRB(
-      math.max(6.0, screenSize.width * 0.006),
-      screenSize.height < 700 ? 2.0 : 6.0,
-      math.max(6.0, screenSize.width * 0.006),
-      0,
+    final EdgeInsets safePadding = MediaQuery.paddingOf(context);
+    final double safeSideInset = math.max(
+      safePadding.left,
+      safePadding.right,
     );
+    final double horizontalInset =
+        safeSideInset + math.max(6.0, screenSize.width * 0.006);
+    final double leftMaxWidth =
+        (screenSize.width * 0.36).clamp(210.0, 360.0).toDouble();
+    final double rightMaxWidth =
+        (screenSize.width * 0.40).clamp(250.0, 430.0).toDouble();
+    final double topInset =
+        safePadding.top + (screenSize.height < 700 ? 2.0 : 6.0);
 
     return <Widget>[
       Positioned(
-        top: 0,
-        left: 0,
+        top: topInset,
+        left: horizontalInset,
         child: IgnorePointer(
-          child: SafeArea(
-            minimum: cornerInset,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: leftMaxWidth),
-              child: _VenueChip(
-                flagPath: widget.flagPath,
-                venueName: widget.venueName,
-                glow: _heroPillGlow,
-                glowActive: _heroPillGlowActive,
-              ),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: leftMaxWidth),
+            child: _VenueClockChip(
+              flagPath: widget.flagPath,
+              venueName: widget.venueName,
+              timeZoneId: widget.venueTimeZoneId,
+              glow: _heroPillGlow,
+              glowActive: _heroPillGlowActive,
             ),
           ),
         ),
       ),
       Positioned(
-        top: 0,
-        right: 0,
+        top: topInset,
+        right: horizontalInset,
         child: IgnorePointer(
-          child: SafeArea(
-            minimum: cornerInset,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: rightMaxWidth),
-              child: _ClockInfoPill(
-                offsetMinutes: widget.venueOffsetMinutes,
-                glow: _heroPillGlow,
-                glowActive: _heroPillGlowActive,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: rightMaxWidth),
+            child: _HandHudPill(
+              showStateScreen: widget.heroIndex >= 0 &&
+                  widget.heroIndex < widget.seats.length &&
+                  widget.seats[widget.heroIndex].folded,
+              snapshot: buildHandHudSnapshot(
+                boardCount: widget.board.length,
+                visiblePot: widget.pot,
+                toCall: widget.toCall,
+                heroSeatIndex: widget.heroIndex,
+                showdown: _handWinnerOverlayVisible,
+                seats: <HandHudSeatState>[
+                  for (final seat in widget.seats)
+                    HandHudSeatState(
+                      chips: seat.chips,
+                      contribution: seat.contributedThisHand,
+                      active: !seat.busted && !seat.folded,
+                      allIn: seat.allIn,
+                    ),
+                ],
               ),
+              glow: _heroPillGlow,
+              glowActive: _heroPillGlowActive,
             ),
           ),
         ),
@@ -1608,6 +1827,15 @@ class _GameScreenUIState extends State<GameScreenUI>
   @override
   void didUpdateWidget(covariant GameScreenUI oldWidget) {
     super.didUpdateWidget(oldWidget);
+
+    if (widget.reduceMotion && !oldWidget.reduceMotion) {
+      _heroPillGlowActive = false;
+      _heroPillGlowCtl
+        ..stop()
+        ..value = 0;
+      _stopWinnerBlink();
+      _stopWinChipPops();
+    }
 
     _hiddenSeatIdx.removeWhere((i) => i < 0 || i >= widget.seats.length);
     _hiddenSeatIdx.remove(widget.heroIndex);
@@ -1807,14 +2035,25 @@ class _GameScreenUIState extends State<GameScreenUI>
     final bool handHighlightActive =
         widget.showHandHighlight && handHighlightCodes.isNotEmpty;
     final _BoardInfoSpec? boardInfo = _activeBoardInfo(heroTurnActive);
-    final String idleActionMessage =
-        _heroIdleActionBarMessage(heroTurnActive) ?? '';
+    final actionBarGuidance = _heroActionBarGuidance();
+    final String idleActionMessage = actionBarGuidance?.message ?? '';
 
     return Scaffold(
       backgroundColor: widget.bg,
       body: Stack(
         clipBehavior: Clip.none,
         children: [
+          if (widget.liveAnnouncement.trim().isNotEmpty)
+            Positioned(
+              left: 0,
+              top: 0,
+              child: Semantics(
+                container: true,
+                liveRegion: true,
+                label: widget.liveAnnouncement,
+                child: const SizedBox(width: 1, height: 1),
+              ),
+            ),
           LayoutBuilder(builder: (context, c) {
             return ValueListenableBuilder<bool>(
               valueListenable: RenoirSignals.canAct,
@@ -1834,242 +2073,257 @@ class _GameScreenUIState extends State<GameScreenUI>
                     seatPlacement?.positions ?? const <Offset>[];
                 final double liveSeatWidth = seatPlacement?.seatWidth ?? 0;
                 final double liveSeatHeight = seatPlacement?.seatHeight ?? 0;
+                final List<Offset> liveSeatTargets = seatPlacement == null
+                    ? const <Offset>[]
+                    : <Offset>[
+                        for (final Offset position in seatPlacement.positions)
+                          seatAvatarVisualRect(
+                            Rect.fromLTWH(
+                              position.dx,
+                              position.dy,
+                              liveSeatWidth,
+                              liveSeatHeight,
+                            ),
+                            avatarScale: _kSeatAvatarScale,
+                          ).center,
+                      ];
 
                 return Center(
                   child: Transform.translate(
                     offset: Offset(0, tableLiftPx),
-                    child: SizedBox(
-                      width: ui.tableW,
-                      height: tableHeight,
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          // 1) BOTTOM: Felt/Rail/Watermark + Pot (NO seats here)
-                          GameTableLayer(
-                            paintSeats: false, // seats will be drawn on top
-                            width: ui.tableW,
-                            height: tableHeight,
-                            railWidth: _railW,
-                            felt: widget.felt,
-                            wood: widget.wood,
-                            watermarkSvgAsset:
-                                (widget.monumentPath?.isNotEmpty ?? false)
-                                    ? widget.monumentPath
-                                    : null,
-                            watermarkOpacity: 0.18,
-                            watermarkAlignment: Alignment.center,
-                            watermarkColor: _watermarkColorForFelt(widget.felt),
-                            tintWhite: false,
-                            pot: widget.pot,
-                            potPulse: widget.potPulse,
-
-                            // (still pass these so geometry math matches)
-                            seats: seats,
-                            heroIndex: widget.heroIndex,
-                            currentTurn: widget.currentTurn,
-                            dealerIndex: widget.dealerIndex,
-                            sbIndex: widget.sbIndex,
-                            bbIndex: widget.bbIndex,
-                            hiddenSeatIdx: _hiddenSeatIdx,
-
-                            defaultProfileAsset: widget.defaultProfileAsset,
-                            seatMaxW: seatMaxW,
-                            seatH: seatMaxH,
-                            baseCardW: ui.cardW,
-                            baseCardH: ui.cardH,
-                            cardBackAsset: widget.cardBackAsset,
-                            showToggleVisible: widget.showToggleVisible,
-                            heroShow: widget.heroShow,
-                            seatVisualMarginPx: _kSeatVisualMarginPx,
-                            showBlindChips: false,
-                            blindChipPlacement: _kBlindChipPlacement,
-
-                            communityRowTopFrac: 0.14,
-                            topGapRadians: math.pi / 3,
-                            softBandRadians: math.pi / 10,
-                            pushDownFrac: 0.10,
-
-                            onGeometryChanged: (TableGeometry g) {
-                              _railW = g.railWidth;
-                              _feltRect = g.feltRect;
-                              _origin = g.origin;
-                              _seatTargets = g.seatTargets;
-                              _boardCenter = g.boardCenter;
-                              if (!_geomReady) {
-                                setState(() => _geomReady = true);
-                              }
-                            },
-                          ),
-
-                          // 2) MIDDLE: ALL cards (community + hole + flights)
-                          if (_geomReady)
-                            RenoirLayer(
-                              key:
-                                  _renoirLayerKey, // <— allows hide/shuffle/next-hand
-                              renoirAsset: widget.renoirAsset,
-                              playIntroWelcome: widget.playIntroWelcome,
-                              showDealerBadge: widget.showDealerBadge,
-                              renoirRadius: ui.renoirR,
-                              renoirLiftPx: widget.renoirLiftPx,
-                              avatarStyle: widget.dealerAvatarStyle,
+                    child: Transform.scale(
+                      scale: ui.tableVisualScale,
+                      child: SizedBox(
+                        width: ui.tableW,
+                        height: tableHeight,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            // 1) BOTTOM: Felt/Rail/Watermark + Pot (NO seats here)
+                            GameTableLayer(
+                              paintSeats: false, // seats will be drawn on top
+                              width: ui.tableW,
+                              height: tableHeight,
                               railWidth: _railW,
-                              feltColor: widget.felt,
+                              felt: widget.felt,
                               wood: widget.wood,
+                              watermarkSvgAsset:
+                                  (widget.monumentPath?.isNotEmpty ?? false)
+                                      ? widget.monumentPath
+                                      : null,
+                              watermarkOpacity: 0.18,
+                              watermarkAlignment: Alignment.center,
+                              watermarkColor:
+                                  _watermarkColorForFelt(widget.felt),
+                              tintWhite: false,
+                              pot: widget.pot,
+                              potPulse: widget.potPulse,
 
-                              // Geometry (felt space)
-                              origin: _origin,
-                              seatTargets: _seatTargets,
-                              seatPanelPositions: liveSeatPositions,
-                              seatPanelWidth: liveSeatWidth,
-                              seatPanelHeight: liveSeatHeight,
-                              boardTarget: _boardCenter,
-
-                              // Card art/size
-                              cardBackAsset: widget.cardBackAsset,
-                              cardW: ui.cardW,
-                              cardH: ui.cardH,
-
-                              // Game state for reveals
-                              seats: widget.seats,
-                              board: _hideAllCards
-                                  ? const <GCard>[]
-                                  : widget.board,
+                              // (still pass these so geometry math matches)
+                              seats: seats,
                               heroIndex: widget.heroIndex,
-                              showHandHighlight: widget.showHandHighlight,
-                              handHighlightCards: widget.handHighlightCards,
-                              hiddenSeats: _hideAllCards
-                                  ? {
-                                      ..._hiddenSeatIdx,
-                                      for (int i = 0; i < seats.length; i++) i,
-                                    }
-                                  : _hiddenSeatIdx,
+                              currentTurn: widget.currentTurn,
+                              dealerIndex: widget.dealerIndex,
+                              sbIndex: widget.sbIndex,
+                              bbIndex: widget.bbIndex,
+                              hiddenSeatIdx: _hiddenSeatIdx,
+
+                              defaultProfileAsset: widget.defaultProfileAsset,
+                              seatMaxW: seatMaxW,
+                              seatH: seatMaxH,
+                              baseCardW: ui.cardW,
+                              baseCardH: ui.cardH,
+                              cardBackAsset: widget.cardBackAsset,
                               showToggleVisible: widget.showToggleVisible,
                               heroShow: widget.heroShow,
+                              seatVisualMarginPx: _kSeatVisualMarginPx,
+                              showBlindChips: false,
+                              blindChipPlacement: _kBlindChipPlacement,
 
-                              // Engine integration (optional)
-                              engineEvents: widget.engineEvents,
-                              onShuffle: () {
-                                widget.onRenoirShuffle?.call();
-                                // Unhide cards slightly after shuffle starts to sync with RenoirLayer timing
-                                Future.delayed(
-                                    Duration(
-                                        milliseconds:
-                                            pace.kRevealAfterShuffleMs), () {
-                                  if (!mounted) return;
-                                  setState(() {
-                                    _hardHideHoleCards =
-                                        false; // seat mini-cards allowed
-                                    _hideAllCards =
-                                        false; // board + flights allowed
-                                  });
+                              communityRowTopFrac: 0.24,
+                              topGapRadians: math.pi / 3,
+                              softBandRadians: math.pi / 10,
+                              pushDownFrac: 0.10,
+
+                              onGeometryChanged: (TableGeometry g) {
+                                if (!mounted) return;
+                                setState(() {
+                                  _railW = g.railWidth;
+                                  _feltRect = g.feltRect;
+                                  _origin = g.origin;
+                                  _seatTargets = g.seatTargets;
+                                  _boardCenter = g.boardCenter;
+                                  _geomReady = true;
                                 });
                               },
-                              onScriptLap: (r) => widget.onScriptLap?.call(r),
-                              onDealingActive: (active) {
-                                if (active) {
-                                  // first flight started → allow seat widgets to show their own mini cards again
-                                  setState(() {
-                                    _hardHideHoleCards = false;
-                                    _hideAllCards =
-                                        false; // unhide board & flights as new hand starts
+                            ),
+
+                            // 2) MIDDLE: ALL cards (community + hole + flights)
+                            if (_geomReady)
+                              RenoirLayer(
+                                key:
+                                    _renoirLayerKey, // <— allows hide/shuffle/next-hand
+                                renoirAsset: widget.renoirAsset,
+                                playIntroWelcome: widget.playIntroWelcome,
+                                showDealerBadge: widget.showDealerBadge,
+                                renoirRadius: ui.renoirR,
+                                renoirLiftPx: widget.renoirLiftPx,
+                                avatarStyle: widget.dealerAvatarStyle,
+                                railWidth: _railW,
+                                feltColor: widget.felt,
+                                wood: widget.wood,
+
+                                // Geometry (felt space)
+                                origin: _origin,
+                                seatTargets: liveSeatTargets,
+                                seatPanelPositions: liveSeatPositions,
+                                seatPanelWidth: liveSeatWidth,
+                                seatPanelHeight: liveSeatHeight,
+                                boardTarget: _boardCenter,
+
+                                // Card art/size
+                                cardBackAsset: widget.cardBackAsset,
+                                cardW: ui.cardW,
+                                cardH: ui.cardH,
+
+                                // Game state for reveals
+                                seats: widget.seats,
+                                board: _hideAllCards
+                                    ? const <GCard>[]
+                                    : widget.board,
+                                heroIndex: widget.heroIndex,
+                                showHandHighlight: widget.showHandHighlight,
+                                handHighlightCards: widget.handHighlightCards,
+                                hiddenSeats: _hideAllCards
+                                    ? {
+                                        ..._hiddenSeatIdx,
+                                        for (int i = 0; i < seats.length; i++)
+                                          i,
+                                      }
+                                    : _hiddenSeatIdx,
+                                showToggleVisible: widget.showToggleVisible,
+                                heroShow: widget.heroShow,
+                                paused: widget.paused,
+                                reduceMotion: widget.reduceMotion,
+
+                                // Engine integration (optional)
+                                engineEvents: widget.engineEvents,
+                                onShuffle: () {
+                                  widget.onRenoirShuffle?.call();
+                                  // Unhide cards slightly after shuffle starts to sync with RenoirLayer timing
+                                  Future.delayed(
+                                      Duration(
+                                          milliseconds:
+                                              pace.kRevealAfterShuffleMs), () {
+                                    if (!mounted) return;
+                                    setState(() {
+                                      _hardHideHoleCards =
+                                          false; // seat mini-cards allowed
+                                      _hideAllCards =
+                                          false; // board + flights allowed
+                                    });
                                   });
-                                }
-                              },
-                            ),
+                                },
+                                onScriptLap: (r) => widget.onScriptLap?.call(r),
+                                onDealingActive: (active) {
+                                  if (active) {
+                                    // first flight started → allow seat widgets to show their own mini cards again
+                                    setState(() {
+                                      _hardHideHoleCards = false;
+                                      _hideAllCards =
+                                          false; // unhide board & flights as new hand starts
+                                    });
+                                  }
+                                },
+                              ),
 
-                          // Winner chip amounts (pop out of community cards)
-                          if (_geomReady && _winChipPops.isNotEmpty)
-                            ..._buildWinChipPops(),
+                            // Winner chip amounts (pop out of community cards)
+                            if (_geomReady && _winChipPops.isNotEmpty)
+                              ..._buildWinChipPops(),
 
-                          if (_geomReady && boardInfo != null)
-                            ..._buildBoardInfoOverlay(
-                              ui: ui,
-                              spec: boardInfo,
-                            ),
+                            if (_geomReady && boardInfo != null)
+                              ..._buildBoardInfoOverlay(
+                                ui: ui,
+                                spec: boardInfo,
+                              ),
 
-                          // 3) Blood stains for busted seats (same plane as cards)
-                          if (_geomReady && seatPlacement != null)
-                            ..._buildBloodStains(
-                              placement: seatPlacement,
-                              seats: seats,
-                            ),
+                            // 3) Blood stains for busted seats (same plane as cards)
+                            if (_geomReady && seatPlacement != null)
+                              ..._buildBloodStains(
+                                placement: seatPlacement,
+                                seats: seats,
+                              ),
 
-                          // 4) TOP: Seat widgets
-                          if (_geomReady && seatPlacement != null)
-                            ..._buildSeatPanelsOnTop(
-                              placement: seatPlacement,
-                              seats: seats,
-                              leaderIdx: leaderIdx,
-                              growOthers: _hiddenSeatIdx.isNotEmpty ||
-                                  seats.any((s) => s.busted),
-                              canAct: canAct,
-                              includeSeat: (int index) =>
-                                  index != widget.heroIndex,
-                            ),
-                          if (_geomReady && _seatTargets.isNotEmpty)
-                            Positioned.fill(
-                              child: IgnorePointer(
-                                ignoring: true,
-                                child: _SeatFaceUpCardsLayer(
-                                  railW: _railW,
-                                  seats: seats,
-                                  seatTargets: _seatTargets,
-                                  seatPanelPositions: liveSeatPositions,
-                                  seatPanelWidth: liveSeatWidth,
-                                  seatPanelHeight: liveSeatHeight,
-                                  heroIndex: widget.heroIndex,
-                                  hiddenSeats: _hiddenSeatIdx,
-                                  showToggleVisible: widget.showToggleVisible,
-                                  heroShow: widget.heroShow,
-                                  baseCardW: ui.cardW,
-                                  baseCardH: ui.cardH,
-                                  hideAllHoleCards:
-                                      _hideAllCards || _hardHideHoleCards,
-                                  winnerOverlayVisible:
-                                      _handWinnerOverlayVisible,
-                                  handHighlightActive: handHighlightActive,
-                                  handHighlightSeat: widget.heroIndex,
-                                  handHighlightCodes: handHighlightCodes,
+                            // 4) Settled hole cards stay behind their owner.
+                            if (_geomReady && _seatTargets.isNotEmpty)
+                              Positioned.fill(
+                                child: IgnorePointer(
+                                  ignoring: true,
+                                  child: _SeatFaceUpCardsLayer(
+                                    railW: _railW,
+                                    seats: seats,
+                                    seatTargets: liveSeatTargets,
+                                    seatPanelPositions: liveSeatPositions,
+                                    seatPanelWidth: liveSeatWidth,
+                                    seatPanelHeight: liveSeatHeight,
+                                    heroIndex: widget.heroIndex,
+                                    hiddenSeats: _hiddenSeatIdx,
+                                    showToggleVisible: widget.showToggleVisible,
+                                    heroShow: widget.heroShow,
+                                    baseCardW: ui.cardW,
+                                    baseCardH: ui.cardH,
+                                    hideAllHoleCards:
+                                        _hideAllCards || _hardHideHoleCards,
+                                    winnerOverlayVisible:
+                                        _handWinnerOverlayVisible,
+                                    handHighlightActive: handHighlightActive,
+                                    handHighlightSeat: widget.heroIndex,
+                                    handHighlightCodes: handHighlightCodes,
+                                    forcedFaceUpSeats: <int>{
+                                      for (final fan in _winnerFans)
+                                        fan.seatIndex,
+                                    },
+                                  ),
                                 ),
                               ),
-                            ),
-                          if (_geomReady && seatPlacement != null)
-                            ..._buildSeatPanelsOnTop(
-                              placement: seatPlacement,
-                              seats: seats,
-                              leaderIdx: leaderIdx,
-                              growOthers: _hiddenSeatIdx.isNotEmpty ||
-                                  seats.any((s) => s.busted),
-                              canAct: canAct,
-                              includeSeat: (int index) =>
-                                  index == widget.heroIndex,
-                            ),
-                          if (_geomReady &&
-                              seatPlacement != null &&
-                              _winnerFans.isNotEmpty &&
-                              !_handWinnerOverlayVisible)
-                            ..._buildWinnerFans(
-                              placement: seatPlacement,
-                              fans: _winnerFans,
-                              cardW: ui.cardW * _kSeatCardWinnerScale,
-                              cardH: ui.cardH * _kSeatCardWinnerScale,
-                            ),
 
-                          // 5) D / SB / BB tags above hole cards
-                          if (_geomReady && seatPlacement != null)
-                            ..._buildBlindChipsOnTop(
-                              placement: seatPlacement,
-                              tableWidth: ui.tableW,
-                              tableHeight: tableHeight,
-                            ),
+                            // 5) Avatars cover the tucked portion of each fan.
+                            if (_geomReady && seatPlacement != null)
+                              Positioned.fill(
+                                child: ClipPath(
+                                  clipper:
+                                      PlayerSafeFeltClipper(railWidth: _railW),
+                                  child: Stack(
+                                    clipBehavior: Clip.none,
+                                    children: _buildSeatPanelsOnTop(
+                                      placement: seatPlacement,
+                                      seats: seats,
+                                      leaderIdx: leaderIdx,
+                                      growOthers: _hiddenSeatIdx.isNotEmpty ||
+                                          seats.any((s) => s.busted),
+                                      canAct: canAct,
+                                      includeSeat: (_) => true,
+                                    ),
+                                  ),
+                                ),
+                              ),
 
-                          // 6) Seat action / busted bubbles above both tags and cards
-                          if (_geomReady && seatPlacement != null)
-                            ..._buildSeatMessageOverlaysOnTop(
-                              placement: seatPlacement,
-                              seats: seats,
-                            ),
-                        ],
+                            // 6) D / SB / BB tags above both cards and avatars.
+                            if (_geomReady && seatPlacement != null)
+                              ..._buildBlindChipsOnTop(
+                                placement: seatPlacement,
+                                tableWidth: ui.tableW,
+                                tableHeight: tableHeight,
+                              ),
+
+                            // 7) Seat action / busted bubbles above everything.
+                            if (_geomReady && seatPlacement != null)
+                              ..._buildSeatMessageOverlaysOnTop(
+                                placement: seatPlacement,
+                                seats: seats,
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -2081,13 +2335,6 @@ class _GameScreenUIState extends State<GameScreenUI>
           ..._buildSideInfoPills(
             screenSize: MediaQuery.of(context).size,
           ),
-
-          if (widget.paused && !_handWinnerOverlayVisible)
-            Positioned.fill(
-              child: _PausedCenterResumeButton(
-                onPressed: widget.onTogglePause,
-              ),
-            ),
 
           // ========= ACTION BURST (LIGHT FX) =========
           // Keep it *behind* the ActionBar so bursts look like they pop up from
@@ -2105,7 +2352,12 @@ class _GameScreenUIState extends State<GameScreenUI>
             child: Align(
               alignment: Alignment.bottomCenter,
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 980),
+                constraints: BoxConstraints(
+                  maxWidth: math.min(
+                    980.0,
+                    MediaQuery.sizeOf(context).width * 0.90,
+                  ),
+                ),
                 child: Material(
                   color: Colors.transparent,
                   child: Row(
@@ -2155,6 +2407,12 @@ class _GameScreenUIState extends State<GameScreenUI>
                                       onBotLearning: widget.onShowBotLearning,
                                       showBotLearning: widget.showBotLearning,
                                       onScoreboard: () {
+                                        final showScoreboard =
+                                            widget.onShowScoreboard;
+                                        if (showScoreboard != null) {
+                                          showScoreboard();
+                                          return;
+                                        }
                                         Seat? heroSeat;
                                         if (widget.heroIndex >= 0 &&
                                             widget.heroIndex <
@@ -2171,11 +2429,23 @@ class _GameScreenUIState extends State<GameScreenUI>
                                       onCall: widget.onCheckOrCall,
                                       onFold: widget.onFold,
                                       onAllIn: widget.onAllIn,
+                                      canCallOrCheck: widget.canCallOrCheck,
+                                      canRaise: widget.canRaise,
+                                      canAllIn: widget.canAllIn,
+                                      canFold: widget.canFold,
                                       onRaiseToChanged: (v) => widget
                                           .onRaiseAmountChanged(v.toDouble()),
                                       onBetOrRaise: widget.onBetOrRaise,
-                                      onTips: () =>
-                                          go.showPreviousHandOverlay(context),
+                                      onTips: () {
+                                        final showPrevious =
+                                            widget.onShowPreviousHand;
+                                        if (showPrevious != null) {
+                                          showPrevious();
+                                          return;
+                                        }
+                                        go.showPreviousHandOverlay(context);
+                                      },
+                                      onSettings: widget.onShowSettings,
                                       onTogglePause: widget.onTogglePause,
                                       paused: widget.paused,
                                       canSkipToWinner:
@@ -2200,8 +2470,9 @@ class _GameScreenUIState extends State<GameScreenUI>
                                       winnerAbout: _handWinnerAbout,
                                       winnerIsHero: _handWinnerIsHero,
                                       winnerGlow: _winnerBlink,
-                                      turnGlow: _heroPillGlow,
                                       idleMessage: idleActionMessage,
+                                      guidanceRecommendation:
+                                          actionBarGuidance?.recommendation,
                                     );
                                   },
                                 );
@@ -2217,6 +2488,17 @@ class _GameScreenUIState extends State<GameScreenUI>
               ),
             ),
           ),
+
+          // Topmost while paused: every point on the game screen, including
+          // the action bar, resumes play on the next tap.
+          if (widget.paused &&
+              widget.showPauseOverlay &&
+              !_handWinnerOverlayVisible)
+            Positioned.fill(
+              child: PausedResumeOverlay(
+                onPressed: widget.onTogglePause,
+              ),
+            ),
         ],
       ),
     );
@@ -2287,74 +2569,11 @@ class _GameScreenUIState extends State<GameScreenUI>
       if (seatIdx == -1) continue;
       if (seatIdx == widget.heroIndex) continue; // hero unchanged
       if (w.holeCards.isEmpty) continue;
-      fans.add(_WinnerFanInfo(
-        seatIndex: seatIdx,
-        holeCards: w.holeCards.take(2).toList(),
-        bestKeys: {
-          for (final c in go.winningHandHighlightCards(w.bestFive))
-            _winnerCardKey(c),
-        },
-      ));
+      fans.add(_WinnerFanInfo(seatIndex: seatIdx));
     }
     setState(() {
       _winnerFans = fans;
     });
-  }
-
-  List<Widget> _buildWinnerFans({
-    required _SeatPlacement placement,
-    required List<_WinnerFanInfo> fans,
-    required double cardW,
-    required double cardH,
-  }) {
-    final widgets = <Widget>[];
-    final positions = placement.positions;
-    final seatHeight = placement.seatHeight;
-
-    for (final fan in fans) {
-      final int idx = fan.seatIndex;
-      if (idx < 0 || idx >= positions.length) continue;
-      final bool isHeroWinner = idx == widget.heroIndex ||
-          (idx < widget.seats.length && widget.seats[idx].isHero);
-      final Color outlineColor =
-          isHeroWinner ? const Color(0xFF24B6FF) : const Color(0xFFFF2800);
-      final Offset pos = positions[idx];
-      final Offset center =
-          Offset(pos.dx + seatHeight / 2, pos.dy + seatHeight * 0.08);
-
-      final double dx = cardW * 0.32;
-      final double dy = cardH * -0.48;
-      final hole = fan.holeCards;
-      if (hole.isEmpty) continue;
-
-      final cards = <({Offset offset, double angle, go.UiCard card})>[];
-      cards.add((offset: Offset(-dx, dy), angle: -0.18, card: hole.first));
-      if (hole.length > 1) {
-        cards.add((offset: Offset(dx, dy), angle: 0.18, card: hole[1]));
-      }
-
-      for (final c in cards) {
-        final bool highlight = fan.bestKeys.contains(_winnerCardKey(c.card));
-        widgets.add(
-          Positioned(
-            left: center.dx + c.offset.dx - cardW / 2,
-            top: center.dy + c.offset.dy - cardH / 2,
-            child: Transform.rotate(
-              angle: c.angle,
-              child: _WinnerSeatCard(
-                card: c.card,
-                w: cardW,
-                h: cardH,
-                highlight: highlight,
-                highlightColor: outlineColor,
-              ),
-            ),
-          ),
-        );
-      }
-    }
-
-    return widgets;
   }
 
   List<Widget> _buildBloodStains({
@@ -2400,7 +2619,7 @@ class _GameScreenUIState extends State<GameScreenUI>
     required double tableHeight,
   }) {
     final double chipSize =
-        (placement.seatHeight * 0.46).clamp(26.0, 52.0).toDouble();
+        (placement.seatHeight * 0.34).clamp(24.0, 40.0).toDouble();
     final bool chipsOnRail = _kBlindChipPlacement == BlindChipPlacement.rail;
     final Rect clampRect = chipsOnRail
         ? Rect.fromLTWH(0, 0, tableWidth, tableHeight)
@@ -2411,12 +2630,9 @@ class _GameScreenUIState extends State<GameScreenUI>
       hiddenSeatIdx: _hiddenSeatIdx,
       seatPositions: placement.positions,
       seatSide: placement.seatHeight,
-      boardCenter: _boardCenter,
-      feltRect: _feltRect,
+      tableCenter: _feltRect.center,
       clampRect: clampRect,
       chipSize: chipSize,
-      placement: _kBlindChipPlacement,
-      railWidth: _railW,
       dealerIndex: widget.dealerIndex,
       sbIndex: widget.sbIndex,
       bbIndex: widget.bbIndex,
@@ -2475,122 +2691,26 @@ class _GameScreenUIState extends State<GameScreenUI>
     final int seatCount = widget.seats.length;
     if (seatCount == 0) return const _SeatPlacement(<Offset>[], 0, 0, 0);
 
-    // Distribute seats along a racetrack (superellipse) arc covering ~60–65%
-    // of the rail, leaving the rest (top) for Renoir. Keep the hero anchored
-    // on the bottom midpoint and distribute the rest by circular distance from
-    // the hero.
-    const double baseReservedTopFraction = 0.40;
-    const double minReservedTopFraction =
-        0.35; // allows up to ~65% arc when crowded
-    const double superellipseN = 4.0; // racetrack exponent
-
-    final double radius = seatHeight / 2;
-    final double cx = feltRect.center.dx;
-    final double cy = feltRect.center.dy;
-    // Seat centres sit on the rail, tangent to its outer edge (no spill
-    // outside the wood). Use an ellipse whose radius is the felt half‑size
-    // plus rail width minus the seat radius.
-    final double tableW = feltRect.width + railW * 2;
-    final double tableH = feltRect.height + railW * 2;
-    final double a = math.max(radius, feltRect.width / 2 + railW - radius);
-    final double b = math.max(radius, feltRect.height / 2 + railW - radius);
-
-    // Determine available arc to avoid overlap if seats are wide.
-    double reservedTopFraction = baseReservedTopFraction;
-    if (seatCount > 1) {
-      final double minSpacing = math.max(seatWidth * 1.04, seatHeight * 1.18);
-      final double rEff = math.min(a, b);
-      final double stepNeeded =
-          2 * math.asin((minSpacing / 2) / math.max(rEff, 1e-3));
-      final double requiredAngle = stepNeeded * seatCount;
-      final double candidateReserved = 1 - (requiredAngle / (2 * math.pi));
-      reservedTopFraction = math.max(
-        minReservedTopFraction,
-        math.min(baseReservedTopFraction, candidateReserved),
-      );
-    }
-
-    final double reservedAngle = reservedTopFraction * 2 * math.pi;
-    final double availableAngle = (2 * math.pi) - reservedAngle;
-    final double start =
-        (math.pi / 2) - (availableAngle / 2); // arc centered on bottom
-    Offset _pointAt(double theta) {
-      final double cosT = math.cos(theta);
-      final double sinT = math.sin(theta);
-      final double px = a *
-          math.pow(cosT.abs(), 2 / superellipseN).toDouble() *
-          (cosT >= 0 ? 1 : -1);
-      final double py = b *
-          math.pow(sinT.abs(), 2 / superellipseN).toDouble() *
-          (sinT >= 0 ? 1 : -1);
-      return Offset(cx + px - radius, cy + py - radius);
-    }
-
-    // Sample the arc to approximate equal distances between seats.
-    final int samples = 400;
-    final List<double> angles = List<double>.generate(
-        samples, (i) => start + (availableAngle * i) / (samples - 1));
-    final List<Offset> pts = [for (final ang in angles) _pointAt(ang)];
-
-    final List<double> cumDist = [0];
-    for (int i = 1; i < pts.length; i++) {
-      cumDist.add(cumDist.last + (pts[i] - pts[i - 1]).distance);
-    }
-    final double totalLen = cumDist.last;
-
-    Offset pointAtDistance(double target) {
-      int idx = cumDist.indexWhere((d) => d >= target);
-      if (idx <= 0) {
-        return pts.first;
-      } else if (idx == -1 || idx >= cumDist.length) {
-        return pts.last;
-      } else {
-        final double prevD = cumDist[idx - 1];
-        final double nextD = cumDist[idx];
-        final double t = (nextD - prevD).abs() < 1e-6
-            ? 0.0
-            : ((target - prevD) / (nextD - prevD)).clamp(0.0, 1.0);
-        final Offset p = Offset.lerp(pts[idx - 1], pts[idx], t)!;
-        return p;
-      }
-    }
-
-    final List<double> seatFractions = balancedSeatArcFractions(
+    final Size tableSize = Size(
+      feltRect.width + railW * 2,
+      feltRect.height + railW * 2,
+    );
+    final RRect safeBoundary = playerSafeFeltRRect(tableSize, railW);
+    final List<Offset> positions = stadiumSeatTopLeftPositions(
+      safeStadiumRect: safeBoundary.outerRect,
       seatCount: seatCount,
       heroIndex: widget.heroIndex,
-    );
-    final List<Offset> positions = List<Offset>.generate(
-      seatCount,
-      (int i) => pointAtDistance(totalLen * seatFractions[i]),
-    );
-
-    // Clamp seats so avatars/cards can sit centered on the rail.
-    final double railCenter = _railW / 2;
-    final double pad = _kSeatVisualMarginPx;
-    final double seatRadius = seatHeight / 2;
-    final double overflow = math.max(0.0, seatRadius - railCenter);
-    final double minX = -overflow + pad;
-    final double maxX = tableW - seatWidth + overflow - pad;
-    final double minY = -overflow + pad;
-    final double maxY = tableH - seatHeight + overflow - pad;
-    final List<Offset> clamped = [
-      for (final o in positions)
-        Offset(
-          o.dx.clamp(minX, maxX),
-          o.dy.clamp(minY, maxY),
-        ),
-    ];
-
-    final List<Offset> resolved = _resolveSeatOverlaps(
-      positions: clamped,
-      seatWidth: seatWidth,
-      seatHeight: seatHeight,
-      areaWidth: tableW,
-      areaHeight: tableH,
+      seatSize: seatHeight,
+      visualFootprintSize: seatAvatarVisualRect(
+        Rect.fromLTWH(0, 0, seatWidth, seatHeight),
+        avatarScale: _kSeatAvatarScale,
+      ).width,
+      maximumVisualScale: 1.10,
+      boundaryGap: _kSeatVisualMarginPx,
     );
 
     return _SeatPlacement(
-      resolved,
+      positions,
       seatWidth,
       seatHeight,
       expandedSeatWidth,
@@ -2781,6 +2901,7 @@ class _GameScreenUIState extends State<GameScreenUI>
 
   @override
   void dispose() {
+    _heroEquityGeneration++;
     WidgetsBinding.instance.removeObserver(this);
     _recoveryDebounce?.cancel();
     _recoveryDebounce = null;
@@ -2826,6 +2947,7 @@ class _SeatFaceUpCardsLayer extends StatelessWidget {
   final bool handHighlightActive;
   final int handHighlightSeat;
   final Set<String> handHighlightCodes;
+  final Set<int> forcedFaceUpSeats;
 
   const _SeatFaceUpCardsLayer({
     required this.railW,
@@ -2845,6 +2967,7 @@ class _SeatFaceUpCardsLayer extends StatelessWidget {
     required this.handHighlightActive,
     required this.handHighlightSeat,
     required this.handHighlightCodes,
+    this.forcedFaceUpSeats = const <int>{},
   });
 
   @override
@@ -2855,7 +2978,9 @@ class _SeatFaceUpCardsLayer extends StatelessWidget {
     return ValueListenableBuilder<bool>(
       valueListenable: RenoirSignals.holeCardsVisible,
       builder: (context, holesVisible, _) {
-        if (!holesVisible && !winnerOverlayVisible) {
+        if (!holesVisible &&
+            !winnerOverlayVisible &&
+            forcedFaceUpSeats.isEmpty) {
           return const SizedBox.shrink();
         }
         final winnerData = winnerOverlayVisible
@@ -2868,25 +2993,16 @@ class _SeatFaceUpCardsLayer extends StatelessWidget {
             final w = c.maxWidth;
             final h = c.maxHeight;
 
-            final List<Widget> layers = [];
+            final List<Widget> layers = <Widget>[];
+            final List<Rect> placedFanBounds = <Rect>[];
             final List<Rect> seatRects = _seatPanelRects(
               positions: seatPanelPositions,
               seatWidth: seatPanelWidth,
               seatHeight: seatPanelHeight,
             );
-            final Offset centerScreen = seatRects.isNotEmpty
-                ? _rectCloudCenter(seatRects)
-                : _feltCenterFromTargets(seatTargets) + Offset(railW, railW);
-
-            // Safe padding away from rail for cards as well
-            final double pad = math.max(_kSeatCardRailPadMin, railW * 0.35);
-
-            double clampX(double x, double halfW) => x
-                .clamp(railW + pad + halfW, w - railW - pad - halfW)
-                .toDouble();
-            double clampY(double y, double halfH) => y
-                .clamp(railW + pad + halfH, h - railW - pad - halfH)
-                .toDouble();
+            final Offset centerScreen = Offset(w / 2, h / 2);
+            final RRect cardSafeBoundary =
+                playerSafeFeltRRect(Size(w, h), railW);
 
             for (int i = 0; i < seats.length && i < seatTargets.length; i++) {
               if (hiddenSeats.contains(i)) continue;
@@ -2900,7 +3016,8 @@ class _SeatFaceUpCardsLayer extends StatelessWidget {
               if (nToDraw == 0) continue;
 
               // Reveal rules
-              final bool revealOpp = showToggleVisible;
+              final bool revealOpp =
+                  showToggleVisible || forcedFaceUpSeats.contains(i);
               final bool revealHero =
                   isHero ? (showToggleVisible ? heroShow : true) : false;
               final bool facesUp = winnerMode
@@ -2917,62 +3034,6 @@ class _SeatFaceUpCardsLayer extends StatelessWidget {
               final double cardW = baseCardW * seatCardScale;
               final double cardH = baseCardH * seatCardScale;
               final bool heroSideBySide = isHero && nToDraw > 1;
-
-              Offset anchor;
-              double fittedCardW = cardW;
-              double fittedCardH = cardH;
-              if (seatRects.length > i) {
-                final fit = _fitSeatCardLayout(
-                  seatRect: seatRects[i],
-                  otherSeatRects: [
-                    for (int j = 0;
-                        j < seatRects.length && j < seats.length;
-                        j++)
-                      if (j != i && !hiddenSeats.contains(j)) seatRects[j],
-                  ],
-                  tableCenter: centerScreen,
-                  isHero: isHero,
-                  nToDraw: nToDraw,
-                  cardW: cardW,
-                  cardH: cardH,
-                  heroSideBySide: heroSideBySide,
-                  fanOverlap: _kSeatCardFanOverlap,
-                  heroSideBySideGap: _kSeatCardHeroSideBySideGap,
-                );
-                anchor = fit.anchor;
-                fittedCardW *= fit.scale;
-                fittedCardH *= fit.scale;
-                if (isHero) {
-                  anchor = anchor.translate(0, fittedCardH * 0.10);
-                }
-              } else {
-                // Anchor in SCREEN space (felt targets + rail offset)
-                final feltAnchor = seatTargets[i];
-                anchor = Offset(feltAnchor.dx + railW, feltAnchor.dy + railW);
-
-                // Push towards table center so cards don't drift to the rail
-                final dirToCenter = _unitVec(centerScreen - anchor);
-                double pushBase = 6.0 + (baseCardH / 2);
-                if (winnerMode && isWinner) pushBase += baseCardH * 0.35;
-                final double push = isHero ? pushBase : pushBase - 6.0;
-                final anchorPushed = anchor +
-                    Offset(dirToCenter.dx * push, dirToCenter.dy * push);
-                anchor = isHero
-                    ? anchorPushed + Offset(0, baseCardH * 0.22)
-                    : anchorPushed;
-              }
-
-              if (isHero) {
-                anchor = Offset(
-                  anchor.dx,
-                  math.min(anchor.dy, h - (fittedCardH / 2) - 1.0),
-                );
-              }
-
-              // Fan
-              final double step = heroSideBySide
-                  ? (fittedCardW * _kSeatCardHeroSideBySideGap)
-                  : (fittedCardW * (1 - _kSeatCardFanOverlap));
               final double totalAngleDeg = heroSideBySide
                   ? 0.0
                   : (isHero
@@ -2981,20 +3042,67 @@ class _SeatFaceUpCardsLayer extends StatelessWidget {
                           ? _kSeatCardHeroFanDeg * 0.8
                           : _kSeatCardOppFanDeg));
               final double totalAngle = totalAngleDeg * (math.pi / 180.0);
+              final double stepFactor = heroSideBySide
+                  ? _kSeatCardHeroSideBySideGap
+                  : 1 - _kSeatCardFanOverlap;
+
+              Offset anchor;
+              double fittedCardW = cardW;
+              double fittedCardH = cardH;
+              SeatCardFanLayout? fanLayout;
+              if (seatRects.length > i) {
+                final List<Rect> otherSeatRects = [
+                  for (int j = 0; j < seatRects.length && j < seats.length; j++)
+                    if (j != i && !hiddenSeats.contains(j)) seatRects[j],
+                  ...placedFanBounds,
+                ];
+                fanLayout = isHero
+                    ? fitHeroCardRow(
+                        seatRect: seatRects[i],
+                        tableCenter: centerScreen,
+                        safeBoundary: cardSafeBoundary,
+                        tableMidpointY: h / 2,
+                        cardCount: nToDraw,
+                        cardW: cardW,
+                        cardH: cardH,
+                        stepFactor: stepFactor,
+                      )
+                    : fitSeatCardFanBehindAvatar(
+                        seatRect: seatRects[i],
+                        obstacleRects: otherSeatRects,
+                        tableCenter: centerScreen,
+                        safeBoundary: cardSafeBoundary,
+                        cardCount: nToDraw,
+                        cardW: cardW,
+                        cardH: cardH,
+                        stepFactor: stepFactor,
+                        totalFanAngleRadians: totalAngle,
+                        minimumScale: 0.78,
+                      );
+                anchor = fanLayout.anchor;
+                fittedCardW *= fanLayout.scale;
+                fittedCardH *= fanLayout.scale;
+                placedFanBounds.add(fanLayout.bounds);
+              } else {
+                anchor = seatTargets[i];
+              }
+
+              final double step = fanLayout?.step ?? fittedCardW * stepFactor;
               final double anglePer =
                   (nToDraw > 1) ? (totalAngle / (nToDraw - 1)) : 0.0;
               final double startAngle = (nToDraw > 1) ? (-totalAngle / 2) : 0.0;
+              final List<Offset> cardCenters = centeredFanCardCenters(
+                anchor: anchor,
+                cardCount: nToDraw,
+                step: step,
+              );
 
               for (int k = 0; k < nToDraw; k++) {
-                final double cxRaw =
-                    anchor.dx + (k - (nToDraw - 1)) * 0.5 * step;
-                final double cyRaw = anchor.dy;
+                final double cxRaw = cardCenters[k].dx;
+                final double cyRaw = cardCenters[k].dy;
 
-                // Clamp so cards can’t touch the rail
-                final double cx = clampX(cxRaw, fittedCardW / 2);
-                final double cy = isHero
-                    ? (h - (fittedCardH / 2) - 1.0)
-                    : clampY(cyRaw, fittedCardH / 2);
+                final double cx = cxRaw;
+                final double cy = cyRaw;
                 final double ang = startAngle + k * anglePer;
 
                 final String code =
@@ -3071,126 +3179,14 @@ class _SeatFaceUpCardsLayer extends StatelessWidget {
               }
             }
 
-            return Stack(clipBehavior: Clip.none, children: layers);
+            return ClipPath(
+              clipper: PlayerSafeFeltClipper(railWidth: railW),
+              child: Stack(clipBehavior: Clip.none, children: layers),
+            );
           },
         );
       },
     );
-  }
-}
-
-class _WinnerSeatCard extends StatelessWidget {
-  final go.UiCard card;
-  final double w, h;
-  final bool highlight;
-  final Color highlightColor;
-  const _WinnerSeatCard(
-      {required this.card,
-      required this.w,
-      required this.h,
-      this.highlight = false,
-      this.highlightColor = const Color(0xFFFFC857)});
-
-  @override
-  Widget build(BuildContext context) {
-    final borderColor = highlight ? highlightColor : Colors.white24;
-    final pc.PlayingCard? mapped = _map(card);
-    final Widget face = mapped == null
-        ? const SizedBox.shrink()
-        : ClipRRect(
-            borderRadius: BorderRadius.circular(w * 0.16),
-            child: SizedBox(
-              width: w,
-              height: h,
-              child: pc.PlayingCardView(
-                card: mapped,
-                showBack: false,
-              ),
-            ),
-          );
-    return Container(
-      width: w,
-      height: h,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(w * 0.16),
-        border: Border.all(color: borderColor, width: highlight ? 3.6 : 1.4),
-        boxShadow: [
-          if (highlight)
-            BoxShadow(
-              color: highlightColor.withValues(alpha: 0.35),
-              blurRadius: 14,
-              spreadRadius: 1.5,
-            ),
-        ],
-      ),
-      child: face,
-    );
-  }
-
-  pc.PlayingCard? _map(go.UiCard c) {
-    final pc.Suit? suit = _toSuit(c.suit);
-    final pc.CardValue? value = _toValue(c.rank);
-    if (suit == null || value == null) return null;
-    return pc.PlayingCard(suit, value);
-  }
-
-  pc.Suit? _toSuit(String raw) {
-    final s = raw.trim().toUpperCase();
-    switch (s) {
-      case 'S':
-      case 'SPADES':
-      case '♠':
-        return pc.Suit.spades;
-      case 'H':
-      case 'HEARTS':
-      case '♥':
-        return pc.Suit.hearts;
-      case 'D':
-      case 'DIAMONDS':
-      case '♦':
-        return pc.Suit.diamonds;
-      case 'C':
-      case 'CLUBS':
-      case '♣':
-        return pc.Suit.clubs;
-      default:
-        return null;
-    }
-  }
-
-  pc.CardValue? _toValue(String raw) {
-    final r = raw.trim().toUpperCase();
-    switch (r) {
-      case 'A':
-        return pc.CardValue.ace;
-      case 'K':
-        return pc.CardValue.king;
-      case 'Q':
-        return pc.CardValue.queen;
-      case 'J':
-        return pc.CardValue.jack;
-      case '10':
-      case 'T':
-        return pc.CardValue.ten;
-      case '9':
-        return pc.CardValue.nine;
-      case '8':
-        return pc.CardValue.eight;
-      case '7':
-        return pc.CardValue.seven;
-      case '6':
-        return pc.CardValue.six;
-      case '5':
-        return pc.CardValue.five;
-      case '4':
-        return pc.CardValue.four;
-      case '3':
-        return pc.CardValue.three;
-      case '2':
-        return pc.CardValue.two;
-      default:
-        return null;
-    }
   }
 }
 
@@ -3207,13 +3203,7 @@ class _WinnerCycleEntry {
 
 class _WinnerFanInfo {
   final int seatIndex;
-  final List<go.UiCard> holeCards;
-  final Set<String> bestKeys;
-  const _WinnerFanInfo({
-    required this.seatIndex,
-    required this.holeCards,
-    required this.bestKeys,
-  });
+  const _WinnerFanInfo({required this.seatIndex});
 }
 
 class _WinChipPop {
@@ -3384,45 +3374,17 @@ class _OutlinedTextPainter extends CustomPainter {
   }
 }
 
-String _winnerCardKey(go.UiCard c) {
-  final rank = c.rank.trim().toUpperCase();
-  final suit = _normalizeSuit(c.suit);
-  return '$rank|$suit';
-}
-
-String _normalizeSuit(String raw) {
-  final s = raw.trim().toUpperCase();
-  switch (s) {
-    case '♠':
-    case 'SPADES':
-    case 'S':
-      return 'S';
-    case '♥':
-    case 'HEARTS':
-    case 'H':
-      return 'H';
-    case '♦':
-    case 'DIAMONDS':
-    case 'D':
-      return 'D';
-    case '♣':
-    case 'CLUBS':
-    case 'C':
-      return 'C';
-    default:
-      return s;
-  }
-}
-
-class _VenueChip extends StatelessWidget {
+class _VenueClockChip extends StatelessWidget {
   final String flagPath;
   final String venueName;
+  final String timeZoneId;
   final Animation<double>? glow;
   final bool glowActive;
-  const _VenueChip({
+  const _VenueClockChip({
     super.key,
     required this.flagPath,
     required this.venueName,
+    required this.timeZoneId,
     this.glow,
     this.glowActive = false,
   });
@@ -3434,36 +3396,64 @@ class _VenueChip extends StatelessWidget {
       child: _TopInfoPill(
         glow: glow,
         glowActive: glowActive,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(width: 20, height: 14, child: _Flag(flagPath: flagPath)),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
+        borderColor: Colors.white,
+        height: 34,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        child: FittedBox(
+          fit: BoxFit.contain,
+          alignment: Alignment.centerLeft,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 24,
+                height: 17,
+                child: _Flag(flagPath: flagPath),
+              ),
+              const SizedBox(width: 7),
+              Text(
                 venueName,
-                style: _kSidePillTextStyle,
+                style: _kSidePillTextStyle.copyWith(
+                  color: Colors.white,
+                  fontSize: 12.4,
+                ),
                 maxLines: 1,
                 softWrap: false,
-                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
+              Text(
+                '  •  ',
+                style: _kTopPillTextStyle.copyWith(
+                  color: Colors.white,
+                  fontSize: 11.4,
+                ),
+              ),
+              DayDateClock(
+                timeZoneId: timeZoneId,
+                pillStyle: false,
+                displayMode: DayDateClockDisplayMode.full,
+                textStyle: _kTopPillTextStyle.copyWith(
+                  color: Colors.white,
+                  fontSize: 11.4,
+                  letterSpacing: 0.10,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _ClockInfoPill extends StatelessWidget {
-  final int offsetMinutes;
-  final DayDateClockDisplayMode displayMode;
+class _HandHudPill extends StatelessWidget {
+  final HandHudSnapshot snapshot;
+  final bool showStateScreen;
   final Animation<double>? glow;
   final bool glowActive;
 
-  const _ClockInfoPill({
-    required this.offsetMinutes,
-    this.displayMode = DayDateClockDisplayMode.full,
+  const _HandHudPill({
+    required this.snapshot,
+    required this.showStateScreen,
     this.glow,
     this.glowActive = false,
   });
@@ -3475,18 +3465,33 @@ class _ClockInfoPill extends StatelessWidget {
       child: _TopInfoPill(
         glow: glow,
         glowActive: glowActive,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: DayDateClock(
-                offsetMinutes: offsetMinutes,
-                pillStyle: false,
-                displayMode: displayMode,
-                textStyle: _kSidePillTextStyle,
+        borderColor: Colors.white,
+        height: 34,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        child: FittedBox(
+          fit: BoxFit.contain,
+          alignment: Alignment.centerRight,
+          child: RichText(
+            maxLines: 1,
+            softWrap: false,
+            textAlign: TextAlign.right,
+            text: TextSpan(
+              style: _kTopPillTextStyle.copyWith(
+                fontSize: 11.6,
+                letterSpacing: 0.10,
               ),
+              children: <InlineSpan>[
+                TextSpan(
+                  text: snapshot.lineFor(heroFolded: showStateScreen),
+                  style: TextStyle(
+                    color: showStateScreen
+                        ? Colors.white
+                        : const Color(0xFFFFD54A),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -3656,11 +3661,15 @@ class _LastActionPillState extends State<_LastActionPill>
 class _TopInfoPill extends StatelessWidget {
   final Widget child;
   final Color? borderColor;
+  final double? height;
+  final EdgeInsetsGeometry padding;
   final Animation<double>? glow;
   final bool glowActive;
   const _TopInfoPill({
     required this.child,
     this.borderColor,
+    this.height,
+    this.padding = _kTopPillPadding,
     this.glow,
     this.glowActive = false,
   });
@@ -3669,12 +3678,13 @@ class _TopInfoPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final BorderRadius radius = BorderRadius.circular(999);
     final pill = Container(
-      padding: _kTopPillPadding,
+      height: height,
+      padding: padding,
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.84),
         borderRadius: radius,
         border: Border.all(
-          color: borderColor ?? Colors.white.withValues(alpha: 0.20),
+          color: borderColor ?? Colors.white,
           width: 1.2,
         ),
         boxShadow: [
@@ -3701,7 +3711,7 @@ class _TopInfoPill extends StatelessWidget {
         return CustomPaint(
           foregroundPainter: _PillGlowPainter(
             progress: glow!.value,
-            color: const Color(0xFFFFD100),
+            color: Colors.white,
           ),
           child: child,
         );
@@ -4225,28 +4235,6 @@ String _normSuit(String raw) {
 String _cardCode(String rank, String suit) =>
     '${_normRank(rank)}${_normSuit(suit)}';
 
-Offset _feltCenterFromTargets(List<Offset> targets) {
-  double minX = double.infinity, minY = double.infinity;
-  double maxX = -double.infinity, maxY = -double.infinity;
-  for (final p in targets) {
-    if (p.dx < minX) minX = p.dx;
-    if (p.dy < minY) minY = p.dy;
-    if (p.dx > maxX) maxX = p.dx;
-    if (p.dy > maxY) maxY = p.dy;
-  }
-  return Offset((minX + maxX) / 2, (minY + maxY) / 2);
-}
-
-class _SeatCardLayout {
-  final Offset anchor;
-  final double scale;
-
-  const _SeatCardLayout({
-    required this.anchor,
-    required this.scale,
-  });
-}
-
 List<Rect> _seatPanelRects({
   required List<Offset> positions,
   required double seatWidth,
@@ -4258,194 +4246,4 @@ List<Rect> _seatPanelRects({
   return [
     for (final p in positions) Rect.fromLTWH(p.dx, p.dy, seatWidth, seatHeight),
   ];
-}
-
-Offset _rectCloudCenter(List<Rect> rects) {
-  double minX = double.infinity, minY = double.infinity;
-  double maxX = -double.infinity, maxY = -double.infinity;
-  for (final r in rects) {
-    if (r.left < minX) minX = r.left;
-    if (r.top < minY) minY = r.top;
-    if (r.right > maxX) maxX = r.right;
-    if (r.bottom > maxY) maxY = r.bottom;
-  }
-  return Offset((minX + maxX) / 2, (minY + maxY) / 2);
-}
-
-double _rectExtentAlong(Rect rect, Offset unitDir) {
-  final halfW = rect.width / 2;
-  final halfH = rect.height / 2;
-  final double dx = unitDir.dx.abs();
-  final double dy = unitDir.dy.abs();
-  final double tx = dx < 1e-4 ? double.infinity : halfW / dx;
-  final double ty = dy < 1e-4 ? double.infinity : halfH / dy;
-  return math.min(tx, ty);
-}
-
-Offset _along(Offset unitDir, double distance) =>
-    Offset(unitDir.dx * distance, unitDir.dy * distance);
-
-Rect _seatCardFanBounds({
-  required Offset anchor,
-  required double cardW,
-  required double cardH,
-  required double step,
-  required int nToDraw,
-  required bool heroSideBySide,
-}) {
-  final double fanWidth = cardW + math.max(0, nToDraw - 1) * step;
-  return Rect.fromCenter(
-    center: anchor,
-    width: fanWidth + cardW * 0.18,
-    height: cardH * (heroSideBySide ? 1.08 : 1.24),
-  );
-}
-
-_SeatCardLayout _fitSeatCardLayout({
-  required Rect seatRect,
-  required List<Rect> otherSeatRects,
-  required Offset tableCenter,
-  required bool isHero,
-  required int nToDraw,
-  required double cardW,
-  required double cardH,
-  required bool heroSideBySide,
-  required double fanOverlap,
-  required double heroSideBySideGap,
-}) {
-  final double maxExtraPush = math.max(16.0, cardH * 0.48);
-  final double minScale = isHero ? 0.76 : 0.70;
-  final Offset dirToCenter =
-      _seatCardAttachmentDir(seatRect: seatRect, tableCenter: tableCenter);
-  Offset fallbackAnchor = _seatAvatarFacingCardAnchor(
-    seatRect: seatRect,
-    dirToCenter: dirToCenter,
-    cardClusterHalfExtent: _seatCardClusterHalfExtent(
-      dirToCenter: dirToCenter,
-      fittedCardW: cardW * minScale,
-      fittedCardH: cardH * minScale,
-      heroSideBySide: heroSideBySide,
-      nToDraw: nToDraw,
-      step: heroSideBySide
-          ? cardW * minScale * heroSideBySideGap
-          : cardW * minScale * (1 - fanOverlap),
-    ),
-  );
-  double fallbackScale = minScale;
-
-  const int attempts = 6;
-  for (int attempt = 0; attempt < attempts; attempt++) {
-    final double t = attempts == 1 ? 1.0 : attempt / (attempts - 1);
-    final double scale = 1.0 - (1.0 - minScale) * t;
-    final double fittedCardW = cardW * scale;
-    final double fittedCardH = cardH * scale;
-    final double step = heroSideBySide
-        ? fittedCardW * heroSideBySideGap
-        : fittedCardW * (1 - fanOverlap);
-    final double outwardNudge = maxExtraPush * t * 0.04;
-    final Offset anchor = _seatAvatarFacingCardAnchor(
-      seatRect: seatRect,
-      dirToCenter: dirToCenter,
-      cardClusterHalfExtent: _seatCardClusterHalfExtent(
-        dirToCenter: dirToCenter,
-        fittedCardW: fittedCardW,
-        fittedCardH: fittedCardH,
-        heroSideBySide: heroSideBySide,
-        nToDraw: nToDraw,
-        step: step,
-      ),
-      outwardNudge: outwardNudge,
-    );
-    fallbackAnchor = anchor;
-    fallbackScale = scale;
-    final Rect fanBounds = _seatCardFanBounds(
-      anchor: anchor,
-      cardW: fittedCardW,
-      cardH: fittedCardH,
-      step: step,
-      nToDraw: nToDraw,
-      heroSideBySide: heroSideBySide,
-    );
-    final bool clearsOthers = otherSeatRects.every(
-      (r) => !fanBounds.overlaps(r.inflate(math.max(8.0, fittedCardH * 0.10))),
-    );
-    if (clearsOthers) {
-      return _SeatCardLayout(anchor: anchor, scale: scale);
-    }
-  }
-
-  return _SeatCardLayout(anchor: fallbackAnchor, scale: fallbackScale);
-}
-
-Rect _seatAvatarRect(Rect seatRect) {
-  final double pillH = seatRect.height;
-  final double avatarBaseSize = (pillH * 0.94).clamp(40.0, pillH).toDouble();
-  final double avatarSize =
-      (avatarBaseSize * _kSeatAvatarScale).clamp(34.0, pillH).toDouble();
-  final double avatarInset =
-      ((pillH - avatarSize) / 2).clamp(2.0, pillH * 0.18).toDouble();
-  return Rect.fromLTWH(
-    seatRect.left + avatarInset,
-    seatRect.top + avatarInset,
-    avatarSize,
-    avatarSize,
-  );
-}
-
-Offset _seatCardAttachmentDir({
-  required Rect seatRect,
-  required Offset tableCenter,
-}) {
-  final Offset delta = tableCenter - seatRect.center;
-  final double absDx = delta.dx.abs();
-  final double absDy = delta.dy.abs();
-  if (absDx < 1e-3 && absDy < 1e-3) {
-    return const Offset(0, -1);
-  }
-  if (absDy >= absDx * 0.85) {
-    return Offset(0, delta.dy >= 0 ? 1 : -1);
-  }
-  return Offset(delta.dx >= 0 ? 1 : -1, 0);
-}
-
-double _seatCardClusterHalfExtent({
-  required Offset dirToCenter,
-  required double fittedCardW,
-  required double fittedCardH,
-  required bool heroSideBySide,
-  required int nToDraw,
-  required double step,
-}) {
-  final Rect fanRect = _seatCardFanBounds(
-    anchor: Offset.zero,
-    cardW: fittedCardW,
-    cardH: fittedCardH,
-    step: step,
-    nToDraw: nToDraw,
-    heroSideBySide: heroSideBySide,
-  );
-  return _rectExtentAlong(fanRect, dirToCenter);
-}
-
-Offset _seatAvatarFacingCardAnchor({
-  required Rect seatRect,
-  required Offset dirToCenter,
-  required double cardClusterHalfExtent,
-  double outwardNudge = 0.0,
-}) {
-  final Rect avatarRect = _seatAvatarRect(seatRect);
-  final double avatarRadius = avatarRect.shortestSide / 2;
-  final Offset avatarEdge =
-      avatarRect.center + _along(dirToCenter, avatarRadius);
-  final double distance =
-      (cardClusterHalfExtent - _kSeatCardAvatarTouchInsetPx + outwardNudge)
-          .clamp(0.0, 9999.0)
-          .toDouble();
-  return avatarEdge + _along(dirToCenter, distance);
-}
-
-Offset _unitVec(Offset v) {
-  final len = math.sqrt(v.dx * v.dx + v.dy * v.dy);
-  if (len == 0) return const Offset(0, -1);
-  return Offset(v.dx / len, v.dy / len);
 }

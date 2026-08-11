@@ -1,6 +1,7 @@
 // lib/ui/screens/game_screen/clock.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:ten_of_a_kind_poker/core/venue_time.dart';
 
 enum DayDateClockDisplayMode {
   full,
@@ -9,20 +10,13 @@ enum DayDateClockDisplayMode {
 }
 
 /// DayDateClock
-/// Displays venue time using a region bucket or a fixed offset.
-/// Supports DST for Washington (US Eastern) and Cairo (Egypt).
+/// Displays the local civil time for an IANA venue time zone.
 ///
 /// Example usage:
-///   DayDateClock(region: 'america', tzAbbr: 'ET')
-///   DayDateClock(region: 'arabia', tzAbbr: 'UAE')
-///   DayDateClock(offsetMinutes: 330, tzAbbr: 'IST')
+///   DayDateClock(timeZoneId: 'Europe/London')
 class DayDateClock extends StatefulWidget {
-  /// Region keyword: 'america', 'arabia', 'southeast', 'amazon', 'africa',
-  /// 'europe', 'russia', 'australia', 'china'
-  final String? region;
-
-  /// Fallback UTC offset (in minutes) if region is null or unrecognized
-  final int? offsetMinutes;
+  /// IANA identifier such as `Asia/Kolkata` or `America/New_York`.
+  final String timeZoneId;
 
   /// Optional label (e.g. "ET", "UAE", "SGT")
   final String? tzAbbr;
@@ -36,8 +30,7 @@ class DayDateClock extends StatefulWidget {
 
   const DayDateClock({
     super.key,
-    this.region,
-    this.offsetMinutes,
+    required this.timeZoneId,
     this.tzAbbr,
     this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     this.pillStyle = true,
@@ -52,7 +45,7 @@ class DayDateClock extends StatefulWidget {
 
 class _DayDateClockState extends State<DayDateClock> {
   Timer? _timer;
-  DateTime _nowUtc = DateTime.now().toUtc();
+  DateTime _now = DateTime.now();
 
   static const _wk = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   static const _mon = [
@@ -73,8 +66,8 @@ class _DayDateClockState extends State<DayDateClock> {
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 15), (_) {
-      if (mounted) setState(() => _nowUtc = DateTime.now().toUtc());
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() => _now = DateTime.now());
     });
   }
 
@@ -83,82 +76,6 @@ class _DayDateClockState extends State<DayDateClock> {
     _timer?.cancel();
     super.dispose();
   }
-
-  /// Returns current UTC offset (in minutes) for a region.
-  int _offsetForRegion(String region, DateTime utcNow) {
-    final r = region.trim().toLowerCase();
-
-    switch (r) {
-      case 'america':
-        // Washington DC (US Eastern Time)
-        // DST starts 2nd Sunday in March, ends 1st Sunday in November
-        final dstStart = _nthWeekdayOfMonth(utcNow.year, 3, DateTime.sunday, 2);
-        final dstEnd = _nthWeekdayOfMonth(utcNow.year, 11, DateTime.sunday, 1);
-        final inDst = utcNow.isAfter(dstStart) && utcNow.isBefore(dstEnd);
-        return inDst ? -240 : -300; // -4h / -5h
-      case 'arabia':
-        // UAE (Abu Dhabi/Dubai)
-        return 240;
-      case 'southeast':
-        // Singapore
-        return 480;
-      case 'amazon':
-        // Brasília (UTC-3, no DST)
-        return -180;
-      case 'africa':
-        // Cairo with DST (since 2023): UTC+2 → +3 (last Fri Apr to last Thu Oct)
-        final lastFriApr = _lastWeekdayOfMonth(utcNow.year, 4, DateTime.friday);
-        final lastThuOct =
-            _lastWeekdayOfMonth(utcNow.year, 10, DateTime.thursday);
-        final inDst = utcNow.isAfter(lastFriApr) && utcNow.isBefore(lastThuOct);
-        return inDst ? 180 : 120;
-      case 'europe':
-        // Paris (CET: +1 winter, +2 summer)
-        final dstStart = _lastSundayOfMonth(utcNow.year, 3);
-        final dstEnd = _lastSundayOfMonth(utcNow.year, 10);
-        final inDst = utcNow.isAfter(dstStart) && utcNow.isBefore(dstEnd);
-        return inDst ? 120 : 60;
-      case 'russia':
-        // Moscow (UTC+3 year-round)
-        return 180;
-      case 'australia':
-        // Sydney (AEST +10, DST +11: starts 1st Sun Oct, ends 1st Sun Apr)
-        final dstStart =
-            _nthWeekdayOfMonth(utcNow.year, 10, DateTime.sunday, 1);
-        final dstEnd = _nthWeekdayOfMonth(utcNow.year, 4, DateTime.sunday, 1);
-        final inDst = utcNow.isAfter(dstStart) || utcNow.isBefore(dstEnd);
-        return inDst ? 660 : 600;
-      case 'china':
-        // Hong Kong (UTC+8, no DST)
-        return 480;
-      default:
-        // fallback to local system
-        return DateTime.now().timeZoneOffset.inMinutes;
-    }
-  }
-
-  /// Nth weekday of month (1-based)
-  DateTime _nthWeekdayOfMonth(int year, int month, int weekday, int n) {
-    final first = DateTime.utc(year, month, 1);
-    int offset = (weekday - first.weekday) % 7;
-    return first.add(Duration(days: offset + (n - 1) * 7));
-  }
-
-  /// Last weekday of month
-  DateTime _lastWeekdayOfMonth(int year, int month, int weekday) {
-    final nextMonth = (month == 12)
-        ? DateTime.utc(year + 1, 1, 1)
-        : DateTime.utc(year, month + 1, 1);
-    DateTime last = nextMonth.subtract(const Duration(days: 1));
-    while (last.weekday != weekday) {
-      last = last.subtract(const Duration(days: 1));
-    }
-    return last;
-  }
-
-  /// Last Sunday of month (used for EU DST)
-  DateTime _lastSundayOfMonth(int year, int month) =>
-      _lastWeekdayOfMonth(year, month, DateTime.sunday);
 
   String _fmtFull(DateTime t, {String? tzAbbr}) {
     final weekday = _wk[(t.weekday - 1) % 7];
@@ -199,11 +116,10 @@ class _DayDateClockState extends State<DayDateClock> {
         Theme.of(context).textTheme.bodyLarge?.fontFamily ?? 'OpenSans';
     final Color resolvedColor = labelStyle?.color ?? Colors.white;
 
-    final offset = widget.region != null
-        ? _offsetForRegion(widget.region!, _nowUtc)
-        : (widget.offsetMinutes ?? DateTime.now().timeZoneOffset.inMinutes);
-
-    final venueTime = _nowUtc.add(Duration(minutes: offset));
+    final venueTime = VenueTime.at(
+      _now,
+      timeZoneId: widget.timeZoneId,
+    );
 
     final TextStyle baseStyle = widget.textStyle ??
         (labelStyle ?? const TextStyle()).copyWith(

@@ -19,7 +19,7 @@ class DealerWidget extends StatelessWidget {
         CircleAvatar(
           radius: size / 2,
           backgroundColor: Colors.white10,
-          backgroundImage: const AssetImage('assets/images/renoir_avatar.png'),
+          backgroundImage: const AssetImage('assets/images/renoir_tux.png'),
         ),
         const SizedBox(height: 8),
 

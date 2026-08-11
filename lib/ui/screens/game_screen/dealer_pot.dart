@@ -53,7 +53,8 @@ class LegacyRenoirDealerState extends State<LegacyRenoirDealer>
       vsync: this,
       duration: const Duration(milliseconds: 2600),
     )..repeat();
-    _shuffleCtrl = AnimationController(vsync: this, duration: widget.shuffleLoop);
+    _shuffleCtrl =
+        AnimationController(vsync: this, duration: widget.shuffleLoop);
     _bowCtrl = AnimationController(vsync: this, duration: widget.bowDuration);
   }
 
@@ -206,7 +207,7 @@ class _ShuffleStrips extends StatelessWidget {
           alignment: Alignment.center,
           children: [
             _strip(x: leftX, y: -gapY, w: cardW, h: cardH, tilt: -0.08),
-            _strip(x: rightX, y:  gapY, w: cardW, h: cardH, tilt:  0.08),
+            _strip(x: rightX, y: gapY, w: cardW, h: cardH, tilt: 0.08),
           ],
         ),
       ),
@@ -334,8 +335,8 @@ class PotChip extends StatelessWidget {
  *    Use when embedding directly as TableFelt.bottomRailChild
  * ==========================================================================*/
 class PotRailCapsule extends StatelessWidget {
-  final int pot;                // integer chips
-  final double railThickness;   // pass TableFelt.railWidth
+  final int pot; // integer chips
+  final double railThickness; // pass TableFelt.railWidth
 
   const PotRailCapsule({
     super.key,

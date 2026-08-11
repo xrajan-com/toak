@@ -21,8 +21,7 @@ void main() {
     }
   });
 
-  test('each free dealer avatar is assigned to two kingdoms in two circuits',
-      () {
+  test('free dealer avatars are balanced across two or three circuits', () {
     final assignments =
         <DealerAvatarStyle, List<({VenueGroup group, String name})>>{};
 
@@ -42,12 +41,12 @@ void main() {
       final styleAssignments = assignments[style] ?? const [];
       expect(
         styleAssignments,
-        hasLength(2),
-        reason: '$style should be reused by exactly two kingdoms',
+        hasLength(anyOf(2, 3)),
+        reason: '$style should be reused by two or three kingdoms',
       );
       expect(
         styleAssignments.map((assignment) => assignment.group).toSet(),
-        hasLength(2),
+        hasLength(styleAssignments.length),
         reason: '$style should not be reused inside one circuit',
       );
     }

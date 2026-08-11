@@ -10,7 +10,8 @@ class VersionScreen extends StatelessWidget {
       backgroundColor: AppColors.black,
       appBar: AppBar(
         backgroundColor: AppColors.black,
-        title: const Text('Choose Version', style: TextStyle(color: AppColors.white)),
+        title: const Text('Choose Version',
+            style: TextStyle(color: AppColors.white)),
         iconTheme: const IconThemeData(color: AppColors.white),
       ),
       body: Center(
@@ -63,7 +64,8 @@ class _VersionButton extends StatelessWidget {
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
         onPressed: onTap,
         child: Text(

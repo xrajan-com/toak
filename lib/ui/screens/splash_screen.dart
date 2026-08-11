@@ -26,8 +26,8 @@ class _SplashScreenState extends State<SplashScreen>
   late final AnimationController _flagWave;
 
   final List<String> _images = const [
-    'assets/images/splash1.png',
-    'assets/images/splash2.png',
+    'assets/images/banner.png',
+    'assets/images/app_icon.png',
   ];
   int _current = 0;
 

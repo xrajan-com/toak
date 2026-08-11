@@ -33,13 +33,17 @@ extension GameEngineBotLogic on GameEngine {
     int steps = 0;
     while (steps++ < maxSteps) {
       if (skipFastForwardActive) return;
-      if (phase == GamePhase.handOver || phase == GamePhase.showdown) return;
+      if (phase == GamePhase.predeal ||
+          phase == GamePhase.handOver ||
+          phase == GamePhase.showdown) {
+        return;
+      }
       if (players.isEmpty) return;
       if (actingIndex < 0 || actingIndex >= players.length) return;
       final p = players[actingIndex];
       if (!p.isBot) return; // stop on human
 
-      final advice = BotAdvisor.suggest(this, actingIndex);
+      final advice = prepareBotDecision(actingIndex);
       recordBotDecision(
         seat: actingIndex,
         action: advice.action,
@@ -321,6 +325,9 @@ class BotAdvisor {
         aggressorIdx != null && aggressorIdx >= 0 && aggressorIdx != idx
             ? eng.opponentMemoryForSeat(aggressorIdx)
             : null;
+    final double aggressorPressure = aggressorMemory?.pressureHeat ?? 0.0;
+    final bool facingRepeatPressure =
+        aggressorMemory?.appliesRepeatPressure ?? false;
     final double aggressorAggression = aggressorMemory?.aggressionIndex ?? 0.5;
     final double aggressorSolidity = aggressorMemory?.showdownStrength ?? 0.5;
     final bool revengeSpot = aggressorIdx != null &&
@@ -755,6 +762,10 @@ class BotAdvisor {
       double memoryEquityShift = styleCaution * 0.05 - styleConfidence * 0.03;
       memoryEquityShift += (aggressorSolidity - 0.5) * 0.08;
       memoryEquityShift -= (aggressorAggression - 0.5) * 0.06;
+      if (facingRepeatPressure) {
+        memoryEquityShift -=
+            (0.05 + aggressorPressure * 0.09).clamp(0.05, 0.14);
+      }
       if (revengeSpot && isManiac) memoryEquityShift -= 0.02;
       final double requiredEquity = (breakEvenEquity +
               equityBuffer +
@@ -789,6 +800,9 @@ class BotAdvisor {
         if (stackFrac >= 0.95) minStrengthToContinue += 0.04;
         if (effectivePotOdds <= 0.18) minStrengthToContinue -= 0.06;
         if (effectivePotOdds >= 0.40) minStrengthToContinue += 0.05;
+        if (facingRepeatPressure && !crowdedAllInPot) {
+          minStrengthToContinue -= 0.08 + aggressorPressure * 0.05;
+        }
 
         if (eng.phase == GamePhase.preflop) {
           if (pocketPair && hi >= rankValue(Rank.queen)) {
@@ -817,6 +831,9 @@ class BotAdvisor {
           }
           if (effectivePotOdds <= 0.18) minWinProbToContinue -= 0.03;
           if (effectivePotOdds >= 0.40) minWinProbToContinue += 0.03;
+        }
+        if (facingRepeatPressure && !crowdedAllInPot) {
+          minWinProbToContinue -= 0.07 + aggressorPressure * 0.05;
         }
         minWinProbToContinue = minWinProbToContinue.clamp(0.28, 0.78);
         final bool probabilitySupportsContinue =
@@ -1948,6 +1965,9 @@ class BotAdvisor {
         aggressorIdx != null && aggressorIdx >= 0 && aggressorIdx != idx
             ? eng.opponentMemoryForSeat(aggressorIdx)
             : null;
+    final bool facingRepeatPressure =
+        aggressorMemory?.appliesRepeatPressure ?? false;
+    final double aggressorPressure = aggressorMemory?.pressureHeat ?? 0.0;
     final bool revengeSpot = aggressorIdx != null &&
         aggressorIdx >= 0 &&
         aggressorIdx < eng.players.length &&
@@ -1978,6 +1998,51 @@ class BotAdvisor {
         revengeSpot: revengeSpot,
       ),
     );
+
+    // Do not let a player print chips by repeatedly making large raises. Once
+    // recent pressure memory confirms the pattern, playable bluff-catchers
+    // defend at a wider—but still price- and hand-strength-aware—threshold.
+    if (action == ActionType.fold &&
+        hasToCall &&
+        facingRepeatPressure &&
+        legal.contains(ActionType.call)) {
+      double strengthFloor = switch (eng.phase) {
+        GamePhase.preflop => 0.44,
+        GamePhase.flop => 0.36,
+        GamePhase.turn => 0.38,
+        GamePhase.river => 0.41,
+        _ => 0.44,
+      };
+      if (isRock) strengthFloor += 0.025;
+      if (isCallingStation) strengthFloor -= 0.045;
+      if (isManiac) strengthFloor -= 0.025;
+      if (multiway) strengthFloor += 0.10;
+      if (allInPressure) strengthFloor += 0.025;
+      strengthFloor = strengthFloor.clamp(0.30, 0.62);
+
+      final double breakEven = _breakEvenEquity(
+        potBeforeCall: eng.pot,
+        toCall: toCall,
+      );
+      double pressureDiscount =
+          (0.055 + aggressorPressure * 0.11).clamp(0.055, 0.16);
+      if (multiway) pressureDiscount *= 0.45;
+      final double neededEquity =
+          (breakEven - pressureDiscount).clamp(0.18, 0.70);
+      final bool hasMadeBluffCatcher = eng.phase != GamePhase.preflop &&
+          madeRank != null &&
+          madeRank.category.index >= HandCategory.pair.index;
+      final bool credibleDefense = strengthScore >= strengthFloor &&
+          winProb >= neededEquity &&
+          (playable || hasMadeBluffCatcher || strengthScore >= 0.58);
+
+      if (credibleDefense) {
+        action = ActionType.call;
+        toAmount = 0;
+        confidence =
+            (confidence + 0.10 + aggressorPressure * 0.08).clamp(0.10, 0.95);
+      }
+    }
 
     // Occasional hero calls when facing a small bet.
     if (action == ActionType.fold &&

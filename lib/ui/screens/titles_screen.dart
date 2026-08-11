@@ -93,6 +93,11 @@ class _TitlesList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final progress = context.watch<CampaignProgressService>();
+    if (!progress.isHydrated) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.blue),
+      );
+    }
 
     final earnedByGroup = <VenueGroup, List<_TitleEntry>>{
       for (final group in kVenueGroups)
@@ -104,7 +109,7 @@ class _TitlesList extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 28),
           child: Text(
-            'No titles yet.\nWin a Main Event after clearing every Sub‑Kingdom.',
+            'No titles yet.\nWin a Main Event after clearing every Fort.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white70,

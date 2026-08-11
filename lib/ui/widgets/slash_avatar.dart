@@ -165,6 +165,7 @@ enum _HairStyle {
   bald,
   thinning,
 }
+
 enum _HatStyle {
   none,
   brim,
@@ -178,7 +179,9 @@ enum _HatStyle {
   helmet,
   boxingHelmet,
 }
+
 enum _GlassesStyle { none, round, square, aviator }
+
 enum _FacialHair { none, moustache, beard, goatee }
 
 enum DealerGender { male, female }
@@ -309,7 +312,8 @@ const Map<DealerAvatarStyle, _DealerPersonaOverride> _dealerPersonaOverrides =
     hairStyle: _HairStyle.long,
     hatStyle: _HatStyle.none,
     glassesStyle: _GlassesStyle.none,
-    facialHair: _FacialHair.moustache, // french cut (moustache + goatee) is painted below
+    facialHair: _FacialHair
+        .moustache, // french cut (moustache + goatee) is painted below
   ),
 
   // Hyderabad → Rihanna (female singer)
@@ -561,8 +565,7 @@ _DealerPersona _personaForStyle(DealerAvatarStyle style) {
       _FacialHair.values[(seed >> 22) % _FacialHair.values.length];
   if (gender == DealerGender.female) facialHair = _FacialHair.none;
 
-  final headgear =
-      headgearTones[(seed >> 12) % headgearTones.length];
+  final headgear = headgearTones[(seed >> 12) % headgearTones.length];
   final headgearAccent = _lighten(headgear, 0.42);
 
   final override = _dealerPersonaOverrides[style];
@@ -728,15 +731,21 @@ class _KingdomDealerPainter extends CustomPainter {
     final Paint lapel = Paint()..color = tux.lapel;
     final Path lapelL = Path()
       ..moveTo(-bodyW * 0.22, -bodyH * 0.35)
-      ..quadraticBezierTo(-bodyW * 0.06, -bodyH * 0.22, -bodyW * 0.02, -bodyH * 0.04)
-      ..quadraticBezierTo(-bodyW * 0.04, bodyH * 0.08, -bodyW * 0.14, bodyH * 0.14)
-      ..quadraticBezierTo(-bodyW * 0.26, bodyH * 0.10, -bodyW * 0.30, -bodyH * 0.06)
+      ..quadraticBezierTo(
+          -bodyW * 0.06, -bodyH * 0.22, -bodyW * 0.02, -bodyH * 0.04)
+      ..quadraticBezierTo(
+          -bodyW * 0.04, bodyH * 0.08, -bodyW * 0.14, bodyH * 0.14)
+      ..quadraticBezierTo(
+          -bodyW * 0.26, bodyH * 0.10, -bodyW * 0.30, -bodyH * 0.06)
       ..close();
     final Path lapelR = Path()
       ..moveTo(bodyW * 0.22, -bodyH * 0.35)
-      ..quadraticBezierTo(bodyW * 0.06, -bodyH * 0.22, bodyW * 0.02, -bodyH * 0.04)
-      ..quadraticBezierTo(bodyW * 0.04, bodyH * 0.08, bodyW * 0.14, bodyH * 0.14)
-      ..quadraticBezierTo(bodyW * 0.26, bodyH * 0.10, bodyW * 0.30, -bodyH * 0.06)
+      ..quadraticBezierTo(
+          bodyW * 0.06, -bodyH * 0.22, bodyW * 0.02, -bodyH * 0.04)
+      ..quadraticBezierTo(
+          bodyW * 0.04, bodyH * 0.08, bodyW * 0.14, bodyH * 0.14)
+      ..quadraticBezierTo(
+          bodyW * 0.26, bodyH * 0.10, bodyW * 0.30, -bodyH * 0.06)
       ..close();
     canvas.drawPath(lapelL, lapel);
     canvas.drawPath(lapelR, lapel);
@@ -791,8 +800,10 @@ class _KingdomDealerPainter extends CustomPainter {
     // Show a bit of skin inside the neckline (stylized; no explicit detail).
     canvas.drawPath(vNeck, Paint()..color = persona.skin);
 
-    final Offset left = Offset(-innerRect.width * 0.18, neckDepth + bodyH * 0.04);
-    final Offset right = Offset(innerRect.width * 0.18, neckDepth + bodyH * 0.04);
+    final Offset left =
+        Offset(-innerRect.width * 0.18, neckDepth + bodyH * 0.04);
+    final Offset right =
+        Offset(innerRect.width * 0.18, neckDepth + bodyH * 0.04);
     final double rx = innerRect.width * 0.26;
     final double ry = innerRect.height * 0.22;
 
@@ -898,8 +909,8 @@ class _KingdomDealerPainter extends CustomPainter {
 
     final double headR = size.width * 0.14;
     final Rect face = _faceRect(headR);
-    final bool hairBehindFace =
-        persona.hairStyle == _HairStyle.long || persona.hairStyle == _HairStyle.afro;
+    final bool hairBehindFace = persona.hairStyle == _HairStyle.long ||
+        persona.hairStyle == _HairStyle.afro;
     if (hairBehindFace) {
       _paintHair(canvas, size, headR);
     }
@@ -951,7 +962,14 @@ class _KingdomDealerPainter extends CustomPainter {
           ..color = _lighten(persona.hair, 0.20).withValues(alpha: 0.75)
           ..strokeWidth = 1.6
           ..strokeCap = StrokeCap.round;
-        for (final double dx in <double>[-0.62, -0.50, -0.38, 0.38, 0.50, 0.62]) {
+        for (final double dx in <double>[
+          -0.62,
+          -0.50,
+          -0.38,
+          0.38,
+          0.50,
+          0.62
+        ]) {
           canvas.drawLine(
             Offset(dx * headR, -headR * 1.02),
             Offset(dx * headR * 0.90, -headR * 0.78),
@@ -961,7 +979,8 @@ class _KingdomDealerPainter extends CustomPainter {
         return;
       case _HairStyle.shaved:
         canvas.drawArc(
-          Rect.fromCircle(center: Offset(0, -headR * 0.30), radius: headR * 1.05),
+          Rect.fromCircle(
+              center: Offset(0, -headR * 0.30), radius: headR * 1.05),
           math.pi,
           math.pi,
           true,
@@ -970,7 +989,8 @@ class _KingdomDealerPainter extends CustomPainter {
         break;
       case _HairStyle.short:
         canvas.drawArc(
-          Rect.fromCircle(center: Offset(0, -headR * 0.36), radius: headR * 1.18),
+          Rect.fromCircle(
+              center: Offset(0, -headR * 0.36), radius: headR * 1.18),
           math.pi,
           math.pi,
           true,
@@ -1002,7 +1022,8 @@ class _KingdomDealerPainter extends CustomPainter {
       case _HairStyle.spikes:
         // Spiky hair silhouette (used for Russia venue).
         canvas.drawArc(
-          Rect.fromCircle(center: Offset(0, -headR * 0.36), radius: headR * 1.18),
+          Rect.fromCircle(
+              center: Offset(0, -headR * 0.36), radius: headR * 1.18),
           math.pi,
           math.pi,
           true,
@@ -1052,7 +1073,8 @@ class _KingdomDealerPainter extends CustomPainter {
         final double bodyCenterY = isAsia ? headR * 0.28 : headR * 0.25;
         final double cutInflate = isAsia ? headR * 0.06 : headR * 0.10;
         final Path p = Path()
-          ..addOval(Rect.fromCircle(center: Offset(0, topCenterY), radius: topRadius))
+          ..addOval(
+              Rect.fromCircle(center: Offset(0, topCenterY), radius: topRadius))
           ..addRRect(
             RRect.fromRectAndRadius(
               Rect.fromCenter(
@@ -1067,7 +1089,8 @@ class _KingdomDealerPainter extends CustomPainter {
         canvas.drawPath(Path.combine(PathOperation.difference, p, cut), hair);
 
         // Add a subtle hairline so the top doesn't look hollow.
-        final Offset hairlineCenter = Offset(0, isAsia ? -headR * 0.48 : -headR * 0.42);
+        final Offset hairlineCenter =
+            Offset(0, isAsia ? -headR * 0.48 : -headR * 0.42);
         final Rect hairlineRect =
             Rect.fromCircle(center: hairlineCenter, radius: headR * 1.10);
         final Path hairline = Path()
@@ -1086,11 +1109,23 @@ class _KingdomDealerPainter extends CustomPainter {
             ..strokeWidth = 2.0
             ..strokeCap = StrokeCap.round;
           final List<List<Offset>> strands = <List<Offset>>[
-            [Offset(-headR * 0.58, -headR * 0.74), Offset(-headR * 0.20, -headR * 0.38)],
-            [Offset(-headR * 0.24, -headR * 0.82), Offset(-headR * 0.02, -headR * 0.40)],
+            [
+              Offset(-headR * 0.58, -headR * 0.74),
+              Offset(-headR * 0.20, -headR * 0.38)
+            ],
+            [
+              Offset(-headR * 0.24, -headR * 0.82),
+              Offset(-headR * 0.02, -headR * 0.40)
+            ],
             [Offset(0, -headR * 0.86), Offset(headR * 0.10, -headR * 0.42)],
-            [Offset(headR * 0.24, -headR * 0.82), Offset(headR * 0.02, -headR * 0.40)],
-            [Offset(headR * 0.58, -headR * 0.74), Offset(headR * 0.20, -headR * 0.38)],
+            [
+              Offset(headR * 0.24, -headR * 0.82),
+              Offset(headR * 0.02, -headR * 0.40)
+            ],
+            [
+              Offset(headR * 0.58, -headR * 0.74),
+              Offset(headR * 0.20, -headR * 0.38)
+            ],
           ];
           for (final seg in strands) {
             canvas.drawLine(seg[0], seg[1], strand);
@@ -1105,7 +1140,8 @@ class _KingdomDealerPainter extends CustomPainter {
         break;
       case _HairStyle.bun:
         canvas.drawArc(
-          Rect.fromCircle(center: Offset(0, -headR * 0.42), radius: headR * 1.15),
+          Rect.fromCircle(
+              center: Offset(0, -headR * 0.42), radius: headR * 1.15),
           math.pi,
           math.pi,
           true,
@@ -1160,7 +1196,8 @@ class _KingdomDealerPainter extends CustomPainter {
                 _lighten(persona.hair, 0.45).withValues(alpha: 0.70),
                 _lighten(persona.hair, 0.45).withValues(alpha: 0.00),
               ],
-            ).createShader(Rect.fromLTWH(-headR * 1.40, -headR * 1.10, headR * 2.80, headR * 1.45));
+            ).createShader(Rect.fromLTWH(
+                -headR * 1.40, -headR * 1.10, headR * 2.80, headR * 1.45));
           final RRect sideL = RRect.fromRectAndRadius(
             Rect.fromCenter(
               center: Offset(-headR * 1.05, -headR * 0.44),
@@ -1197,7 +1234,8 @@ class _KingdomDealerPainter extends CustomPainter {
           ..moveTo(-headR * 0.98, -headR * 0.62)
           ..quadraticBezierTo(0, -headR * 1.18, headR * 0.98, -headR * 0.62)
           ..quadraticBezierTo(headR * 0.72, -headR * 0.08, 0, -headR * 0.10)
-          ..quadraticBezierTo(-headR * 0.72, -headR * 0.08, -headR * 0.98, -headR * 0.62)
+          ..quadraticBezierTo(
+              -headR * 0.72, -headR * 0.08, -headR * 0.98, -headR * 0.62)
           ..close();
         canvas.drawPath(top, hair);
 
@@ -1241,13 +1279,15 @@ class _KingdomDealerPainter extends CustomPainter {
           width: headR * 2.20,
           height: headR * 0.38,
         );
-        canvas.drawRRect(RRect.fromRectAndRadius(brim, Radius.circular(headR)), hat);
+        canvas.drawRRect(
+            RRect.fromRectAndRadius(brim, Radius.circular(headR)), hat);
         final Rect crown = Rect.fromCenter(
           center: Offset(0, -headR * 1.22),
           width: headR * 1.35,
           height: headR * 0.85,
         );
-        canvas.drawRRect(RRect.fromRectAndRadius(crown, Radius.circular(headR * 0.35)), hat);
+        canvas.drawRRect(
+            RRect.fromRectAndRadius(crown, Radius.circular(headR * 0.35)), hat);
         canvas.drawRRect(
           RRect.fromRectAndRadius(brim.deflate(2.0), Radius.circular(headR)),
           trim..color = trim.color.withValues(alpha: 0.55),
@@ -1255,7 +1295,8 @@ class _KingdomDealerPainter extends CustomPainter {
         break;
       case _HatStyle.cap:
         canvas.drawArc(
-          Rect.fromCircle(center: Offset(0, -headR * 0.95), radius: headR * 1.10),
+          Rect.fromCircle(
+              center: Offset(0, -headR * 0.95), radius: headR * 1.10),
           math.pi,
           math.pi,
           true,
@@ -1348,7 +1389,8 @@ class _KingdomDealerPainter extends CustomPainter {
 
         // Crown band trim.
         canvas.drawRRect(
-          RRect.fromRectAndRadius(bandRect.deflate(2.0), Radius.circular(headR * 0.28)),
+          RRect.fromRectAndRadius(
+              bandRect.deflate(2.0), Radius.circular(headR * 0.28)),
           Paint()
             ..color = persona.headgearAccent.withValues(alpha: 0.40)
             ..style = PaintingStyle.stroke
@@ -1362,7 +1404,8 @@ class _KingdomDealerPainter extends CustomPainter {
           Color(0xFF2563EB), // sapphire
         ];
         final Paint jewelStroke = Paint()
-          ..color = _darken(persona.headgearAccent, 0.05).withValues(alpha: 0.75)
+          ..color =
+              _darken(persona.headgearAccent, 0.05).withValues(alpha: 0.75)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2.0;
 
@@ -1400,7 +1443,8 @@ class _KingdomDealerPainter extends CustomPainter {
           width: headR * 2.20,
           height: headR * 0.45,
         );
-        canvas.drawRRect(RRect.fromRectAndRadius(band, Radius.circular(headR)), hat);
+        canvas.drawRRect(
+            RRect.fromRectAndRadius(band, Radius.circular(headR)), hat);
         for (int i = -2; i <= 2; i++) {
           final double y = -headR * 0.98 + i * headR * 0.10;
           canvas.drawLine(
@@ -1450,7 +1494,8 @@ class _KingdomDealerPainter extends CustomPainter {
 
         // Fold lines.
         final Paint fold = Paint()
-          ..color = _darken(persona.headgearAccent, 0.02).withValues(alpha: 0.38)
+          ..color =
+              _darken(persona.headgearAccent, 0.02).withValues(alpha: 0.38)
           ..strokeWidth = 2.0
           ..strokeCap = StrokeCap.round;
         for (int i = -4; i <= 4; i++) {
@@ -1477,7 +1522,8 @@ class _KingdomDealerPainter extends CustomPainter {
 
         // Small front knot.
         final Offset knot = Offset(0, -headR * 0.76);
-        canvas.drawCircle(knot, headR * 0.13, Paint()..color = _darken(persona.headgear, 0.10));
+        canvas.drawCircle(knot, headR * 0.13,
+            Paint()..color = _darken(persona.headgear, 0.10));
         canvas.drawCircle(
           knot,
           headR * 0.13,
@@ -1518,7 +1564,8 @@ class _KingdomDealerPainter extends CustomPainter {
         canvas.drawPath(
           body,
           Paint()
-            ..color = _darken(persona.headgearAccent, 0.10).withValues(alpha: 0.28)
+            ..color =
+                _darken(persona.headgearAccent, 0.10).withValues(alpha: 0.28)
             ..style = PaintingStyle.stroke
             ..strokeWidth = 2.0,
         );
@@ -1581,7 +1628,8 @@ class _KingdomDealerPainter extends CustomPainter {
         for (int i = -3; i <= 3; i++) {
           final double t = i / 3.0;
           final double x = t * rimW * 0.22;
-          canvas.drawLine(Offset(x, topY + headR * 0.22), Offset(x, rimY - headR * 0.10), rib);
+          canvas.drawLine(Offset(x, topY + headR * 0.22),
+              Offset(x, rimY - headR * 0.10), rib);
         }
 
         // Red label patch (accent) on the front.
@@ -1600,18 +1648,24 @@ class _KingdomDealerPainter extends CustomPainter {
           ..strokeWidth = 2.0;
         for (int i = -2; i <= 2; i++) {
           final double x = label.center.dx + i * headR * 0.18;
-          canvas.drawLine(Offset(x, label.top + headR * 0.10), Offset(x, label.bottom - headR * 0.10),
-              stripe..color = stripe.color.withValues(alpha: i.isEven ? 0.55 : 0.30));
+          canvas.drawLine(
+              Offset(x, label.top + headR * 0.10),
+              Offset(x, label.bottom - headR * 0.10),
+              stripe
+                ..color =
+                    stripe.color.withValues(alpha: i.isEven ? 0.55 : 0.30));
         }
 
         // Side rivets.
-        final Paint rivet = Paint()..color = _darken(persona.headgear, 0.25).withValues(alpha: 0.25);
+        final Paint rivet = Paint()
+          ..color = _darken(persona.headgear, 0.25).withValues(alpha: 0.25);
         final double rivetY = topY + (rimY - topY) * 0.38;
         canvas.drawCircle(Offset(-rimW * 0.40, rivetY), headR * 0.05, rivet);
         canvas.drawCircle(Offset(rimW * 0.40, rivetY), headR * 0.05, rivet);
 
         // Light grime speckles for a more "real" bucket.
-        final Paint speck = Paint()..color = const Color(0xFF121214).withValues(alpha: 0.06);
+        final Paint speck = Paint()
+          ..color = const Color(0xFF121214).withValues(alpha: 0.06);
         for (final o in <Offset>[
           Offset(-headR * 0.62, topY + headR * 0.52),
           Offset(headR * 0.34, topY + headR * 0.60),
@@ -1627,10 +1681,10 @@ class _KingdomDealerPainter extends CustomPainter {
         final Offset c = Offset(0, -headR * 0.10);
         final double r = headR * 1.30;
         final Rect main = Rect.fromCircle(center: c, radius: r);
-        final Rect earL =
-            Rect.fromCircle(center: Offset(-headR * 1.05, -headR * 1.10), radius: headR * 0.62);
-        final Rect earR =
-            Rect.fromCircle(center: Offset(headR * 1.05, -headR * 1.10), radius: headR * 0.62);
+        final Rect earL = Rect.fromCircle(
+            center: Offset(-headR * 1.05, -headR * 1.10), radius: headR * 0.62);
+        final Rect earR = Rect.fromCircle(
+            center: Offset(headR * 1.05, -headR * 1.10), radius: headR * 0.62);
         final Path helmetPath = Path()
           ..addOval(main)
           ..addOval(earL)
@@ -1689,8 +1743,10 @@ class _KingdomDealerPainter extends CustomPainter {
 
         // Eyes on the helmet.
         final Paint eye = Paint()..color = persona.headgearAccent;
-        canvas.drawCircle(Offset(-headR * 0.46, -headR * 0.06), headR * 0.30, eye);
-        canvas.drawCircle(Offset(headR * 0.46, -headR * 0.06), headR * 0.30, eye);
+        canvas.drawCircle(
+            Offset(-headR * 0.46, -headR * 0.06), headR * 0.30, eye);
+        canvas.drawCircle(
+            Offset(headR * 0.46, -headR * 0.06), headR * 0.30, eye);
         canvas.drawCircle(
           Offset(-headR * 0.54, -headR * 0.14),
           headR * 0.08,
@@ -1707,9 +1763,11 @@ class _KingdomDealerPainter extends CustomPainter {
         final Path scarf = Path()
           ..moveTo(-headR * 1.05, -headR * 0.85)
           ..quadraticBezierTo(0, -headR * 1.72, headR * 1.05, -headR * 0.85)
-          ..quadraticBezierTo(headR * 0.98, -headR * 0.05, headR * 0.55, headR * 0.18)
+          ..quadraticBezierTo(
+              headR * 0.98, -headR * 0.05, headR * 0.55, headR * 0.18)
           ..quadraticBezierTo(0, headR * 0.38, -headR * 0.55, headR * 0.18)
-          ..quadraticBezierTo(-headR * 0.98, -headR * 0.05, -headR * 1.05, -headR * 0.85)
+          ..quadraticBezierTo(
+              -headR * 0.98, -headR * 0.05, -headR * 1.05, -headR * 0.85)
           ..close();
         canvas.drawPath(scarf, hat);
 
@@ -1890,7 +1948,8 @@ class _KingdomDealerPainter extends CustomPainter {
           ),
           Radius.circular(headR * 0.18),
         );
-        canvas.drawRRect(strap, Paint()..color = _darken(persona.headgear, 0.22));
+        canvas.drawRRect(
+            strap, Paint()..color = _darken(persona.headgear, 0.22));
         canvas.drawRRect(
           strap,
           Paint()
@@ -1941,12 +2000,14 @@ class _KingdomDealerPainter extends CustomPainter {
         ? headR * 0.34
         : (style == DealerAvatarStyle.asia ? headR * 0.29 : headR * 0.30);
     final double eyeY = -headR * 0.10;
-    final double eyeR = style == DealerAvatarStyle.china ? headR * 0.085 : headR * 0.10;
+    final double eyeR =
+        style == DealerAvatarStyle.china ? headR * 0.085 : headR * 0.10;
 
     final Paint eye = Paint()..color = const Color(0xFF121214);
     canvas.drawCircle(Offset(-eyeX, eyeY), eyeR, eye);
     canvas.drawCircle(Offset(eyeX, eyeY), eyeR, eye);
-    final Paint eyeGlint = Paint()..color = Colors.white.withValues(alpha: 0.85);
+    final Paint eyeGlint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.85);
     canvas.drawCircle(
       Offset(-eyeX - eyeR * 0.35, eyeY - eyeR * 0.35),
       eyeR * 0.40,
@@ -2026,14 +2087,10 @@ class _KingdomDealerPainter extends CustomPainter {
         ..color = const Color(0xFF1A1A1F)
         ..strokeWidth = 1.6
         ..strokeCap = StrokeCap.round;
-      canvas.drawLine(
-          Offset(-headR * 0.42, -headR * 0.20),
-          Offset(-headR * 0.34, -headR * 0.24),
-          lash);
-      canvas.drawLine(
-          Offset(headR * 0.34, -headR * 0.24),
-          Offset(headR * 0.42, -headR * 0.20),
-          lash);
+      canvas.drawLine(Offset(-headR * 0.42, -headR * 0.20),
+          Offset(-headR * 0.34, -headR * 0.24), lash);
+      canvas.drawLine(Offset(headR * 0.34, -headR * 0.24),
+          Offset(headR * 0.42, -headR * 0.20), lash);
 
       final Paint lip = Paint()
         ..color = const Color(0xFFB03A48).withValues(alpha: 0.65)
@@ -2099,14 +2156,18 @@ class _KingdomDealerPainter extends CustomPainter {
         );
         break;
       case _GlassesStyle.aviator:
-        final double lensW =
-            style == DealerAvatarStyle.marathaEmpire ? headR * 0.66 : headR * 0.52;
-        final double lensH =
-            style == DealerAvatarStyle.marathaEmpire ? headR * 0.50 : headR * 0.40;
-        final double lensX =
-            style == DealerAvatarStyle.marathaEmpire ? headR * 0.33 : headR * 0.30;
-        final double lensR =
-            style == DealerAvatarStyle.marathaEmpire ? headR * 0.26 : headR * 0.22;
+        final double lensW = style == DealerAvatarStyle.marathaEmpire
+            ? headR * 0.66
+            : headR * 0.52;
+        final double lensH = style == DealerAvatarStyle.marathaEmpire
+            ? headR * 0.50
+            : headR * 0.40;
+        final double lensX = style == DealerAvatarStyle.marathaEmpire
+            ? headR * 0.33
+            : headR * 0.30;
+        final double lensR = style == DealerAvatarStyle.marathaEmpire
+            ? headR * 0.26
+            : headR * 0.22;
         canvas.drawRRect(
           RRect.fromRectAndRadius(
             Rect.fromCenter(
@@ -2158,8 +2219,9 @@ class _KingdomDealerPainter extends CustomPainter {
   }
 
   void _paintFacialHair(Canvas canvas, double headR) {
-    final Color baseFacialHair =
-        style == DealerAvatarStyle.mysore ? persona.hair : _darken(persona.hair, 0.10);
+    final Color baseFacialHair = style == DealerAvatarStyle.mysore
+        ? persona.hair
+        : _darken(persona.hair, 0.10);
     final Paint hair = Paint()..color = baseFacialHair;
     switch (persona.facialHair) {
       case _FacialHair.none:
@@ -2426,7 +2488,6 @@ class SlashAvatar extends StatelessWidget {
       ),
     );
   }
-
 }
 
 /// Stylized Buckethead-inspired avatar.
@@ -2625,14 +2686,15 @@ class _SlashAvatarPainter extends CustomPainter {
     if (pose < shuffleEnd) {
       shufflePhase = (pose / shuffleEnd).clamp(0.0, 1.0);
     } else if (pose < dealStart) {
-      shufflePhase =
-          1.0 - ((pose - shuffleEnd) / (dealStart - shuffleEnd)).clamp(0.0, 1.0);
+      shufflePhase = 1.0 -
+          ((pose - shuffleEnd) / (dealStart - shuffleEnd)).clamp(0.0, 1.0);
     }
     final double dealPhase = pose <= dealStart
         ? 0.0
         : ((pose - dealStart) / (1.0 - dealStart)).clamp(0.0, 1.0);
 
-    final Offset seatCenter = Offset(size.width / 2, size.height * _kDealerSeatCenterY);
+    final Offset seatCenter =
+        Offset(size.width / 2, size.height * _kDealerSeatCenterY);
 
     _paintGlow(canvas, size, seatCenter);
     _paintChair(canvas, size);
@@ -2729,9 +2791,12 @@ class _SlashAvatarPainter extends CustomPainter {
       );
     final Path leftShoulder = Path()
       ..moveTo(-bodyW * 0.47, -bodyH * 0.34)
-      ..quadraticBezierTo(-bodyW * 0.74, -bodyH * 0.32, -bodyW * 0.78, -bodyH * 0.08)
-      ..quadraticBezierTo(-bodyW * 0.80, bodyH * 0.08, -bodyW * 0.60, bodyH * 0.18)
-      ..quadraticBezierTo(-bodyW * 0.48, bodyH * 0.12, -bodyW * 0.44, -bodyH * 0.05)
+      ..quadraticBezierTo(
+          -bodyW * 0.74, -bodyH * 0.32, -bodyW * 0.78, -bodyH * 0.08)
+      ..quadraticBezierTo(
+          -bodyW * 0.80, bodyH * 0.08, -bodyW * 0.60, bodyH * 0.18)
+      ..quadraticBezierTo(
+          -bodyW * 0.48, bodyH * 0.12, -bodyW * 0.44, -bodyH * 0.05)
       ..close();
     canvas.drawPath(leftShoulder, shoulderPaintLeft);
     canvas.drawPath(
@@ -2759,9 +2824,12 @@ class _SlashAvatarPainter extends CustomPainter {
       );
     final Path rightShoulder = Path()
       ..moveTo(bodyW * 0.47, -bodyH * 0.34)
-      ..quadraticBezierTo(bodyW * 0.74, -bodyH * 0.32, bodyW * 0.78, -bodyH * 0.08)
-      ..quadraticBezierTo(bodyW * 0.80, bodyH * 0.08, bodyW * 0.60, bodyH * 0.18)
-      ..quadraticBezierTo(bodyW * 0.48, bodyH * 0.12, bodyW * 0.44, -bodyH * 0.05)
+      ..quadraticBezierTo(
+          bodyW * 0.74, -bodyH * 0.32, bodyW * 0.78, -bodyH * 0.08)
+      ..quadraticBezierTo(
+          bodyW * 0.80, bodyH * 0.08, bodyW * 0.60, bodyH * 0.18)
+      ..quadraticBezierTo(
+          bodyW * 0.48, bodyH * 0.12, bodyW * 0.44, -bodyH * 0.05)
       ..close();
     canvas.drawPath(rightShoulder, shoulderPaintRight);
     canvas.drawPath(
@@ -2816,17 +2884,25 @@ class _SlashAvatarPainter extends CustomPainter {
     final Paint lapel = Paint()..color = palette.lapel;
     final Path leftLapel = Path()
       ..moveTo(-bodyW * 0.44, -bodyH * 0.34)
-      ..quadraticBezierTo(-bodyW * 0.30, -bodyH * 0.44, -bodyW * 0.18, -bodyH * 0.32)
-      ..quadraticBezierTo(-bodyW * 0.05, -bodyH * 0.18, -bodyW * 0.08, -bodyH * 0.02)
-      ..quadraticBezierTo(-bodyW * 0.10, bodyH * 0.18, -bodyW * 0.30, bodyH * 0.30)
-      ..quadraticBezierTo(-bodyW * 0.44, bodyH * 0.18, -bodyW * 0.45, -bodyH * 0.02)
+      ..quadraticBezierTo(
+          -bodyW * 0.30, -bodyH * 0.44, -bodyW * 0.18, -bodyH * 0.32)
+      ..quadraticBezierTo(
+          -bodyW * 0.05, -bodyH * 0.18, -bodyW * 0.08, -bodyH * 0.02)
+      ..quadraticBezierTo(
+          -bodyW * 0.10, bodyH * 0.18, -bodyW * 0.30, bodyH * 0.30)
+      ..quadraticBezierTo(
+          -bodyW * 0.44, bodyH * 0.18, -bodyW * 0.45, -bodyH * 0.02)
       ..close();
     final Path rightLapel = Path()
       ..moveTo(bodyW * 0.44, -bodyH * 0.34)
-      ..quadraticBezierTo(bodyW * 0.30, -bodyH * 0.44, bodyW * 0.18, -bodyH * 0.32)
-      ..quadraticBezierTo(bodyW * 0.05, -bodyH * 0.18, bodyW * 0.08, -bodyH * 0.02)
-      ..quadraticBezierTo(bodyW * 0.10, bodyH * 0.18, bodyW * 0.30, bodyH * 0.30)
-      ..quadraticBezierTo(bodyW * 0.44, bodyH * 0.18, bodyW * 0.45, -bodyH * 0.02)
+      ..quadraticBezierTo(
+          bodyW * 0.30, -bodyH * 0.44, bodyW * 0.18, -bodyH * 0.32)
+      ..quadraticBezierTo(
+          bodyW * 0.05, -bodyH * 0.18, bodyW * 0.08, -bodyH * 0.02)
+      ..quadraticBezierTo(
+          bodyW * 0.10, bodyH * 0.18, bodyW * 0.30, bodyH * 0.30)
+      ..quadraticBezierTo(
+          bodyW * 0.44, bodyH * 0.18, bodyW * 0.45, -bodyH * 0.02)
       ..close();
     canvas.drawPath(leftLapel, lapel);
     canvas.drawPath(rightLapel, lapel);
@@ -2883,7 +2959,8 @@ class _SlashAvatarPainter extends CustomPainter {
           Color(0xFF15161F),
           Color(0xFF05060A),
         ],
-      ).createShader(Rect.fromCircle(center: Offset.zero, radius: size.width * 0.36));
+      ).createShader(
+          Rect.fromCircle(center: Offset.zero, radius: size.width * 0.36));
     final Paint hatCrownPaint = Paint()
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
@@ -2892,7 +2969,8 @@ class _SlashAvatarPainter extends CustomPainter {
           Color(0xFF202231),
           Color(0xFF07080E),
         ],
-      ).createShader(Rect.fromCircle(center: Offset.zero, radius: size.width * 0.25));
+      ).createShader(
+          Rect.fromCircle(center: Offset.zero, radius: size.width * 0.25));
 
     canvas.save();
     canvas.translate(headCenter.dx, headCenter.dy);
@@ -2918,7 +2996,8 @@ class _SlashAvatarPainter extends CustomPainter {
     for (int i = 1; i < curlsPts.length; i++) {
       final Offset prev = curlsPts[i - 1];
       final Offset curr = curlsPts[i];
-      final Offset mid = Offset((prev.dx + curr.dx) / 2, (prev.dy + curr.dy) / 2);
+      final Offset mid =
+          Offset((prev.dx + curr.dx) / 2, (prev.dy + curr.dy) / 2);
       curls.quadraticBezierTo(prev.dx, prev.dy, mid.dx, mid.dy);
     }
     final Offset last = curlsPts[curlsPts.length - 1];
@@ -2981,7 +3060,8 @@ class _SlashAvatarPainter extends CustomPainter {
 
         final Paint ringFill = Paint()
           ..shader = RadialGradient(
-            center: left ? const Alignment(0.2, -0.3) : const Alignment(-0.2, -0.3),
+            center:
+                left ? const Alignment(0.2, -0.3) : const Alignment(-0.2, -0.3),
             radius: 1.05,
             colors: const [
               Color(0xFF221107),
@@ -3015,7 +3095,8 @@ class _SlashAvatarPainter extends CustomPainter {
               Color(0x00000000),
             ],
           ).createShader(bounds);
-        canvas.drawArc(bounds, left ? math.pi * 0.25 : -math.pi * 1.25, math.pi * 0.90, false, rim);
+        canvas.drawArc(bounds, left ? math.pi * 0.25 : -math.pi * 1.25,
+            math.pi * 0.90, false, rim);
       }
     }
 
@@ -3046,8 +3127,10 @@ class _SlashAvatarPainter extends CustomPainter {
       width: headR * 0.95,
       height: headR * 0.55,
     );
-    canvas.drawRRect(RRect.fromRectAndRadius(lensLeft, const Radius.circular(8)), glasses);
-    canvas.drawRRect(RRect.fromRectAndRadius(lensRight, const Radius.circular(8)), glasses);
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(lensLeft, const Radius.circular(8)), glasses);
+    canvas.drawRRect(
+        RRect.fromRectAndRadius(lensRight, const Radius.circular(8)), glasses);
     canvas.drawLine(lensLeft.centerRight, lensRight.centerLeft, frames);
     canvas.drawRect(
       Rect.fromCenter(center: lensLeft.centerLeft, width: 3, height: 8),
@@ -3089,9 +3172,11 @@ class _SlashAvatarPainter extends CustomPainter {
     final Path stache = Path()
       ..moveTo(-headR * 0.55, headR * 0.12)
       ..quadraticBezierTo(-headR * 0.18, headR * 0.24, 0, headR * 0.14)
-      ..quadraticBezierTo(headR * 0.18, headR * 0.24, headR * 0.55, headR * 0.10)
+      ..quadraticBezierTo(
+          headR * 0.18, headR * 0.24, headR * 0.55, headR * 0.10)
       ..quadraticBezierTo(headR * 0.16, headR * 0.32, 0, headR * 0.22)
-      ..quadraticBezierTo(-headR * 0.16, headR * 0.30, -headR * 0.55, headR * 0.10)
+      ..quadraticBezierTo(
+          -headR * 0.16, headR * 0.30, -headR * 0.55, headR * 0.10)
       ..close();
     canvas.drawPath(stache, moustache);
 
@@ -3133,7 +3218,8 @@ class _SlashAvatarPainter extends CustomPainter {
       hatCrownPaint,
     );
     canvas.drawRRect(
-      RRect.fromRectAndRadius(crown.inflate(-headR * 0.06), const Radius.circular(12)),
+      RRect.fromRectAndRadius(
+          crown.inflate(-headR * 0.06), const Radius.circular(12)),
       Paint()
         ..shader = RadialGradient(
           center: const Alignment(0.05, -0.60),
@@ -3220,6 +3306,7 @@ class _SlashAvatarPainter extends CustomPainter {
 
     canvas.restore();
   }
+
   void _paintForearmsOnTable(
       Canvas canvas, Size size, double shufflePhase, double cardLift) {
     final double tableTop = size.height * 0.60;
@@ -3344,13 +3431,14 @@ class _SlashAvatarPainter extends CustomPainter {
       final double reach =
           ui.lerpDouble(size.width * 0.02, size.width * 0.05, shuffleT) ??
               size.width * 0.03;
-      final double centerX = left
-          ? size.width * 0.47 - reach
-          : size.width * 0.53 + reach;
+      final double centerX =
+          left ? size.width * 0.47 - reach : size.width * 0.53 + reach;
       final double rotation =
           (left ? -0.12 : 0.12) + direction * shuffleT * 0.05;
-      final double centerY =
-          tableTop - forearmThickness / 2 - wristLift + direction * size.height * 0.0015;
+      final double centerY = tableTop -
+          forearmThickness / 2 -
+          wristLift +
+          direction * size.height * 0.0015;
       final double forearmLength =
           ui.lerpDouble(size.width * 0.32, size.width * 0.28, shuffleT) ??
               size.width * 0.30;
@@ -3462,8 +3550,7 @@ class _SlashAvatarPainter extends CustomPainter {
     final double palmHeight = size.height * 0.058;
 
     final double gather = math.sin(shufflePhase * math.pi).clamp(0.0, 1.0);
-    final double release =
-        ((shufflePhase - 0.45) / 0.55).clamp(0.0, 1.0);
+    final double release = ((shufflePhase - 0.45) / 0.55).clamp(0.0, 1.0);
 
     final double palmSpread =
         ui.lerpDouble(size.width * 0.17, size.width * 0.09, gather) ??
@@ -3473,8 +3560,7 @@ class _SlashAvatarPainter extends CustomPainter {
     final double palmDrop = release * size.height * 0.012;
     final double palmYOffset = palmRise - palmDrop;
 
-    final double dealEase =
-        math.pow(dealPhase.clamp(0.0, 1.0), 1.4).toDouble();
+    final double dealEase = math.pow(dealPhase.clamp(0.0, 1.0), 1.4).toDouble();
     final double rightReach =
         ui.lerpDouble(0.0, size.width * 0.06, dealEase) ?? 0.0;
     final double leftWithdraw =
@@ -3490,22 +3576,19 @@ class _SlashAvatarPainter extends CustomPainter {
     );
 
     final double fingerCurl = ui.lerpDouble(0.98, 0.74, gather) ?? 0.84;
-    final double fingerSpreadFactor =
-        ui.lerpDouble(0.28, 0.21, gather) ?? 0.24;
+    final double fingerSpreadFactor = ui.lerpDouble(0.28, 0.21, gather) ?? 0.24;
     final double fingerLift =
         gather * size.height * 0.014 - release * size.height * 0.010;
 
     void drawPalm(bool isLeft, Offset center) {
       canvas.save();
       canvas.translate(center.dx, center.dy);
-      final double palmTiltBase =
-          ui.lerpDouble(0.03, 0.09, gather) ?? 0.06;
-      final double palmTilt =
-          (isLeft ? -1 : 1) * palmTiltBase - (isLeft ? 1 : -1) * release * 0.035;
+      final double palmTiltBase = ui.lerpDouble(0.03, 0.09, gather) ?? 0.06;
+      final double palmTilt = (isLeft ? -1 : 1) * palmTiltBase -
+          (isLeft ? 1 : -1) * release * 0.035;
       canvas.rotate(palmTilt);
 
-      final double squish =
-          ui.lerpDouble(1.0, 0.92, gather) ?? 0.95;
+      final double squish = ui.lerpDouble(1.0, 0.92, gather) ?? 0.95;
       final Rect palmRect = Rect.fromCenter(
         center: Offset.zero,
         width: palmWidth,
@@ -3543,7 +3626,8 @@ class _SlashAvatarPainter extends CustomPainter {
       final Path thumb = Path();
       if (isLeft) {
         thumb
-          ..moveTo(palm.right - palmWidth * 0.18, palm.top + palmRect.height * 0.28)
+          ..moveTo(
+              palm.right - palmWidth * 0.18, palm.top + palmRect.height * 0.28)
           ..quadraticBezierTo(
             palm.right + palmWidth * 0.26,
             palm.top - palmRect.height * 0.25,
@@ -3559,7 +3643,8 @@ class _SlashAvatarPainter extends CustomPainter {
           ..close();
       } else {
         thumb
-          ..moveTo(palm.left + palmWidth * 0.18, palm.top + palmRect.height * 0.26)
+          ..moveTo(
+              palm.left + palmWidth * 0.18, palm.top + palmRect.height * 0.26)
           ..quadraticBezierTo(
             palm.left - palmWidth * 0.24,
             palm.top - palmRect.height * 0.24,
@@ -3580,8 +3665,7 @@ class _SlashAvatarPainter extends CustomPainter {
           palmRect.top - size.height * 0.010 - fingerLift;
       final double fingerWidth =
           palmWidth * (0.16 * (ui.lerpDouble(1.0, 0.9, gather) ?? 0.94));
-      final double fingerHeight =
-          size.height * 0.088 * fingerCurl;
+      final double fingerHeight = size.height * 0.088 * fingerCurl;
 
       for (int f = 0; f < 4; f++) {
         final double t = (f - 1.5) / 3.0;
@@ -3645,8 +3729,7 @@ class _SlashAvatarPainter extends CustomPainter {
               ripple * deckWidth * 0.02);
       final double vertical =
           -bridgeLift + bridgeDrop + direction * gather * deckHeight * 0.06;
-      final double tilt =
-          direction * (0.22 - gather * 0.14 - release * 0.10);
+      final double tilt = direction * (0.22 - gather * 0.14 - release * 0.10);
 
       canvas.save();
       canvas.translate(deckCenter.dx + lateral, deckCenter.dy + vertical);
@@ -3764,7 +3847,8 @@ class _SlashAvatarPainter extends CustomPainter {
       final Size dealSize =
           Size(deckWidth * 0.45 * cardScale, deckHeight * 0.68 * cardScale);
       final RRect moving = RRect.fromRectAndRadius(
-        Rect.fromCenter(center: pos, width: dealSize.width, height: dealSize.height),
+        Rect.fromCenter(
+            center: pos, width: dealSize.width, height: dealSize.height),
         const Radius.circular(6),
       );
       canvas.drawRRect(moving, card);
@@ -3854,7 +3938,8 @@ class _BucketheadPainter extends CustomPainter {
 
   void _paintChair(Canvas canvas, Size size) {
     final double backTop = size.height * 0.18;
-    final double backBottom = size.height * 0.58; // keep chair behind rail/table
+    final double backBottom =
+        size.height * 0.58; // keep chair behind rail/table
     final Rect back = Rect.fromLTRB(
       size.width * 0.20,
       backTop,
@@ -3885,10 +3970,13 @@ class _BucketheadPainter extends CustomPainter {
     );
     final Rect inner = outer.deflate(railHeight * 0.34);
     final Path outerPath = Path()
-      ..addRRect(RRect.fromRectAndRadius(outer, Radius.circular(outer.height / 2)));
+      ..addRRect(
+          RRect.fromRectAndRadius(outer, Radius.circular(outer.height / 2)));
     final Path innerPath = Path()
-      ..addRRect(RRect.fromRectAndRadius(inner, Radius.circular(inner.height / 2)));
-    final Path rail = Path.combine(PathOperation.difference, outerPath, innerPath);
+      ..addRRect(
+          RRect.fromRectAndRadius(inner, Radius.circular(inner.height / 2)));
+    final Path rail =
+        Path.combine(PathOperation.difference, outerPath, innerPath);
 
     final Paint railPaint = Paint()
       ..shader = LinearGradient(
@@ -3931,7 +4019,8 @@ class _BucketheadPainter extends CustomPainter {
     final double bodyH = size.height * 0.38;
 
     final Rect torso = Rect.fromCenter(
-      center: Offset(0, bodyH * 0.26), // lift torso so it rests against the chair back
+      center: Offset(
+          0, bodyH * 0.26), // lift torso so it rests against the chair back
       width: bodyW,
       height: bodyH,
     );
@@ -4087,11 +4176,12 @@ class _DharmaPainter extends CustomPainter {
     const double sway = 0.0; // keep seated position stable
     const double bob = 0.0;
 
-    final Offset seatCenter =
-        Offset(size.width / 2, size.height * (_kCustomSeatCenterY - 0.06) + bob);
+    final Offset seatCenter = Offset(
+        size.width / 2, size.height * (_kCustomSeatCenterY - 0.06) + bob);
     const double liftPx = 44; // raise torso/head further (additional 4px)
     final Offset bodyCenter = seatCenter.translate(0, -liftPx);
-    final Offset handCenter = seatCenter.translate(0, -20); // lower hands slightly
+    final Offset handCenter =
+        seatCenter.translate(0, -20); // lower hands slightly
 
     _paintGlow(canvas, size, seatCenter);
     _paintChair(canvas, size);
@@ -4154,10 +4244,13 @@ class _DharmaPainter extends CustomPainter {
     );
     final Rect inner = outer.deflate(railHeight * 0.34);
     final Path outerPath = Path()
-      ..addRRect(RRect.fromRectAndRadius(outer, Radius.circular(outer.height / 2)));
+      ..addRRect(
+          RRect.fromRectAndRadius(outer, Radius.circular(outer.height / 2)));
     final Path innerPath = Path()
-      ..addRRect(RRect.fromRectAndRadius(inner, Radius.circular(inner.height / 2)));
-    final Path rail = Path.combine(PathOperation.difference, outerPath, innerPath);
+      ..addRRect(
+          RRect.fromRectAndRadius(inner, Radius.circular(inner.height / 2)));
+    final Path rail =
+        Path.combine(PathOperation.difference, outerPath, innerPath);
 
     final Paint railPaint = Paint()
       ..shader = LinearGradient(
@@ -4224,17 +4317,25 @@ class _DharmaPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
     final Path leftLapel = Path()
       ..moveTo(-bodyW * 0.42, -bodyH * 0.35)
-      ..quadraticBezierTo(-bodyW * 0.32, -bodyH * 0.47, -bodyW * 0.18, -bodyH * 0.32)
-      ..quadraticBezierTo(-bodyW * 0.07, -bodyH * 0.12, -bodyW * 0.12, bodyH * 0.08)
-      ..quadraticBezierTo(-bodyW * 0.16, bodyH * 0.26, -bodyW * 0.32, bodyH * 0.32)
-      ..quadraticBezierTo(-bodyW * 0.42, bodyH * 0.14, -bodyW * 0.44, -bodyH * 0.04)
+      ..quadraticBezierTo(
+          -bodyW * 0.32, -bodyH * 0.47, -bodyW * 0.18, -bodyH * 0.32)
+      ..quadraticBezierTo(
+          -bodyW * 0.07, -bodyH * 0.12, -bodyW * 0.12, bodyH * 0.08)
+      ..quadraticBezierTo(
+          -bodyW * 0.16, bodyH * 0.26, -bodyW * 0.32, bodyH * 0.32)
+      ..quadraticBezierTo(
+          -bodyW * 0.42, bodyH * 0.14, -bodyW * 0.44, -bodyH * 0.04)
       ..close();
     final Path rightLapel = Path()
       ..moveTo(bodyW * 0.42, -bodyH * 0.35)
-      ..quadraticBezierTo(bodyW * 0.32, -bodyH * 0.47, bodyW * 0.18, -bodyH * 0.32)
-      ..quadraticBezierTo(bodyW * 0.07, -bodyH * 0.12, bodyW * 0.12, bodyH * 0.08)
-      ..quadraticBezierTo(bodyW * 0.16, bodyH * 0.26, bodyW * 0.32, bodyH * 0.32)
-      ..quadraticBezierTo(bodyW * 0.42, bodyH * 0.14, bodyW * 0.44, -bodyH * 0.04)
+      ..quadraticBezierTo(
+          bodyW * 0.32, -bodyH * 0.47, bodyW * 0.18, -bodyH * 0.32)
+      ..quadraticBezierTo(
+          bodyW * 0.07, -bodyH * 0.12, bodyW * 0.12, bodyH * 0.08)
+      ..quadraticBezierTo(
+          bodyW * 0.16, bodyH * 0.26, bodyW * 0.32, bodyH * 0.32)
+      ..quadraticBezierTo(
+          bodyW * 0.42, bodyH * 0.14, bodyW * 0.44, -bodyH * 0.04)
       ..close();
     canvas.drawPath(leftLapel, lapel);
     canvas.drawPath(rightLapel, lapel);
@@ -4262,8 +4363,7 @@ class _DharmaPainter extends CustomPainter {
   }
 
   void _paintHands(Canvas canvas, Size size, double phase) {
-    _paintRenoirHands(canvas, size, phase,
-        drawCards: false);
+    _paintRenoirHands(canvas, size, phase, drawCards: false);
   }
 
   void _paintHead(Canvas canvas, Size size, double tilt) {
@@ -4300,7 +4400,8 @@ class _DharmaPainter extends CustomPainter {
     // Side fade shadow
     final Path fadeL = Path()
       ..moveTo(-headR * 0.9, -headR * 1.05)
-      ..quadraticBezierTo(-headR * 0.5, -headR * 1.30, -headR * 0.25, -headR * 1.05)
+      ..quadraticBezierTo(
+          -headR * 0.5, -headR * 1.30, -headR * 0.25, -headR * 1.05)
       ..lineTo(-headR * 0.22, headR * 0.9)
       ..quadraticBezierTo(-headR * 0.6, headR * 1.0, -headR * 0.9, headR * 0.5)
       ..close();
@@ -4312,7 +4413,8 @@ class _DharmaPainter extends CustomPainter {
     canvas.drawPath(fadeL, Paint()..shader = fadeShader);
     final Path fadeR = Path()
       ..moveTo(headR * 0.9, -headR * 1.05)
-      ..quadraticBezierTo(headR * 0.5, -headR * 1.30, headR * 0.25, -headR * 1.05)
+      ..quadraticBezierTo(
+          headR * 0.5, -headR * 1.30, headR * 0.25, -headR * 1.05)
       ..lineTo(headR * 0.22, headR * 0.9)
       ..quadraticBezierTo(headR * 0.6, headR * 1.0, headR * 0.9, headR * 0.5)
       ..close();
@@ -4325,12 +4427,14 @@ class _DharmaPainter extends CustomPainter {
     void drawEye(double dx) {
       final Offset center = Offset(dx, -headR * 0.08);
       canvas.drawOval(
-        Rect.fromCenter(center: center, width: headR * 0.46, height: headR * 0.30),
+        Rect.fromCenter(
+            center: center, width: headR * 0.46, height: headR * 0.30),
         eyeWhite,
       );
       canvas.drawCircle(center.translate(0, headR * 0.01), headR * 0.16, iris);
       canvas.drawCircle(center.translate(0, headR * 0.01), headR * 0.09, pupil);
     }
+
     drawEye(-headR * 0.36);
     drawEye(headR * 0.36);
 
@@ -4466,10 +4570,13 @@ class _RedrixPainter extends CustomPainter {
     );
     final Rect inner = outer.deflate(railHeight * 0.34);
     final Path outerPath = Path()
-      ..addRRect(RRect.fromRectAndRadius(outer, Radius.circular(outer.height / 2)));
+      ..addRRect(
+          RRect.fromRectAndRadius(outer, Radius.circular(outer.height / 2)));
     final Path innerPath = Path()
-      ..addRRect(RRect.fromRectAndRadius(inner, Radius.circular(inner.height / 2)));
-    final Path rail = Path.combine(PathOperation.difference, outerPath, innerPath);
+      ..addRRect(
+          RRect.fromRectAndRadius(inner, Radius.circular(inner.height / 2)));
+    final Path rail =
+        Path.combine(PathOperation.difference, outerPath, innerPath);
 
     final Paint railPaint = Paint()
       ..shader = LinearGradient(
@@ -4557,9 +4664,11 @@ class _RedrixPainter extends CustomPainter {
       ));
     final Path scarfPath = Path()
       ..moveTo(-bodyW * 0.10, -bodyH * 0.26)
-      ..quadraticBezierTo(-bodyW * 0.20, -bodyH * 0.12, -bodyW * 0.08, bodyH * 0.26)
+      ..quadraticBezierTo(
+          -bodyW * 0.20, -bodyH * 0.12, -bodyW * 0.08, bodyH * 0.26)
       ..quadraticBezierTo(0, bodyH * 0.36, bodyW * 0.06, bodyH * 0.26)
-      ..quadraticBezierTo(bodyW * 0.18, -bodyH * 0.12, bodyW * 0.06, -bodyH * 0.26)
+      ..quadraticBezierTo(
+          bodyW * 0.18, -bodyH * 0.12, bodyW * 0.06, -bodyH * 0.26)
       ..close();
     canvas.drawPath(scarfPath, scarf);
 
@@ -4645,7 +4754,8 @@ class _RedrixPainter extends CustomPainter {
     canvas.rotate(-0.5);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromCenter(center: Offset.zero, width: headR * 0.7, height: headR * 0.20),
+        Rect.fromCenter(
+            center: Offset.zero, width: headR * 0.7, height: headR * 0.20),
         const Radius.circular(4),
       ),
       bandPaint,
@@ -4744,8 +4854,8 @@ class _ReviciiPainter extends CustomPainter {
     const double bob = 0.0;
     const double dropPx = 18.0;
 
-    final Offset seatCenter =
-        Offset(size.width / 2, size.height * _kCustomSeatCenterY + bob + dropPx);
+    final Offset seatCenter = Offset(
+        size.width / 2, size.height * _kCustomSeatCenterY + bob + dropPx);
 
     _paintGlow(canvas, size, seatCenter);
     _paintChair(canvas, size);
@@ -4797,10 +4907,13 @@ class _ReviciiPainter extends CustomPainter {
     );
     final Rect inner = outer.deflate(railHeight * 0.34);
     final Path outerPath = Path()
-      ..addRRect(RRect.fromRectAndRadius(outer, Radius.circular(outer.height / 2)));
+      ..addRRect(
+          RRect.fromRectAndRadius(outer, Radius.circular(outer.height / 2)));
     final Path innerPath = Path()
-      ..addRRect(RRect.fromRectAndRadius(inner, Radius.circular(inner.height / 2)));
-    final Path rail = Path.combine(PathOperation.difference, outerPath, innerPath);
+      ..addRRect(
+          RRect.fromRectAndRadius(inner, Radius.circular(inner.height / 2)));
+    final Path rail =
+        Path.combine(PathOperation.difference, outerPath, innerPath);
 
     final Paint railPaint = Paint()
       ..shader = LinearGradient(

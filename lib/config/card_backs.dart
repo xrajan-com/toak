@@ -26,4 +26,3 @@ const List<String> kCardBackAssets = <String>[
 
 /// Fallback card back asset (must exist in `pubspec.yaml` assets).
 const String kFallbackCardBackAsset = 'assets/images/cards/back_custom_01.webp';
-

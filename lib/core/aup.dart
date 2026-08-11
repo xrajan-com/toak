@@ -9,10 +9,10 @@ import 'package:ten_of_a_kind_poker/config/venues.dart'
 
 const int kAupPerAura = 10000000;
 const int kAuraMilliPerAura = 1000;
-const int kAupMaxAuraPerCircuit = 25;
+const int kAupMaxAuraPerCircuit = 20;
 const int kAupMaxAuraTotal = 100;
 
-const int kAupPerCircuit = 250000000;
+const int kAupPerCircuit = 200000000;
 
 /// All kingdom/event rewards are quantized to keep numbers easy to remember.
 const int kAupRewardUnit = 1000;
@@ -20,7 +20,7 @@ const int kAupRewardUnit = 1000;
 /// Entry fees are also quantized to keep numbers easy to remember.
 const int kAupEntryFeeUnit = kAupRewardUnit;
 
-const int kAupMaxTotal = kAupPerCircuit * 4;
+const int kAupMaxTotal = kAupPerCircuit * 5;
 const int kRegisteredStarterAup = 10000;
 const int kRewardedAdAupBonus = 2000;
 
@@ -107,6 +107,18 @@ const Map<VenueGroup, Map<String, int>> _kKingdomPopularityWeights =
     'Dragonland': 108,
     'Dutch Isles': 104,
     'American Isles': 102,
+  },
+  VenueGroup.northAmerica: <String, int>{
+    'California': 150,
+    'New York': 144,
+    'Texas': 138,
+    'Florida': 132,
+    'Illinois': 126,
+    'Massachusetts': 120,
+    'Virginia': 114,
+    'Colorado': 108,
+    'Dominion of Canada': 104,
+    'Kansas': 100,
   },
 };
 
@@ -322,8 +334,163 @@ List<int> _subKingdomAupPrizesFor({
     seed: _fnv1a32('aup_rem|${group.name}|$canonicalKingdomName|v1'),
     unit: kAupRewardUnit,
   );
-  byGroup[canonicalKingdomName] = amounts;
+  final tuned = _tuneFreeFortReward(
+    group: group,
+    kingdomName: canonicalKingdomName,
+    amounts: amounts,
+  );
+  byGroup[canonicalKingdomName] = _capFreeFortPrizeByAverageEntryFee(
+    group: group,
+    kingdomName: canonicalKingdomName,
+    amounts: tuned,
+  );
   return byGroup[canonicalKingdomName]!;
+}
+
+/// Initially tunes the free fort toward the lowest paid entry fee. The final
+/// average-entry cap below may reduce it further. Removed AUP is moved to paid
+/// forts so the kingdom's total reward budget remains unchanged.
+List<int> _tuneFreeFortReward({
+  required VenueGroup group,
+  required String kingdomName,
+  required List<int> amounts,
+}) {
+  if (amounts.length < 2) return amounts;
+
+  final order = ce.subKingdomIndicesByPrizePool(
+    group: group,
+    kingdomName: kingdomName,
+  );
+  final int freeIndex =
+      ce.freeSubKingdomIndexFor(group: group, kingdomName: kingdomName);
+  final int freePos = order.indexOf(freeIndex);
+  if (freePos < 0) return amounts;
+
+  final int nextIndex = freePos + 1 < order.length
+      ? order[freePos + 1]
+      : order.firstWhere((index) => index != freeIndex);
+  final int nextPrize = amounts[nextIndex - 1];
+  final int nextEntryFee = _entryFeeFromPrize(
+    prizeAup: nextPrize,
+    fraction: _kSubEventEntryFeeFrac,
+  );
+  if (nextEntryFee <= 0) return amounts;
+
+  final bool shouldFallJustShort =
+      _fnv1a32('free_fort_short|${group.name}|$kingdomName|v1') % 3 == 0;
+  final int tunedFreePrize = _freeFortPrizeNearEntryFee(
+    nextEntryFee: nextEntryFee,
+    shouldFallJustShort: shouldFallJustShort,
+  );
+  final int oldFreePrize = amounts[freeIndex - 1];
+  if (tunedFreePrize <= 0 || tunedFreePrize >= oldFreePrize) return amounts;
+
+  final out = List<int>.from(amounts);
+  out[freeIndex - 1] = tunedFreePrize;
+  final int toRedistribute = oldFreePrize - tunedFreePrize;
+  final recipients = <int>[
+    for (final index in order)
+      if (index != freeIndex && index != nextIndex) index,
+  ];
+  if (recipients.isEmpty) recipients.add(nextIndex);
+
+  final additions = _distributeByWeights(
+    total: toRedistribute,
+    weights: <int>[for (final index in recipients) amounts[index - 1]],
+    seed: _fnv1a32('free_fort_remainder|${group.name}|$kingdomName|v1'),
+    unit: kAupRewardUnit,
+  );
+  for (int i = 0; i < recipients.length; i++) {
+    out[recipients[i] - 1] += additions[i];
+  }
+  return List<int>.unmodifiable(out);
+}
+
+/// Keeps a free fort's displayed prize pool strictly below twice the average
+/// entry fee across every fort in its kingdom, including the free AUP 0 entry.
+///
+/// Any trimmed AUP is redistributed across the paid forts so the established
+/// per-kingdom and per-circuit reward totals do not change. Since paid entry
+/// fees are derived from those prize pools, redistribution can only raise the
+/// final average and therefore preserves the strict cap calculated here.
+List<int> _capFreeFortPrizeByAverageEntryFee({
+  required VenueGroup group,
+  required String kingdomName,
+  required List<int> amounts,
+}) {
+  if (amounts.length < 2) return amounts;
+
+  final int freeIndex =
+      ce.freeSubKingdomIndexFor(group: group, kingdomName: kingdomName);
+  if (freeIndex < 1 || freeIndex > amounts.length) return amounts;
+
+  int entryFeeTotal = 0;
+  for (int index = 1; index <= amounts.length; index++) {
+    if (index == freeIndex) continue;
+    entryFeeTotal += _entryFeeFromPrize(
+      prizeAup: amounts[index - 1],
+      fraction: _kSubEventEntryFeeFrac,
+    );
+  }
+  if (entryFeeTotal <= 0) return amounts;
+
+  // Strictly require:
+  //   freePrize < 2 * (sum(all fort entry fees) / fortCount)
+  // and retain the existing AUP 1,000 quantization.
+  final int maximumUnits =
+      ((2 * entryFeeTotal) - 1) ~/ (amounts.length * kAupRewardUnit);
+  final int maximumFreePrize = maximumUnits * kAupRewardUnit;
+  final int currentFreePrize = amounts[freeIndex - 1];
+  if (maximumFreePrize <= 0 || currentFreePrize <= maximumFreePrize) {
+    return amounts;
+  }
+
+  final out = List<int>.from(amounts);
+  out[freeIndex - 1] = maximumFreePrize;
+  final int toRedistribute = currentFreePrize - maximumFreePrize;
+  final recipients = <int>[
+    for (int index = 1; index <= amounts.length; index++)
+      if (index != freeIndex) index,
+  ];
+  final additions = _distributeByWeights(
+    total: toRedistribute,
+    weights: <int>[for (final index in recipients) amounts[index - 1]],
+    seed: _fnv1a32(
+      'free_fort_average_cap|${group.name}|$kingdomName|v1',
+    ),
+    unit: kAupRewardUnit,
+  );
+  for (int i = 0; i < recipients.length; i++) {
+    out[recipients[i] - 1] += additions[i];
+  }
+  return List<int>.unmodifiable(out);
+}
+
+int _freeFortPrizeNearEntryFee({
+  required int nextEntryFee,
+  required bool shouldFallJustShort,
+}) {
+  int prize = kAupRewardUnit;
+  int bestPrize = prize;
+  while (prize <= nextEntryFee * 3) {
+    final payout = _firstPlaceFortPayout(prize);
+    if (shouldFallJustShort) {
+      if (payout >= nextEntryFee) return bestPrize;
+      bestPrize = prize;
+    } else if (payout >= nextEntryFee) {
+      return prize;
+    }
+    prize += kAupRewardUnit;
+  }
+  return bestPrize;
+}
+
+int _firstPlaceFortPayout(int prizePool) {
+  final first = (prizePool * 0.60).floor();
+  final second = (prizePool * 0.25).floor();
+  final third = (prizePool * 0.15).floor();
+  final remainder = prizePool - first - second - third;
+  return first + (remainder > 0 ? 1 : 0);
 }
 
 Map<String, int> _kingdomTotalsForGroup(VenueGroup group) {

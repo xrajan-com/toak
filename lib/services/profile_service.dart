@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileService extends ChangeNotifier {
@@ -13,6 +13,8 @@ class ProfileService extends ChangeNotifier {
   static const String _kEmailKeyPrefix = 'profile.email.';
   static const String _kAboutKeyPrefix = 'profile.about.';
   static const String _kKingdomKeyPrefix = 'profile.kingdom.';
+  static const String _kProfileCompleteKeyPrefix = 'profile.complete.';
+
   String? _displayName;
   String? _email;
   String? _avatarUrl;
@@ -21,18 +23,29 @@ class ProfileService extends ChangeNotifier {
   String? _about;
   String? _kingdom;
   Uint8List? _avatarBytes;
+  bool _profileComplete = false;
+  bool _profileHydrated = true;
+  bool _localProfileResolved = true;
+  bool _remoteProfileResolved = true;
+  bool _remoteCompletionAuthoritative = false;
+  Object? _loadError;
+  int _bindingGeneration = 0;
+  final Set<String> _purgedUserIds = <String>{};
+  Timer? _remoteHydrationTimer;
   FirebaseFirestore? _db;
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _sub;
 
-  // Getters
   String? get displayName => _displayName;
   String? get email => _email;
   String? get avatarUrl => _avatarUrl;
   String? get userId => _userId;
   String? get rank => _rank;
-  String? get about => _about ?? defaultAbout;
+  String get about => _about ?? defaultAbout;
   String? get kingdom => _kingdom;
   Uint8List? get avatarBytes => _avatarBytes;
+  bool get profileComplete => _profileComplete;
+  bool get isHydrated => _profileHydrated;
+  Object? get loadError => _loadError;
 
   static String normalizeAbout(
     String? about, {
@@ -45,47 +58,140 @@ class ProfileService extends ChangeNotifier {
     return trimmed.length > 30 ? trimmed.substring(0, 30) : trimmed;
   }
 
-  void bindUserId(String? uid) {
-    if (_userId == uid) return;
-    _sub?.cancel();
-    _sub = null;
-    _userId = uid;
-    _avatarBytes = null;
-    _displayName = null;
-    _email = null;
-    _about = null;
-    _kingdom = null;
-    notifyListeners();
-    if (uid == null || uid.trim().isEmpty) return;
-    _loadLocalProfile(uid);
-    _loadLocalAvatar(uid);
-    _bindRemoteProfile(uid);
+  static bool inferProfileComplete({
+    String? displayName,
+    String? kingdom,
+  }) {
+    return (displayName ?? '').trim().length >= 3 &&
+        (kingdom ?? '').trim().isNotEmpty;
   }
 
-  void _bindRemoteProfile(String uid) {
+  void bindUserId(String? uid) {
+    final normalized = uid?.trim();
+    final nextUid =
+        normalized == null || normalized.isEmpty ? null : normalized;
+    if (_userId == nextUid) return;
+    _startBinding(nextUid);
+  }
+
+  void retryCurrentUser() {
+    final uid = _userId;
+    if (uid == null) return;
+    _startBinding(uid);
+  }
+
+  void _startBinding(String? uid) {
+    final generation = ++_bindingGeneration;
+    _remoteHydrationTimer?.cancel();
+    unawaited(_sub?.cancel());
+    _sub = null;
+    _userId = uid;
+    _displayName = null;
+    _email = null;
+    _avatarUrl = null;
+    _rank = null;
+    _about = null;
+    _kingdom = null;
+    _avatarBytes = null;
+    _profileComplete = false;
+    _profileHydrated = uid == null;
+    _localProfileResolved = uid == null;
+    _remoteProfileResolved = uid == null;
+    _remoteCompletionAuthoritative = false;
+    _loadError = null;
+    notifyListeners();
+
+    if (uid == null) return;
+    _remoteHydrationTimer = Timer(const Duration(seconds: 4), () {
+      if (!_isCurrent(uid, generation) || _remoteProfileResolved) return;
+      _remoteProfileResolved = true;
+      _loadError = TimeoutException('Profile sync timed out.');
+      _updateHydration();
+      notifyListeners();
+    });
+    _bindRemoteProfile(uid, generation);
+    unawaited(_loadLocalProfile(uid, generation));
+    unawaited(_loadLocalAvatar(uid, generation));
+  }
+
+  bool _isCurrent(String uid, int generation) {
+    return _userId == uid && _bindingGeneration == generation;
+  }
+
+  void _updateHydration() {
+    _profileHydrated = _localProfileResolved && _remoteProfileResolved;
+  }
+
+  void _resolveRemoteHydration() {
+    _remoteHydrationTimer?.cancel();
+    _remoteProfileResolved = true;
+    _updateHydration();
+  }
+
+  void _bindRemoteProfile(String uid, int generation) {
     final db = _dbOrNull();
-    if (db == null) return;
+    if (db == null) {
+      if (_isCurrent(uid, generation)) {
+        _loadError = StateError('Profile service is unavailable.');
+        _resolveRemoteHydration();
+        notifyListeners();
+      }
+      return;
+    }
+
     final doc = db.collection('users').doc(uid);
     _sub = doc.snapshots().listen(
       (snap) {
+        if (!_isCurrent(uid, generation)) return;
         final data = snap.data();
-        if (data == null) return;
-        _applyRemote(data, uid: uid);
+        if (data == null) {
+          _remoteCompletionAuthoritative = false;
+          _profileComplete = inferProfileComplete(
+            displayName: _displayName,
+            kingdom: _kingdom,
+          );
+          _resolveRemoteHydration();
+          notifyListeners();
+          return;
+        }
+        _applyRemote(data, uid: uid, generation: generation);
       },
-      onError: (e) => debugPrint('Profile stream error: $e'),
+      onError: (Object error) {
+        if (!_isCurrent(uid, generation)) return;
+        debugPrint('Profile stream error: $error');
+        _loadError = error;
+        _resolveRemoteHydration();
+        notifyListeners();
+      },
     );
   }
 
-  void _applyRemote(Map<String, dynamic> data, {required String uid}) {
-    _displayName = (data['displayName'] as String?)?.trim() ?? _displayName;
-    _email = (data['email'] as String?)?.trim() ?? _email;
-    final String? remoteAbout = (data['about'] as String?)?.trim();
+  void _applyRemote(
+    Map<String, dynamic> data, {
+    required String uid,
+    required int generation,
+  }) {
+    if (!_isCurrent(uid, generation)) return;
+    _displayName =
+        (data['displayName'] as String?)?.trim().nullIfEmpty ?? _displayName;
+    _email = (data['email'] as String?)?.trim().nullIfEmpty ?? _email;
+    final remoteAbout = (data['about'] as String?)?.trim();
     _about = remoteAbout == null
         ? (_about ?? defaultAbout)
         : normalizeAbout(remoteAbout);
-    _kingdom = (data['kingdom'] as String?)?.trim() ?? _kingdom;
+    _kingdom = (data['kingdom'] as String?)?.trim().nullIfEmpty ?? _kingdom;
+    final explicitComplete = data['profileComplete'];
+    _remoteCompletionAuthoritative = true;
+    _profileComplete = explicitComplete is bool
+        ? explicitComplete
+        : inferProfileComplete(
+            displayName: _displayName,
+            kingdom: _kingdom,
+          );
+    _resolveRemoteHydration();
+    _loadError = null;
     notifyListeners();
-    unawaited(_persistLocalProfile(uid));
+    unawaited(_persistLocalProfile(uid, generation));
   }
 
   FirebaseFirestore? _dbOrNull() {
@@ -93,59 +199,94 @@ class ProfileService extends ChangeNotifier {
     try {
       _db = FirebaseFirestore.instance;
       return _db;
-    } catch (e) {
-      debugPrint('Firestore unavailable: $e');
+    } catch (error) {
+      debugPrint('Firestore unavailable: $error');
       return null;
     }
   }
 
-  Future<void> _loadLocalAvatar(String uid) async {
+  Future<void> _loadLocalAvatar(String uid, int generation) async {
+    Uint8List? decoded;
     try {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString('$_kAvatarKeyPrefix$uid');
-      if (_userId != uid) return;
-      if (raw == null || raw.isEmpty) {
-        _avatarBytes = null;
-      } else {
-        _avatarBytes = base64Decode(raw);
+      if (raw != null && raw.isNotEmpty) {
+        decoded = base64Decode(raw);
       }
-    } catch (_) {
-      _avatarBytes = null;
+    } catch (error) {
+      debugPrint('Local profile avatar load failed: $error');
     }
-    if (_userId == uid) notifyListeners();
+    if (!_isCurrent(uid, generation)) return;
+    _avatarBytes ??= decoded;
+    notifyListeners();
   }
 
-  Future<void> _loadLocalProfile(String uid) async {
+  Future<void> _loadLocalProfile(String uid, int generation) async {
+    String? displayName;
+    String? email;
+    String? about;
+    String? kingdom;
+    bool? complete;
     try {
       final prefs = await SharedPreferences.getInstance();
-      _displayName = prefs.getString('$_kNameKeyPrefix$uid');
-      _email = prefs.getString('$_kEmailKeyPrefix$uid');
-      _about = normalizeAbout(prefs.getString('$_kAboutKeyPrefix$uid'));
-      _kingdom = prefs.getString('$_kKingdomKeyPrefix$uid');
-      notifyListeners();
-    } catch (_) {
-      // ignore
+      displayName = prefs.getString('$_kNameKeyPrefix$uid');
+      email = prefs.getString('$_kEmailKeyPrefix$uid');
+      about = prefs.getString('$_kAboutKeyPrefix$uid');
+      kingdom = prefs.getString('$_kKingdomKeyPrefix$uid');
+      complete = prefs.getBool('$_kProfileCompleteKeyPrefix$uid');
+    } catch (error) {
+      debugPrint('Local profile load failed: $error');
     }
+
+    if (!_isCurrent(uid, generation)) return;
+    _displayName ??= displayName?.trim().nullIfEmpty;
+    _email ??= email?.trim().nullIfEmpty;
+    _about ??= about == null ? null : normalizeAbout(about);
+    _kingdom ??= kingdom?.trim().nullIfEmpty;
+    if (!_remoteCompletionAuthoritative) {
+      _profileComplete = complete ??
+          (_profileComplete ||
+              inferProfileComplete(
+                displayName: _displayName,
+                kingdom: _kingdom,
+              ));
+    }
+    _localProfileResolved = true;
+    _updateHydration();
+    notifyListeners();
   }
 
-  Future<void> _persistLocalProfile(String uid) async {
+  Future<void> _persistLocalProfile(String uid, int generation) async {
+    if (!_isCurrent(uid, generation) || _purgedUserIds.contains(uid)) return;
+    final displayName = _displayName?.trim();
+    final email = _email?.trim();
+    final about = _about;
+    final kingdom = _kingdom?.trim();
+    final complete = _profileComplete;
+
     try {
       final prefs = await SharedPreferences.getInstance();
-      if (_displayName != null && _displayName!.trim().isNotEmpty) {
-        await prefs.setString('$_kNameKeyPrefix$uid', _displayName!.trim());
+      if (!_isCurrent(uid, generation) || _purgedUserIds.contains(uid)) {
+        return;
       }
-      if (_email != null && _email!.trim().isNotEmpty) {
-        await prefs.setString('$_kEmailKeyPrefix$uid', _email!.trim());
+      if (displayName != null && displayName.isNotEmpty) {
+        await prefs.setString('$_kNameKeyPrefix$uid', displayName);
       }
-      if (_about != null && _about!.trim().isNotEmpty) {
-        final safe = normalizeAbout(_about);
-        await prefs.setString('$_kAboutKeyPrefix$uid', safe);
+      if (email != null && email.isNotEmpty) {
+        await prefs.setString('$_kEmailKeyPrefix$uid', email);
       }
-      if (_kingdom != null && _kingdom!.trim().isNotEmpty) {
-        await prefs.setString('$_kKingdomKeyPrefix$uid', _kingdom!.trim());
+      if (about != null && about.trim().isNotEmpty) {
+        await prefs.setString(
+          '$_kAboutKeyPrefix$uid',
+          normalizeAbout(about),
+        );
       }
-    } catch (_) {
-      // ignore
+      if (kingdom != null && kingdom.isNotEmpty) {
+        await prefs.setString('$_kKingdomKeyPrefix$uid', kingdom);
+      }
+      await prefs.setBool('$_kProfileCompleteKeyPrefix$uid', complete);
+    } catch (error) {
+      debugPrint('Local profile persistence failed: $error');
     }
   }
 
@@ -154,9 +295,12 @@ class ProfileService extends ChangeNotifier {
     String? email,
     String? about,
     String? kingdom,
+    bool? profileComplete,
   }) async {
     final uid = _userId;
-    if (uid == null || uid.trim().isEmpty) return;
+    final generation = _bindingGeneration;
+    if (uid == null || !_isCurrent(uid, generation)) return;
+
     if (displayName != null && displayName.trim().isNotEmpty) {
       _displayName = displayName.trim();
     }
@@ -169,31 +313,47 @@ class ProfileService extends ChangeNotifier {
     if (kingdom != null && kingdom.trim().isNotEmpty) {
       _kingdom = kingdom.trim();
     }
+    if (profileComplete != null) {
+      _profileComplete = profileComplete;
+    } else if (!_remoteCompletionAuthoritative) {
+      _profileComplete = _profileComplete ||
+          inferProfileComplete(
+            displayName: _displayName,
+            kingdom: _kingdom,
+          );
+    }
+    _localProfileResolved = true;
+    _updateHydration();
     notifyListeners();
-    await _persistLocalProfile(uid);
+    await _persistLocalProfile(uid, generation);
   }
 
-  Future<void> updateAbout(String about) async {
+  /// Returns false when the local change was saved but remote sync failed.
+  Future<bool> updateAbout(String about) async {
     final uid = _userId;
-    if (uid == null || uid.trim().isEmpty) return;
+    final generation = _bindingGeneration;
+    if (uid == null || !_isCurrent(uid, generation)) return false;
+
     final safe = normalizeAbout(about);
     _about = safe;
     notifyListeners();
-    await _persistLocalProfile(uid);
+    await _persistLocalProfile(uid, generation);
+    if (!_isCurrent(uid, generation)) return false;
 
     final db = _dbOrNull();
-    if (db == null) return;
+    if (db == null) return false;
     try {
-      final updates = <String, Object?>{
-        'updatedAt': FieldValue.serverTimestamp(),
-        'about': safe,
-      };
       await db.collection('users').doc(uid).set(
-            updates,
-            SetOptions(merge: true),
-          );
-    } catch (e) {
-      debugPrint('Failed to update about: $e');
+        <String, Object?>{
+          'updatedAt': FieldValue.serverTimestamp(),
+          'about': safe,
+        },
+        SetOptions(merge: true),
+      );
+      return _isCurrent(uid, generation);
+    } catch (error) {
+      debugPrint('Failed to update about: $error');
+      return false;
     }
   }
 
@@ -201,74 +361,104 @@ class ProfileService extends ChangeNotifier {
     Uint8List bytes, {
     String? uidOverride,
   }) async {
-    final uid = uidOverride ?? _userId;
-    if (uid == null || uid.trim().isEmpty) return;
-    _avatarBytes = bytes;
-    notifyListeners();
+    final uid = uidOverride?.trim().nullIfEmpty ?? _userId;
+    if (uid == null || _purgedUserIds.contains(uid)) return;
+    final generation = _bindingGeneration;
+    if (_isCurrent(uid, generation)) {
+      _avatarBytes = bytes;
+      notifyListeners();
+    }
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(
         '$_kAvatarKeyPrefix$uid',
         base64Encode(bytes),
       );
-    } catch (_) {
-      // ignore persistence failures
+    } catch (error) {
+      debugPrint('Local avatar persistence failed: $error');
     }
   }
 
   Future<void> clearLocalAvatar({String? uidOverride}) async {
-    final uid = uidOverride ?? _userId;
-    if (uid == null || uid.trim().isEmpty) return;
-    _avatarBytes = null;
-    notifyListeners();
+    final uid = uidOverride?.trim().nullIfEmpty ?? _userId;
+    if (uid == null) return;
+    final generation = _bindingGeneration;
+    if (_isCurrent(uid, generation)) {
+      _avatarBytes = null;
+      notifyListeners();
+    }
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('$_kAvatarKeyPrefix$uid');
-    } catch (_) {
-      // ignore persistence failures
+    } catch (error) {
+      debugPrint('Local avatar removal failed: $error');
     }
   }
 
-  // Load profile from a data source (e.g., Firebase, REST API)
+  /// Removes every device-local profile value associated with [uid].
+  ///
+  /// This is intentionally separate from [clearProfile], which only clears
+  /// in-memory state during a normal sign-out. Account deletion must also
+  /// erase the cached email, name, profile fields, and avatar bytes.
+  Future<void> purgeLocalDataForUser(String uid) async {
+    final normalizedUid = uid.trim();
+    if (normalizedUid.isEmpty) return;
+    _purgedUserIds.add(normalizedUid);
+    if (_userId == normalizedUid) _startBinding(null);
+
+    final prefs = await SharedPreferences.getInstance();
+    await Future.wait<bool>(<Future<bool>>[
+      prefs.remove('$_kAvatarKeyPrefix$normalizedUid'),
+      prefs.remove('$_kNameKeyPrefix$normalizedUid'),
+      prefs.remove('$_kEmailKeyPrefix$normalizedUid'),
+      prefs.remove('$_kAboutKeyPrefix$normalizedUid'),
+      prefs.remove('$_kKingdomKeyPrefix$normalizedUid'),
+      prefs.remove('$_kProfileCompleteKeyPrefix$normalizedUid'),
+    ]);
+  }
+
   Future<void> loadProfile(Map<String, dynamic> data) async {
-    _displayName = data['displayName'];
-    _email = data['email'];
-    _avatarUrl = data['avatarUrl'];
-    _userId = data['userId'];
-    _rank = data['rank'];
+    _displayName = data['displayName'] as String?;
+    _email = data['email'] as String?;
+    _avatarUrl = data['avatarUrl'] as String?;
+    _userId = data['userId'] as String?;
+    _rank = data['rank'] as String?;
+    _kingdom = data['kingdom'] as String?;
+    _profileComplete = data['profileComplete'] as bool? ??
+        inferProfileComplete(
+          displayName: _displayName,
+          kingdom: _kingdom,
+        );
+    _profileHydrated = true;
+    _localProfileResolved = true;
+    _remoteProfileResolved = true;
+    _remoteCompletionAuthoritative = data.containsKey('profileComplete');
     notifyListeners();
   }
 
-  // Update display name
   void updateDisplayName(String newName) {
     _displayName = newName;
     notifyListeners();
-    // TODO: Persist to backend
   }
 
-  // Update avatar URL
   void updateAvatar(String newUrl) {
     _avatarUrl = newUrl;
     notifyListeners();
-    // TODO: Persist to backend
   }
 
-  // Clear profile on logout
   void clearProfile() {
-    _displayName = null;
-    _email = null;
-    _avatarUrl = null;
-    _userId = null;
-    _rank = null;
-    _about = null;
-    _kingdom = null;
-    _avatarBytes = null;
-    notifyListeners();
+    _startBinding(null);
   }
 
   @override
   void dispose() {
-    _sub?.cancel();
+    _bindingGeneration++;
+    _remoteHydrationTimer?.cancel();
+    unawaited(_sub?.cancel());
     super.dispose();
   }
+}
+
+extension on String {
+  String? get nullIfEmpty => isEmpty ? null : this;
 }

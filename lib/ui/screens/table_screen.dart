@@ -12,7 +12,13 @@ class TableScreen extends StatefulWidget {
 }
 
 class _TableScreenState extends State<TableScreen> {
-  final List<String> communityCards = ['🂠', '🂠', '🂠', '🂠', '🂠']; // Placeholder cards
+  final List<String> communityCards = [
+    '🂠',
+    '🂠',
+    '🂠',
+    '🂠',
+    '🂠'
+  ]; // Placeholder cards
   int pot = 1200;
 
   @override
@@ -26,7 +32,7 @@ class _TableScreenState extends State<TableScreen> {
 
             /// Pot Display
             Text(
-              'POT: ₹$pot',
+              'POT: $pot chips',
               style: const TextStyle(
                 color: AppColors.white,
                 fontSize: 24,
@@ -51,7 +57,7 @@ class _TableScreenState extends State<TableScreen> {
               children: [
                 CircleAvatar(
                   radius: 40,
-                  backgroundImage: AssetImage('assets/images/renoir_avatar.png'),
+                  backgroundImage: AssetImage('assets/images/renoir_tux.png'),
                   backgroundColor: Colors.white10,
                 ),
                 SizedBox(height: 8),

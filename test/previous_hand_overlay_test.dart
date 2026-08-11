@@ -66,4 +66,3 @@ void main() {
     expect(find.text('Win/Lose'), findsOneWidget);
   });
 }
-

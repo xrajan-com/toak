@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen/players.dart';
 
 void main() {
-  testWidgets('seat stays circular until tapped, then reverts after 3 seconds',
+  testWidgets('seat always exposes name and stack while tap reveals details',
       (tester) async {
     final Seat seat = Seat(
       name: 'Riya Sharma',
@@ -40,7 +40,14 @@ void main() {
       ),
     );
 
-    expect(find.text('Riya'), findsNothing);
+    expect(find.text('Riya'), findsOneWidget);
+    expect(find.text('2.4K'), findsOneWidget);
+    expect(find.text('1.2K'), findsOneWidget);
+
+    expect(
+      find.bySemanticsLabel(RegExp(r'Riya Sharma, 2\.4K chips')),
+      findsOneWidget,
+    );
 
     await tester.tap(find.byType(SeatWidget));
     await tester.pump(const Duration(milliseconds: 260));
@@ -51,6 +58,7 @@ void main() {
     expect(find.text('Riya'), findsOneWidget);
 
     await tester.pump(const Duration(milliseconds: 400));
-    expect(find.text('Riya'), findsNothing);
+    expect(find.text('Riya'), findsOneWidget);
+    expect(find.text('2.4K'), findsOneWidget);
   });
 }

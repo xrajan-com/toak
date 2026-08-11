@@ -73,8 +73,7 @@ class BotPolicyFeatures {
       'phase_river': phase == GamePhase.river ? 1.0 : 0.0,
       'temper_aggressive': temperament == BotTemperament.aggressive ? 1.0 : 0.0,
       'temper_stoic': temperament == BotTemperament.stoic ? 1.0 : 0.0,
-      'temper_worldchamp':
-          temperament == BotTemperament.worldChamp ? 1.0 : 0.0,
+      'temper_worldchamp': temperament == BotTemperament.worldChamp ? 1.0 : 0.0,
       'skill_killer': skill == BotSkill.killer ? 1.0 : 0.0,
       'skill_fluke': skill == BotSkill.fluke ? 1.0 : 0.0,
     };

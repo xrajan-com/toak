@@ -18,9 +18,36 @@ class BotOpponentMemory {
   int riverAggressionCount = 0;
   int showdowns = 0;
   double showdownStrengthTotal = 0.0;
+  int aggressiveActions = 0;
+  int largePressureActions = 0;
+  int allInActions = 0;
+  double aggressionHeat = 0.0;
+  double pressureHeat = 0.0;
 
   void observeNewHand() {
     handsSeen += 1;
+    // Recent pressure matters much more than ancient table history. A player
+    // who stops shoving will gradually regain credit.
+    aggressionHeat *= 0.84;
+    pressureHeat *= 0.78;
+  }
+
+  void observeAggression({
+    required bool largePressure,
+    required bool allIn,
+  }) {
+    aggressiveActions += 1;
+    if (largePressure) largePressureActions += 1;
+    if (allIn) allInActions += 1;
+
+    aggressionHeat += largePressure ? 0.18 : 0.10;
+    pressureHeat += largePressure ? 0.25 : 0.03;
+    if (allIn) {
+      aggressionHeat += 0.10;
+      pressureHeat += 0.17;
+    }
+    aggressionHeat = aggressionHeat.clamp(0.0, 1.0).toDouble();
+    pressureHeat = pressureHeat.clamp(0.0, 1.0).toDouble();
   }
 
   double get vpip => _ratio(vpipHands, handsSeen);
@@ -43,7 +70,16 @@ class BotOpponentMemory {
         flopCBet * 0.20 +
         turnBarrel * 0.16 +
         riverAggression * 0.24;
-    return value.clamp(0.0, 1.0);
+    final double observed = value.clamp(0.0, 1.0).toDouble();
+    return observed >= aggressionHeat ? observed : aggressionHeat;
+  }
+
+  bool get appliesRepeatPressure {
+    final bool repeatedLargePressure =
+        largePressureActions >= 2 && pressureHeat >= 0.42;
+    final bool repeatedOrdinaryPressure =
+        aggressiveActions >= 3 && aggressionHeat >= 0.24;
+    return repeatedLargePressure || repeatedOrdinaryPressure;
   }
 
   static double _ratio(int num, int den) {
@@ -225,8 +261,7 @@ class BotDecisionLogEntry {
       fieldAggression: (json['fieldAggression'] as num?)?.toDouble() ?? 0.5,
       aggressorAggression:
           (json['aggressorAggression'] as num?)?.toDouble() ?? 0.5,
-      aggressorSolidity:
-          (json['aggressorSolidity'] as num?)?.toDouble() ?? 0.5,
+      aggressorSolidity: (json['aggressorSolidity'] as num?)?.toDouble() ?? 0.5,
       action: ActionType.values.firstWhere(
         (value) => value.name == json['action'],
         orElse: () => ActionType.check,

@@ -1,6 +1,7 @@
 // lib/ui/screens/auth_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/services.dart'; // Clipboard
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -11,17 +12,39 @@ import 'package:ten_of_a_kind_poker/ui/theme/colors.dart';
 import 'package:ten_of_a_kind_poker/services/aura_points_service.dart';
 import 'package:ten_of_a_kind_poker/services/campaign_progress_service.dart';
 import 'package:ten_of_a_kind_poker/services/profile_service.dart';
-import 'package:ten_of_a_kind_poker/features/venue/game_mode.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/game_mode_screen.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/profile_setup_screen.dart';
-import 'package:ten_of_a_kind_poker/ui/screens/venue_screen.dart';
 import 'package:ten_of_a_kind_poker/ui/widgets/stadium_banner.dart';
+
+String friendlyAuthErrorMessage(FirebaseAuthException error) {
+  return switch (error.code) {
+    'invalid-email' => 'Enter a valid email address.',
+    'invalid-credential' ||
+    'wrong-password' ||
+    'user-not-found' =>
+      'The email or password is incorrect.',
+    'email-already-in-use' =>
+      'An account already exists for this email. Try logging in.',
+    'weak-password' => 'Choose a stronger password with at least 6 characters.',
+    'network-request-failed' =>
+      'Could not connect. Check your internet connection and try again.',
+    'too-many-requests' =>
+      'Too many attempts. Please wait a little before trying again.',
+    'operation-not-allowed' => 'This sign-in option is currently unavailable.',
+    'popup-closed-by-user' ||
+    'cancelled-popup-request' =>
+      'Google sign-in was cancelled.',
+    _ => 'Authentication could not be completed. Please try again.',
+  };
+}
 
 class AuthScreen extends StatefulWidget {
   final bool requireRegisteredUser;
   final Widget? postAuthDestination;
   final String? title;
   final String? message;
+  final bool managedByAuthGate;
+  final FirebaseAuth? authOverride;
 
   const AuthScreen({
     super.key,
@@ -29,6 +52,8 @@ class AuthScreen extends StatefulWidget {
     this.postAuthDestination,
     this.title,
     this.message,
+    this.managedByAuthGate = false,
+    this.authOverride,
   });
 
   @override
@@ -37,9 +62,12 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   static const _bannerAsset = 'assets/images/banner.png';
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   FirebaseAuth? _auth;
 
   FirebaseAuth? _authOrNull() {
+    if (widget.authOverride != null) return widget.authOverride;
     try {
       _auth ??= FirebaseAuth.instance;
       return _auth;
@@ -49,21 +77,42 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
-  FirebaseAuth? _authOrNotify() {
-    final auth = _authOrNull();
-    if (auth == null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Auth unavailable. Check Firebase setup.')),
-      );
-    }
-    return auth;
+  bool _isLogin = true;
+  bool _isLoading = false;
+  bool _showPassword = false;
+  String? _errorText;
+  String? _statusText;
+
+  bool get _googleSignInAvailable =>
+      kIsWeb || defaultTargetPlatform != TargetPlatform.iOS;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
-  bool _isLogin = true;
-  String _email = '';
-  String _password = '';
-  bool _isLoading = false;
+  void _showError(String message) {
+    if (!mounted) return;
+    setState(() {
+      _errorText = message;
+      _statusText = null;
+    });
+  }
+
+  void _showStatus(String message) {
+    if (!mounted) return;
+    setState(() {
+      _statusText = message;
+      _errorText = null;
+    });
+  }
+
+  void _setLoading(bool value) {
+    if (!mounted) return;
+    setState(() => _isLoading = value);
+  }
 
   Future<void> _upsertUserDoc(
     User user, {
@@ -108,127 +157,130 @@ class _AuthScreenState extends State<AuthScreen> {
 
   Future<void> _submitAuthForm() async {
     if (_isLoading) return;
-    final isValid = _email.isNotEmpty && _password.length >= 6;
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    final isValid = email.contains('@') && password.length >= 6;
     if (!isValid) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Enter a valid email and 6+ char password')),
-      );
+      _showError('Enter a valid email and a password of 6+ characters.');
       return;
     }
 
+    final submittingLogin = _isLogin;
+    _setLoading(true);
+    if (mounted) {
+      setState(() {
+        _errorText = null;
+        _statusText = null;
+      });
+    }
     try {
-      if (mounted) setState(() => _isLoading = true);
-      User? signedInUser;
-
-      if (_isLogin) {
-        final auth = _authOrNotify();
-        if (auth == null) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Auth unavailable. Check Firebase setup.'),
-              ),
-            );
-          }
-          if (!widget.requireRegisteredUser) {
-            await _enterGame(reason: 'email-auth-unavailable');
-          }
-          return;
-        }
-        final cred = await auth.signInWithEmailAndPassword(
-          email: _email,
-          password: _password,
+      final auth = _authOrNull();
+      if (auth == null) {
+        _showError(
+          'Sign-in is unavailable right now. Please restart and try again.',
         );
-        final user = cred.user;
-        signedInUser = user;
-        if (user != null) {
-          await _upsertUserDoc(user);
-          if (mounted) {
-            await context.read<ProfileService>().setLocalProfile(
-                  displayName: user.displayName,
-                  email: user.email,
-                );
-          }
-        }
+        return;
+      }
+
+      final UserCredential credential;
+      if (submittingLogin) {
+        credential = await auth.signInWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
       } else {
-        final auth = _authOrNotify();
-        if (auth == null) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Auth unavailable. Check Firebase setup.'),
-              ),
-            );
-          }
-          if (!widget.requireRegisteredUser) {
-            await _enterGame(reason: 'register-auth-unavailable');
-          }
-          return;
-        }
-        final userCred = await auth.createUserWithEmailAndPassword(
-          email: _email,
-          password: _password,
+        credential = await auth.createUserWithEmailAndPassword(
+          email: email,
+          password: password,
         );
-        final user = userCred.user;
-        signedInUser = user;
-        if (user != null) {
-          await _upsertUserDoc(
-            user,
-            profileComplete: false,
-          );
-          if (mounted) {
-            await context.read<ProfileService>().setLocalProfile(
-                  email: user.email,
-                );
-          }
-        }
       }
 
-      if (mounted) {
-        await _enterGame(
-          reason: signedInUser != null ? 'email' : 'email-null-user',
-          needsProfileSetup: !_isLogin && signedInUser != null,
-        );
+      final user = credential.user ?? auth.currentUser;
+      if (user == null) {
+        _showError('Sign-in did not finish. Please try again.');
+        return;
       }
-    } on FirebaseAuthException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? 'Authentication error')),
+
+      _bindRegisteredUserServices(user);
+      await _upsertUserDoc(
+        user,
+        profileComplete: submittingLogin ? null : false,
       );
-      if (!widget.requireRegisteredUser) {
-        await _enterGame(reason: 'email-auth-error');
-      }
-    } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Authentication error')),
+      await context.read<ProfileService>().setLocalProfile(
+            displayName: user.displayName,
+            email: user.email,
+            profileComplete: submittingLogin ? null : false,
+          );
+      if (!mounted) return;
+      await _completeAuth(user);
+    } on FirebaseAuthException catch (error) {
+      _showError(friendlyAuthErrorMessage(error));
+    } catch (error) {
+      debugPrint('Email authentication failed: $error');
+      _showError(
+        'Authentication could not be completed. Please try again.',
       );
-      if (!widget.requireRegisteredUser) {
-        await _enterGame(reason: 'email-auth-exception');
-      }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      _setLoading(false);
+    }
+  }
+
+  Future<void> _sendPasswordReset() async {
+    if (_isLoading) return;
+    final email = _emailController.text.trim();
+    if (!email.contains('@')) {
+      _showError('Enter your email address first.');
+      return;
+    }
+
+    _setLoading(true);
+    try {
+      final auth = _authOrNull();
+      if (auth == null) {
+        _showError(
+          'Password reset is unavailable right now. Please try again later.',
+        );
+        return;
+      }
+      await auth.sendPasswordResetEmail(email: email);
+      _showStatus(
+        'If an account exists for that email, a reset link has been sent.',
+      );
+    } on FirebaseAuthException catch (error) {
+      _showError(friendlyAuthErrorMessage(error));
+    } catch (error) {
+      debugPrint('Password reset failed: $error');
+      _showError(
+        'Password reset could not be completed. Please try again.',
+      );
+    } finally {
+      _setLoading(false);
     }
   }
 
   Future<void> _signInWithGoogle() async {
     if (_isLoading) return;
-    if (mounted) setState(() => _isLoading = true);
+    if (!_googleSignInAvailable) {
+      _showError(
+        'Google sign-in is not configured for this iOS build. '
+        'Use email sign-in instead.',
+      );
+      return;
+    }
+    _setLoading(true);
+    if (mounted) {
+      setState(() {
+        _errorText = null;
+        _statusText = null;
+      });
+    }
     try {
-      final auth = _authOrNotify();
+      final auth = _authOrNull();
       if (auth == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Auth unavailable. Check Firebase setup.'),
-            ),
-          );
-          if (!widget.requireRegisteredUser) {
-            await _enterGame(reason: 'google-auth-unavailable');
-          }
-        }
+        _showError(
+          'Google sign-in is unavailable right now. Please try again later.',
+        );
         return;
       }
 
@@ -239,11 +291,7 @@ class _AuthScreenState extends State<AuthScreen> {
       } else {
         final googleUser = await GoogleSignIn().signIn();
         if (googleUser == null) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Google sign-in cancelled.')),
-            );
-          }
+          _showStatus('Google sign-in was cancelled.');
           return;
         }
         final googleAuth = await googleUser.authentication;
@@ -256,7 +304,8 @@ class _AuthScreenState extends State<AuthScreen> {
 
       final user = userCred.user ?? auth.currentUser;
       if (user != null) {
-        final bool isNewUser = userCred.additionalUserInfo?.isNewUser == true;
+        final isNewUser = userCred.additionalUserInfo?.isNewUser == true;
+        _bindRegisteredUserServices(user);
         await _upsertUserDoc(
           user,
           profileComplete: isNewUser ? false : null,
@@ -265,130 +314,106 @@ class _AuthScreenState extends State<AuthScreen> {
           await context.read<ProfileService>().setLocalProfile(
                 displayName: user.displayName,
                 email: user.email,
+                profileComplete: isNewUser ? false : null,
               );
         }
-        if (mounted) {
-          await _enterGame(
-            reason: 'google',
-            needsProfileSetup: isNewUser,
-          );
-        }
-      } else if (mounted) {
-        await _enterGame(reason: 'google-null-user');
+        if (!mounted) return;
+        await _completeAuth(user);
+      } else {
+        _showError('Google sign-in did not finish. Please try again.');
       }
-    } on FirebaseAuthException catch (e) {
-      debugPrint('Google Sign-In failed (${e.code}): ${e.message}');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? 'Google sign-in failed')),
+    } on FirebaseAuthException catch (error) {
+      debugPrint(
+        'Google Sign-In failed (${error.code}): ${error.message}',
       );
-      if (!widget.requireRegisteredUser) {
-        await _enterGame(reason: 'google-auth-error');
-      }
-    } catch (e) {
-      debugPrint('Google Sign-In failed: $e');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Google sign-in failed')),
-      );
-      if (!widget.requireRegisteredUser) {
-        await _enterGame(reason: 'google-auth-exception');
-      }
+      _showError(friendlyAuthErrorMessage(error));
+    } catch (error) {
+      debugPrint('Google Sign-In failed: $error');
+      _showError('Google sign-in could not be completed. Please try again.');
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      _setLoading(false);
     }
   }
 
   Future<void> _continueAsGuest() async {
     if (_isLoading) return;
-    if (mounted) setState(() => _isLoading = true);
+    _setLoading(true);
     try {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Continuing as guest...')),
-        );
-      }
       final auth = _authOrNull();
-      if (auth != null) {
-        try {
-          final cred = await auth.signInAnonymously();
-          final user = cred.user ?? auth.currentUser;
-          if (user == null) {
-            debugPrint('Guest sign-in returned null user');
-          }
-        } catch (e) {
-          debugPrint('Guest sign-in failed (non-fatal): $e');
-        }
-      } else {
-        debugPrint('FirebaseAuth unavailable; using offline guest.');
-      }
-    } on FirebaseAuthException catch (e) {
-      debugPrint('Guest login failed (${e.code}): ${e.message}');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message ?? 'Guest sign-in failed')),
-        );
-      }
-    } catch (e) {
-      debugPrint('Guest login failed: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Guest sign-in failed')),
-        );
-      }
-    }
-    if (!mounted) return;
-    await _enterGame(reason: 'guest');
-    if (mounted) setState(() => _isLoading = false);
-  }
-
-  Future<void> _enterGame({
-    String? reason,
-    bool needsProfileSetup = false,
-  }) async {
-    if (!mounted) return;
-    if (reason != null) {
-      debugPrint('AuthScreen: entering game ($reason)');
-    }
-    final user = _authOrNull()?.currentUser;
-    if (widget.requireRegisteredUser) {
-      if (user == null || user.isAnonymous) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Login or register to save Career progress.'),
-          ),
+      if (auth == null) {
+        _showError(
+          'Guest sign-in is unavailable right now. Please try again later.',
         );
         return;
       }
+      final credential = await auth.signInAnonymously();
+      final user = credential.user ?? auth.currentUser;
+      if (user == null || !user.isAnonymous) {
+        _showError('Guest sign-in did not finish. Please try again.');
+        return;
+      }
+      if (!mounted) return;
+      if (widget.managedByAuthGate) return;
+      await Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const GameModeScreen()),
+      );
+    } on FirebaseAuthException catch (error) {
+      debugPrint('Guest login failed (${error.code}): ${error.message}');
+      _showError(friendlyAuthErrorMessage(error));
+    } catch (error) {
+      debugPrint('Guest login failed: $error');
+      _showError('Guest sign-in could not be completed. Please try again.');
+    } finally {
+      _setLoading(false);
     }
-    if (user != null && !user.isAnonymous) {
-      _bindRegisteredUserServices(user);
+  }
+
+  Future<void> _completeAuth(User user) async {
+    if (!mounted) return;
+    if (widget.requireRegisteredUser && user.isAnonymous) {
+      _showError('Login or register to save Career progress.');
+      return;
     }
-    final Widget destination =
-        widget.postAuthDestination ?? _defaultDestination();
-    final Widget next = needsProfileSetup && user != null && !user.isAnonymous
-        ? ProfileSetupScreen(destination: destination)
-        : destination;
-    await Navigator.of(context, rootNavigator: true).pushReplacement(
+    if (widget.managedByAuthGate) return;
+
+    if (user.isAnonymous) {
+      await Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const GameModeScreen()),
+      );
+      return;
+    }
+
+    final destination = widget.postAuthDestination ?? const GameModeScreen();
+    await Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => next,
+        builder: (_) => _RegisteredProfileDestination(
+          userId: user.uid,
+          destination: destination,
+        ),
       ),
     );
   }
 
   void _bindRegisteredUserServices(User user) {
-    context.read<AuraPointsService>().bindUserId(
-          user.uid,
-          registeredUser: true,
-        );
-    context.read<CampaignProgressService>().bindUserId(user.uid);
-    context.read<ProfileService>().bindUserId(user.uid);
-  }
-
-  Widget _defaultDestination() {
-    final user = _authOrNull()?.currentUser;
-    if (user == null || user.isAnonymous) return const GameModeScreen();
-    return const VenueScreen(mode: VenueEntryMode.career);
+    if (user.isAnonymous || !mounted) return;
+    try {
+      context.read<AuraPointsService>().bindUserId(
+            user.uid,
+            registeredUser: true,
+          );
+    } on ProviderNotFoundException {
+      // Some isolated widget tests intentionally omit app-level services.
+    }
+    try {
+      context.read<CampaignProgressService>().bindUserId(user.uid);
+    } on ProviderNotFoundException {
+      // Some isolated widget tests intentionally omit app-level services.
+    }
+    try {
+      context.read<ProfileService>().bindUserId(user.uid);
+    } on ProviderNotFoundException {
+      // The app always provides this service; tests may not.
+    }
   }
 
   // ---------- Footer popups ----------
@@ -402,41 +427,47 @@ class _AuthScreenState extends State<AuthScreen> {
           backgroundColor: const Color(0xFF101010),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.info_outline, color: AppColors.blue),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'About Us',
-                      style: TextStyle(
-                        color: AppColors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 18,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 440,
+              maxHeight: MediaQuery.sizeOf(ctx).height * 0.86,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.info_outline, color: AppColors.blue),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'About Us',
+                        style: TextStyle(
+                          color: AppColors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 18,
+                        ),
                       ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      splashRadius: 18,
-                      icon: const Icon(Icons.close, color: Colors.white70),
-                      onPressed: () => Navigator.pop(ctx),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const Text('Just a passion project',
-                    style: TextStyle(color: Colors.white70)),
-                const SizedBox(height: 4),
-                const Text(
-                  'The Author would like to stay anonymous.',
-                  style: TextStyle(color: Colors.white70),
-                ),
-              ],
+                      const Spacer(),
+                      IconButton(
+                        splashRadius: 18,
+                        icon: const Icon(Icons.close, color: Colors.white70),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text('Just a passion project',
+                      style: TextStyle(color: Colors.white70)),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'The Author would like to stay anonymous.',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -445,7 +476,7 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   void _showSupportDialog() {
-    const email = 'xrajan.com@gmail.com';
+    const email = 'pooniaone@gmail.com';
     showDialog<void>(
       context: context,
       barrierDismissible: true,
@@ -455,71 +486,78 @@ class _AuthScreenState extends State<AuthScreen> {
           backgroundColor: const Color(0xFF101010),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.support_agent, color: AppColors.blue),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Support',
-                      style: TextStyle(
-                        color: AppColors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 18,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 440,
+              maxHeight: MediaQuery.sizeOf(ctx).height * 0.86,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.support_agent, color: AppColors.blue),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Support',
+                        style: TextStyle(
+                          color: AppColors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 18,
+                        ),
                       ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      splashRadius: 18,
-                      icon: const Icon(Icons.close, color: Colors.white70),
-                      onPressed: () => Navigator.pop(ctx),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  '"THE WILD DOESN\'T FOLD"',
-                  style: TextStyle(
-                      color: AppColors.white, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 6),
-                const Text('Hey there!',
-                    style: TextStyle(color: Colors.white70)),
-                const Text('Meet Renoir',
-                    style: TextStyle(color: Colors.white70)),
-                const SizedBox(height: 10),
-                const Row(
-                  children: [
-                    Icon(Icons.mail_outline, size: 18, color: AppColors.blue),
-                    SizedBox(width: 8),
-                    Text('xrajan.com@gmail.com',
-                        style: TextStyle(color: Colors.white70)),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    onPressed: () async {
-                      await Clipboard.setData(const ClipboardData(text: email));
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Email copied')),
-                        );
-                      }
-                    },
-                    icon:
-                        const Icon(Icons.copy, color: AppColors.blue, size: 18),
-                    label: const Text('Copy Email',
-                        style: TextStyle(color: AppColors.blue)),
+                      const Spacer(),
+                      IconButton(
+                        splashRadius: 18,
+                        icon: const Icon(Icons.close, color: Colors.white70),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 10),
+                  const Text(
+                    '"THE WILD DOESN\'T FOLD"',
+                    style: TextStyle(
+                        color: AppColors.white, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text('Hey there!',
+                      style: TextStyle(color: Colors.white70)),
+                  const Text('Meet Renoir',
+                      style: TextStyle(color: Colors.white70)),
+                  const SizedBox(height: 10),
+                  const Row(
+                    children: [
+                      Icon(Icons.mail_outline, size: 18, color: AppColors.blue),
+                      SizedBox(width: 8),
+                      Text('pooniaone@gmail.com',
+                          style: TextStyle(color: Colors.white70)),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () async {
+                        await Clipboard.setData(
+                            const ClipboardData(text: email));
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Email copied')),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.copy,
+                          color: AppColors.blue, size: 18),
+                      label: const Text('Copy Email',
+                          style: TextStyle(color: AppColors.blue)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -527,9 +565,10 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
-  InputDecoration _field(String label) => InputDecoration(
+  InputDecoration _field(String label, {Widget? suffixIcon}) => InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: AppColors.white),
+        suffixIcon: suffixIcon,
         filled: true,
         fillColor: Colors.white10,
         contentPadding:
@@ -542,6 +581,10 @@ class _AuthScreenState extends State<AuthScreen> {
           borderRadius: BorderRadius.circular(999),
           borderSide: const BorderSide(color: AppColors.blue),
         ),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(999),
+          borderSide: const BorderSide(color: Colors.white12),
+        ),
       );
 
   Widget _clickable(Widget child) {
@@ -550,7 +593,8 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenH = MediaQuery.of(context).size.height;
+    final media = MediaQuery.of(context);
+    final screenH = media.size.height;
     final compactHeader = screenH < 520;
     const bannerScale = 0.75;
     final bannerMaxH = (compactHeader ? 48.0 : 72.0) * bannerScale;
@@ -562,131 +606,258 @@ class _AuthScreenState extends State<AuthScreen> {
       body: SafeArea(
         child: ListView(
           padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
+            bottom: media.viewInsets.bottom + 16,
             left: 16,
             right: 16,
             top: 16,
           ),
           children: [
-            const SizedBox(height: 8),
-            StadiumBanner(
-              asset: _bannerAsset,
-              maxHeight: bannerMaxH,
-              maxWidth: bannerMaxW,
-            ),
-            const SizedBox(height: 18),
-            if (widget.title != null || widget.message != null) ...[
-              if (widget.title != null)
-                Text(
-                  widget.title!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: AppColors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 520),
+                child: AutofillGroup(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 8),
+                      StadiumBanner(
+                        asset: _bannerAsset,
+                        maxHeight: bannerMaxH,
+                        maxWidth: bannerMaxW,
+                      ),
+                      const SizedBox(height: 18),
+                      if (widget.title != null || widget.message != null) ...[
+                        if (widget.title != null)
+                          Text(
+                            widget.title!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: AppColors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        if (widget.message != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            widget.message!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              height: 1.25,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 18),
+                      ],
+                      TextField(
+                        key: const ValueKey('auth_email'),
+                        controller: _emailController,
+                        enabled: !_isLoading,
+                        autofillHints: const [
+                          AutofillHints.username,
+                          AutofillHints.email,
+                        ],
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
+                        autocorrect: false,
+                        style: const TextStyle(color: AppColors.white),
+                        decoration: _field('Email'),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        key: const ValueKey('auth_password'),
+                        controller: _passwordController,
+                        enabled: !_isLoading,
+                        autofillHints: [
+                          _isLogin
+                              ? AutofillHints.password
+                              : AutofillHints.newPassword,
+                        ],
+                        obscureText: !_showPassword,
+                        textInputAction: TextInputAction.done,
+                        autocorrect: false,
+                        enableSuggestions: false,
+                        onSubmitted:
+                            _isLoading ? null : (_) => _submitAuthForm(),
+                        style: const TextStyle(color: AppColors.white),
+                        decoration: _field(
+                          'Password',
+                          suffixIcon: IconButton(
+                            tooltip: _showPassword
+                                ? 'Hide password'
+                                : 'Show password',
+                            onPressed: _isLoading
+                                ? null
+                                : () => setState(
+                                      () => _showPassword = !_showPassword,
+                                    ),
+                            icon: Icon(
+                              _showPassword
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (_isLogin)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            key: const ValueKey('forgot_password'),
+                            onPressed: _isLoading ? null : _sendPasswordReset,
+                            child: const Text('Forgot password?'),
+                          ),
+                        )
+                      else
+                        const SizedBox(height: 12),
+                      if (_errorText case final error?)
+                        Semantics(
+                          liveRegion: true,
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: Text(
+                              error,
+                              key: const ValueKey('auth_error'),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Color(0xFFFF8A80),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (_statusText case final status?)
+                        Semantics(
+                          liveRegion: true,
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: Text(
+                              status,
+                              key: const ValueKey('auth_status'),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Color(0xFF9BE7A5),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      _AuthPillButton(
+                        label: _isLoading
+                            ? (_isLogin ? 'Logging in…' : 'Registering…')
+                            : (_isLogin ? 'Login' : 'Register'),
+                        backgroundColor: AppColors.red,
+                        textColor: AppColors.white,
+                        onPressed: _isLoading ? null : _submitAuthForm,
+                      ),
+                      _AuthPillButton(
+                        label: _isLogin
+                            ? 'Create new account'
+                            : 'Already have an account? Login',
+                        backgroundColor: const Color(0xFF2E3238),
+                        textColor: AppColors.white,
+                        onPressed: _isLoading
+                            ? null
+                            : () => setState(() {
+                                  _isLogin = !_isLogin;
+                                  _errorText = null;
+                                  _statusText = null;
+                                }),
+                      ),
+                      if (!widget.requireRegisteredUser) ...[
+                        _AuthPillButton(
+                          label: 'Continue as Guest',
+                          backgroundColor: const Color(0xFF24B6FF),
+                          textColor: Colors.white,
+                          onPressed: _isLoading ? null : _continueAsGuest,
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                      _AuthPillButton(
+                        label: _googleSignInAvailable
+                            ? 'Sign in with Google'
+                            : 'Google sign-in unavailable on iOS',
+                        icon: Icons.g_mobiledata,
+                        iconSize: 28,
+                        backgroundColor: AppColors.white,
+                        textColor: AppColors.white,
+                        onPressed: _isLoading || !_googleSignInAvailable
+                            ? null
+                            : _signInWithGoogle,
+                      ),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 10,
+                        runSpacing: 8,
+                        children: [
+                          _clickable(
+                            _AuthFooterPillLink(
+                              onPressed: _showAboutDialog,
+                              label: 'About Us',
+                            ),
+                          ),
+                          _clickable(
+                            _AuthFooterPillLink(
+                              onPressed: _showSupportDialog,
+                              label: 'Support',
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                   ),
                 ),
-              if (widget.message != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  widget.message!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    height: 1.25,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 18),
-            ],
-
-            // -------- Common fields --------
-            TextField(
-              onChanged: (v) => _email = v.trim(),
-              keyboardType: TextInputType.emailAddress,
-              style: const TextStyle(color: AppColors.white),
-              decoration: _field('Email'),
-            ),
-            const SizedBox(height: 12),
-
-            TextField(
-              onChanged: (v) => _password = v,
-              obscureText: true,
-              style: const TextStyle(color: AppColors.white),
-              decoration: _field('Password'),
-            ),
-
-            const SizedBox(height: 20),
-
-            // -------- Submit --------
-            if (_isLoading)
-              const Center(
-                child: CircularProgressIndicator(color: AppColors.blue),
-              )
-            else
-              _AuthPillButton(
-                label: _isLogin ? 'Login' : 'Register',
-                backgroundColor: AppColors.red,
-                textColor: AppColors.white,
-                onPressed: _submitAuthForm,
               ),
-
-            // Switch login/register
-            _AuthPillButton(
-              label: _isLogin
-                  ? 'Create new account'
-                  : 'Already have an account? Login',
-              backgroundColor: const Color(0xFF2E3238),
-              textColor: AppColors.white,
-              onPressed: () => setState(() => _isLogin = !_isLogin),
             ),
-
-            if (!widget.requireRegisteredUser) ...[
-              // Continue as Guest (blue)
-              _AuthPillButton(
-                label: 'Continue as Guest',
-                backgroundColor: const Color(0xFF24B6FF),
-                textColor: Colors.white,
-                onPressed: _isLoading ? null : _continueAsGuest,
-              ),
-              const SizedBox(height: 10),
-            ],
-
-            // Google Sign-in
-            _AuthPillButton(
-              label: 'Sign in with Google',
-              icon: Icons.g_mobiledata,
-              iconSize: 28,
-              backgroundColor: AppColors.white,
-              textColor: AppColors.white,
-              onPressed: _isLoading ? null : _signInWithGoogle,
-            ),
-
-            const SizedBox(height: 16),
-
-            // -------- Footer links --------
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _clickable(
-                  _AuthFooterPillLink(
-                    onPressed: _showAboutDialog,
-                    label: 'About Us',
-                  ),
-                ),
-                const SizedBox(width: 10),
-                _clickable(
-                  _AuthFooterPillLink(
-                    onPressed: _showSupportDialog,
-                    label: 'Support',
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RegisteredProfileDestination extends StatelessWidget {
+  final String userId;
+  final Widget destination;
+
+  const _RegisteredProfileDestination({
+    required this.userId,
+    required this.destination,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final profile = context.watch<ProfileService>();
+    if (profile.userId != userId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        profile.bindUserId(userId);
+      });
+      return const _ProfileLoading();
+    }
+    if (!profile.isHydrated) return const _ProfileLoading();
+    if (profile.profileComplete) return destination;
+    return ProfileSetupScreen(destination: destination);
+  }
+}
+
+class _ProfileLoading extends StatelessWidget {
+  const _ProfileLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.black,
+      body: Center(
+        child: Semantics(
+          liveRegion: true,
+          label: 'Loading your profile',
+          child: const CircularProgressIndicator(color: AppColors.blue),
         ),
       ),
     );

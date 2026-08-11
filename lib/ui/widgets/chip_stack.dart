@@ -35,15 +35,18 @@ class ChipStack extends StatelessWidget {
           ),
         ),
 
-        /// ₹ Value Label
+        /// Play-chip value label.
         if (showAmount)
           Padding(
             padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              '₹$chipAmount',
-              style: const TextStyle(
-                color: AppColors.white70,
-                fontSize: 12,
+            child: Semantics(
+              label: '$chipAmount chips',
+              child: Text(
+                '$chipAmount chips',
+                style: const TextStyle(
+                  color: AppColors.white70,
+                  fontSize: 12,
+                ),
               ),
             ),
           ),

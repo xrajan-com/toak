@@ -18,7 +18,8 @@ class Pcg32 {
   BigInt _seed = BigInt.zero;
 
   Pcg32({int? seed, BigInt? bigSeed, BigInt? stream}) {
-    final BigInt effectiveSeed = bigSeed ?? (seed != null ? BigInt.from(seed) : _defaultSeed());
+    final BigInt effectiveSeed =
+        bigSeed ?? (seed != null ? BigInt.from(seed) : _defaultSeed());
     reseed(seed: effectiveSeed, stream: stream);
   }
 

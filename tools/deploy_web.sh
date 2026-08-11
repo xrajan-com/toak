@@ -13,14 +13,23 @@ fi
 
 cd "$repo_root"
 
+api_base_url="${API_BASE_URL:-}"
+
 echo "==> Getting Flutter packages"
 flutter pub get
 
+echo "==> Running backend-authoritative release gates"
+bash "$repo_root/tools/verify_release_prereqs.sh"
+
 echo "==> Building Flutter web (served under /web/)"
-build_args=(web --release --base-href /web/ --no-wasm-dry-run)
-if [[ -n "${API_BASE_URL:-}" ]]; then
-  build_args+=(--dart-define="API_BASE_URL=$API_BASE_URL")
-fi
+build_args=(
+  web
+  --release
+  --base-href /web/
+  --no-wasm-dry-run
+  --dart-define="API_BASE_URL=$api_base_url"
+  --dart-define="ALLOW_LOCAL_ECONOMY_DEV=false"
+)
 flutter build "${build_args[@]}"
 
 echo "==> Syncing build output to Firebase Hosting public dir"
@@ -33,9 +42,11 @@ if [[ -f "$hosting_web_dir/assets/.env" ]]; then
   exit 1
 fi
 
-echo "==> Deploying to Firebase Hosting"
+echo "==> Deploying verified Firestore rules and Firebase Hosting"
 deploy_log="$(mktemp)"
-if ! env -u DEBUG firebase deploy --only hosting --non-interactive 2>&1 | tee "$deploy_log"; then
+if ! env -u DEBUG firebase deploy \
+  --only firestore:rules,hosting \
+  --non-interactive 2>&1 | tee "$deploy_log"; then
   if grep -q "Hosting storage quota" "$deploy_log"; then
     cat >&2 <<'EOF'
 

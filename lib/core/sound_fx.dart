@@ -26,7 +26,8 @@ class SoundFx {
   static const int _kMaxAnnouncerOverlap = 2;
   static const Duration _kDuplicateAnnouncerCooldown =
       Duration(milliseconds: 520);
-  bool _muted = false;
+  bool _soundEffectsMuted = false;
+  bool _voiceMuted = false;
   bool _unlocked = !kIsWeb;
   DateTime? _lastHandWinAt;
   DateTime? _lastShuffleAt;
@@ -34,11 +35,29 @@ class SoundFx {
   String? _lastAnnouncerAsset;
   bool _shufflePlaying = false;
 
-  bool get _enabled => Env.soundEnabled && !_muted && _unlocked;
+  bool get _baseEnabled => Env.soundEnabled && _unlocked;
+  bool get _soundEffectsEnabled => _baseEnabled && !_soundEffectsMuted;
+  bool get _voiceEnabled => _baseEnabled && !_voiceMuted;
   bool get needsUnlock => !_unlocked;
 
-  /// Toggle sounds at runtime in addition to the compile-time Env flag.
-  void setMuted(bool value) => _muted = value;
+  /// Legacy master mute used by tests and callers that want complete silence.
+  void setMuted(bool value) {
+    _soundEffectsMuted = value;
+    _voiceMuted = value;
+    if (value) unawaited(stopAll());
+  }
+
+  void setSoundEffectsMuted(bool value) {
+    _soundEffectsMuted = value;
+    if (value) {
+      unawaited(_stopNonAnnouncerPlayers());
+    }
+  }
+
+  void setVoiceMuted(bool value) {
+    _voiceMuted = value;
+    if (value) unawaited(stopAnnouncer());
+  }
 
   Future<void> unlock() async {
     if (_unlocked) return;
@@ -47,7 +66,7 @@ class SoundFx {
   }
 
   Future<void> preloadDefaults() async {
-    if (!_enabled) return;
+    if (!_baseEnabled) return;
     final assets = <String>{
       AppAssets.dealCardSound,
       AppAssets.foldSound,
@@ -62,7 +81,7 @@ class SoundFx {
       AppAssets.raiseSound,
       AppAssets.callCoinSound,
       AppAssets.actionTapSound,
-      AppAssets.heroTurnSound,
+      AppAssets.heroTurnNotificationSound,
       AppAssets.applauseSound,
       AppAssets.doorKnockSound,
       AppAssets.knock1Sound,
@@ -125,11 +144,15 @@ class SoundFx {
   Future<void> playRaiseAtm() =>
       _playAnnouncer(AppAssets.renoirFemaleRaiseAnnouncer, volume: 0.46);
   Future<void> playActionTap() => _play(AppAssets.actionTapSound, volume: 0.7);
+  Future<void> playHeroTurnNotification() => _play(
+        AppAssets.heroTurnNotificationSound,
+        volume: 0.9,
+        allowOverlap: false,
+      );
   Future<void> playCallCoin() =>
       _playAnnouncer(AppAssets.renoirFemaleCallAnnouncer, volume: 0.46);
   Future<void> playPotIncrease() =>
       _play(AppAssets.potIncreaseSound, volume: 0.9);
-  Future<void> playHeroTurn() => _maybePlayHeroTurn();
   Future<void> playApplause() =>
       _play(AppAssets.applauseSound, volume: 0.4, allowOverlap: false);
 
@@ -168,7 +191,7 @@ class SoundFx {
 
   Future<void> _play(String asset,
       {double volume = 1.0, bool allowOverlap = true}) async {
-    if (!_enabled) return;
+    if (!_soundEffectsEnabled) return;
     try {
       final player = await _ensurePlayer(asset, allowOverlap: allowOverlap);
       if (player == null) return;
@@ -192,7 +215,7 @@ class SoundFx {
   }
 
   Future<void> _playAnnouncer(String asset, {double volume = 1.0}) async {
-    if (!_enabled) return;
+    if (!_voiceEnabled) return;
     final now = DateTime.now();
     if (_lastAnnouncerAsset == asset &&
         _lastAnnouncerAt != null &&
@@ -238,6 +261,13 @@ class SoundFx {
     }
   }
 
+  Future<void> _stopNonAnnouncerPlayers() async {
+    for (final String asset in _players.keys.toList(growable: false)) {
+      if (_announcerAssets.contains(asset)) continue;
+      await _stopPlayers(asset);
+    }
+  }
+
   Future<AudioPlayer?> _ensurePlayer(String asset,
       {bool allowOverlap = true}) async {
     final pool = _players.putIfAbsent(asset, () => <AudioPlayer>[]);
@@ -260,15 +290,6 @@ class SoundFx {
     await player.setAsset(asset);
     pool.add(player);
     return player;
-  }
-
-  Future<void> _maybePlayHeroTurn() async {
-    // Always play the turn notification when requested; no cooldown.
-    await _play(
-      AppAssets.heroTurnSound,
-      volume: 0.90,
-      allowOverlap: false,
-    );
   }
 
   Future<void> _stopPlayers(String asset) async {

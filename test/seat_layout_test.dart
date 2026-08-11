@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen/players.dart';
+import 'package:ten_of_a_kind_poker/ui/screens/game_screen/seat_layout.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen/table.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen/table_ui.dart';
 
@@ -32,7 +33,139 @@ double _minPairwiseDistance(List<Offset> pts) {
   return minD;
 }
 
+void _expectCircularFootprintInside({
+  required RRect boundary,
+  required Offset center,
+  required double radius,
+  required String reason,
+}) {
+  const int sampleCount = 360;
+  for (int sample = 0; sample < sampleCount; sample++) {
+    final double angle = 2 * math.pi * sample / sampleCount;
+    final Offset point = center +
+        Offset(
+          radius * math.cos(angle),
+          radius * math.sin(angle),
+        );
+    expect(
+      boundary.contains(point),
+      isTrue,
+      reason: '$reason; footprint point $sample at $point crossed '
+          '${boundary.outerRect}',
+    );
+  }
+}
+
 void main() {
+  group('player-safe stadium seat layout', () {
+    const double maximumVisualScale = 1.10;
+    final List<
+        ({
+          int seatCount,
+          int heroIndex,
+          Size tableSize,
+          double railWidth,
+          double seatSize,
+        })> cases = [
+      (
+        seatCount: 2,
+        heroIndex: 0,
+        tableSize: const Size(900, 500),
+        railWidth: 30,
+        seatSize: 94,
+      ),
+      (
+        seatCount: 6,
+        heroIndex: 2,
+        tableSize: const Size(1080, 580),
+        railWidth: 34,
+        seatSize: 100,
+      ),
+      (
+        seatCount: 8,
+        heroIndex: 3,
+        tableSize: const Size(1220, 640),
+        railWidth: 36,
+        seatSize: 102,
+      ),
+      (
+        seatCount: 10,
+        heroIndex: 7,
+        tableSize: const Size(1360, 700),
+        railWidth: 38,
+        seatSize: 104,
+      ),
+    ];
+
+    for (final testCase in cases) {
+      test(
+          '${testCase.seatCount} maximum-scale seat circles stay '
+          'inside the inner felt line', () {
+        final RRect safeBoundary = playerSafeFeltRRect(
+          testCase.tableSize,
+          testCase.railWidth,
+        );
+        final List<Offset> positions = stadiumSeatTopLeftPositions(
+          safeStadiumRect: safeBoundary.outerRect,
+          seatCount: testCase.seatCount,
+          heroIndex: testCase.heroIndex,
+          seatSize: testCase.seatSize,
+          maximumVisualScale: maximumVisualScale,
+        );
+
+        expect(positions, hasLength(testCase.seatCount));
+
+        final double visualRadius = testCase.seatSize * maximumVisualScale / 2;
+        for (int index = 0; index < positions.length; index++) {
+          final Offset center = positions[index] +
+              Offset(testCase.seatSize / 2, testCase.seatSize / 2);
+          _expectCircularFootprintInside(
+            boundary: safeBoundary,
+            center: center,
+            radius: visualRadius,
+            reason: 'seat $index of ${testCase.seatCount}',
+          );
+        }
+
+        final Offset heroCenter = positions[testCase.heroIndex] +
+            Offset(testCase.seatSize / 2, testCase.seatSize / 2);
+        expect(
+          heroCenter.dx,
+          closeTo(safeBoundary.outerRect.center.dx, 0.001),
+          reason: 'hero must remain horizontally centred',
+        );
+        expect(
+          heroCenter.dy,
+          greaterThan(safeBoundary.outerRect.center.dy),
+          reason: 'hero must be on the bottom side of the table',
+        );
+        expect(
+          safeBoundary.outerRect.bottom - (heroCenter.dy + visualRadius),
+          closeTo(1.0, 0.001),
+          reason: 'hero footprint should retain the requested boundary gap',
+        );
+      });
+    }
+
+    test('player-safe boundary sits wholly inside the painted felt band', () {
+      const Size tableSize = Size(1080, 580);
+      const double railWidth = 34;
+      final Rect innerBand = innerFeltBandRect(tableSize, railWidth);
+      final RRect safeBoundary = playerSafeFeltRRect(tableSize, railWidth);
+      const double expectedGuard = kInnerFeltBandStrokeWidth / 2;
+
+      expect(
+        safeBoundary.outerRect,
+        Rect.fromLTRB(
+          innerBand.left + expectedGuard,
+          innerBand.top + expectedGuard,
+          innerBand.right - expectedGuard,
+          innerBand.bottom - expectedGuard,
+        ),
+      );
+    });
+  });
+
   testWidgets('Table geometry keeps 10 seats reasonably spaced',
       (tester) async {
     TableGeometry? geom;
@@ -58,12 +191,12 @@ void main() {
             sbIndex: 0,
             bbIndex: 2,
             hiddenSeatIdx: const <int>{},
-            defaultProfileAsset: 'assets/images/profile.png',
+            defaultProfileAsset: 'assets/images/default_profile.png',
             seatMaxW: seatSide,
             seatH: seatSide,
             baseCardW: 66,
             baseCardH: 92,
-            cardBackAsset: 'assets/images/cards/back.webp',
+            cardBackAsset: 'assets/images/cards/back_custom_01.webp',
             showBlindChips: false,
             paintSeats: false,
             onGeometryChanged: (g) => geom = g,
@@ -111,12 +244,12 @@ void main() {
             sbIndex: 0,
             bbIndex: 2,
             hiddenSeatIdx: const <int>{},
-            defaultProfileAsset: 'assets/images/profile.png',
+            defaultProfileAsset: 'assets/images/default_profile.png',
             seatMaxW: seatSide,
             seatH: seatSide,
             baseCardW: 66,
             baseCardH: 92,
-            cardBackAsset: 'assets/images/cards/back.webp',
+            cardBackAsset: 'assets/images/cards/back_custom_01.webp',
             showBlindChips: false,
             paintSeats: false,
             onGeometryChanged: (g) => geom = g,
@@ -153,12 +286,12 @@ void main() {
             sbIndex: 5,
             bbIndex: 0,
             hiddenSeatIdx: const <int>{},
-            defaultProfileAsset: 'assets/images/profile.png',
+            defaultProfileAsset: 'assets/images/default_profile.png',
             seatMaxW: 102,
             seatH: 102,
             baseCardW: 66,
             baseCardH: 92,
-            cardBackAsset: 'assets/images/cards/back.webp',
+            cardBackAsset: 'assets/images/cards/back_custom_01.webp',
             paintSeats: false,
           ),
         ),
@@ -170,5 +303,119 @@ void main() {
     expect(find.text('D'), findsOneWidget);
     expect(find.text('SB'), findsOneWidget);
     expect(find.text('BB'), findsOneWidget);
+  });
+
+  testWidgets('position chip stays visibly attached to its owning seat',
+      (tester) async {
+    const Offset heroTopLeft = Offset(250, 300);
+    const double seatSide = 80;
+    const double chipSize = 30;
+    const Key chipKey = ValueKey<String>('position-chip-smallBlind-0');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Material(
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: 600,
+              height: 400,
+              child: Stack(
+                children: buildBlindChips(
+                  seats: _dummySeats(1, heroIndex: 0),
+                  hiddenSeatIdx: const <int>{},
+                  seatPositions: const <Offset>[heroTopLeft],
+                  seatSide: seatSide,
+                  tableCenter: const Offset(290, 150),
+                  clampRect: const Rect.fromLTWH(20, 20, 560, 360),
+                  chipSize: chipSize,
+                  sbIndex: 0,
+                  bbIndex: -1,
+                  heroIndex: 0,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final Positioned chip = tester.widget<Positioned>(find.byKey(chipKey));
+    final Offset chipCenter = Offset(
+      chip.left! + chipSize / 2,
+      chip.top! + chipSize / 2,
+    );
+    final Offset ownerCenter = Offset(
+      heroTopLeft.dx + seatSide / 2,
+      heroTopLeft.dy + seatSide / 2,
+    );
+    expect(
+      (chipCenter - ownerCenter).distance,
+      lessThan(seatSide * 0.65),
+    );
+    expect(chipCenter.dy, lessThan(ownerCenter.dy));
+    expect(chipCenter.dx, greaterThan(ownerCenter.dx));
+    expect(
+      find.bySemanticsLabel('Small blind for You'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('heads-up dealer and small blind share one seat without overlap',
+      (tester) async {
+    const double seatSide = 84;
+    const double chipSize = 28;
+    const Offset buttonSeat = Offset(120, 180);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Material(
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: 500,
+              height: 360,
+              child: Stack(
+                children: buildBlindChips(
+                  seats: _dummySeats(2, heroIndex: 0),
+                  hiddenSeatIdx: const <int>{},
+                  seatPositions: const <Offset>[
+                    buttonSeat,
+                    Offset(300, 180),
+                  ],
+                  seatSide: seatSide,
+                  tableCenter: const Offset(250, 160),
+                  clampRect: const Rect.fromLTWH(20, 20, 460, 320),
+                  chipSize: chipSize,
+                  dealerIndex: 0,
+                  sbIndex: 0,
+                  bbIndex: 1,
+                  heroIndex: 0,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final Rect dealerRect =
+        tester.getRect(find.byKey(const ValueKey('position-chip-dealer-0')));
+    final Rect smallBlindRect = tester
+        .getRect(find.byKey(const ValueKey('position-chip-smallBlind-0')));
+    final Rect bigBlindRect =
+        tester.getRect(find.byKey(const ValueKey('position-chip-bigBlind-1')));
+
+    expect(dealerRect.overlaps(smallBlindRect), isFalse);
+    expect(
+      (dealerRect.center -
+              Offset(
+                buttonSeat.dx + seatSide / 2,
+                buttonSeat.dy + seatSide / 2,
+              ))
+          .distance,
+      lessThan(seatSide * 0.8),
+    );
+    expect(bigBlindRect.center.dx, greaterThan(250));
   });
 }

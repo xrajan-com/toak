@@ -50,6 +50,18 @@ const Map<VenueGroup, Map<String, String>> kKingdomAbouts = {
     'Dutch Isles': 'Harbor Forts, Merchant Edge',
     'American Isles': 'Pacific Batteries, Bold Play',
   },
+  VenueGroup.northAmerica: <String, String>{
+    'Dominion of Canada': 'Northern Forts, Steady Nerves',
+    'Massachusetts': 'Patriot Walls, Cold Reads',
+    'New York': 'Atlantic Power, Sharp Value',
+    'Virginia': 'Old Dominion, Iron Calls',
+    'Illinois': 'Great Lakes, Deep Stacks',
+    'Florida': 'Southern Forts, Hot Rivers',
+    'Texas': 'Lone Star, Fearless Raises',
+    'Kansas': 'Prairie Steel, Hard Pressure',
+    'Colorado': 'Mountain Forts, High Stakes',
+    'California': 'Pacific Edge, Golden Pots',
+  },
 };
 
 String _canonicalKingdomName(VenueGroup group, String kingdomName) {

@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'models.dart'; // GCard, truncateNice
 import 'cards.dart' show ActionGate;
 import 'bot_avatar.dart';
+import 'seat_card_layout.dart' show seatAvatarVisualRect;
 
 /* ──────────────────────────────────────────────
  * Legibility floors
@@ -235,7 +236,8 @@ class _SeatWidgetState extends State<SeatWidget> with TickerProviderStateMixin {
             final bool showRedRing = !isBusted && (isAllIn || seat.shortStack);
             final bool canShowTurn = actionsOn && widget.isTurn && !isBusted;
             final bool showExpandedSeat = _showDetails && !isBusted;
-            _syncTurnAnimation(canShowTurn);
+            final bool reduceMotion = MediaQuery.disableAnimationsOf(context);
+            _syncTurnAnimation(canShowTurn, reduceMotion: reduceMotion);
             final AvatarMood mood = _resolveMood(seat, canShowTurn);
 
             final double maxH = constraints.maxHeight.isFinite
@@ -257,13 +259,12 @@ class _SeatWidgetState extends State<SeatWidget> with TickerProviderStateMixin {
             final double maxWidth = math.max(minWidth, widget.seatMaxWidth);
             pillW = pillW.clamp(minWidth, maxWidth).toDouble();
             final double shellWidth = showExpandedSeat ? pillW : collapsedSide;
-            final double avatarBaseSize =
-                (pillH * 0.94).clamp(40.0, pillH).toDouble();
-            final double avatarSize = (avatarBaseSize * _kSeatAvatarScale)
-                .clamp(34.0, pillH)
-                .toDouble();
-            final double avatarInset =
-                ((pillH - avatarSize) / 2).clamp(2.0, pillH * 0.18).toDouble();
+            final Rect avatarGeometry = seatAvatarVisualRect(
+              Rect.fromLTWH(0, 0, collapsedSide, pillH),
+              avatarScale: _kSeatAvatarScale,
+            );
+            final double avatarSize = avatarGeometry.width;
+            final double avatarInset = avatarGeometry.top;
             final double avatarLeft = showExpandedSeat
                 ? avatarInset
                 : ((collapsedSide - avatarSize) / 2).clamp(0.0, collapsedSide);
@@ -305,251 +306,302 @@ class _SeatWidgetState extends State<SeatWidget> with TickerProviderStateMixin {
                 spreadRadius: 0.5,
               ),
             ];
+            final String seatStatus =
+                _actionLabelFor(seat, isFolded, isAllIn, canShowTurn);
+            final String blindLabel = widget.isSB
+                ? ', small blind'
+                : widget.isBB
+                    ? ', big blind'
+                    : '';
+            final String semanticsLabel =
+                '${seat.name}, ${_formatAmount(seat.chips)} chips'
+                '${seat.contributedThisHand > 0 ? ', ${_formatAmount(seat.contributedThisHand)} committed' : ''}'
+                ', $seatStatus$blindLabel';
 
             return AnimatedScale(
               scale: (widget.growWhenOthersGone && !isBusted) ? 1.1 : 1.0,
-              duration: const Duration(milliseconds: 450),
+              duration: reduceMotion
+                  ? Duration.zero
+                  : const Duration(milliseconds: 450),
               curve: Curves.easeOutBack,
               child: Center(
                 child: SizedBox(
                   width: collapsedSide,
                   height: pillH,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
+                  child: Semantics(
+                    container: true,
+                    button: !isBusted,
+                    enabled: !isBusted,
+                    excludeSemantics: true,
+                    label: semanticsLabel,
                     onTap: isBusted ? null : _showSeatDetails,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Positioned.fill(
-                          child: AnimatedOpacity(
-                            opacity: _opacity,
-                            duration: seat.busted
-                                ? _kBustFadeDuration
-                                : _kDefaultFadeDuration,
-                            curve: seat.busted
-                                ? Curves.easeOutQuad
-                                : Curves.easeOut,
-                            child: Center(
-                              child: OverflowBox(
-                                minWidth: collapsedSide,
-                                maxWidth: pillW,
-                                minHeight: pillH,
-                                maxHeight: pillH,
-                                alignment: Alignment.center,
-                                child: AnimatedContainer(
-                                  duration: _kSeatExpandDuration,
-                                  curve: Curves.easeOutCubic,
-                                  width: shellWidth,
-                                  height: pillH,
-                                  decoration: BoxDecoration(
-                                    color: showExpandedSeat
-                                        ? pillFillColor
-                                        : Colors.transparent,
-                                    borderRadius:
-                                        BorderRadius.circular(pillH / 2),
-                                    border: showExpandedSeat
-                                        ? Border.all(
-                                            color: Colors.white.withValues(
-                                              alpha: isBusted ? 0.06 : 0.14,
-                                            ),
-                                            width: 1.0,
-                                          )
-                                        : null,
-                                    boxShadow: showExpandedSeat
-                                        ? [
-                                            BoxShadow(
-                                              color: Colors.black.withValues(
-                                                alpha: 0.28,
+                    child: GestureDetector(
+                      excludeFromSemantics: true,
+                      behavior: HitTestBehavior.opaque,
+                      onTap: isBusted ? null : _showSeatDetails,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Positioned.fill(
+                            child: AnimatedOpacity(
+                              opacity: _opacity,
+                              duration: reduceMotion
+                                  ? Duration.zero
+                                  : seat.busted
+                                      ? _kBustFadeDuration
+                                      : _kDefaultFadeDuration,
+                              curve: seat.busted
+                                  ? Curves.easeOutQuad
+                                  : Curves.easeOut,
+                              child: Center(
+                                child: OverflowBox(
+                                  minWidth: collapsedSide,
+                                  maxWidth: pillW,
+                                  minHeight: pillH,
+                                  maxHeight: pillH,
+                                  alignment: Alignment.center,
+                                  child: AnimatedContainer(
+                                    duration: reduceMotion
+                                        ? Duration.zero
+                                        : _kSeatExpandDuration,
+                                    curve: Curves.easeOutCubic,
+                                    width: shellWidth,
+                                    height: pillH,
+                                    decoration: BoxDecoration(
+                                      color: showExpandedSeat
+                                          ? pillFillColor
+                                          : Colors.transparent,
+                                      borderRadius:
+                                          BorderRadius.circular(pillH / 2),
+                                      border: showExpandedSeat
+                                          ? Border.all(
+                                              color: Colors.white.withValues(
+                                                alpha: isBusted ? 0.06 : 0.14,
                                               ),
-                                              blurRadius: 16,
-                                              spreadRadius: 0.5,
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius:
-                                        BorderRadius.circular(pillH / 2),
-                                    child: Stack(
-                                      fit: StackFit.expand,
-                                      children: [
-                                        if (showExpandedSeat &&
-                                            shellStatusTint != null &&
-                                            !isFolded &&
-                                            !isBusted)
-                                          Container(color: shellStatusTint),
-                                        if (showExpandedSeat &&
-                                            isAllIn &&
-                                            !isBusted)
-                                          Container(color: allInShellTint),
-                                        AnimatedPositioned(
-                                          duration: _kSeatExpandDuration,
-                                          curve: Curves.easeOutCubic,
-                                          left: avatarLeft,
-                                          top: showExpandedSeat
-                                              ? avatarInset
-                                              : 0,
-                                          width: avatarBoxSize,
-                                          height: avatarBoxSize,
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: border.color,
-                                                width: border.width,
+                                              width: 1.0,
+                                            )
+                                          : null,
+                                      boxShadow: showExpandedSeat
+                                          ? [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(
+                                                  alpha: 0.28,
+                                                ),
+                                                blurRadius: 16,
+                                                spreadRadius: 0.5,
                                               ),
-                                              boxShadow: avatarShadows,
-                                            ),
-                                            child: ClipOval(
-                                              child: Stack(
-                                                fit: StackFit.expand,
-                                                children: [
-                                                  avatar,
-                                                  if (avatarStatusTint !=
-                                                          null &&
-                                                      !isFolded &&
-                                                      !isBusted)
-                                                    Container(
-                                                      color: avatarStatusTint,
-                                                    ),
-                                                  if (isAllIn && !isBusted)
-                                                    Container(
-                                                      color: allInAvatarTint,
-                                                    ),
-                                                  if (_busting &&
-                                                      isBusted &&
-                                                      seat.chips <= 0)
-                                                    Positioned.fill(
-                                                      child: IgnorePointer(
-                                                        child: AnimatedBuilder(
-                                                          animation:
-                                                              _bustShatterController,
-                                                          builder:
-                                                              (context, _) {
-                                                            final t = Curves
-                                                                .easeOutCubic
-                                                                .transform(
-                                                              _bustShatterController
-                                                                  .value,
-                                                            );
-                                                            final double
-                                                                opacity =
-                                                                (1.0 - t).clamp(
-                                                              0.0,
-                                                              1.0,
-                                                            );
-                                                            final double scale =
-                                                                0.95 + 0.10 * t;
-                                                            final double
-                                                                rotation =
-                                                                (t - 0.5) *
-                                                                    0.08;
-                                                            return Opacity(
-                                                              opacity: opacity,
-                                                              child: Transform
-                                                                  .rotate(
-                                                                angle: rotation,
+                                            ]
+                                          : null,
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius:
+                                          BorderRadius.circular(pillH / 2),
+                                      child: Stack(
+                                        fit: StackFit.expand,
+                                        children: [
+                                          if (showExpandedSeat &&
+                                              shellStatusTint != null &&
+                                              !isFolded &&
+                                              !isBusted)
+                                            Container(color: shellStatusTint),
+                                          if (showExpandedSeat &&
+                                              isAllIn &&
+                                              !isBusted)
+                                            Container(color: allInShellTint),
+                                          AnimatedPositioned(
+                                            duration: reduceMotion
+                                                ? Duration.zero
+                                                : _kSeatExpandDuration,
+                                            curve: Curves.easeOutCubic,
+                                            left: avatarLeft,
+                                            top: avatarInset,
+                                            width: avatarBoxSize,
+                                            height: avatarBoxSize,
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: border.color,
+                                                  width: border.width,
+                                                ),
+                                                boxShadow: avatarShadows,
+                                              ),
+                                              child: ClipOval(
+                                                child: Stack(
+                                                  fit: StackFit.expand,
+                                                  children: [
+                                                    avatar,
+                                                    if (avatarStatusTint !=
+                                                            null &&
+                                                        !isFolded &&
+                                                        !isBusted)
+                                                      Container(
+                                                        color: avatarStatusTint,
+                                                      ),
+                                                    if (isAllIn && !isBusted)
+                                                      Container(
+                                                        color: allInAvatarTint,
+                                                      ),
+                                                    if (_busting &&
+                                                        isBusted &&
+                                                        seat.chips <= 0)
+                                                      Positioned.fill(
+                                                        child: IgnorePointer(
+                                                          child:
+                                                              AnimatedBuilder(
+                                                            animation:
+                                                                _bustShatterController,
+                                                            builder:
+                                                                (context, _) {
+                                                              final t = Curves
+                                                                  .easeOutCubic
+                                                                  .transform(
+                                                                _bustShatterController
+                                                                    .value,
+                                                              );
+                                                              final double
+                                                                  opacity =
+                                                                  (1.0 - t)
+                                                                      .clamp(
+                                                                0.0,
+                                                                1.0,
+                                                              );
+                                                              final double
+                                                                  scale = 0.95 +
+                                                                      0.10 * t;
+                                                              final double
+                                                                  rotation =
+                                                                  (t - 0.5) *
+                                                                      0.08;
+                                                              return Opacity(
+                                                                opacity:
+                                                                    opacity,
                                                                 child: Transform
-                                                                    .scale(
-                                                                  scale: scale,
+                                                                    .rotate(
+                                                                  angle:
+                                                                      rotation,
                                                                   child:
-                                                                      SvgPicture
-                                                                          .asset(
-                                                                    'assets/images/svgs/shattered-glass-svgrepo-com.svg',
-                                                                    fit: BoxFit
-                                                                        .cover,
-                                                                    colorFilter:
-                                                                        ColorFilter
-                                                                            .mode(
-                                                                      Colors
-                                                                          .white
-                                                                          .withValues(
-                                                                        alpha:
-                                                                            0.75,
+                                                                      Transform
+                                                                          .scale(
+                                                                    scale:
+                                                                        scale,
+                                                                    child: SvgPicture
+                                                                        .asset(
+                                                                      'assets/images/svgs/shattered-glass-svgrepo-com.svg',
+                                                                      fit: BoxFit
+                                                                          .cover,
+                                                                      colorFilter:
+                                                                          ColorFilter
+                                                                              .mode(
+                                                                        Colors
+                                                                            .white
+                                                                            .withValues(
+                                                                          alpha:
+                                                                              0.75,
+                                                                        ),
+                                                                        BlendMode
+                                                                            .srcIn,
                                                                       ),
-                                                                      BlendMode
-                                                                          .srcIn,
                                                                     ),
                                                                   ),
                                                                 ),
-                                                              ),
-                                                            );
-                                                          },
+                                                              );
+                                                            },
+                                                          ),
                                                         ),
                                                       ),
-                                                    ),
-                                                  if (showRedRing)
-                                                    const _CriticalStackRing(),
-                                                  if (seat.isHero)
-                                                    const _HeroGlow(),
-                                                  if (widget.isSB ||
-                                                      widget.isBB)
-                                                    _BlindRing(
-                                                      isSB: widget.isSB,
-                                                      isBB: widget.isBB,
-                                                    ),
-                                                  if (canShowTurn)
-                                                    Positioned.fill(
-                                                      child: IgnorePointer(
-                                                        child: CustomPaint(
-                                                          painter:
-                                                              _TurnArcPainter(
-                                                            animation:
-                                                                _turnController,
-                                                            color: const Color(
-                                                              0xFFFFC857,
+                                                    if (showRedRing)
+                                                      const _CriticalStackRing(),
+                                                    if (seat.isHero)
+                                                      const _HeroGlow(),
+                                                    if (widget.isSB ||
+                                                        widget.isBB)
+                                                      _BlindRing(
+                                                        isSB: widget.isSB,
+                                                        isBB: widget.isBB,
+                                                      ),
+                                                    if (canShowTurn)
+                                                      Positioned.fill(
+                                                        child: IgnorePointer(
+                                                          child: CustomPaint(
+                                                            painter:
+                                                                _TurnArcPainter(
+                                                              animation:
+                                                                  _turnController,
+                                                              color:
+                                                                  const Color(
+                                                                0xFFFFC857,
+                                                              ),
                                                             ),
                                                           ),
                                                         ),
                                                       ),
-                                                    ),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        if (showExpandedSeat)
-                                          Positioned.fill(
-                                            left: textLeft,
-                                            right: textRight,
-                                            child: IgnorePointer(
-                                              child: Align(
-                                                alignment: Alignment.centerLeft,
-                                                child: _SeatInfoText(
-                                                  name: truncateNice(
-                                                    _seatFirstName(seat.name),
-                                                    18,
-                                                  ),
-                                                  betLabel: _formatAmount(
-                                                    seat.contributedThisHand,
-                                                  ),
-                                                  stackLabel: _formatAmount(
-                                                    seat.chips,
-                                                  ),
-                                                  height: pillH,
+                                                  ],
                                                 ),
                                               ),
                                             ),
                                           ),
-                                      ],
+                                          if (showExpandedSeat)
+                                            Positioned.fill(
+                                              left: textLeft,
+                                              right: textRight,
+                                              child: IgnorePointer(
+                                                child: Align(
+                                                  alignment:
+                                                      Alignment.centerLeft,
+                                                  child: _SeatInfoText(
+                                                    name: truncateNice(
+                                                      _seatFirstName(seat.name),
+                                                      18,
+                                                    ),
+                                                    betLabel: _formatAmount(
+                                                      seat.contributedThisHand,
+                                                    ),
+                                                    stackLabel: _formatAmount(
+                                                      seat.chips,
+                                                    ),
+                                                    height: pillH,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                        if (widget.showTopBubble)
-                          Positioned.fill(
-                            child: SeatTopBubbleOverlay(
-                              seat: seat,
-                              seatWidth: collapsedSide,
-                              seatHeight: pillH,
-                              persistBustedBubble: widget.persistBustedBubble,
-                              seatVisibleOpacity: _opacity,
+                          if (widget.showTopBubble)
+                            Positioned.fill(
+                              child: SeatTopBubbleOverlay(
+                                seat: seat,
+                                seatWidth: collapsedSide,
+                                seatHeight: pillH,
+                                persistBustedBubble: widget.persistBustedBubble,
+                                seatVisibleOpacity: _opacity,
+                              ),
                             ),
-                          ),
-                      ],
+                          if (!isBusted && !showExpandedSeat)
+                            Positioned(
+                              left: -(pillH * 0.14),
+                              right: -(pillH * 0.14),
+                              bottom: -2,
+                              child: IgnorePointer(
+                                child: _SeatStackBadge(
+                                  name: _seatFirstName(seat.name),
+                                  stackLabel: _formatAmount(seat.chips),
+                                  betLabel: seat.contributedThisHand > 0
+                                      ? _formatAmount(
+                                          seat.contributedThisHand,
+                                        )
+                                      : null,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -561,14 +613,21 @@ class _SeatWidgetState extends State<SeatWidget> with TickerProviderStateMixin {
     );
   }
 
-  void _syncTurnAnimation(bool active) {
-    if (active == _turnActive) return;
-    _turnActive = active;
-    if (active) {
-      _turnController.repeat();
-    } else {
+  void _syncTurnAnimation(bool active, {required bool reduceMotion}) {
+    if (!active) {
+      if (!_turnActive && _turnController.value == 0) return;
+      _turnActive = false;
       _turnController.stop();
       _turnController.reset();
+      return;
+    }
+
+    _turnActive = true;
+    if (reduceMotion) {
+      _turnController.stop();
+      _turnController.value = 1;
+    } else if (!_turnController.isAnimating) {
+      _turnController.repeat();
     }
   }
 
@@ -1220,14 +1279,97 @@ class _SeatInfoChip extends StatelessWidget {
 }
 
 class _SeatStackBadge extends StatelessWidget {
-  const _SeatStackBadge({required this.stackLabel, this.betLabel});
+  const _SeatStackBadge({
+    required this.name,
+    required this.stackLabel,
+    this.betLabel,
+  });
 
+  final String name;
   final String stackLabel;
   final String? betLabel;
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox.shrink();
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.84),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.22),
+          width: 0.8,
+        ),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x88000000),
+            blurRadius: 5,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontFamily: 'OpenSans',
+                fontWeight: FontWeight.w800,
+                fontSize: 11.5,
+                height: 1,
+              ),
+            ),
+            const SizedBox(height: 2),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Text(
+                    stackLabel,
+                    maxLines: 1,
+                    style: const TextStyle(
+                      color: _kSeatStackTextColor,
+                      fontFamily: 'OpenSans',
+                      fontWeight: FontWeight.w900,
+                      fontSize: 10.5,
+                      height: 1,
+                    ),
+                  ),
+                  if (betLabel != null) ...<Widget>[
+                    const Text(
+                      ' • ',
+                      style: TextStyle(
+                        color: Colors.white54,
+                        fontSize: 9,
+                        height: 1,
+                      ),
+                    ),
+                    Text(
+                      betLabel!,
+                      maxLines: 1,
+                      style: const TextStyle(
+                        color: _kSeatBetTextColor,
+                        fontFamily: 'OpenSans',
+                        fontWeight: FontWeight.w900,
+                        fontSize: 10.5,
+                        height: 1,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

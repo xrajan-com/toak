@@ -1,6 +1,6 @@
 class Env {
   /// Base URL for your backend API
-  static const String apiBaseUrl = 'https://api.tenofakind.com';
+  static const String apiBaseUrl = '';
 
   /// Public website documents portal.
   /// Use the live Firebase Hosting URL until the custom domain is configured.
@@ -22,11 +22,11 @@ class Env {
   static const bool leaderboardEnabled = true;
   static const bool statsTrackingEnabled = true;
   static const bool allowGuestLogin = true;
-  static const bool unlockMainEvents = true;
+  static const bool unlockMainEvents = false;
 
   /// Placeholder UPI/Payment info (for future membership mode)
   static const String paymentProvider = 'razorpay';
 
   /// Optional developer debug flag
-  static const bool debugMode = true;
+  static const bool debugMode = false;
 }

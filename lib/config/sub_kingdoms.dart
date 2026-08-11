@@ -9,7 +9,7 @@ const int kDefaultSubKingdomCount = 50;
 /// Optional sub-kingdom names keyed by circuit -> kingdom name.
 ///
 /// - Indices are 1-based in the UI, but lists are 0-based here.
-/// - If a name is missing/blank, the UI falls back to "Sub‑Kingdom 01".
+/// - If a name is missing/blank, the UI falls back to "Fort 01".
 ///
 /// Fill this incrementally as you finalize names.
 const Map<VenueGroup, Map<String, List<String>>> kSubKingdomNames = {
@@ -273,6 +273,127 @@ const Map<VenueGroup, Map<String, List<String>>> kSubKingdomNames = {
       'Spandau Citadel (Germany)',
       'Montjuic Castle (Spain)',
       'Kyiv Fortress (Ukraine)',
+    ],
+  },
+  VenueGroup.northAmerica: <String, List<String>>{
+    'Dominion of Canada': [
+      'CFB Halifax',
+      'CFB Esquimalt',
+      'CFB Kingston',
+      'CFB Petawawa',
+      'CFB Gagetown',
+      'CFB Borden',
+      'CFB Trenton',
+      'CFB Cold Lake',
+      'CFB Valcartier',
+    ],
+    'Massachusetts': [
+      'Hanscom Air Force Base',
+      'Springfield Armory',
+      'Charlestown Navy Yard',
+      'Fort Andrews',
+      'Fort Revere',
+      'Fort Banks',
+      'Fort Sewall',
+      'Fort Strong',
+      'Fort Phoenix',
+      'Otis Air National Guard Base',
+    ],
+    'New York': [
+      'West Point Military Academy',
+      'Fort Drum',
+      'Fort Totten',
+      'Fort Montgomery',
+      'Fort Clinton',
+      'Brooklyn Navy Yard',
+      'Watervliet Arsenal',
+      'Madison Barracks',
+      'Fort Wood',
+      'Camp Smith',
+    ],
+    'Virginia': [
+      'Fort Belvoir',
+      'Fort Gregg-Adams',
+      'Fort Eustis',
+      'Fort Story',
+      'Fort Myer',
+      'Fort Hunt',
+      'Norfolk Naval Station',
+      'Marine Corps Base Quantico',
+      'Joint Base Langley-Eustis',
+      'Naval Air Station Oceana',
+    ],
+    'Illinois': [
+      'Rock Island Arsenal',
+      'Great Lakes Naval Station',
+      'Camp Grant',
+      'Camp Lincoln',
+      'Fort Sheridan',
+      'Fort Massac',
+      'Fort de Chartres',
+      'Camp Ellis',
+      'Fort Crevecoeur',
+      'Joliet Army Ammunition Plant',
+    ],
+    'Florida': [
+      'Fort Jefferson',
+      'Fort Clinch',
+      'Fort Barrancas',
+      'Fort Zachary Taylor',
+      'Fort Brooke',
+      'Naval Air Station Pensacola',
+      'Naval Station Mayport',
+      'Cape Canaveral Space Force Station',
+      'Patrick Space Force Base',
+      'Homestead Air Reserve Base',
+    ],
+    'Texas': [
+      'Fort Bliss',
+      'Fort Cavazos',
+      'Fort Sam Houston',
+      'Laughlin Air Force Base',
+      'Corpus Christi Naval Air Station',
+      'Fort McKavett',
+      'Presidio La Bahía',
+      'Fort Chadbourne',
+      'Fort McIntosh',
+      'Fort Stockton',
+    ],
+    'Kansas': [
+      'Fort Riley',
+      'Fort Larned',
+      'Fort Harker',
+      'Fort Wallace',
+      'Fort Zarah',
+      'Fort Dodge',
+      'Camp Funston',
+      'Smoky Hill Depot',
+      'Fort Mann',
+      'Fort Aubrey',
+    ],
+    'Colorado': [
+      'Fort Garland',
+      'Fort Logan',
+      'Camp Hale',
+      'Fort Lyon',
+      'Fort Vasquez',
+      'Fort St. Vrain',
+      'Rocky Mountain Arsenal',
+      'Buckley Space Force Base',
+      'Fort Sedgwick',
+      'Fort Lupton',
+    ],
+    'California': [
+      'Vandenberg Space Force Base',
+      'Edwards Air Force Base',
+      'China Lake Naval Weapons Station',
+      'Camp Pendleton',
+      'Fort Irwin',
+      'Travis Air Force Base',
+      'Naval Base San Diego',
+      'Mare Island Naval Shipyard',
+      'Moffett Federal Airfield',
+      'Lawrence Livermore National Laboratory',
     ],
   },
   VenueGroup.euro: <String, List<String>>{
@@ -894,12 +1015,12 @@ String subKingdomDisplayName({
   required int index,
 }) {
   final i = index - 1;
-  if (i < 0) return 'Sub‑Kingdom 01';
+  if (i < 0) return 'Fort 01';
 
   final names = subKingdomNamesFor(group: group, kingdomName: kingdomName);
   if (i < names.length) return names[i];
 
-  return 'Sub‑Kingdom ${index.toString().padLeft(2, '0')}';
+  return 'Fort ${index.toString().padLeft(2, '0')}';
 }
 
 int _fnv1a32(String s) {

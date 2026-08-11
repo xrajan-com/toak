@@ -7,15 +7,15 @@ import 'package:flutter/material.dart';
 /// A single flying card in the deal timeline.
 /// Coordinates are in FELT space (0,0 = top-left of felt inside the rail).
 class DealFlight {
-  final Offset from;            // dealer hand position (felt coords)
-  final Offset to;              // target anchor (felt coords)
-  final double settleAngleRad;  // tiny final fan angle (radians)
-  final Duration startDelay;    // delay before this flight starts
-  final Duration duration;      // flight time
-  final int seatIndex;          // which seat this card is going to
-  final int pass;               // 1 or 2 (first or second card)
-  final bool faceUp;            // show face instead of back (hero, etc.)
-  final Object? payload;        // optional: anything your faceBuilder needs
+  final Offset from; // dealer hand position (felt coords)
+  final Offset to; // target anchor (felt coords)
+  final double settleAngleRad; // tiny final fan angle (radians)
+  final Duration startDelay; // delay before this flight starts
+  final Duration duration; // flight time
+  final int seatIndex; // which seat this card is going to
+  final int pass; // 1 or 2 (first or second card)
+  final bool faceUp; // show face instead of back (hero, etc.)
+  final Object? payload; // optional: anything your faceBuilder needs
 
   const DealFlight({
     required this.from,
@@ -29,17 +29,18 @@ class DealFlight {
     this.payload,
   });
 
-  DealFlight shifted(Duration addDelay, {Offset by = Offset.zero}) => DealFlight(
-    from: from,
-    to: to + by,
-    settleAngleRad: settleAngleRad,
-    startDelay: startDelay + addDelay,
-    duration: duration,
-    seatIndex: seatIndex,
-    pass: pass,
-    faceUp: faceUp,
-    payload: payload,
-  );
+  DealFlight shifted(Duration addDelay, {Offset by = Offset.zero}) =>
+      DealFlight(
+        from: from,
+        to: to + by,
+        settleAngleRad: settleAngleRad,
+        startDelay: startDelay + addDelay,
+        duration: duration,
+        seatIndex: seatIndex,
+        pass: pass,
+        faceUp: faceUp,
+        payload: payload,
+      );
 }
 
 /// Builds a sequence of DealFlight entries for common dealing patterns.
@@ -63,7 +64,7 @@ class DealPlan {
   }) {
     if (toAnchors.isEmpty) return const [];
     final n = toAnchors.length;
-    final sb = (dealerIndex + 1) % n;                 // small blind starts
+    final sb = (dealerIndex + 1) % n; // small blind starts
     final order = List<int>.generate(n, (i) => (sb + i) % n);
     final flights = <DealFlight>[];
 
@@ -77,7 +78,8 @@ class DealPlan {
         DealFlight(
           from: from,
           to: to,
-          settleAngleRad: (seat.isEven ? fanAngle : -fanAngle) * (pass == 1 ? 0.9 : 1.2),
+          settleAngleRad:
+              (seat.isEven ? fanAngle : -fanAngle) * (pass == 1 ? 0.9 : 1.2),
           startDelay: baseDelay * k,
           duration: fly,
           seatIndex: seat,
@@ -140,7 +142,7 @@ class DealPlan {
   static List<DealFlight> communityRow({
     required Offset from,
     required Offset rowCenter,
-    required int count,      // 3 (flop), 1 (turn/river)
+    required int count, // 3 (flop), 1 (turn/river)
     required double cardGap, // horizontal gap between cards
     Duration baseDelay = const Duration(milliseconds: 90),
     Duration fly = const Duration(milliseconds: 360),
@@ -227,8 +229,8 @@ class DealLayer extends StatefulWidget {
   ///
   /// - You receive the DealFlight (includes seatIndex and pass).
   /// - Use `flight.payload` if you want to pipe rank/suit etc.
-  final Widget Function(BuildContext ctx, DealFlight flight, double w, double h, double cornerRadius)?
-      faceBuilder;
+  final Widget Function(BuildContext ctx, DealFlight flight, double w, double h,
+      double cornerRadius)? faceBuilder;
 
   const DealLayer({
     super.key,
@@ -246,7 +248,8 @@ class DealLayer extends StatefulWidget {
   State<DealLayer> createState() => _DealLayerState();
 }
 
-class _DealLayerState extends State<DealLayer> with SingleTickerProviderStateMixin {
+class _DealLayerState extends State<DealLayer>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _ticker;
   final Stopwatch _clock = Stopwatch();
 
@@ -278,9 +281,11 @@ class _DealLayerState extends State<DealLayer> with SingleTickerProviderStateMix
   }
 
   void _bindController(DealController controller) {
-    controller._onStart = (flights, {String? backAsset, double speed = 1.0}) async {
+    controller._onStart =
+        (flights, {String? backAsset, double speed = 1.0}) async {
       if (!mounted || flights.isEmpty) return;
-      if (widget.feltSize.isEmpty || widget.cardW <= 0 || widget.cardH <= 0) return;
+      if (widget.feltSize.isEmpty || widget.cardW <= 0 || widget.cardH <= 0)
+        return;
 
       _finishBatch(); // stop any running batch immediately
 
@@ -315,7 +320,8 @@ class _DealLayerState extends State<DealLayer> with SingleTickerProviderStateMix
     controller._onResume = () {
       if (!_isRunning) return;
       _clock.start();
-      _ticker.animateTo(1.0, duration: const Duration(days: 365), curve: Curves.linear);
+      _ticker.animateTo(1.0,
+          duration: const Duration(days: 365), curve: Curves.linear);
     };
   }
 
@@ -384,7 +390,8 @@ class _DealLayerState extends State<DealLayer> with SingleTickerProviderStateMix
             for (final f in _flights)
               Builder(builder: (_) {
                 final start = f.startDelay.inMilliseconds.toDouble();
-                final end = (f.startDelay + f.duration).inMilliseconds.toDouble();
+                final end =
+                    (f.startDelay + f.duration).inMilliseconds.toDouble();
                 double p;
                 if (elapsedMs <= start) {
                   p = 0.0;
@@ -437,7 +444,8 @@ class _FlightCard extends StatelessWidget {
   final double cornerRadius;
 
   final bool faceUp;
-  final Widget Function(BuildContext, DealFlight, double, double, double)? faceBuilder;
+  final Widget Function(BuildContext, DealFlight, double, double, double)?
+      faceBuilder;
   final DealFlight flight;
 
   const _FlightCard({
@@ -466,7 +474,7 @@ class _FlightCard extends StatelessWidget {
 
     // Subtle settle (scale + rotation) in last 10%
     final settleK = progress > 0.9 ? (progress - 0.9) / 0.1 : 0.0;
-    final rot = _lerp(0, angle, t) + (0.02 * settleK);     // ~1.1°
+    final rot = _lerp(0, angle, t) + (0.02 * settleK); // ~1.1°
     final scale = _lerp(0.86, 1.0, t) + (0.015 * settleK); // +1.5%
 
     // Shadow peaks mid-flight.

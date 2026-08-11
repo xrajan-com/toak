@@ -7,7 +7,10 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:ten_of_a_kind_poker/config/.env.dart';
 import 'package:ten_of_a_kind_poker/ui/theme/colors.dart';
+import 'package:ten_of_a_kind_poker/services/api_client.dart';
 import 'package:ten_of_a_kind_poker/services/auth_service.dart';
+import 'package:ten_of_a_kind_poker/services/aura_points_service.dart';
+import 'package:ten_of_a_kind_poker/services/campaign_progress_service.dart';
 import 'package:ten_of_a_kind_poker/services/profile_service.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -20,34 +23,52 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final _aboutController = TextEditingController();
   bool _saving = false;
+  bool _loggingOut = false;
   bool _aboutDirty = false;
 
   @override
-  void initState() {
-    super.initState();
+  void dispose() {
+    _aboutController.dispose();
+    super.dispose();
   }
 
   Future<void> _saveChanges() async {
+    if (_saving) return;
     setState(() => _saving = true);
-
-    await context.read<ProfileService>().updateAbout(_aboutController.text);
-
+    final synced =
+        await context.read<ProfileService>().updateAbout(_aboutController.text);
+    if (!mounted) return;
     setState(() {
       _saving = false;
-      _aboutDirty = false;
+      if (synced) _aboutDirty = false;
     });
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("About updated")),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          synced
+              ? 'About updated'
+              : 'Saved on this device, but could not sync. Please retry.',
+        ),
+      ),
+    );
   }
 
   Future<void> _logout() async {
-    await context.read<AuthService>().logout();
-    if (context.mounted) {
+    if (_loggingOut) return;
+    setState(() => _loggingOut = true);
+    final auth = context.read<AuthService>();
+    await auth.logout();
+    if (!mounted) return;
+    setState(() => _loggingOut = false);
+    if (auth.currentUser == null) {
       Navigator.of(context).popUntil((route) => route.isFirst);
+      return;
     }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Could not log out. Check your connection and retry.'),
+      ),
+    );
   }
 
   Future<void> _openExternalUrl(Uri uri) async {
@@ -82,21 +103,266 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _openDeleteAccount() async {
     final auth = context.read<AuthService>();
     final user = auth.currentUser;
-    final Map<String, String> params = <String, String>{};
-    if (user != null) {
-      if (user.uid.isNotEmpty) params['uid'] = user.uid;
-      final email = (user.email ?? '').trim();
-      if (email.isNotEmpty) params['email'] = email;
-      final name = (user.displayName ?? '').trim();
-      if (name.isNotEmpty) params['name'] = name;
-      if (user.isAnonymous) params['guest'] = '1';
-    } else {
-      params['guest'] = '1';
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No signed-in account to delete.')),
+      );
+      return;
     }
-    final uri = params.isEmpty
-        ? Uri.parse(Env.deleteAccountUrl)
-        : Uri.parse(Env.deleteAccountUrl).replace(queryParameters: params);
-    await _openExternalUrl(uri);
+    final deletedUid = user.uid;
+    final profileService = context.read<ProfileService>();
+    final auraService = context.read<AuraPointsService>();
+    final campaignService = context.read<CampaignProgressService>();
+
+    final confirmationController = TextEditingController();
+    var deleting = false;
+    String? errorText;
+    try {
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) {
+          return StatefulBuilder(
+            builder: (context, setDialogState) {
+              Future<void> deleteAccount() async {
+                if (deleting ||
+                    confirmationController.text.trim() != 'DELETE') {
+                  return;
+                }
+                setDialogState(() {
+                  deleting = true;
+                  errorText = null;
+                });
+                try {
+                  final result = await auth.deleteCurrentAccount();
+                  if (!result.deleted) {
+                    throw const ApiException(
+                      kind: ApiFailureKind.malformedResponse,
+                      message: 'Deletion was not confirmed.',
+                    );
+                  }
+                  var localDataPurged = true;
+                  try {
+                    await Future.wait<void>(<Future<void>>[
+                      profileService.purgeLocalDataForUser(deletedUid),
+                      auraService.purgeLocalDataForUser(
+                        deletedUid,
+                        includeGuestWallet: user.isAnonymous,
+                      ),
+                      campaignService.purgeLocalDataForUser(deletedUid),
+                    ]);
+                  } catch (error) {
+                    localDataPurged = false;
+                    debugPrint(
+                      'Account deleted, but local data purge failed: $error',
+                    );
+                  }
+                  if (!dialogContext.mounted) return;
+                  Navigator.of(dialogContext).pop();
+                  if (!mounted) return;
+                  final messenger = ScaffoldMessenger.of(this.context);
+                  Navigator.of(this.context).popUntil((route) => route.isFirst);
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        localDataPurged
+                            ? 'Account and device-local account data deleted.'
+                            : 'Account deleted. Clear this app\'s storage to '
+                                'remove any remaining device-only data.',
+                      ),
+                      duration: const Duration(seconds: 5),
+                    ),
+                  );
+                } on ApiException catch (error) {
+                  if (!dialogContext.mounted) return;
+                  if (error.code == 'recent_login_required') {
+                    Navigator.of(dialogContext).pop();
+                    await _showRecentLoginRequired();
+                    return;
+                  }
+                  setDialogState(() {
+                    deleting = false;
+                    errorText = switch (error.kind) {
+                      ApiFailureKind.network ||
+                      ApiFailureKind.timeout =>
+                        'Could not reach the deletion service. Check your '
+                            'connection and retry.',
+                      ApiFailureKind.notConfigured =>
+                        'Account deletion is temporarily unavailable.',
+                      ApiFailureKind.rateLimited =>
+                        'Too many attempts. Please wait and try again.',
+                      _ => 'We could not delete the account. Please try again.',
+                    };
+                  });
+                } catch (error) {
+                  debugPrint('Account deletion failed: $error');
+                  if (!dialogContext.mounted) return;
+                  setDialogState(() {
+                    deleting = false;
+                    errorText =
+                        'We could not delete the account. Please try again.';
+                  });
+                }
+              }
+
+              return Dialog(
+                backgroundColor: const Color(0xFF151515),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: 480,
+                    maxHeight: MediaQuery.sizeOf(context).height * 0.88,
+                  ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(22),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Icon(
+                          Icons.warning_amber_rounded,
+                          color: AppColors.orange,
+                          size: 42,
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Permanently delete account?',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: AppColors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'This permanently deletes your sign-in, profile, '
+                          'saved progress, Aura, and leaderboard entry. This '
+                          'cannot be undone.',
+                          style: TextStyle(color: Colors.white70, height: 1.4),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Type DELETE to confirm',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: confirmationController,
+                          enabled: !deleting,
+                          autocorrect: false,
+                          enableSuggestions: false,
+                          textCapitalization: TextCapitalization.characters,
+                          style: const TextStyle(color: Colors.white),
+                          onChanged: (_) => setDialogState(() {}),
+                          decoration: const InputDecoration(
+                            hintText: 'DELETE',
+                            hintStyle: TextStyle(color: Colors.white38),
+                            enabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.white30),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: AppColors.orange),
+                            ),
+                          ),
+                        ),
+                        if (errorText case final message?)
+                          Semantics(
+                            liveRegion: true,
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: Text(
+                                message,
+                                style: const TextStyle(
+                                  color: Color(0xFFFF8A80),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 20),
+                        Wrap(
+                          alignment: WrapAlignment.end,
+                          spacing: 10,
+                          runSpacing: 8,
+                          children: [
+                            TextButton(
+                              onPressed: deleting
+                                  ? null
+                                  : () => Navigator.of(dialogContext).pop(),
+                              child: const Text('Cancel'),
+                            ),
+                            FilledButton.icon(
+                              onPressed: deleting ||
+                                      confirmationController.text.trim() !=
+                                          'DELETE'
+                                  ? null
+                                  : deleteAccount,
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.red,
+                              ),
+                              icon: deleting
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Icon(Icons.delete_forever_outlined),
+                              label: Text(
+                                deleting ? 'Deleting…' : 'Delete Account',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      confirmationController.dispose();
+    }
+  }
+
+  Future<void> _showRecentLoginRequired() async {
+    if (!mounted) return;
+    final logOut = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF151515),
+          title: const Text(
+            'Sign in again',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: const Text(
+            'For security, account deletion requires a sign-in from the last '
+            'five minutes. Log out, sign in again, then return here to retry.',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Not Now'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Log Out'),
+            ),
+          ],
+        );
+      },
+    );
+    if (logOut == true && mounted) await _logout();
   }
 
   Future<void> _copyPlayerId(String playerId) async {
@@ -158,6 +424,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final ImageProvider<Object> avatarImage = avatarBytes != null
         ? MemoryImage(avatarBytes) as ImageProvider<Object>
         : const AssetImage('assets/images/default_profile.png');
+    final width = MediaQuery.sizeOf(context).width;
+    final horizontalPadding = width > 600 ? (width - 552) / 2 : 24.0;
 
     return Scaffold(
       backgroundColor: AppColors.black,
@@ -168,7 +436,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         iconTheme: const IconThemeData(color: AppColors.white),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.fromLTRB(
+          horizontalPadding,
+          24,
+          horizontalPadding,
+          32,
+        ),
         child: Column(
           children: [
             /// Avatar
@@ -281,8 +554,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 side: const BorderSide(color: AppColors.red),
                 minimumSize: const Size(double.infinity, 48),
               ),
-              onPressed: _logout,
-              label: const Text('Log Out'),
+              onPressed: _loggingOut ? null : _logout,
+              label: Text(_loggingOut ? 'Logging Out…' : 'Log Out'),
             ),
 
             const SizedBox(height: 24),
@@ -318,7 +591,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 minimumSize: const Size(double.infinity, 48),
               ),
               onPressed: _openDeleteAccount,
-              label: const Text('Request Account Deletion'),
+              label: const Text('Delete Account'),
             ),
           ],
         ),

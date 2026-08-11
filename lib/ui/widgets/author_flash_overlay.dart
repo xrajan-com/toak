@@ -7,7 +7,7 @@ class AuthorFlashOverlay extends StatelessWidget {
   static const String _renoirAsset = 'assets/images/renoir_tux.png';
 
   static const String _bodyText =
-      'The author would like to stay anonymous. However, you can reach out to him @ +91 953 7654321 or Instagram page "x_of_a_kind".';
+      'The author would like to stay anonymous. You can reach out through the Instagram page "x_of_a_kind".';
 
   @override
   Widget build(BuildContext context) {

@@ -6,14 +6,17 @@
 // tree, read text, and verify that the values of widget properties are correct.
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:ten_of_a_kind_poker/app/app.dart';
 
 void main() {
   testWidgets('App shows disclaimer on launch', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues(const <String, Object>{});
     await tester.pumpWidget(const TenOfAKindApp());
-    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpAndSettle();
 
-    expect(find.text('DISCLAIMER'), findsOneWidget);
+    expect(find.text('Before You Play'), findsOneWidget);
+    expect(find.text('I Understand — Continue'), findsOneWidget);
   });
 }

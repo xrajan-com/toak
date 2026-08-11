@@ -1,61 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:ten_of_a_kind_poker/game/core.dart';
+import 'package:ten_of_a_kind_poker/game/equity/hero_equity.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen/hero_messages.dart';
 
 void main() {
-  test('visible win probability drops as live player count increases', () {
-    final headsUp = estimateVisibleHeroWinProbability(
-      livePlayers: 2,
-      heroHole: const <Card>[
-        Card(Rank.ace, Suit.spades),
-        Card(Rank.ace, Suit.hearts),
-      ],
-      revealedBoard: const <Card>[],
-    );
-    final fourWay = estimateVisibleHeroWinProbability(
-      livePlayers: 4,
-      heroHole: const <Card>[
-        Card(Rank.ace, Suit.spades),
-        Card(Rank.ace, Suit.hearts),
-      ],
-      revealedBoard: const <Card>[],
-    );
-
-    expect(headsUp, isNotNull);
-    expect(fourWay, isNotNull);
-    expect(headsUp!, greaterThan(fourWay!));
-    expect(
-      estimateVisibleHeroWinProbability(
-        livePlayers: 1,
-        heroHole: const <Card>[
-          Card(Rank.ace, Suit.spades),
-          Card(Rank.ace, Suit.hearts),
-        ],
-        revealedBoard: const <Card>[],
-      ),
-      1.0,
-    );
-  });
-
-  test('visible win probability respects only the revealed board', () {
-    final prob = estimateVisibleHeroWinProbability(
-      livePlayers: 5,
-      heroHole: const <Card>[
-        Card(Rank.ace, Suit.spades),
-        Card(Rank.king, Suit.spades),
-      ],
-      revealedBoard: const <Card>[
-        Card(Rank.queen, Suit.spades),
-        Card(Rank.jack, Suit.spades),
-        Card(Rank.ten, Suit.spades),
-        Card(Rank.two, Suit.diamonds),
-        Card(Rank.three, Suit.clubs),
-      ],
-    );
-
-    expect(prob, 1.0);
-  });
-
   test('hero guidance message uses compact chance hand action format', () {
     final message = buildVisibleHeroGuidanceMessage(
       livePlayers: 4,
@@ -85,6 +32,34 @@ void main() {
     );
 
     expect(message, '72% CHANCE, FLUSH, RAISE');
+  });
+
+  test('hero guidance separates win tie equity and side-pot share', () {
+    const estimate = HeroEquityEstimate(
+      winProbability: 0.514,
+      tieProbability: 0.031,
+      equity: 0.5295,
+      expectedPotShare: 0.418,
+      samples: 8000,
+      marginOfError95: 0.006,
+      exact: false,
+      sidePotAware: true,
+      method: 'Stratified adaptive Monte Carlo',
+    );
+    final message = buildVisibleHeroGuidanceMessage(
+      livePlayers: 4,
+      canCheck: false,
+      equityEstimate: estimate,
+      useEquityBreakdown: true,
+      revealedBoardCount: 4,
+      variantSeed: 0,
+      handName: 'PAIR',
+    );
+
+    expect(
+      message,
+      'WIN ~51% • TIE ~3% • EQUITY ~53% • POT SHARE ~42%, PAIR, CALL',
+    );
   });
 
   test('hero guidance uses call when facing pressure with a strong river hand',
@@ -178,9 +153,7 @@ void main() {
     expect(message2, '7% CHANCE, HIGH CARD, DANGER');
   });
 
-  test(
-      'hero guidance calls when probability is unknown instead of auto-folding',
-      () {
+  test('hero guidance shows a useful loading state instead of dash values', () {
     final message = buildVisibleHeroGuidanceMessage(
       livePlayers: 4,
       canCheck: false,
@@ -192,6 +165,6 @@ void main() {
       handName: 'FLUSH DRAW',
     );
 
-    expect(message, '--% CHANCE, FLUSH DRAW, CALL');
+    expect(message, 'CALCULATING ODDS, FLUSH DRAW, CALL');
   });
 }

@@ -520,18 +520,20 @@ BotLore botLoreFor({
   required String kingdomName,
 }) {
   final String k = _canonicalKingdomName(kingdomName);
-  final List<String> hometowns = _hometownsByKingdom[k] ?? const <String>[
-    'Old Town',
-    'Riverside',
-    'Market Road',
-    'Harbor District',
-  ];
-  final List<String> professions = _professionsByKingdom[k] ?? const <String>[
-    'Office Associate',
-    'Driver',
-    'Shop Owner',
-    'Technician',
-  ];
+  final List<String> hometowns = _hometownsByKingdom[k] ??
+      const <String>[
+        'Old Town',
+        'Riverside',
+        'Market Road',
+        'Harbor District',
+      ];
+  final List<String> professions = _professionsByKingdom[k] ??
+      const <String>[
+        'Office Associate',
+        'Driver',
+        'Shop Owner',
+        'Technician',
+      ];
 
   final hometown = _pickFromList(
     hometowns,

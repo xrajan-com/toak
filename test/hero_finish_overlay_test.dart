@@ -156,6 +156,44 @@ void main() {
     expect(find.text('PODIUM FINISH. AUP PAYOUT EARNED.'), findsOneWidget);
   });
 
+  testWidgets('Hero finish overlay identifies a fort reward', (tester) async {
+    final heroSeat = Seat(
+      name: 'Hero',
+      chips: 0,
+      startChips: 10000,
+      bet: 0,
+      isHero: true,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: ElevatedButton(
+              onPressed: () => go.showHeroFinishOverlay(
+                context,
+                heroSeat: heroSeat,
+                rank: 1,
+                totalPlayers: 6,
+                handsPlayed: 8,
+                finalChips: 60000,
+                winnings: 12000,
+                winningsLabel: 'FORT REWARD',
+              ),
+              child: const Text('Open fort result'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open fort result'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('FORT REWARD +12,000 AUP'), findsOneWidget);
+  });
+
   testWidgets('Hero finish overlay runs match-end hook after five seconds', (
     tester,
   ) async {

@@ -2,6 +2,12 @@
 
 A new Flutter project.
 
+The production economy and gameplay trust boundary is documented in
+[`docs/GAMEPLAY_TRUST_MODEL.md`](docs/GAMEPLAY_TRUST_MODEL.md). Release 550 uses
+authenticated client outcome claims for local single-player matches, with
+server-authoritative catalog and accounting. AUP and leaderboard positions are
+cosmetic and have no monetary, prize, or eligibility value.
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.

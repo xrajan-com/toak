@@ -49,6 +49,18 @@ const Map<VenueGroup, Map<String, String>> kKingdomTitles = {
     'Dutch Isles': 'Burgher',
     'American Isles': 'Marshal',
   },
+  VenueGroup.northAmerica: <String, String>{
+    'Dominion of Canada': 'Mountie',
+    'Massachusetts': 'Patriot',
+    'New York': 'Maccabee',
+    'Virginia': 'Cavalier',
+    'Illinois': 'Loopmaster',
+    'Florida': 'Buccaneer',
+    'Texas': 'Longhorn',
+    'Kansas': 'Marshal',
+    'Colorado': 'Prospector',
+    'California': 'Rainmaker',
+  },
 };
 
 String kingdomTitleFor({

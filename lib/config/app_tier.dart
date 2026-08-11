@@ -7,4 +7,3 @@ class AppTier {
 
   static const bool isPremiumBuild = name == 'premium';
 }
-

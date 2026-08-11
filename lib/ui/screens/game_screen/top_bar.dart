@@ -31,7 +31,7 @@ class GameTopBar extends StatelessWidget implements PreferredSizeWidget {
   final String venueName;
   final String flagPath;
 
-  final int venueOffsetMinutes;
+  final String venueTimeZoneId;
   final VoidCallback onExit;
   final VoidCallback onShowHandRankings;
 
@@ -44,7 +44,7 @@ class GameTopBar extends StatelessWidget implements PreferredSizeWidget {
     required this.bg,
     required this.venueName,
     required this.flagPath,
-    required this.venueOffsetMinutes,
+    required this.venueTimeZoneId,
     required this.onExit,
     required this.onShowHandRankings,
     this.isGuest = false,
@@ -127,7 +127,7 @@ class GameTopBar extends StatelessWidget implements PreferredSizeWidget {
                     const SizedBox(width: 6),
                     Padding(
                       padding: const EdgeInsets.only(right: 6),
-                      child: DayDateClock(offsetMinutes: venueOffsetMinutes),
+                      child: DayDateClock(timeZoneId: venueTimeZoneId),
                     ),
                     Semantics(
                       label: 'Open hand rankings',

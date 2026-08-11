@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CLIENT_ID</key>
+	<string>96098527170-vp725enp98j8m8nuig2cii20ttnmspl8.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.96098527170-vp725enp98j8m8nuig2cii20ttnmspl8</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>96098527170-bkk0qtjrjgkkbhb8iumc2c4lbrttfirb.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
 	<string>AIzaSyDrOMJCbikvHliOalQaPLC9L41vc3xZYBs</string>
 	<key>GCM_SENDER_ID</key>
@@ -9,7 +15,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.tenOfAKindPoker</string>
+	<string>com.tenofakind.poker</string>
 	<key>PROJECT_ID</key>
 	<string>ten-of-a-kind-poker</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +31,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:96098527170:ios:5019eb08ccb8d75d98185b</string>
+	<string>1:96098527170:ios:23f4c8b56a27e5a698185b</string>
 </dict>
 </plist>

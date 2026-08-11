@@ -19,7 +19,7 @@ class _CroppedCache {
 Future<Uint8List> _cropWhiteBorderPng(
   Uint8List originalBytes, {
   int whiteThreshold = 246, // 0..255: > means treated as “white-ish”
-  int alphaThreshold = 8,   // 0..255: <= transparent-ish
+  int alphaThreshold = 8, // 0..255: <= transparent-ish
   double maxCropFraction = 0.18, // never crop more than 18% per side
   double minCropFraction = 0.01, // never crop less than 1% (guards tiny noise)
 }) async {
@@ -53,8 +53,12 @@ Future<Uint8List> _cropWhiteBorderPng(
   // LEFT
   while (left < w) {
     bool allWhite = true;
-    for (int y = 0; y < h; y += 3) { // step 3 for speed
-      if (!isWhiteish(left, y)) { allWhite = false; break; }
+    for (int y = 0; y < h; y += 3) {
+      // step 3 for speed
+      if (!isWhiteish(left, y)) {
+        allWhite = false;
+        break;
+      }
     }
     if (!allWhite) break;
     left++;
@@ -64,7 +68,10 @@ Future<Uint8List> _cropWhiteBorderPng(
   while (right >= 0) {
     bool allWhite = true;
     for (int y = 0; y < h; y += 3) {
-      if (!isWhiteish(right, y)) { allWhite = false; break; }
+      if (!isWhiteish(right, y)) {
+        allWhite = false;
+        break;
+      }
     }
     if (!allWhite) break;
     right--;
@@ -74,7 +81,10 @@ Future<Uint8List> _cropWhiteBorderPng(
   while (top < h) {
     bool allWhite = true;
     for (int x = 0; x < w; x += 3) {
-      if (!isWhiteish(x, top)) { allWhite = false; break; }
+      if (!isWhiteish(x, top)) {
+        allWhite = false;
+        break;
+      }
     }
     if (!allWhite) break;
     top++;
@@ -84,7 +94,10 @@ Future<Uint8List> _cropWhiteBorderPng(
   while (bottom >= 0) {
     bool allWhite = true;
     for (int x = 0; x < w; x += 3) {
-      if (!isWhiteish(x, bottom)) { allWhite = false; break; }
+      if (!isWhiteish(x, bottom)) {
+        allWhite = false;
+        break;
+      }
     }
     if (!allWhite) break;
     bottom--;
@@ -127,8 +140,7 @@ Future<Uint8List> _cropWhiteBorderPng(
   canvas.drawImageRect(img, src, dst, paint);
   final picture = recorder.endRecording();
   final cropped = await picture.toImage(newW, newH);
-  final croppedBytes =
-      await cropped.toByteData(format: ui.ImageByteFormat.png);
+  final croppedBytes = await cropped.toByteData(format: ui.ImageByteFormat.png);
 
   return croppedBytes?.buffer.asUint8List() ?? originalBytes;
 }
@@ -151,6 +163,7 @@ class AutoCroppedAsset extends StatefulWidget {
   final double? height;
   final BorderRadius borderRadius;
   final BoxFit fit;
+
   /// If you tweak thresholds in code and want a fresh cache, change this.
   final String cacheKeySuffix;
 

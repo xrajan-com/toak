@@ -1,7 +1,11 @@
+import 'dart:math' show max;
+
 import 'package:flutter/material.dart';
 import 'package:ten_of_a_kind_poker/core/sound_fx.dart';
+import 'package:ten_of_a_kind_poker/game/equity/hero_action_guidance.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen/info_pill.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen/overlays.dart' as go;
+import 'package:ten_of_a_kind_poker/ui/screens/game_screen/viewport.dart';
 import 'package:ten_of_a_kind_poker/ui/theme/colors.dart';
 
 /// Brand colors (fallbacks; prefer your theme if already exported)
@@ -11,8 +15,20 @@ const kRed = AppColors.red;
 const kYellow = Color(0xFFFFD100); // JCB yellow
 const double _kActionBarScale = 0.64;
 const double _kActionBarHeightScale = 0.81;
-const double _kActionIconBoost = 1.10;
 const double _kWinnerInfoPillHeight = 96.0;
+// A stable design-space target keeps the entire action cluster proportional
+// across desktop and phone viewports. The scale-aware term below only grows it
+// further on unusually small safe areas where 70 design pixels would render
+// below the 44 logical-pixel accessibility minimum.
+const double _kCanonicalMinHitTarget = 70.0;
+const _kActionAreaFrameKey = ValueKey<String>('action-area-frame');
+const _kHandExamplesButtonKey = ValueKey<String>('action-hand-examples-button');
+const _kScoreboardButtonKey = ValueKey<String>('action-scoreboard-button');
+const _kTipsButtonKey = ValueKey<String>('action-tips-button');
+const _kPauseButtonKey = ValueKey<String>('action-pause-button');
+const _kSettingsButtonKey = ValueKey<String>('action-settings-button');
+const _kActionGuidanceKey = ValueKey<String>('action-guidance');
+const _kActionGuidanceLabelKey = ValueKey<String>('action-guidance-label');
 
 class ActionBar extends StatefulWidget {
   /// Betting/stack context
@@ -22,6 +38,10 @@ class ActionBar extends StatefulWidget {
   final int maxRaiseTo;
   final int sliderTo; // current selected raise-to value (from parent)
   final bool canAct;
+  final bool canCallOrCheck;
+  final bool canRaise;
+  final bool canAllIn;
+  final bool canFold;
 
   /// Left-side actions
   final VoidCallback onHandExamples;
@@ -40,6 +60,7 @@ class ActionBar extends StatefulWidget {
 
   /// Right-side utility actions
   final VoidCallback onTips; // “i” button
+  final VoidCallback? onSettings;
   final VoidCallback onTogglePause; // pause/resume
   final bool paused;
 
@@ -73,8 +94,8 @@ class ActionBar extends StatefulWidget {
   final String winnerAbout;
   final bool winnerIsHero;
   final Animation<double>? winnerGlow;
-  final Animation<double>? turnGlow;
   final String idleMessage;
+  final HeroActionRecommendation? guidanceRecommendation;
 
   const ActionBar({
     super.key,
@@ -84,6 +105,10 @@ class ActionBar extends StatefulWidget {
     required this.maxRaiseTo,
     required this.sliderTo,
     required this.canAct,
+    this.canCallOrCheck = true,
+    this.canRaise = true,
+    this.canAllIn = true,
+    this.canFold = true,
     required this.onHandExamples,
     required this.onBotLearning,
     required this.showBotLearning,
@@ -94,6 +119,7 @@ class ActionBar extends StatefulWidget {
     required this.onRaiseToChanged,
     required this.onBetOrRaise,
     required this.onTips,
+    this.onSettings,
     required this.onTogglePause,
     required this.paused,
     this.callButtonKey,
@@ -116,8 +142,8 @@ class ActionBar extends StatefulWidget {
     this.winnerAbout = '',
     this.winnerIsHero = false,
     this.winnerGlow,
-    this.turnGlow,
     this.idleMessage = '',
+    this.guidanceRecommendation,
   });
 
   @override
@@ -127,33 +153,25 @@ class ActionBar extends StatefulWidget {
 class _ActionBarState extends State<ActionBar> {
   /// First Bet/Raise click shows slider strip; second click confirms.
   bool _showRaiseStrip = false;
-  bool _raiseCommittedFromSlider = false;
 
   /// Arms SKIP after the hero taps Fold (and we also honor widget.canSkipToWinner).
   bool _skipAfterFold = false;
   bool get _isSkipArmed => _skipAfterFold;
 
-  // Track previous canAct to detect transitions for state resets
-  bool _prevCanAct = false;
-  bool _notifiedActivation = false;
-
   @override
   void initState() {
     super.initState();
-    _prevCanAct = widget.canAct;
     _skipAfterFold = widget.canSkipToWinner;
   }
 
   @override
   void didUpdateWidget(covariant ActionBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final bool overlayShown =
-        !oldWidget.winnerOverlayVisible && widget.winnerOverlayVisible;
     final bool overlayHidden =
         oldWidget.winnerOverlayVisible && !widget.winnerOverlayVisible;
     final bool collapseRaise =
         !widget.canAct && _showRaiseStrip && !widget.winnerOverlayVisible;
-    final bool regainedAction = !_prevCanAct && widget.canAct;
+    final bool regainedAction = !oldWidget.canAct && widget.canAct;
     final bool parentClearedSkip =
         oldWidget.canSkipToWinner && !widget.canSkipToWinner;
     final bool disarmSkip =
@@ -172,39 +190,22 @@ class _ActionBarState extends State<ActionBar> {
       });
     }
 
-    if (overlayShown) {
-      _notifiedActivation = false;
-    }
     if (overlayHidden && (_showRaiseStrip || _skipAfterFold)) {
       setState(() {
         _showRaiseStrip = false;
         _skipAfterFold = false;
       });
     }
-
-    if (regainedAction &&
-        widget.canAct &&
-        !_notifiedActivation &&
-        !widget.winnerOverlayVisible) {
-      _notifiedActivation = true;
-      SoundFx.instance.playHeroTurn();
-    } else if (!widget.canAct) {
-      _notifiedActivation = false;
-    }
-
-    _prevCanAct = widget.canAct;
   }
 
   void _collapseStrip() {
     if (_showRaiseStrip) setState(() => _showRaiseStrip = false);
   }
 
-  void _commitRaiseFromSlider(int value) {
-    widget.onRaiseToChanged(value);
-    if (_raiseCommittedFromSlider) return;
-    _raiseCommittedFromSlider = true;
-    widget.onBetOrRaise();
+  void _confirmSelectedRaise() {
+    if (!widget.canAct || !widget.canRaise) return;
     setState(() => _showRaiseStrip = false);
+    widget.onBetOrRaise();
   }
 
   @override
@@ -215,6 +216,11 @@ class _ActionBarState extends State<ActionBar> {
   @override
   Widget build(BuildContext context) {
     final double scale = _kActionBarScale;
+    final double viewportScale = GameViewportScale.maybeOf(context) ?? 1.0;
+    final double minHitTarget = max(
+      _kCanonicalMinHitTarget,
+      viewportScale > 0 ? 44.0 / viewportScale : 44.0,
+    );
     final baseHeight =
         (widget.compact ? 76.0 : 90.0) * scale * _kActionBarHeightScale;
     final messageHeight = baseHeight < _kWinnerInfoPillHeight * scale
@@ -224,16 +230,34 @@ class _ActionBarState extends State<ActionBar> {
         ? (widget.compact ? 42.0 : 52.0) * scale * _kActionBarHeightScale
         : 0.0;
     final minHeight = baseHeight + extraForRaise;
-    final double radius = 22.0 * scale;
+    const double actionFrameBorderWidth = 0;
+    final double actionFrameReservedInset = 3.2 * scale;
+    final actionAreaContentHeight =
+        minHeight < messageHeight ? messageHeight : minHeight;
+    final double baseActionAreaMinHeight =
+        actionAreaContentHeight + (actionFrameReservedInset * 2);
+    final double actionButtonVisualHeight = 74 * scale * _kActionBarHeightScale;
+    final double actionButtonHeight =
+        max(actionButtonVisualHeight, minHitTarget);
+    final double actionAreaMinHeight =
+        max(baseActionAreaMinHeight, actionButtonHeight);
+    final double sideButtonSize = actionAreaMinHeight * 0.612;
+    final double sideButtonHitSize = max(sideButtonSize, minHitTarget);
     final bool skipReady = widget.canSkipNow;
     final bool yellowSkipPending = widget.canShowdown ||
         widget.everyoneElseFolded ||
         _isSkipArmed ||
         widget.canSkipToWinner;
-    final bool showControls = widget.canAct || yellowSkipPending;
-    final String idleMessage = widget.idleMessage.trim().isNotEmpty
-        ? widget.idleMessage.trim()
-        : 'WATCH THE TABLE. YOUR TURN WILL COME.';
+    final HeroActionRecommendation? actionGuidance =
+        widget.guidanceRecommendation;
+    final ({String label, int slot, Color color})? actionGuidanceStyle =
+        actionGuidance == null
+            ? null
+            : _actionGuidanceStyle(actionGuidance.action);
+    final int handStrengthPercent =
+        ((actionGuidance?.handStrength ?? 0).clamp(0.0, 1.0) * 100)
+            .round()
+            .clamp(0, 100);
 
     Widget buildLeftIcons() => _LeftIconButtons(
           onHandExamples: () {
@@ -252,8 +276,9 @@ class _ActionBarState extends State<ActionBar> {
             _collapseStrip();
             widget.onScoreboard();
           },
-          compact: widget.compact,
           scale: scale,
+          buttonSize: sideButtonSize,
+          hitSize: sideButtonHitSize,
           enabled: true,
         );
 
@@ -263,14 +288,22 @@ class _ActionBarState extends State<ActionBar> {
             _collapseStrip();
             widget.onTips();
           },
+          onSettings: widget.onSettings == null
+              ? null
+              : () {
+                  SoundFx.instance.playActionTap();
+                  _collapseStrip();
+                  widget.onSettings!.call();
+                },
           onTogglePause: () {
             SoundFx.instance.playActionTap();
             _collapseStrip();
             widget.onTogglePause();
           },
           paused: widget.paused,
-          compact: widget.compact,
           scale: scale,
+          buttonSize: sideButtonSize,
+          hitSize: sideButtonHitSize,
           engine: widget.engine,
           enabled: true,
         );
@@ -278,11 +311,14 @@ class _ActionBarState extends State<ActionBar> {
     Widget buildShell({
       required Widget centerChild,
       bool centerExpanded = true,
+      bool alignSidesToActionButtons = false,
     }) {
       final Widget wrappedCenter =
           centerExpanded ? Expanded(child: centerChild) : centerChild;
       return Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: alignSidesToActionButtons
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.center,
         children: [
           buildLeftIcons(),
           SizedBox(width: 10 * scale),
@@ -293,15 +329,29 @@ class _ActionBarState extends State<ActionBar> {
       );
     }
 
-    final normalCenter = Container(
-      constraints: BoxConstraints(minHeight: minHeight),
-      padding: EdgeInsets.symmetric(
-        horizontal: 12 * scale,
-        vertical: 8 * scale * _kActionBarHeightScale,
+    final normalCenterFrame = Container(
+      key: _kActionAreaFrameKey,
+      height: _showRaiseStrip ? null : actionAreaMinHeight,
+      alignment: _showRaiseStrip ? null : Alignment.center,
+      constraints: _showRaiseStrip
+          ? BoxConstraints(minHeight: actionAreaMinHeight)
+          : null,
+      padding: EdgeInsets.fromLTRB(
+        12 * scale,
+        0,
+        12 * scale,
+        0,
       ),
       decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(radius),
+        color: Colors.black.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.45),
+            blurRadius: 24,
+            spreadRadius: 1.5,
+          ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -312,11 +362,11 @@ class _ActionBarState extends State<ActionBar> {
               value: widget.sliderTo,
               min: widget.minRaiseTo,
               max: widget.maxRaiseTo,
-              enabled: widget.canAct,
+              enabled: widget.canAct && widget.canRaise,
               compact: widget.compact,
               scale: scale,
               onChanged: widget.onRaiseToChanged,
-              onChangeEnd: _commitRaiseFromSlider,
+              onChangeEnd: widget.onRaiseToChanged,
             ),
             SizedBox(height: 10 * scale),
           ],
@@ -330,9 +380,14 @@ class _ActionBarState extends State<ActionBar> {
                   sliderTo: widget.sliderTo,
                   // Disable core hero buttons once Skip is armed (after Fold).
                   enabled: widget.canAct && !_isSkipArmed,
+                  callEnabled: widget.canCallOrCheck,
+                  raiseEnabled: widget.canRaise,
+                  allInEnabled: widget.canAllIn,
+                  foldEnabled: widget.canFold,
                   showRaiseStrip: _showRaiseStrip,
                   actionsOn: widget.canAct,
                   scale: scale,
+                  hitHeight: actionButtonHeight,
                   callButtonKey: widget.callButtonKey,
                   foldButtonKey: widget.foldButtonKey,
                   raiseButtonKey: widget.raiseButtonKey,
@@ -345,8 +400,6 @@ class _ActionBarState extends State<ActionBar> {
                   everyoneElseFolded: widget.everyoneElseFolded,
                   yellowEnabled:
                       widget.canAct || skipReady || yellowSkipPending,
-                  turnGlow: widget.turnGlow,
-                  turnGlowActive: widget.canAct,
                   onYellowTap: () {
                     SoundFx.instance.playActionTap();
                     _collapseStrip();
@@ -383,9 +436,8 @@ class _ActionBarState extends State<ActionBar> {
                   onBetOrRaise: () {
                     SoundFx.instance.playActionTap();
                     if (_showRaiseStrip) {
-                      _commitRaiseFromSlider(widget.sliderTo);
+                      _confirmSelectedRaise();
                     } else {
-                      _raiseCommittedFromSlider = false;
                       setState(() => _showRaiseStrip = true);
                     }
                   },
@@ -401,23 +453,55 @@ class _ActionBarState extends State<ActionBar> {
       ),
     );
 
-    final idleBar = _MessagePill(
-      message: idleMessage,
-      compact: widget.compact,
-      scale: scale,
-      minHeight: messageHeight,
-      backgroundColor: Colors.black.withValues(alpha: 0.92),
-      borderColor: Colors.white.withValues(alpha: 0.24),
-      textColor: Colors.white,
-      borderWidth: 3.2 * scale,
-    );
+    final Widget normalCenter = actionGuidanceStyle == null || _showRaiseStrip
+        ? normalCenterFrame
+        : LayoutBuilder(
+            builder: (context, constraints) {
+              final double width = constraints.maxWidth;
+              final double actionGap = 10 * scale;
+              final double innerInset =
+                  actionFrameBorderWidth + (12 * scale) + (6.03 * scale);
+              final double rowWidth = width - (innerInset * 2);
+              final double buttonWidth =
+                  ((rowWidth - (actionGap * 3)) / 4).clamp(1.0, width);
+              final double buttonCenter = innerInset +
+                  (buttonWidth / 2) +
+                  (actionGuidanceStyle.slot * (buttonWidth + actionGap));
+              final double labelWidth = buttonWidth;
+              final double labelHeight = 19 * scale;
+
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  normalCenterFrame,
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 460),
+                    curve: Curves.easeOutCubic,
+                    left: buttonCenter - (labelWidth / 2),
+                    top: scale,
+                    width: labelWidth,
+                    height: labelHeight,
+                    child: IgnorePointer(
+                      child: _ActionGuidanceLabel(
+                        action: actionGuidanceStyle.label,
+                        percent: handStrengthPercent,
+                        actionColor: actionGuidanceStyle.color,
+                        scale: scale,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
 
     final bool showWinnerOverlay = widget.winnerOverlayVisible &&
         (widget.winnerName.trim().isNotEmpty ||
             widget.winnerAbout.trim().isNotEmpty);
     if (!showWinnerOverlay) {
       return buildShell(
-        centerChild: showControls ? normalCenter : idleBar,
+        centerChild: normalCenter,
+        alignSidesToActionButtons: true,
       );
     }
 
@@ -425,54 +509,58 @@ class _ActionBarState extends State<ActionBar> {
         widget.winnerAbout.trim().isNotEmpty ? widget.winnerAbout.trim() : '-';
     final Animation<double> glowAnim =
         widget.winnerGlow ?? const AlwaysStoppedAnimation<double>(0);
-    final winnerBar = IgnorePointer(
-      child: AnimatedBuilder(
-        animation: glowAnim,
-        builder: (context, _) {
-          final palette = winnerPillPalette(
-            isHero: widget.winnerIsHero,
-            blinkStrength: glowAnim.value,
-          );
-          final double t = glowAnim.value.clamp(0.0, 1.0);
-          final double borderWidth = (3.2 + (0.8 * t)) * scale;
-          final double outerBlur = (14 + (4 * t)) * scale;
-          final double outerSpread = 1.4 + (0.8 * t);
+    final winnerBar = SizedBox(
+      height: actionAreaMinHeight,
+      child: IgnorePointer(
+        child: AnimatedBuilder(
+          animation: glowAnim,
+          builder: (context, _) {
+            final palette = winnerPillPalette(
+              isHero: widget.winnerIsHero,
+              blinkStrength: glowAnim.value,
+            );
+            final double t = glowAnim.value.clamp(0.0, 1.0);
+            final double borderWidth = (3.2 + (0.8 * t)) * scale;
+            final double outerBlur = (14 + (4 * t)) * scale;
+            final double outerSpread = 1.4 + (0.8 * t);
 
-          final Color bgColor = palette.background.withValues(
-            alpha: (0.28 + (0.12 * t)).clamp(0.0, 1.0),
-          );
-          final Color borderColor = palette.border.withValues(
-            alpha: (0.95 + (0.05 * t)).clamp(0.0, 1.0),
-          );
-          final Color glowColor = palette.glow.withValues(
-            alpha: (0.55 + (0.15 * t)).clamp(0.0, 1.0),
-          );
+            final Color bgColor = palette.background.withValues(
+              alpha: (0.28 + (0.12 * t)).clamp(0.0, 1.0),
+            );
+            final Color borderColor = palette.border.withValues(
+              alpha: (0.95 + (0.05 * t)).clamp(0.0, 1.0),
+            );
+            final Color glowColor = palette.glow.withValues(
+              alpha: (0.55 + (0.15 * t)).clamp(0.0, 1.0),
+            );
 
-          return _MessagePill(
-            message: winnerAbout,
-            compact: widget.compact,
-            scale: scale,
-            minHeight: _kWinnerInfoPillHeight * scale,
-            backgroundColor: bgColor,
-            borderColor: borderColor,
-            textColor: palette.foreground,
-            borderWidth: borderWidth,
-            extraShadows: [
-              BoxShadow(
-                color: glowColor,
-                blurRadius: outerBlur,
-                spreadRadius: outerSpread,
-              ),
-              BoxShadow(
-                color: Colors.white.withValues(
-                  alpha: 0.12 + (0.14 * t),
+            return _MessagePill(
+              key: _kActionAreaFrameKey,
+              message: winnerAbout,
+              compact: widget.compact,
+              scale: scale,
+              minHeight: 20 * scale * _kActionBarHeightScale,
+              backgroundColor: bgColor,
+              borderColor: borderColor,
+              textColor: palette.foreground,
+              borderWidth: borderWidth,
+              extraShadows: [
+                BoxShadow(
+                  color: glowColor,
+                  blurRadius: outerBlur,
+                  spreadRadius: outerSpread,
                 ),
-                blurRadius: (8 + (6 * t)) * scale,
-                spreadRadius: 0.4 + (0.9 * t),
-              ),
-            ],
-          );
-        },
+                BoxShadow(
+                  color: Colors.white.withValues(
+                    alpha: 0.12 + (0.14 * t),
+                  ),
+                  blurRadius: (8 + (6 * t)) * scale,
+                  spreadRadius: 0.4 + (0.9 * t),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
 
@@ -487,8 +575,9 @@ class _LeftIconButtons extends StatelessWidget {
   final VoidCallback onBotLearning;
   final bool showBotLearning;
   final VoidCallback onScoreboard;
-  final bool compact;
   final double scale;
+  final double buttonSize;
+  final double hitSize;
   final bool enabled;
 
   const _LeftIconButtons({
@@ -496,23 +585,25 @@ class _LeftIconButtons extends StatelessWidget {
     required this.onBotLearning,
     required this.showBotLearning,
     required this.onScoreboard,
-    required this.compact,
     required this.scale,
+    required this.buttonSize,
+    required this.hitSize,
     required this.enabled,
   });
 
   @override
   Widget build(BuildContext context) {
-    final double s = (compact ? 40 : 46) * scale * _kActionIconBoost;
     return SizedBox(
-      height: 74 * scale * _kActionBarHeightScale,
+      height: hitSize,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           _roundIcon(
+            buttonKey: _kHandExamplesButtonKey,
             tooltip: 'Open hand examples, rules, and quick tips.',
             icon: Icons.menu_book_rounded,
-            size: s,
+            size: buttonSize,
+            hitSize: hitSize,
             onTap: onHandExamples,
             enabled: enabled,
           ),
@@ -521,16 +612,19 @@ class _LeftIconButtons extends StatelessWidget {
             _roundIcon(
               tooltip: 'Open the bot learning and behavior panel.',
               icon: Icons.psychology_alt_rounded,
-              size: s,
+              size: buttonSize,
+              hitSize: hitSize,
               onTap: onBotLearning,
               enabled: enabled,
             ),
           ],
           SizedBox(width: 8 * scale),
           _roundIcon(
+            buttonKey: _kScoreboardButtonKey,
             tooltip: 'Open the scoreboard and chip order.',
             icon: Icons.leaderboard_rounded,
-            size: s,
+            size: buttonSize,
+            hitSize: hitSize,
             onTap: onScoreboard,
             enabled: enabled,
           ),
@@ -543,8 +637,10 @@ class _LeftIconButtons extends StatelessWidget {
 class _HeroButtonsRow extends StatelessWidget {
   final int callAmount, minRaiseTo, sliderTo;
   final bool enabled, showRaiseStrip;
+  final bool callEnabled, raiseEnabled, allInEnabled, foldEnabled;
   final bool actionsOn; // reflects ActionGate / canAct from parent
   final double scale;
+  final double hitHeight;
   final Key? callButtonKey;
   final Key? foldButtonKey;
   final Key? raiseButtonKey;
@@ -555,8 +651,6 @@ class _HeroButtonsRow extends StatelessWidget {
   final bool canSkipToWinner, canShowdown;
   final bool everyoneElseFolded;
   final bool yellowEnabled;
-  final Animation<double>? turnGlow;
-  final bool turnGlowActive;
   final VoidCallback onYellowTap;
 
   final VoidCallback onCall, onBetOrRaise, onAllIn;
@@ -566,9 +660,14 @@ class _HeroButtonsRow extends StatelessWidget {
     required this.minRaiseTo,
     required this.sliderTo,
     required this.enabled,
+    required this.callEnabled,
+    required this.raiseEnabled,
+    required this.allInEnabled,
+    required this.foldEnabled,
     required this.showRaiseStrip,
     required this.actionsOn,
     required this.scale,
+    required this.hitHeight,
     this.callButtonKey,
     this.foldButtonKey,
     this.raiseButtonKey,
@@ -578,8 +677,6 @@ class _HeroButtonsRow extends StatelessWidget {
     required this.canShowdown,
     required this.everyoneElseFolded,
     required this.yellowEnabled,
-    this.turnGlow,
-    this.turnGlowActive = false,
     required this.onYellowTap,
     required this.onCall,
     required this.onBetOrRaise,
@@ -590,7 +687,7 @@ class _HeroButtonsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool yellowSkipPending =
         canShowdown || everyoneElseFolded || canSkipToWinner;
-    final bool yellowIsFold = actionsOn && !yellowSkipPending;
+    final bool yellowIsFold = !yellowSkipPending;
     final String yellowLabel = yellowIsFold ? 'FOLD' : 'SKIP';
 
     final bool hasCallAmount = callAmount > 0;
@@ -612,89 +709,176 @@ class _HeroButtonsRow extends StatelessWidget {
         : canShowdown || everyoneElseFolded
             ? 'Show the remaining cards and resolve the hand.'
             : 'Skip ahead and fast-forward to the winner.';
-
     const containerColor = Colors.transparent;
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: 16 * scale,
-        vertical: 8 * scale * _kActionBarHeightScale,
+        horizontal: 6.03 * scale,
       ),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(60 * scale),
         color: containerColor,
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _pillActionButton(
-              widgetKey: callButtonKey,
-              title: callTitle,
-              value: callValue,
-              color: const Color(0xFF3BB143),
-              onTap: onCall,
-              enabled: enabled,
-              active: enabled,
-              scale: scale,
-              turnGlow: turnGlow,
-              turnGlowActive: turnGlowActive,
-              tooltip: callTooltip,
+      child: SizedBox(
+        height: hitHeight,
+        child: Row(
+          children: [
+            Expanded(
+              child: _pillActionButton(
+                title: 'ALL-IN',
+                widgetKey: allInButtonKey,
+                color: const Color(0xFFC41230),
+                onTap: onAllIn,
+                enabled: enabled && allInEnabled,
+                active: !actionsOn || (enabled && allInEnabled),
+                scale: scale,
+                hitHeight: hitHeight,
+                tooltip: allInTooltip,
+              ),
             ),
-          ),
-          SizedBox(width: 10 * scale),
-          Expanded(
-            child: _pillActionButton(
-              title: raiseTitle,
-              value: raiseValue,
-              widgetKey: raiseButtonKey,
-              color: const Color(0xFF007FFF),
-              textColor: Colors.white,
-              valueColor: Colors.white,
-              onTap: onBetOrRaise,
-              enabled: enabled && (!showRaiseStrip || sliderTo >= minRaiseTo),
-              active: enabled && (!showRaiseStrip || sliderTo >= minRaiseTo),
-              scale: scale,
-              turnGlow: turnGlow,
-              turnGlowActive: turnGlowActive,
-              tooltip: raiseTooltip,
+            SizedBox(width: 10 * scale),
+            Expanded(
+              child: _pillActionButton(
+                title: raiseTitle,
+                value: raiseValue,
+                widgetKey: raiseButtonKey,
+                color: const Color(0xFF007FFF),
+                textColor: Colors.white,
+                valueColor: Colors.white,
+                onTap: onBetOrRaise,
+                enabled: enabled &&
+                    raiseEnabled &&
+                    (!showRaiseStrip || sliderTo >= minRaiseTo),
+                active: !actionsOn ||
+                    (enabled &&
+                        raiseEnabled &&
+                        (!showRaiseStrip || sliderTo >= minRaiseTo)),
+                scale: scale,
+                hitHeight: hitHeight,
+                tooltip: raiseTooltip,
+              ),
             ),
-          ),
-          SizedBox(width: 10 * scale),
-          Expanded(
-            child: _pillActionButton(
-              title: 'ALL-IN',
-              widgetKey: allInButtonKey,
-              color: const Color(0xFFC41230),
-              onTap: onAllIn,
-              enabled: enabled,
-              active: enabled,
-              scale: scale,
-              turnGlow: turnGlow,
-              turnGlowActive: turnGlowActive,
-              tooltip: allInTooltip,
+            SizedBox(width: 10 * scale),
+            Expanded(
+              child: _pillActionButton(
+                widgetKey: callButtonKey,
+                title: callTitle,
+                value: callValue,
+                color: const Color(0xFF3BB143),
+                onTap: onCall,
+                enabled: enabled && callEnabled,
+                active: !actionsOn || (enabled && callEnabled),
+                scale: scale,
+                hitHeight: hitHeight,
+                tooltip: callTooltip,
+              ),
             ),
-          ),
-          SizedBox(width: 10 * scale),
-          Expanded(
-            child: _pillActionButton(
-              widgetKey: yellowButtonKey ?? foldButtonKey,
-              title: yellowLabel,
-              color: kYellow,
-              textColor: Colors.black,
-              titleStyle: _yellowActionLabelStyle(),
-              onTap: onYellowTap,
-              enabled: yellowEnabled,
-              active: yellowEnabled,
-              scale: scale,
-              turnGlow: turnGlow,
-              turnGlowActive: turnGlowActive,
-              tooltip: yellowTooltip,
+            SizedBox(width: 10 * scale),
+            Expanded(
+              child: _pillActionButton(
+                widgetKey: yellowButtonKey ?? foldButtonKey,
+                title: yellowLabel,
+                color: kYellow,
+                textColor: Colors.white,
+                titleStyle: _yellowActionLabelStyle(),
+                onTap: onYellowTap,
+                enabled: yellowEnabled && (!yellowIsFold || foldEnabled),
+                active: !actionsOn ||
+                    (yellowEnabled && (!yellowIsFold || foldEnabled)),
+                scale: scale,
+                hitHeight: hitHeight,
+                tooltip: yellowTooltip,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
+
+class _ActionGuidanceLabel extends StatelessWidget {
+  final String action;
+  final int percent;
+  final Color actionColor;
+  final double scale;
+
+  const _ActionGuidanceLabel({
+    required this.action,
+    required this.percent,
+    required this.actionColor,
+    required this.scale,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      key: _kActionGuidanceKey,
+      label: 'Recommended $action, hand strength $percent percent',
+      child: ExcludeSemantics(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: RichText(
+            key: _kActionGuidanceLabelKey,
+            maxLines: 1,
+            text: TextSpan(
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 19 * scale,
+                letterSpacing: 0.28,
+                shadows: const <Shadow>[
+                  Shadow(
+                    color: Colors.black,
+                    blurRadius: 5,
+                    offset: Offset(0, 1),
+                  ),
+                ],
+              ),
+              children: <InlineSpan>[
+                TextSpan(
+                  text: action,
+                  style: TextStyle(color: actionColor),
+                ),
+                TextSpan(text: '  •  HAND STRENGTH: $percent%'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+({String label, int slot, Color color}) _actionGuidanceStyle(
+  HeroRecommendedAction action,
+) =>
+    switch (action) {
+      HeroRecommendedAction.allIn => (
+          label: 'ALL-IN',
+          slot: 0,
+          color: const Color(0xFFC41230),
+        ),
+      HeroRecommendedAction.raise => (
+          label: 'RAISE',
+          slot: 1,
+          color: const Color(0xFF007FFF),
+        ),
+      HeroRecommendedAction.check => (
+          label: 'CHECK',
+          slot: 2,
+          color: const Color(0xFF3BB143),
+        ),
+      HeroRecommendedAction.call => (
+          label: 'CALL',
+          slot: 2,
+          color: const Color(0xFF3BB143),
+        ),
+      HeroRecommendedAction.fold => (
+          label: 'FOLD',
+          slot: 3,
+          color: kYellow,
+        ),
+    };
 
 class _MessagePill extends StatelessWidget {
   final String message;
@@ -706,8 +890,10 @@ class _MessagePill extends StatelessWidget {
   final Color textColor;
   final double borderWidth;
   final List<BoxShadow> extraShadows;
+  final bool highlightTrailingAction;
 
   const _MessagePill({
+    super.key,
     required this.message,
     required this.compact,
     required this.scale,
@@ -717,6 +903,7 @@ class _MessagePill extends StatelessWidget {
     required this.textColor,
     this.borderWidth = 1.4,
     this.extraShadows = const <BoxShadow>[],
+    this.highlightTrailingAction = false,
   });
 
   @override
@@ -750,6 +937,7 @@ class _MessagePill extends StatelessWidget {
             message: message,
             compact: compact,
             textColor: textColor,
+            highlightTrailingAction: highlightTrailingAction,
           ),
         ),
       ),
@@ -761,11 +949,13 @@ class _AdaptivePillText extends StatelessWidget {
   final String message;
   final bool compact;
   final Color textColor;
+  final bool highlightTrailingAction;
 
   const _AdaptivePillText({
     required this.message,
     required this.compact,
     required this.textColor,
+    required this.highlightTrailingAction,
   });
 
   @override
@@ -786,11 +976,29 @@ class _AdaptivePillText extends StatelessWidget {
               letterSpacing: 0.08,
             );
 
+        List<InlineSpan> spansFor(TextStyle style) {
+          if (!highlightTrailingAction) {
+            return <InlineSpan>[TextSpan(text: message, style: style)];
+          }
+          final _TrailingActionHighlight? highlight =
+              _trailingActionHighlight(message);
+          if (highlight == null) {
+            return <InlineSpan>[TextSpan(text: message, style: style)];
+          }
+          return <InlineSpan>[
+            TextSpan(text: highlight.prefix, style: style),
+            TextSpan(
+              text: highlight.action,
+              style: style.copyWith(color: highlight.color),
+            ),
+          ];
+        }
+
         while (fontSize > minFont) {
+          final TextStyle style = styleFor(fontSize);
           final TextPainter painter = TextPainter(
             text: TextSpan(
-              text: message,
-              style: styleFor(fontSize),
+              children: spansFor(style),
             ),
             textAlign: TextAlign.center,
             textDirection: Directionality.of(context),
@@ -800,16 +1008,58 @@ class _AdaptivePillText extends StatelessWidget {
           fontSize -= step;
         }
 
-        return Text(
-          message,
+        final TextStyle resolvedStyle = styleFor(fontSize);
+        return RichText(
+          key: const ValueKey<String>('action-guidance-text'),
           textAlign: TextAlign.center,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: styleFor(fontSize),
+          text: TextSpan(children: spansFor(resolvedStyle)),
         );
       },
     );
   }
+}
+
+class _TrailingActionHighlight {
+  final String prefix;
+  final String action;
+  final Color color;
+
+  const _TrailingActionHighlight({
+    required this.prefix,
+    required this.action,
+    required this.color,
+  });
+}
+
+_TrailingActionHighlight? _trailingActionHighlight(String message) {
+  const List<(String, Color)> actions = <(String, Color)>[
+    ('MATCH BID', kYellow),
+    ('TOO THIN', Color(0xFFC41230)),
+    ('ALL-IN', Color(0xFF007FFF)),
+    ('ALL IN', Color(0xFF007FFF)),
+    ('CAUTION', Color(0xFFC41230)),
+    ('DANGER', Color(0xFFC41230)),
+    ('RAISE', Color(0xFF007FFF)),
+    ('BET', Color(0xFF007FFF)),
+    ('CALL', Color(0xFF3BB143)),
+    ('CHECK', Color(0xFF3BB143)),
+    ('FOLD', Color(0xFFC41230)),
+    ('SHOW', kYellow),
+    ('SKIP', kYellow),
+  ];
+  final String upper = message.trimRight().toUpperCase();
+  for (final (String action, Color color) in actions) {
+    if (!upper.endsWith(action)) continue;
+    final int start = message.trimRight().length - action.length;
+    return _TrailingActionHighlight(
+      prefix: message.trimRight().substring(0, start),
+      action: message.trimRight().substring(start),
+      color: color,
+    );
+  }
+  return null;
 }
 
 class _RaiseStrip extends StatelessWidget {
@@ -834,12 +1084,11 @@ class _RaiseStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final double trackH = (compact ? 3 : 4) * scale;
     final double thumbR = (compact ? 8 : 10) * scale;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Align(
-          alignment: Alignment.center,
-          child: Container(
+    return SizedBox(
+      height: 25 * scale,
+      child: Row(
+        children: [
+          Container(
             padding: EdgeInsets.symmetric(
               horizontal: 12 * scale,
               vertical: 5 * scale,
@@ -865,25 +1114,29 @@ class _RaiseStrip extends StatelessWidget {
               ),
             ),
           ),
-        ),
-        SizedBox(height: 8 * scale),
-        SliderTheme(
-          data: SliderTheme.of(context).copyWith(
-            trackHeight: trackH,
-            thumbShape: RoundSliderThumbShape(enabledThumbRadius: thumbR),
-            overlayShape: RoundSliderOverlayShape(overlayRadius: thumbR + 2),
+          SizedBox(width: 8 * scale),
+          Expanded(
+            child: SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                trackHeight: trackH,
+                thumbShape: RoundSliderThumbShape(enabledThumbRadius: thumbR),
+                overlayShape:
+                    RoundSliderOverlayShape(overlayRadius: thumbR + 2),
+              ),
+              child: Slider(
+                padding: EdgeInsets.zero,
+                value: value.clamp(min, max).toDouble(),
+                min: min.toDouble(),
+                max: max.toDouble(),
+                onChanged: enabled ? (v) => onChanged(v.round()) : null,
+                onChangeEnd: enabled && onChangeEnd != null
+                    ? (v) => onChangeEnd!(v.round())
+                    : null,
+              ),
+            ),
           ),
-          child: Slider(
-            value: value.clamp(min, max).toDouble(),
-            min: min.toDouble(),
-            max: max.toDouble(),
-            onChanged: enabled ? (v) => onChanged(v.round()) : null,
-            onChangeEnd: enabled && onChangeEnd != null
-                ? (v) => onChangeEnd!(v.round())
-                : null,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -904,11 +1157,10 @@ Widget _pillActionButton({
   TextStyle? titleStyle,
   TextStyle? valueStyle,
   double scale = 1.0,
-  Animation<double>? turnGlow,
-  bool turnGlowActive = false,
+  double? hitHeight,
 }) {
   return _PillActionButton(
-    key: widgetKey,
+    visualKey: widgetKey,
     title: title,
     value: value,
     tooltip: tooltip,
@@ -921,12 +1173,12 @@ Widget _pillActionButton({
     titleStyle: titleStyle,
     valueStyle: valueStyle,
     scale: scale,
-    turnGlow: turnGlow,
-    turnGlowActive: turnGlowActive,
+    hitHeight: hitHeight,
   );
 }
 
 class _PillActionButton extends StatefulWidget {
+  final Key? visualKey;
   final String title;
   final String? value;
   final String? tooltip;
@@ -939,11 +1191,10 @@ class _PillActionButton extends StatefulWidget {
   final TextStyle? titleStyle;
   final TextStyle? valueStyle;
   final double scale;
-  final Animation<double>? turnGlow;
-  final bool turnGlowActive;
+  final double? hitHeight;
 
   const _PillActionButton({
-    super.key,
+    this.visualKey,
     required this.title,
     this.value,
     this.tooltip,
@@ -956,8 +1207,7 @@ class _PillActionButton extends StatefulWidget {
     this.titleStyle,
     this.valueStyle,
     required this.scale,
-    this.turnGlow,
-    this.turnGlowActive = false,
+    this.hitHeight,
   });
 
   @override
@@ -979,7 +1229,8 @@ class _PillActionButtonState extends State<_PillActionButton> {
 
   @override
   Widget build(BuildContext context) {
-    final double height = 74 * widget.scale * _kActionBarHeightScale;
+    final double visualHeight = 74 * widget.scale * _kActionBarHeightScale;
+    final double height = max(visualHeight, widget.hitHeight ?? 0);
     final bool neutral = !widget.active;
     final bool emphasized = _hover || _pressed;
     final String titleText = widget.title.toUpperCase();
@@ -1010,91 +1261,92 @@ class _PillActionButtonState extends State<_PillActionButton> {
     final Color glowColor = borderColor.withValues(alpha: 0.24);
     final double glowBlur = _hover ? 12 : 8;
     final double glowSpread = _hover ? 0.8 : 0.0;
-    final Color effectiveBorderColor =
-        widget.enabled ? borderColor : borderColor.withValues(alpha: 0.35);
-    final List<BoxShadow> glow = widget.enabled
-        ? [
-            BoxShadow(
-              color: glowColor,
-              blurRadius: glowBlur,
-              spreadRadius: glowSpread,
-            ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.30),
-              blurRadius: 8,
-              spreadRadius: 0.0,
-              offset: const Offset(0, 4),
-            ),
-          ]
-        : const [];
-    final Color turnGlowColor = neutral
-        ? Colors.white.withValues(alpha: 0.88)
-        : widget.color.withValues(alpha: 0.96);
-
+    final Color effectiveBorderColor = borderColor;
+    final List<BoxShadow> glow = [
+      BoxShadow(
+        color: glowColor,
+        blurRadius: glowBlur,
+        spreadRadius: glowSpread,
+      ),
+      BoxShadow(
+        color: Colors.black.withValues(alpha: 0.30),
+        blurRadius: 8,
+        spreadRadius: 0.0,
+        offset: const Offset(0, 4),
+      ),
+    ];
     Widget button = SizedBox(
       height: height,
       child: Center(
-        child: Opacity(
-          opacity: widget.enabled ? 1 : 0.5,
-          child: SizedBox(
-            width: double.infinity,
-            height: height,
-            child: MouseRegion(
-              onEnter:
-                  widget.enabled ? (_) => setState(() => _hover = true) : null,
-              onExit: (_) => setState(() {
-                _hover = false;
-                _pressed = false;
-              }),
-              cursor: widget.enabled
-                  ? SystemMouseCursors.click
-                  : SystemMouseCursors.basic,
-              child: Material(
-                color: Colors.transparent,
-                shape: const StadiumBorder(),
-                child: InkWell(
-                  customBorder: const StadiumBorder(),
-                  onTapDown: widget.enabled
-                      ? (_) => setState(() => _pressed = true)
-                      : null,
-                  onTapCancel: widget.enabled
-                      ? () => setState(() => _pressed = false)
-                      : null,
-                  onTap: widget.enabled
-                      ? () {
-                          setState(() => _pressed = false);
-                          widget.onTap();
-                        }
-                      : null,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    curve: Curves.easeOut,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(height),
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [fillTop, fillBottom],
+        child: SizedBox(
+          width: double.infinity,
+          height: height,
+          child: MouseRegion(
+            onEnter:
+                widget.enabled ? (_) => setState(() => _hover = true) : null,
+            onExit: (_) => setState(() {
+              _hover = false;
+              _pressed = false;
+            }),
+            cursor: widget.enabled
+                ? SystemMouseCursors.click
+                : SystemMouseCursors.basic,
+            child: Material(
+              color: Colors.transparent,
+              shape: const StadiumBorder(),
+              child: InkWell(
+                customBorder: const StadiumBorder(),
+                onTapDown: widget.enabled
+                    ? (_) => setState(() => _pressed = true)
+                    : null,
+                onTapCancel: widget.enabled
+                    ? () => setState(() => _pressed = false)
+                    : null,
+                onTap: widget.enabled
+                    ? () {
+                        setState(() => _pressed = false);
+                        widget.onTap();
+                      }
+                    : null,
+                child: Center(
+                  child: Transform.translate(
+                    offset: Offset(0, 2 * widget.scale),
+                    child: Container(
+                      key: widget.visualKey,
+                      width: double.infinity,
+                      height: visualHeight,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(visualHeight),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [fillTop, fillBottom],
+                        ),
+                        border: Border.all(
+                            color: effectiveBorderColor, width: borderWidth),
+                        boxShadow: glow,
                       ),
-                      border: Border.all(
-                          color: effectiveBorderColor, width: borderWidth),
-                      boxShadow: glow,
-                    ),
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: height * 0.12,
-                        vertical: height * 0.16,
-                      ),
-                      child: Center(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            displayLabel,
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            style: (widget.titleStyle ??
-                                    _buttonTitleStyle(primaryText))
-                                .copyWith(color: primaryText),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: visualHeight * 0.12,
+                          vertical: visualHeight * 0.16,
+                        ),
+                        child: ClipRect(
+                          child: Center(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                displayLabel,
+                                key: ValueKey<String>(displayLabel),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                softWrap: false,
+                                overflow: TextOverflow.clip,
+                                style: (widget.titleStyle ??
+                                        _buttonTitleStyle(primaryText))
+                                    .copyWith(color: primaryText),
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -1108,24 +1360,6 @@ class _PillActionButtonState extends State<_PillActionButton> {
       ),
     );
 
-    if (widget.turnGlowActive && widget.turnGlow != null) {
-      button = AnimatedBuilder(
-        animation: widget.turnGlow!,
-        child: button,
-        builder: (context, child) {
-          return CustomPaint(
-            foregroundPainter: _ActionButtonTurnGlowPainter(
-              progress: widget.turnGlow!.value,
-              color: turnGlowColor,
-              inset: borderWidth * 0.45,
-              strokeWidth: 1.9 + (0.5 * widget.scale),
-            ),
-            child: child,
-          );
-        },
-      );
-    }
-
     final String tooltip =
         widget.tooltip?.trim().isNotEmpty == true ? widget.tooltip!.trim() : '';
     if (tooltip.isEmpty) return button;
@@ -1138,71 +1372,6 @@ class _PillActionButtonState extends State<_PillActionButton> {
   }
 }
 
-class _ActionButtonTurnGlowPainter extends CustomPainter {
-  final double progress;
-  final Color color;
-  final double inset;
-  final double strokeWidth;
-
-  const _ActionButtonTurnGlowPainter({
-    required this.progress,
-    required this.color,
-    required this.inset,
-    required this.strokeWidth,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (size.isEmpty) return;
-    final Rect rect = Offset.zero & size;
-    final double safeInset = inset.clamp(0.0, size.shortestSide / 4);
-    final RRect rrect = RRect.fromRectAndRadius(
-      rect.deflate(safeInset),
-      Radius.circular((size.height / 2) - safeInset),
-    );
-    final Path path = Path()..addRRect(rrect);
-    final metrics = path.computeMetrics().toList();
-    if (metrics.isEmpty) return;
-    final metric = metrics.first;
-    if (metric.length <= 0) return;
-
-    final double sweep = metric.length * 0.22;
-    final double start = (progress % 1.0) * metric.length;
-    final double end = start + sweep;
-    Path glowPath;
-    if (end <= metric.length) {
-      glowPath = metric.extractPath(start, end);
-    } else {
-      glowPath = Path()
-        ..addPath(metric.extractPath(start, metric.length), Offset.zero)
-        ..addPath(metric.extractPath(0, end - metric.length), Offset.zero);
-    }
-
-    final Paint glowPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth + 0.8
-      ..strokeCap = StrokeCap.round
-      ..color = color.withValues(alpha: 0.64)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
-    final Paint corePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round
-      ..color = color;
-
-    canvas.drawPath(glowPath, glowPaint);
-    canvas.drawPath(glowPath, corePaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _ActionButtonTurnGlowPainter oldDelegate) {
-    return oldDelegate.progress != progress ||
-        oldDelegate.color != color ||
-        oldDelegate.inset != inset ||
-        oldDelegate.strokeWidth != strokeWidth;
-  }
-}
-
 TextStyle _buttonTitleStyle(Color color) => TextStyle(
       color: color,
       fontWeight: FontWeight.w800,
@@ -1212,39 +1381,47 @@ TextStyle _buttonTitleStyle(Color color) => TextStyle(
     );
 
 TextStyle _yellowActionLabelStyle() => TextStyle(
-      color: Colors.black,
+      color: Colors.white,
       fontWeight: FontWeight.w900,
       fontSize: 20 * 1.6 * _kActionBarScale,
       letterSpacing: 0.20 * _kActionBarScale,
     );
 
 Widget _roundIcon({
+  Key? buttonKey,
   required String tooltip,
   required IconData icon,
   required double size,
+  double? hitSize,
   VoidCallback? onTap,
   bool enabled = true,
 }) {
   return _RoundIconButton(
+    buttonKey: buttonKey,
     tooltip: tooltip,
     icon: icon,
     size: size,
+    hitSize: hitSize ?? size,
     onTap: onTap,
     enabled: enabled,
   );
 }
 
 class _RoundIconButton extends StatefulWidget {
+  final Key? buttonKey;
   final String tooltip;
   final IconData icon;
   final double size;
+  final double hitSize;
   final VoidCallback? onTap;
   final bool enabled;
 
   const _RoundIconButton({
+    this.buttonKey,
     required this.tooltip,
     required this.icon,
     required this.size,
+    required this.hitSize,
     this.onTap,
     required this.enabled,
   });
@@ -1268,59 +1445,72 @@ class _RoundIconButtonState extends State<_RoundIconButton> {
 
   @override
   Widget build(BuildContext context) {
-    final double iconSize = widget.size * 0.55;
-    final double buttonHeight = widget.size;
-    final double buttonWidth = buttonHeight * 1.38;
-    final double borderAlpha = _pressed ? 0.24 : (_hover ? 0.20 : 0.14);
+    final double iconSize = widget.size * 0.46;
+    final double visualSize = widget.size;
+    final double hitSize = max(widget.hitSize, visualSize);
+    final double borderAlpha = _pressed ? 0.32 : (_hover ? 0.24 : 0.16);
     final double borderWidth = _pressed ? 1.5 : (_hover ? 1.3 : 1.0);
     final Color glowColor = Colors.white.withValues(
-      alpha: _pressed ? 0.22 : (_hover ? 0.16 : 0.10),
+      alpha: _pressed ? 0.30 : (_hover ? 0.22 : 0.14),
     );
+    const ShapeBorder circleShape = CircleBorder();
 
-    final button = MouseRegion(
-      onEnter: widget.enabled ? (_) => setState(() => _hover = true) : null,
-      onExit: (_) => setState(() {
-        _hover = false;
-        _pressed = false;
-      }),
-      cursor:
-          widget.enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
-      child: Material(
-        color: Colors.transparent,
-        shape: const StadiumBorder(),
-        child: InkWell(
-          customBorder: const StadiumBorder(),
-          onTapDown:
-              widget.enabled ? (_) => setState(() => _pressed = true) : null,
-          onTapCancel:
-              widget.enabled ? () => setState(() => _pressed = false) : null,
-          onTap: widget.enabled
-              ? () {
-                  setState(() => _pressed = false);
-                  widget.onTap?.call();
-                }
-              : null,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOut,
-            width: buttonWidth,
-            height: buttonHeight,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(buttonHeight),
-              color: Colors.white.withValues(alpha: 0.09),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: borderAlpha),
-                width: borderWidth,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: glowColor,
-                  blurRadius: _pressed ? 10 : (_hover ? 8 : 5),
-                  spreadRadius: 0.0,
+    final button = SizedBox(
+      width: hitSize,
+      height: hitSize,
+      child: MouseRegion(
+        onEnter: widget.enabled ? (_) => setState(() => _hover = true) : null,
+        onExit: (_) => setState(() {
+          _hover = false;
+          _pressed = false;
+        }),
+        cursor: widget.enabled
+            ? SystemMouseCursors.click
+            : SystemMouseCursors.basic,
+        child: Material(
+          color: Colors.transparent,
+          shape: circleShape,
+          child: InkWell(
+            customBorder: circleShape,
+            onTapDown:
+                widget.enabled ? (_) => setState(() => _pressed = true) : null,
+            onTapCancel:
+                widget.enabled ? () => setState(() => _pressed = false) : null,
+            onTap: widget.enabled
+                ? () {
+                    setState(() => _pressed = false);
+                    widget.onTap?.call();
+                  }
+                : null,
+            child: Center(
+              child: Transform.translate(
+                offset: const Offset(0, 2 * _kActionBarScale),
+                child: AnimatedContainer(
+                  key: widget.buttonKey,
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOut,
+                  width: visualSize,
+                  height: visualSize,
+                  decoration: ShapeDecoration(
+                    color: Colors.white,
+                    shape: CircleBorder(
+                      side: BorderSide(
+                        color: Colors.black.withValues(alpha: borderAlpha),
+                        width: borderWidth,
+                      ),
+                    ),
+                    shadows: [
+                      BoxShadow(
+                        color: glowColor,
+                        blurRadius: _pressed ? 10 : (_hover ? 8 : 5),
+                        spreadRadius: 0.0,
+                      ),
+                    ],
+                  ),
+                  child: Icon(widget.icon, color: Colors.black, size: iconSize),
                 ),
-              ],
+              ),
             ),
-            child: Icon(widget.icon, color: kText, size: iconSize),
           ),
         ),
       ),
@@ -1339,51 +1529,69 @@ class _RoundIconButtonState extends State<_RoundIconButton> {
 
 class _RightIcons extends StatelessWidget {
   final VoidCallback onTips;
+  final VoidCallback? onSettings;
   final VoidCallback onTogglePause;
   final bool paused;
-  final bool compact;
   final double scale;
+  final double buttonSize;
+  final double hitSize;
   final Object? engine;
   final bool enabled;
 
   const _RightIcons({
     required this.onTips,
+    this.onSettings,
     required this.onTogglePause,
     required this.paused,
-    required this.compact,
     required this.scale,
+    required this.buttonSize,
+    required this.hitSize,
     this.engine,
     required this.enabled,
   });
 
   @override
   Widget build(BuildContext context) {
-    final s = (compact ? 40.0 : 46.0) * scale * _kActionIconBoost;
-
     // Prefer cached last-hand snapshot stored by overlays.dart
     final cached = go.LastHandStore.last;
     final bool hasLast = cached != null && cached.winners.isNotEmpty;
 
     return SizedBox(
-      height: 74 * scale * _kActionBarHeightScale,
+      height: hitSize,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           _roundIcon(
+            buttonKey: _kTipsButtonKey,
             tooltip: hasLast
                 ? 'Open the previous hand recap.'
                 : 'No previous hand recap yet.',
             icon: Icons.info_outline_rounded,
-            size: s,
+            size: buttonSize,
+            hitSize: hitSize,
             enabled: enabled,
             onTap: onTips,
           ),
           SizedBox(width: 8 * scale),
+          if (onSettings != null) ...[
+            _roundIcon(
+              buttonKey: _kSettingsButtonKey,
+              tooltip: 'Open sound and accessibility settings.',
+              icon: Icons.settings_rounded,
+              size: buttonSize,
+              hitSize: hitSize,
+              enabled: enabled,
+              onTap: onSettings,
+            ),
+            SizedBox(width: 8 * scale),
+          ],
           _roundIcon(
+            buttonKey: _kPauseButtonKey,
             tooltip:
                 paused ? 'Resume the current hand.' : 'Pause the current hand.',
             icon: paused ? Icons.play_arrow_rounded : Icons.pause_rounded,
-            size: s,
+            size: buttonSize,
+            hitSize: hitSize,
             enabled: enabled,
             onTap: onTogglePause,
           ),

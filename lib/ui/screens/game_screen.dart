@@ -21,6 +21,7 @@ import 'package:ten_of_a_kind_poker/game/bot/policy_model.dart'
     show BotLearnedPolicyRegistry, BotLearnedPolicyWeights, BotPolicyAdjustment;
 import 'package:ten_of_a_kind_poker/services/aura_points_service.dart';
 import 'package:ten_of_a_kind_poker/services/ads_service.dart';
+import 'package:ten_of_a_kind_poker/services/app_settings_service.dart';
 import 'package:ten_of_a_kind_poker/services/campaign_progress_service.dart';
 import 'package:ten_of_a_kind_poker/services/poker_bot_learning_service.dart';
 import 'package:ten_of_a_kind_poker/services/profile_service.dart';
@@ -41,16 +42,21 @@ import 'package:ten_of_a_kind_poker/ui/screens/game_screen/players.dart'; // Sea
 import 'package:ten_of_a_kind_poker/game/events.dart' as ge;
 import 'package:ten_of_a_kind_poker/ui/widgets/slash_avatar.dart'
     show DealerAvatarStyle;
+import 'package:ten_of_a_kind_poker/ui/widgets/app_settings_sheet.dart';
 
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen/table.dart'
     show WoodType;
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen/hand_examples.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen/ui.dart';
+import 'package:ten_of_a_kind_poker/ui/screens/game_screen/scoreboard_button.dart'
+    as scoreboard_sheet;
+import 'package:ten_of_a_kind_poker/ui/screens/game_screen/viewport.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen/cards.dart'
-    show CardBackTheme;
+    show ActionGate, CardBackTheme;
 import 'package:ten_of_a_kind_poker/ui/screens/venue_screen.dart';
 
 import 'game_screen/pacing.dart' as pace;
+import 'game_screen/hero_turn_cue.dart';
 
 /* ---------------- Fixed bot roster (100 unique about lines) -------------- */
 
@@ -369,6 +375,7 @@ class GameScreen extends StatefulWidget {
   final VenueGroup? campaignGroup;
   final int? campaignSubKingdomIndex;
   final bool campaignMainEvent;
+  final EntryReservation? campaignEntryReservation;
 
   const GameScreen({
     super.key,
@@ -379,7 +386,12 @@ class GameScreen extends StatefulWidget {
     this.campaignGroup,
     this.campaignSubKingdomIndex,
     this.campaignMainEvent = false,
-  });
+    this.campaignEntryReservation,
+  }) : assert(
+          venueMode != VenueEntryMode.career ||
+              campaignEntryReservation != null,
+          'Every career tournament must carry its persisted entry reservation.',
+        );
 
   factory GameScreen.guestTable({
     required String tableName,
@@ -389,6 +401,7 @@ class GameScreen extends StatefulWidget {
     VenueGroup? campaignGroup,
     int? campaignSubKingdomIndex,
     bool campaignMainEvent = false,
+    EntryReservation? campaignEntryReservation,
   }) =>
       GameScreen(
         tableName: tableName,
@@ -398,6 +411,7 @@ class GameScreen extends StatefulWidget {
         campaignGroup: campaignGroup,
         campaignSubKingdomIndex: campaignSubKingdomIndex,
         campaignMainEvent: campaignMainEvent,
+        campaignEntryReservation: campaignEntryReservation,
       );
 
   @visibleForTesting
@@ -415,6 +429,39 @@ class GameScreen extends StatefulWidget {
     return math.max(2, campaignMaxPlayers ?? defaultMaxSeats);
   }
 
+  @visibleForTesting
+  static bool shouldRevealAllHoleCards({
+    required bool atShowdown,
+    required bool bettingLockedRunout,
+  }) =>
+      atShowdown || bettingLockedRunout;
+
+  @visibleForTesting
+  static bool isCampaignEventConfiguration({
+    required VenueEntryMode venueMode,
+    required bool campaignMainEvent,
+    required int? campaignSubKingdomIndex,
+  }) {
+    return venueMode == VenueEntryMode.career &&
+        (campaignMainEvent || campaignSubKingdomIndex != null);
+  }
+
+  @visibleForTesting
+  static bool shouldCreditCampaignPodiumPayout({
+    required VenueEntryMode venueMode,
+    required bool campaignMainEvent,
+    required int? campaignSubKingdomIndex,
+    required int rank,
+    required int winnings,
+  }) {
+    return venueMode == VenueEntryMode.career &&
+        !campaignMainEvent &&
+        campaignSubKingdomIndex != null &&
+        rank >= 2 &&
+        rank <= 3 &&
+        winnings > 0;
+  }
+
   @override
   State<GameScreen> createState() => _GameScreenState();
 }
@@ -426,49 +473,27 @@ class _GameScreenState extends State<GameScreen>
   late final int _tableMaxSeats;
   late final int _startingStackChips;
   bool _disposing = false;
+  bool _gameplayStarted = false;
+  bool _campaignEntryCommitted = false;
+  bool _entryCommitInFlight = false;
+  String _entryCommitFailure = '';
   AuraPointsService? _auraService;
   VoidCallback? _auraListener;
+  CampaignProgressService? _campaignProgressService;
   int _heroAura = _kHeroAura;
   ProfileService? _profileService;
   VoidCallback? _profileListener;
   String _heroAbout = ProfileService.defaultAbout;
 
-  void _markCampaignWinIfApplicable({required bool heroWon}) {
-    if (!heroWon) return;
-    final group = widget.campaignGroup;
-    if (group == null) return;
-    final kingdomName = (widget.venue?.name ?? '').toString();
-    if (kingdomName.trim().isEmpty) return;
-    try {
-      final progress = context.read<CampaignProgressService>();
-      if (widget.campaignMainEvent) {
-        progress.markMainEventCleared(group: group, kingdomName: kingdomName);
-        unawaited(
-          context.read<AuraPointsService>().awardForCampaignWin(
-                group: group,
-                kingdomName: kingdomName,
-                isMainEvent: true,
-              ),
-        );
-        return;
-      }
+  bool get _isCampaignEvent => GameScreen.isCampaignEventConfiguration(
+        venueMode: widget.venueMode,
+        campaignMainEvent: widget.campaignMainEvent,
+        campaignSubKingdomIndex: widget.campaignSubKingdomIndex,
+      );
 
-      final idx = widget.campaignSubKingdomIndex;
-      if (idx == null) return;
-      progress.markCleared(
-        group: group,
-        kingdomName: kingdomName,
-        subKingdomIndex: idx,
-      );
-      unawaited(
-        context.read<AuraPointsService>().awardForCampaignWin(
-              group: group,
-              kingdomName: kingdomName,
-              isMainEvent: false,
-              subKingdomIndex: idx,
-            ),
-      );
-    } catch (_) {}
+  String? _campaignRewardLabel() {
+    if (!_isCampaignEvent || widget.campaignGroup == null) return null;
+    return widget.campaignMainEvent ? 'MAIN EVENT REWARD' : 'FORT REWARD';
   }
 
   DealerAvatarStyle _dealerAvatarForVenue({
@@ -492,10 +517,12 @@ class _GameScreenState extends State<GameScreen>
   // ---- Engine
   eng.GameEngine? _engine;
   final math.Random _rng = math.Random();
+  final math.Random _uiTimingRng = math.Random();
   // Renoir is the single dealer; in free builds this is kingdom-specific,
   // and in premium builds it is the Slash skin (fixed per session).
   late DealerAvatarStyle _dealerAvatarStyle;
   Timer? _engineTicker;
+  Timer? _stuckKickTimer;
 
   // Track engine events for bust scheduling
   int _lastEventSeen = 0;
@@ -518,8 +545,8 @@ class _GameScreenState extends State<GameScreen>
   // ---- Table / seats
   late List<Seat> seats;
   int dealerIndex = -1;
-  int sbIndex = 0;
-  int bbIndex = 1;
+  int sbIndex = -1;
+  int bbIndex = -1;
 
   // ---- Pot & pulse
   double pot = 0;
@@ -534,6 +561,8 @@ class _GameScreenState extends State<GameScreen>
   // ---- Hand/match
   bool _matchOver = false;
   bool _paused = false;
+  int _blockingPauseDepth = 0;
+  bool get _gameplayPaused => _paused || _blockingPauseDepth > 0;
   bool _handOverHandled = false;
   double _lastHandPot = 0;
   // Track if everyone is all-in & matched (for debug/UX)
@@ -543,6 +572,9 @@ class _GameScreenState extends State<GameScreen>
   int? _heroFinalRank;
   int _heroFinalWinnings = 0;
   bool _heroFinishOverlayShown = false;
+  Future<void>? _tournamentSettlementFuture;
+  Future<void>? _heroPlacementSettlementFuture;
+  Future<void>? _matchActivitySettlementFuture;
   bool _matchEndSoundPlayed = false;
   bool _handWinSoundPlayed = false;
   bool _handStartQueued = true;
@@ -619,6 +651,16 @@ class _GameScreenState extends State<GameScreen>
     'french isles': 'assets/images/watermarks/french_isles.svg',
     'dutch isles': 'assets/images/watermarks/dutch_isles.svg',
     'american isles': 'assets/images/watermarks/american_isles.svg',
+    'dominion of canada': 'assets/images/watermarks/n_america.svg',
+    'massachusetts': 'assets/images/watermarks/n_america.svg',
+    'new york': 'assets/images/watermarks/n_america.svg',
+    'virginia': 'assets/images/watermarks/n_america.svg',
+    'illinois': 'assets/images/watermarks/n_america.svg',
+    'florida': 'assets/images/watermarks/n_america.svg',
+    'texas': 'assets/images/watermarks/n_america.svg',
+    'kansas': 'assets/images/watermarks/n_america.svg',
+    'colorado': 'assets/images/watermarks/n_america.svg',
+    'california': 'assets/images/watermarks/n_america.svg',
   };
 
   bool get _useSubKingdomWatermark {
@@ -701,6 +743,7 @@ class _GameScreenState extends State<GameScreen>
         _heroIndex >= 0 &&
         e.players.isNotEmpty &&
         e.actingIndex == _heroIndex &&
+        e.phase != eng.GamePhase.predeal &&
         e.phase != eng.GamePhase.handOver &&
         e.phase != eng.GamePhase.showdown;
   }
@@ -720,7 +763,7 @@ class _GameScreenState extends State<GameScreen>
   Timer? _botWatchdogTimer;
   int _lastBotSeat = -1;
   final Map<int, int> _botFixedThinkDelays = <int, int>{};
-  bool _heroTurnChimed = false; // ensure hero-turn sound plays once per turn
+  final HeroTurnCueTracker _heroTurnCueTracker = HeroTurnCueTracker();
   late final int _heroTurnTimeoutSeconds;
   Timer? _heroTurnTimer;
   int _heroTurnTimerToken = 0;
@@ -736,6 +779,7 @@ class _GameScreenState extends State<GameScreen>
   bool _showActionFlash = false;
   String _actionFlashName = '';
   String _actionFlashLabel = '';
+  String _accessibilityAnnouncement = '';
   DateTime? _lastBackPressedAt;
   bool _exitDialogOpen = false;
   final PokerBotLearningService _botLearningService =
@@ -776,6 +820,10 @@ class _GameScreenState extends State<GameScreen>
   Future<void> _exitToVenue() async {
     if (!mounted || _disposing) return;
     final nav = Navigator.of(context);
+    await _recordAbandonIfNeeded();
+    if (!mounted || _disposing) return;
+    await restoreAppSystemUi();
+    if (!mounted || _disposing) return;
     if (nav.canPop()) {
       nav.pop();
       return;
@@ -792,69 +840,69 @@ class _GameScreenState extends State<GameScreen>
   Future<bool> _showExitDialog() async {
     if (_exitDialogOpen) return false;
     _exitDialogOpen = true;
-    final result = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        return WillPopScope(
-          onWillPop: () async {
-            final now = DateTime.now();
-            final last = _lastBackPressedAt;
-            if (last != null &&
-                now.difference(last) <= const Duration(milliseconds: 900)) {
-              Navigator.of(ctx, rootNavigator: true).pop(true);
-              return false;
-            }
-            _lastBackPressedAt = now;
-            return false;
-          },
-          child: AlertDialog(
-            backgroundColor: AppColors.black,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            titlePadding: const EdgeInsets.fromLTRB(16, 14, 8, 0),
-            title: Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Exit to venue?',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
+    final result = await _withGameplayPaused<bool?>(() => showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) {
+            return WillPopScope(
+              onWillPop: () async {
+                final now = DateTime.now();
+                final last = _lastBackPressedAt;
+                if (last != null &&
+                    now.difference(last) <= const Duration(milliseconds: 900)) {
+                  Navigator.of(ctx, rootNavigator: true).pop(true);
+                  return false;
+                }
+                _lastBackPressedAt = now;
+                return false;
+              },
+              child: AlertDialog(
+                backgroundColor: AppColors.black,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+                titlePadding: const EdgeInsets.fromLTRB(16, 14, 8, 0),
+                title: Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Exit to venue?',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white70),
+                      tooltip: 'Cancel',
+                      onPressed: () =>
+                          Navigator.of(ctx, rootNavigator: true).pop(false),
+                    ),
+                  ],
+                ),
+                content: const Text(
+                  'Your current match will be closed.',
+                  style: TextStyle(color: Colors.white70),
+                ),
+                actionsAlignment: MainAxisAlignment.center,
+                actions: [
+                  TextButton(
+                    onPressed: () =>
+                        Navigator.of(ctx, rootNavigator: true).pop(true),
+                    child: const Text(
+                      'OK',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white70),
-                  tooltip: 'Cancel',
-                  onPressed: () =>
-                      Navigator.of(ctx, rootNavigator: true).pop(false),
-                ),
-              ],
-            ),
-            content: const Text(
-              'Your current match will be closed.',
-              style: TextStyle(color: Colors.white70),
-            ),
-            actionsAlignment: MainAxisAlignment.center,
-            actions: [
-              TextButton(
-                onPressed: () =>
-                    Navigator.of(ctx, rootNavigator: true).pop(true),
-                child: const Text(
-                  'OK',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                ],
               ),
-            ],
-          ),
-        );
-      },
-    );
+            );
+          },
+        ));
     _exitDialogOpen = false;
     if (result == true) {
       await _exitToVenue();
@@ -1230,202 +1278,206 @@ class _GameScreenState extends State<GameScreen>
     final List<eng.BotDecisionLogEntry> rows = _currentBotDecisionLog();
     final BotLearnedPolicyWeights weights = BotLearnedPolicyRegistry.weights;
     final String learningJson = _botLearningSnapshotJson(decisionLog: rows);
-    await showDialog<void>(
-      context: context,
-      builder: (BuildContext context) {
-        final Size screen = MediaQuery.of(context).size;
-        final double dialogMaxWidth = math.min(820, screen.width - 24);
-        final double dialogMaxHeight = screen.height * 0.88;
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: dialogMaxWidth,
-              maxHeight: dialogMaxHeight,
-            ),
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-              decoration: BoxDecoration(
-                color: const Color(0xE6101010),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: const Color(0xFFFFD54F), width: 2),
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: const Color(0xFFFFD54F).withValues(alpha: 0.48),
-                    blurRadius: 16,
-                    spreadRadius: 1.0,
+    await _withGameplayPaused<void>(() => showDialog<void>(
+          context: context,
+          builder: (BuildContext context) {
+            final Size screen = MediaQuery.of(context).size;
+            final double dialogMaxWidth = math.min(820, screen.width - 24);
+            final double dialogMaxHeight = screen.height * 0.88;
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: dialogMaxWidth,
+                  maxHeight: dialogMaxHeight,
+                ),
+                child: Container(
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xE6101010),
+                    borderRadius: BorderRadius.circular(24),
+                    border:
+                        Border.all(color: const Color(0xFFFFD54F), width: 2),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: const Color(0xFFFFD54F).withValues(alpha: 0.48),
+                        blurRadius: 16,
+                        spreadRadius: 1.0,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    const Center(
-                      child: Text(
-                        'Bot Learning',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Color(0xFFFFD54F),
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        const Center(
+                          child: Text(
+                            'Bot Learning',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Color(0xFFFFD54F),
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                      decoration: BoxDecoration(
-                        color: const Color(0x331C1C1C),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.14),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            'Decision log rows: ${rows.length}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
+                        const SizedBox(height: 8),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0x331C1C1C),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.14),
                             ),
                           ),
-                          const SizedBox(height: 3),
-                          Text(
-                            'Tracked features: ${weights.featureWeights.length}',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            'Intercept raise bias: ${weights.intercept.raiseBias.toStringAsFixed(3)}',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          if ((_lastBotTrainingSummary ?? '').trim().isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 6),
-                              child: Text(
-                                _lastBotTrainingSummary!,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                'Decision log rows: ${rows.length}',
                                 style: const TextStyle(
-                                  color: Color(0xFFFFF59D),
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w700,
-                                  height: 1.25,
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
                                 ),
                               ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    _botPolicySummaryCard(
-                      title: 'Call Bias',
-                      metric: 'call',
-                      accent: const Color(0xFFFFD54F),
-                    ),
-                    const SizedBox(height: 10),
-                    _botPolicySummaryCard(
-                      title: 'Raise Bias',
-                      metric: 'raise',
-                      accent: const Color(0xFF81D4FA),
-                    ),
-                    const SizedBox(height: 10),
-                    _botPolicySummaryCard(
-                      title: 'Bluff Bias',
-                      metric: 'bluff',
-                      accent: const Color(0xFFFFAB91),
-                    ),
-                    const SizedBox(height: 10),
-                    _botPolicySummaryCard(
-                      title: 'Value Bias',
-                      metric: 'value',
-                      accent: const Color(0xFFA5D6A7),
-                    ),
-                    const SizedBox(height: 10),
-                    _botPolicySummaryCard(
-                      title: 'Sizing',
-                      metric: 'size',
-                      accent: const Color(0xFFE1BEE7),
-                    ),
-                    const SizedBox(height: 10),
-                    _botLearningExportTextCard(learningJson),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: <Widget>[
-                        SizedBox(
-                          width: 176,
-                          child: OutlinedButton(
-                            onPressed: _copyBotLearningSnapshotJson,
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.black,
-                              backgroundColor: const Color(0xFFFFD54F)
-                                  .withValues(alpha: 0.86),
-                              side: const BorderSide(
-                                color: Color(0xFFFFD54F),
+                              const SizedBox(height: 3),
+                              Text(
+                                'Tracked features: ${weights.featureWeights.length}',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                'Intercept raise bias: ${weights.intercept.raiseBias.toStringAsFixed(3)}',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              if ((_lastBotTrainingSummary ?? '')
+                                  .trim()
+                                  .isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 6),
+                                  child: Text(
+                                    _lastBotTrainingSummary!,
+                                    style: const TextStyle(
+                                      color: Color(0xFFFFF59D),
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.25,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        _botPolicySummaryCard(
+                          title: 'Call Bias',
+                          metric: 'call',
+                          accent: const Color(0xFFFFD54F),
+                        ),
+                        const SizedBox(height: 10),
+                        _botPolicySummaryCard(
+                          title: 'Raise Bias',
+                          metric: 'raise',
+                          accent: const Color(0xFF81D4FA),
+                        ),
+                        const SizedBox(height: 10),
+                        _botPolicySummaryCard(
+                          title: 'Bluff Bias',
+                          metric: 'bluff',
+                          accent: const Color(0xFFFFAB91),
+                        ),
+                        const SizedBox(height: 10),
+                        _botPolicySummaryCard(
+                          title: 'Value Bias',
+                          metric: 'value',
+                          accent: const Color(0xFFA5D6A7),
+                        ),
+                        const SizedBox(height: 10),
+                        _botPolicySummaryCard(
+                          title: 'Sizing',
+                          metric: 'size',
+                          accent: const Color(0xFFE1BEE7),
+                        ),
+                        const SizedBox(height: 10),
+                        _botLearningExportTextCard(learningJson),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: <Widget>[
+                            SizedBox(
+                              width: 176,
+                              child: OutlinedButton(
+                                onPressed: _copyBotLearningSnapshotJson,
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.black,
+                                  backgroundColor: const Color(0xFFFFD54F)
+                                      .withValues(alpha: 0.86),
+                                  side: const BorderSide(
+                                    color: Color(0xFFFFD54F),
+                                  ),
+                                ),
+                                child: const Text('Copy Learning JSON'),
                               ),
                             ),
-                            child: const Text('Copy Learning JSON'),
-                          ),
-                        ),
-                        SizedBox(
-                          width: 176,
-                          child: OutlinedButton(
-                            onPressed: _trainCurrentBotLogs,
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              side: const BorderSide(color: Colors.white24),
+                            SizedBox(
+                              width: 176,
+                              child: OutlinedButton(
+                                onPressed: _trainCurrentBotLogs,
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  side: const BorderSide(color: Colors.white24),
+                                ),
+                                child: const Text('Train Current Bots'),
+                              ),
                             ),
-                            child: const Text('Train Current Bots'),
-                          ),
-                        ),
-                        SizedBox(
-                          width: 176,
-                          child: OutlinedButton(
-                            onPressed: _trainClipboardBotLogs,
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              side: const BorderSide(color: Colors.white24),
+                            SizedBox(
+                              width: 176,
+                              child: OutlinedButton(
+                                onPressed: _trainClipboardBotLogs,
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  side: const BorderSide(color: Colors.white24),
+                                ),
+                                child: const Text('Train Clipboard Bots'),
+                              ),
                             ),
-                            child: const Text('Train Clipboard Bots'),
-                          ),
-                        ),
-                        SizedBox(
-                          width: 176,
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              side: const BorderSide(color: Colors.white24),
+                            SizedBox(
+                              width: 176,
+                              child: OutlinedButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  side: const BorderSide(color: Colors.white24),
+                                ),
+                                child: const Text('Close'),
+                              ),
                             ),
-                            child: const Text('Close'),
-                          ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
               ),
-            ),
-          ),
-        );
-      },
-    );
+            );
+          },
+        ));
   }
 
   void _flashLastAction(String name, String label) {
@@ -1433,6 +1485,7 @@ class _GameScreenState extends State<GameScreen>
     _actionFlashTimer?.cancel();
     _actionFlashName = name.trim();
     _actionFlashLabel = label.trim();
+    _accessibilityAnnouncement = '${name.trim()} ${label.trim()}';
     _showActionFlash = true;
     if (mounted && !_disposing) setState(() {});
     _actionFlashTimer = Timer(const Duration(milliseconds: 500), () {
@@ -1474,7 +1527,7 @@ class _GameScreenState extends State<GameScreen>
 
   void _queueBotSchedulingPass() {
     Timer.run(() {
-      if (!mounted || _matchOver || _paused) return;
+      if (!mounted || _matchOver || _gameplayPaused) return;
       final e = _engine;
       if (e == null) return;
       _scheduleBotActionIfNeeded(e);
@@ -1483,12 +1536,16 @@ class _GameScreenState extends State<GameScreen>
 
   void _armBotWatchdog(int actor) {
     _botWatchdogTimer?.cancel();
-    _botWatchdogTimer = Timer(const Duration(seconds: 3), () {
-      if (!mounted || _matchOver || _paused) return;
+    _botWatchdogTimer = Timer(
+        const Duration(
+          milliseconds: pace.kBotActionAbsoluteMaxDelayMs + 1000,
+        ), () {
+      if (!mounted || _matchOver || _gameplayPaused) return;
       final e = _engine;
       if (e == null) return;
       if (!RenoirSignals.canAct.value) return;
       if (e.phase == eng.GamePhase.handOver ||
+          e.phase == eng.GamePhase.predeal ||
           e.phase == eng.GamePhase.showdown) {
         _cancelBotScheduling();
         return;
@@ -1513,24 +1570,37 @@ class _GameScreenState extends State<GameScreen>
 
   void _onCanActChanged() {
     if (!mounted) return;
-    if (_paused) return;
+    if (_gameplayPaused) return;
     if (!RenoirSignals.canAct.value) {
-      _heroTurnChimed = false;
       _cancelBotScheduling();
       _disarmHeroTurnClock();
       return;
     }
-    // Action just opened: chime hero if it's their turn, otherwise kick bots.
-    if (_isHeroTurn && !_heroTurnChimed) {
-      _heroTurnChimed = true;
-      unawaited(SoundFx.instance.playHeroTurn());
-    } else {
+    if (!_isHeroTurn) {
       final e = _engine;
       if (e != null) {
         _scheduleBotActionIfNeeded(e);
       }
     }
+    final bool announced = _maybePlayHeroTurnCue();
     _armHeroTurnClockIfNeeded();
+    if (announced && mounted && !_disposing) setState(() {});
+  }
+
+  bool _maybePlayHeroTurnCue([eng.GameEngine? engine]) {
+    final eng.GameEngine? e = engine ?? _engine;
+    if (e == null) return false;
+    final bool shouldPlay = _heroTurnCueTracker.shouldPlay(
+      heroCanAct: _heroCanActNow(),
+      handNumber: e.handNumber,
+      phase: e.phase.name,
+      eventRevision: e.eventLog.length,
+    );
+    if (!shouldPlay) return false;
+
+    _accessibilityAnnouncement = 'Your turn';
+    unawaited(SoundFx.instance.playHeroTurnNotification());
+    return true;
   }
 
   void _disarmHeroTurnClock() {
@@ -1545,10 +1615,11 @@ class _GameScreenState extends State<GameScreen>
     final e = _engine;
     if (e == null) return false;
     if (_matchOver) return false;
-    if (_paused) return false;
+    if (_gameplayPaused) return false;
     if (!_isHeroTurn) return false;
     if (!RenoirSignals.holeCardsVisible.value) return false;
     if (!RenoirSignals.canAct.value) return false;
+    if (!ActionGate.enabled.value) return false;
     return true;
   }
 
@@ -1567,11 +1638,27 @@ class _GameScreenState extends State<GameScreen>
 
   void _setPaused(bool value) {
     if (_paused == value) return;
+    final bool wasPaused = _gameplayPaused;
     setState(() => _paused = value);
-    if (_paused) {
+    final bool isPaused = _gameplayPaused;
+    if (!wasPaused && isPaused) {
       _pauseGameplay();
-    } else {
+    } else if (wasPaused && !isPaused) {
       _resumeGameplay();
+    }
+  }
+
+  Future<T> _withGameplayPaused<T>(Future<T> Function() operation) async {
+    final bool wasPaused = _gameplayPaused;
+    _blockingPauseDepth += 1;
+    if (mounted && !_disposing) setState(() {});
+    if (!wasPaused) _pauseGameplay();
+    try {
+      return await operation();
+    } finally {
+      _blockingPauseDepth = math.max(0, _blockingPauseDepth - 1);
+      if (mounted && !_disposing) setState(() {});
+      if (!_gameplayPaused) _resumeGameplay();
     }
   }
 
@@ -1583,6 +1670,7 @@ class _GameScreenState extends State<GameScreen>
     _stopHeroTurnTicker(); // keep displayed seconds (frozen)
     _cancelBotScheduling();
     _engineTicker?.cancel();
+    _stuckKickTimer?.cancel();
     _engineTicker = null;
     unawaited(SoundFx.instance.stopAll());
   }
@@ -1601,7 +1689,7 @@ class _GameScreenState extends State<GameScreen>
     _engineTicker?.cancel();
     _engineTicker =
         Timer.periodic(Duration(milliseconds: pace.kBotThinkTimeMs), (_) {
-      if (!mounted || _matchOver || _paused) return;
+      if (!mounted || _matchOver || _gameplayPaused) return;
       final ee = _engine;
       if (ee == null) return;
 
@@ -1630,7 +1718,7 @@ class _GameScreenState extends State<GameScreen>
   }
 
   void _armHeroTurnClockIfNeeded() {
-    if (_paused) {
+    if (_gameplayPaused) {
       _stopHeroTurnTicker();
       return;
     }
@@ -1768,6 +1856,7 @@ class _GameScreenState extends State<GameScreen>
 
     final auraService = context.read<AuraPointsService>();
     final profileService = context.read<ProfileService>();
+    _campaignProgressService = context.read<CampaignProgressService>();
     unawaited(adsService.init());
     _heroAura = _auraFromService(auraService);
     _heroAbout = _aboutFromProfile(profileService);
@@ -1820,8 +1909,22 @@ class _GameScreenState extends State<GameScreen>
             if (s == AnimationStatus.completed) _potPulseCtl.reset();
           });
 
-    _initEngineAndStart();
+    if (_isCampaignEvent) {
+      unawaited(_commitCampaignEntryAndStart());
+    } else {
+      _campaignEntryCommitted = true;
+      _startGameplay();
+    }
+  }
 
+  void _startGameplay() {
+    if (_gameplayStarted || _disposing) return;
+    _gameplayStarted = true;
+    _initEngineAndStart();
+    _scheduleInitialPresentation();
+  }
+
+  void _scheduleInitialPresentation() {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
         await precacheImage(AssetImage(CardBackTheme.current), context);
@@ -1843,6 +1946,74 @@ class _GameScreenState extends State<GameScreen>
     });
   }
 
+  Future<void> _commitCampaignEntryAndStart() async {
+    if (_entryCommitInFlight || _gameplayStarted) return;
+    final EntryReservation? reservation = widget.campaignEntryReservation;
+    final AuraPointsService? service = _auraService;
+    if (reservation == null || service == null) {
+      _entryCommitFailure = 'Tournament entry could not be verified.';
+      if (mounted) setState(() {});
+      return;
+    }
+
+    _entryCommitInFlight = true;
+    EntryPaymentResult result;
+    try {
+      result = await service.commitEntry(reservation);
+    } catch (error, stack) {
+      debugPrint('Tournament entry commit failed: $error\n$stack');
+      result = EntryPaymentResult(
+        status: EntryPaymentStatus.serviceUnavailable,
+        reservation: reservation,
+        reason: 'entry_commit_failed',
+      );
+    } finally {
+      _entryCommitInFlight = false;
+    }
+
+    final EntryReservation resolved = result.reservation ?? reservation;
+    final bool committed = result.canEnter && resolved.state == 'committed';
+    if (!mounted || _disposing) {
+      if (committed) {
+        final VenueGroup? group = widget.campaignGroup;
+        final String kingdomName = (widget.venue?.name ?? '').toString().trim();
+        if (group != null && kingdomName.isNotEmpty) {
+          unawaited(service.finalizeCampaignAbandon(
+            group: group,
+            kingdomName: kingdomName,
+            isMainEvent: widget.campaignMainEvent,
+            subKingdomIndex: widget.campaignSubKingdomIndex,
+            entryAttemptId: resolved.attemptId,
+            totalPlayers: _tableMaxSeats,
+          ));
+        }
+      } else if (resolved.state == 'intent' || resolved.state == 'reserved') {
+        unawaited(service.refundEntry(resolved));
+      }
+      return;
+    }
+
+    if (!committed) {
+      if (resolved.state == 'intent' || resolved.state == 'reserved') {
+        await service.refundEntry(resolved);
+      }
+      if (!mounted || _disposing) return;
+      _entryCommitFailure = switch (result.status) {
+        EntryPaymentStatus.pending =>
+          'Tournament entry is still being reconciled. No cards were dealt.',
+        EntryPaymentStatus.serviceUnavailable =>
+          'Tournament entry service is unavailable. No cards were dealt.',
+        _ => 'Tournament entry was not accepted. No cards were dealt.',
+      };
+      setState(() {});
+      return;
+    }
+
+    _campaignEntryCommitted = true;
+    setState(() {});
+    _startGameplay();
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     switch (state) {
@@ -1855,6 +2026,9 @@ class _GameScreenState extends State<GameScreen>
       case AppLifecycleState.detached:
         if (!_disposing && !_matchOver) {
           _setPaused(true);
+          if (state == AppLifecycleState.detached) {
+            unawaited(_recordAbandonIfNeeded());
+          }
         }
         break;
     }
@@ -1862,9 +2036,13 @@ class _GameScreenState extends State<GameScreen>
 
   @override
   void dispose() {
+    if (!_matchOver) {
+      unawaited(_recordAbandonIfNeeded());
+    }
     _disposing = true;
     WidgetsBinding.instance.removeObserver(this);
     _engineTicker?.cancel();
+    _stuckKickTimer?.cancel();
     _renoirTimer?.cancel();
     _clearHandRankHighlight(notify: false);
     _clearActionFlash(notify: false);
@@ -1902,7 +2080,7 @@ class _GameScreenState extends State<GameScreen>
     if (_profileService != null && _profileListener != null) {
       _profileService!.removeListener(_profileListener!);
     }
-    unawaited(applyGameSystemUi());
+    unawaited(restoreAppSystemUi());
     super.dispose();
   }
 
@@ -1912,7 +2090,7 @@ class _GameScreenState extends State<GameScreen>
   }
 
   String _aboutFromProfile(ProfileService service) {
-    final about = (service.about ?? '').trim();
+    final about = service.about.trim();
     return about.isNotEmpty ? about : ProfileService.defaultAbout;
   }
 
@@ -2042,6 +2220,7 @@ class _GameScreenState extends State<GameScreen>
   }
 
   int? _campaignAupPrizePool() {
+    if (!_isCampaignEvent) return null;
     final group = widget.campaignGroup;
     final String kingdom = (widget.venue?.name ?? '').toString().trim();
     if (group == null || kingdom.isEmpty) return null;
@@ -2131,7 +2310,7 @@ class _GameScreenState extends State<GameScreen>
     e.addListener((ev) {
       // Listen for tournament end (engine-level terminal signal)
       if (ev is ge.TournamentEnded) {
-        _onTournamentEnded(ev);
+        _tournamentSettlementFuture ??= _onTournamentEnded(ev);
         return; // no further sync needed, UI will close out
       }
 
@@ -2150,33 +2329,153 @@ class _GameScreenState extends State<GameScreen>
     _startEngineTicker();
   }
 
-  void _onTournamentEnded(ge.TournamentEnded ev) async {
+  Future<void> _onTournamentEnded(ge.TournamentEnded ev) async {
     if (!mounted) return;
     _matchOver = true;
     _engineTicker?.cancel();
     final bool heroWon = ev.championIndex == _heroIndex;
-    _playMatchEndCue(heroWon: heroWon);
-    _markCampaignWinIfApplicable(heroWon: heroWon);
+    final int finishRank = heroWon ? 1 : (_heroFinalRank ?? _totalPlayerCount);
     if (heroWon) {
       _heroFinalRank = 1;
       _heroFinalWinnings = ev.prize;
     }
-    final int fallbackRank = heroWon
-        ? 1
-        : (_heroFinalRank ??
-            math.max(
-              2,
-              (_engine?.players
-                          .where(
-                              (p) => p.chips > 0 && !p.isOut && !p.sittingOut)
-                          .length ??
-                      1) +
-                  1,
-            ));
-    await _showHeroFinishOverlay(
-      rank: fallbackRank,
-      winnings: heroWon ? ev.prize : _heroFinalWinnings,
+    _matchActivitySettlementFuture ??= _recordMatchCompleted(
+      heroWon: heroWon,
+      finishRank: finishRank,
+      payoutAup: heroWon ? ev.prize : _heroFinalWinnings,
     );
+    _playMatchEndCue(heroWon: heroWon);
+    await _matchActivitySettlementFuture;
+  }
+
+  int get _totalPlayerCount {
+    final int count = _engine?.players.length ?? seats.length;
+    return math.max(1, count);
+  }
+
+  Future<void> _recordMatchCompleted({
+    required bool heroWon,
+    required int finishRank,
+    int payoutAup = 0,
+  }) async {
+    final AuraPointsService? service = _auraService;
+    if (service == null) return;
+    final int rank = finishRank.clamp(1, _totalPlayerCount);
+    try {
+      if (!_isCampaignEvent) {
+        await service.recordMatchCompleted(
+          heroWon: heroWon,
+          finishRank: rank,
+          totalPlayers: _totalPlayerCount,
+        );
+        return;
+      }
+
+      final EntryReservation? reservation = widget.campaignEntryReservation;
+      final VenueGroup? group = widget.campaignGroup;
+      final String kingdomName = (widget.venue?.name ?? '').toString().trim();
+      if (reservation == null || group == null || kingdomName.isEmpty) {
+        throw StateError('Campaign result is missing its committed entry.');
+      }
+      final CampaignSettlementResult result =
+          await service.finalizeCampaignResult(
+        group: group,
+        kingdomName: kingdomName,
+        isMainEvent: widget.campaignMainEvent,
+        subKingdomIndex: widget.campaignSubKingdomIndex,
+        entryAttemptId: reservation.attemptId,
+        finishRank: rank,
+        totalPlayers: _totalPlayerCount,
+        payoutAup: payoutAup,
+      );
+
+      if (result.accepted) {
+        if (mounted && _heroFinalRank == rank) {
+          setState(() => _heroFinalWinnings = result.creditedAup);
+        } else {
+          _heroFinalWinnings = result.creditedAup;
+        }
+        final CampaignProgressService? progress = _campaignProgressService;
+        if (progress != null) {
+          final authoritativeProgress = result.progress;
+          if (authoritativeProgress != null) {
+            // A conclusive settlement snapshot is the sole source of truth.
+            // Re-marking the same clear would create a second persistence
+            // operation after the server already acknowledged this attempt.
+            await progress.applyAuthoritativeSnapshot(authoritativeProgress);
+          } else if (rank == 1 && result.clearConfirmed) {
+            // Local/offline fallback has no authoritative snapshot to apply.
+            if (widget.campaignMainEvent) {
+              await progress.markMainEventCleared(
+                group: group,
+                kingdomName: kingdomName,
+              );
+            } else {
+              final int? subIndex = widget.campaignSubKingdomIndex;
+              if (subIndex != null) {
+                await progress.markCleared(
+                  group: group,
+                  kingdomName: kingdomName,
+                  subKingdomIndex: subIndex,
+                );
+              }
+            }
+          }
+        }
+        return;
+      }
+
+      if (mounted) {
+        final String message = result.queued
+            ? 'Tournament result queued. Progress unlocks after server confirmation.'
+            : 'Tournament result was not accepted. Your entry remains protected.';
+        _accessibilityAnnouncement = message;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+        setState(() {});
+      }
+    } catch (error, stack) {
+      debugPrint('Match activity settlement failed: $error\n$stack');
+    }
+  }
+
+  Future<void> _recordAbandonIfNeeded() {
+    final existing = _matchActivitySettlementFuture;
+    if (existing != null) return existing;
+    if (_matchOver || !_gameplayStarted) return Future<void>.value();
+    final AuraPointsService? service = _auraService;
+    if (service == null) return Future<void>.value();
+    return _matchActivitySettlementFuture = () async {
+      try {
+        if (_isCampaignEvent) {
+          final EntryReservation? reservation = widget.campaignEntryReservation;
+          final VenueGroup? group = widget.campaignGroup;
+          final String kingdomName =
+              (widget.venue?.name ?? '').toString().trim();
+          if (reservation == null || group == null || kingdomName.isEmpty) {
+            throw StateError('Campaign abandon is missing its entry.');
+          }
+          final CampaignSettlementResult result =
+              await service.finalizeCampaignAbandon(
+            group: group,
+            kingdomName: kingdomName,
+            isMainEvent: widget.campaignMainEvent,
+            subKingdomIndex: widget.campaignSubKingdomIndex,
+            entryAttemptId: reservation.attemptId,
+            totalPlayers: _totalPlayerCount,
+          );
+          final CampaignProgressService? progress = _campaignProgressService;
+          if (progress != null && result.progress != null) {
+            await progress.applyAuthoritativeSnapshot(result.progress!);
+          }
+          return;
+        }
+        await service.recordGameAbandoned(totalPlayers: _totalPlayerCount);
+      } catch (error, stack) {
+        debugPrint('Match abandon settlement failed: $error\n$stack');
+      }
+    }();
   }
 
   void _captureNewEngineEvents() {
@@ -2197,6 +2496,13 @@ class _GameScreenState extends State<GameScreen>
             unawaited(SoundFx.instance.playDeal());
           }
         }
+        continue;
+      }
+      if (ev is ge.DealingStarted && ev.target != 'hole') {
+        RenoirSignals.canAct.value = false;
+        ActionGate.disable();
+        _cancelBotScheduling();
+        _disarmHeroTurnClock();
         continue;
       }
       if (ev is ge.ActionTaken) {
@@ -2436,6 +2742,12 @@ class _GameScreenState extends State<GameScreen>
     if (ev.playerIndex == _heroIndex) {
       _heroFinalRank = ev.rank;
       _heroFinalWinnings = ev.winnings;
+      _matchActivitySettlementFuture ??= _recordMatchCompleted(
+        heroWon: false,
+        finishRank: ev.rank,
+        payoutAup: ev.winnings,
+      );
+      _heroPlacementSettlementFuture ??= _matchActivitySettlementFuture;
       _heroWasLeader = false;
       _heroInDanger = false;
       _playMatchEndCue(heroWon: ev.rank > 0 && ev.rank <= 3);
@@ -2487,11 +2799,12 @@ class _GameScreenState extends State<GameScreen>
       handsPlayed: handsPlayed,
       finalChips: finalChips,
       winnings: winnings,
+      winningsLabel: _campaignRewardLabel(),
       venueName: (widget.venue?.name ?? '').toString(),
       venueFlagAsset: (widget.venue?.flagAsset ?? '').toString(),
       onBeforeExit: () async {
         await adsService.showMatchEndInterstitial();
-        await applyGameSystemUi();
+        await restoreAppSystemUi();
       },
       rewardedAdLabel:
           canOfferRewardedAup ? rewardedAupOfferLabel().toUpperCase() : null,
@@ -2649,11 +2962,12 @@ class _GameScreenState extends State<GameScreen>
   void _scheduleBotActionIfNeeded(eng.GameEngine e) {
     if (!mounted || _matchOver) return;
     if (e.phase == eng.GamePhase.handOver ||
+        e.phase == eng.GamePhase.predeal ||
         e.phase == eng.GamePhase.showdown) {
       _cancelBotScheduling();
       return;
     }
-    if (_paused) {
+    if (_gameplayPaused) {
       _cancelBotScheduling();
       return;
     }
@@ -2696,7 +3010,7 @@ class _GameScreenState extends State<GameScreen>
     final bool quickCheck = suggestion != null &&
         suggestion.action == eng.ActionType.check &&
         e.toCallFor(actor) == 0 &&
-        _rng.nextDouble() < _kCheckQuickChance;
+        _uiTimingRng.nextDouble() < _kCheckQuickChance;
     if (quickCheck) {
       delayMs = math.max(
         _kCheckDelayFloorMs,
@@ -2720,7 +3034,7 @@ class _GameScreenState extends State<GameScreen>
     delayMs = math.max(delayMs, pace.kBotActionMinDelayMs);
     // Add slight randomness to avoid robotic timing.
     final double jitter = _temperamentJitter(temperament);
-    final double noise = (_rng.nextDouble() * 2 - 1) * jitter;
+    final double noise = (_uiTimingRng.nextDouble() * 2 - 1) * jitter;
     delayMs = (delayMs * (1 + noise)).round();
     delayMs = delayMs
         .clamp(
@@ -2744,6 +3058,7 @@ class _GameScreenState extends State<GameScreen>
         return;
       }
       if (ee.phase == eng.GamePhase.handOver ||
+          ee.phase == eng.GamePhase.predeal ||
           ee.phase == eng.GamePhase.showdown) {
         _cancelBotScheduling();
         return;
@@ -2813,7 +3128,7 @@ class _GameScreenState extends State<GameScreen>
     int seat,
   ) {
     try {
-      return eng.BotAdvisor.suggest(engine, seat);
+      return engine.prepareBotDecision(seat);
     } catch (_) {
       return null;
     }
@@ -2845,7 +3160,9 @@ class _GameScreenState extends State<GameScreen>
 
     final newPot = e.pot.toDouble();
     if (newPot > _prevPot) {
-      _potPulseCtl.forward(from: 0);
+      final bool reduceMotion =
+          context.read<AppSettingsService>().reduceMotionFor(context);
+      if (!reduceMotion) _potPulseCtl.forward(from: 0);
       unawaited(SoundFx.instance.playPotIncrease());
     }
     _prevPot = newPot;
@@ -2853,6 +3170,16 @@ class _GameScreenState extends State<GameScreen>
 
     final prevPhase = phase;
     phase = _mapPhase(e.phase);
+    if (phase != prevPhase) {
+      final String? street = switch (phase) {
+        _Phase.flop => 'Flop dealt',
+        _Phase.turn => 'Turn dealt',
+        _Phase.river => 'River dealt',
+        _Phase.showdown => 'Showdown',
+        _ => null,
+      };
+      if (street != null) _accessibilityAnnouncement = street;
+    }
     if (phase == _Phase.showdown || e.phase == eng.GamePhase.handOver) {
       _lastHandPot = math.max(_lastHandPot, pot);
     }
@@ -2885,24 +3212,15 @@ class _GameScreenState extends State<GameScreen>
       _lastBoardTargetLen = 5;
     }
 
-    if (e.players.isNotEmpty) {
-      if (e.dealerIndex >= 0) dealerIndex = e.dealerIndex;
-      if (e.smallBlindIndex >= 0) sbIndex = e.smallBlindIndex;
-      if (e.bigBlindIndex >= 0) bbIndex = e.bigBlindIndex;
-    }
+    dealerIndex = e.dealerIndex;
+    sbIndex = e.smallBlindIndex;
+    bbIndex = e.bigBlindIndex;
 
     currentTurn = e.actingIndex;
-    // Play hero turn notification exactly once per turn when action is live.
-    if (!RenoirSignals.canAct.value) {
-      _heroTurnChimed = false;
-    } else if (_isHeroTurn && !_heroTurnChimed) {
-      _heroTurnChimed = true;
-      unawaited(SoundFx.instance.playHeroTurn());
-    } else if (!_isHeroTurn) {
-      _heroTurnChimed = false;
-    }
-
-    final showAll = (phase == _Phase.showdown);
+    final bool showAll = GameScreen.shouldRevealAllHoleCards(
+      atShowdown: phase == _Phase.showdown,
+      bettingLockedRunout: e.everyoneAllInMatched(),
+    );
     for (int i = 0; i < seats.length && i < e.players.length; i++) {
       final ep = e.players[i];
       final s = seats[i];
@@ -2911,6 +3229,7 @@ class _GameScreenState extends State<GameScreen>
       s.bet = ep.betThisStreet;
       s.contributedThisHand = ep.contributedThisHand;
       s.folded = ep.folded;
+      s.allIn = ep.allIn;
 
       if (s.busted && ep.chips > 0 && !ep.isOut) {
         s.busted = false;
@@ -2956,34 +3275,40 @@ class _GameScreenState extends State<GameScreen>
 
     _scheduleBotActionIfNeeded(e);
     _armHeroTurnClockIfNeeded();
+    _maybePlayHeroTurnCue(e);
 
     if (mounted) setState(() {});
     _kickIfStuck();
   }
 
   void _kickIfStuck() {
-    Future.delayed(Duration(milliseconds: pace.kPostActionPauseMs), () {
-      if (!mounted) return;
-      bool needSet = false;
+    _stuckKickTimer?.cancel();
+    _stuckKickTimer = Timer(
+      Duration(milliseconds: pace.kPostActionPauseMs),
+      () {
+        _stuckKickTimer = null;
+        if (!mounted) return;
+        bool needSet = false;
 
-      final bool shouldShow = RenoirSignals.holeCardsVisible.value;
-      if (_showSeatCards != shouldShow) {
-        _showSeatCards = shouldShow;
-        needSet = true;
-      }
-      // No visualDealt forcing here; reveal timing is controlled by Renoir
+        final bool shouldShow = RenoirSignals.holeCardsVisible.value;
+        if (_showSeatCards != shouldShow) {
+          _showSeatCards = shouldShow;
+          needSet = true;
+        }
+        // No visualDealt forcing here; reveal timing is controlled by Renoir
 
-      final e = _engine;
-      if (e != null && e.community.isNotEmpty && board.isEmpty) {
-        _boardTarget = e.community.map(_mapEngCard).toList(growable: false);
-        final int nextLen = math.min(_boardTarget.length, 5);
-        _stageBoardReveal(_boardTarget, nextLen);
-        _lastBoardTargetLen = nextLen;
-        needSet = true;
-      }
+        final e = _engine;
+        if (e != null && e.community.isNotEmpty && board.isEmpty) {
+          _boardTarget = e.community.map(_mapEngCard).toList(growable: false);
+          final int nextLen = math.min(_boardTarget.length, 5);
+          _stageBoardReveal(_boardTarget, nextLen);
+          _lastBoardTargetLen = nextLen;
+          needSet = true;
+        }
 
-      if (needSet) setState(() {});
-    });
+        if (needSet) setState(() {});
+      },
+    );
   }
 
   /* ========================== Hand-over / winners ========================= */
@@ -3061,6 +3386,9 @@ class _GameScreenState extends State<GameScreen>
           .map((p) => p.name)
           .toList();
       final title = alive.length == 1 ? '${alive.first} wins' : 'Split Pot';
+      if (mounted) {
+        setState(() => _accessibilityAnnouncement = title);
+      }
       final subtitle = (_lastHandPot > 0)
           ? 'Pot ${_lastHandPot.toStringAsFixed(0)}'
           : 'Hand complete';
@@ -3101,6 +3429,15 @@ class _GameScreenState extends State<GameScreen>
       ));
     }
     lines.sort((a, b) => b.amount.compareTo(a.amount));
+    if (mounted && lines.isNotEmpty) {
+      final String winnerNames =
+          lines.map((line) => line.playerName).join(' and ');
+      setState(() {
+        _accessibilityAnnouncement = lines.length == 1
+            ? '$winnerNames wins the hand'
+            : '$winnerNames split the pot';
+      });
+    }
     final totalPot = payouts.fold<int>(0, (a, e) => a + e.amount);
 
     final boardUi = e.community
@@ -3211,6 +3548,10 @@ class _GameScreenState extends State<GameScreen>
   }
 
   Future<void> _afterWinnersClosed() async {
+    final settlement = _tournamentSettlementFuture;
+    if (settlement != null) await settlement;
+    final placementSettlement = _heroPlacementSettlementFuture;
+    if (placementSettlement != null) await placementSettlement;
     final e = _engine;
     if (!mounted || e == null) return;
     _lastHandPot = 0;
@@ -3231,12 +3572,7 @@ class _GameScreenState extends State<GameScreen>
     }
 
     if (_isMatchOver()) {
-      int prize = 0;
-      try {
-        prize = e.config.payoutForRank?.call(1) ?? 0;
-      } catch (_) {}
       _heroFinalRank ??= 1;
-      _heroFinalWinnings = math.max(_heroFinalWinnings, prize);
       await _showHeroFinishOverlay(
         rank: _heroFinalRank ?? 1,
         winnings: _heroFinalWinnings,
@@ -3388,11 +3724,17 @@ class _GameScreenState extends State<GameScreen>
     return snapped.clamp(min, max).toDouble();
   }
 
-  int _sanitizeRaiseForEngine(int raiseToTotal) {
+  int? _sanitizeRaiseForEngine(int raiseToTotal) {
     final e = _engine;
     if (e == null) return raiseToTotal;
 
+    final legal = e.legalActionsFor(_heroIndex);
+    if (!legal.contains(eng.ActionType.bet) &&
+        !legal.contains(eng.ActionType.raise)) {
+      return null;
+    }
     final bounds = e.raiseBoundsTo(_heroIndex);
+    if (bounds.minTo > bounds.maxTo) return null;
     return _snapRaiseAmount(
       raiseToTotal.toDouble(),
       bounds.minTo.toDouble(),
@@ -3403,45 +3745,63 @@ class _GameScreenState extends State<GameScreen>
   /* =============================== Hero actions =========================== */
   void _doHeroCheckOrCall() {
     final e = _engine;
-    if (!_isHeroTurn || e == null) return;
+    if (e == null || !_heroCanActNow()) return;
     _disarmHeroTurnClock();
     _cancelBotScheduling();
+    final eng.GamePhase phaseBefore = e.phase;
     final need = e.toCallFor(_heroIndex);
     if (need == 0) {
       e.act(eng.ActionType.check);
     } else {
       e.act(eng.ActionType.call);
     }
+    _closeActionGateAfterStreetChange(e, phaseBefore);
   }
 
   void _doHeroFold() {
     final e = _engine;
-    if (!_isHeroTurn || e == null) return;
+    if (e == null || !_heroCanActNow()) return;
     _disarmHeroTurnClock();
     _cancelBotScheduling();
+    final eng.GamePhase phaseBefore = e.phase;
     e.act(eng.ActionType.fold);
+    _closeActionGateAfterStreetChange(e, phaseBefore);
   }
 
   void _doHeroBetOrRaise(int raiseToTotal) {
     final e = _engine;
-    if (!_isHeroTurn || e == null) return;
+    if (e == null || !_heroCanActNow()) return;
+    final int? desired = _sanitizeRaiseForEngine(raiseToTotal);
+    if (desired == null) return;
     _disarmHeroTurnClock();
     _cancelBotScheduling();
-    final int desired = _sanitizeRaiseForEngine(raiseToTotal);
+    final eng.GamePhase phaseBefore = e.phase;
     final int need = e.toCallFor(_heroIndex);
     if (need <= 0) {
       e.act(eng.ActionType.bet, amount: desired);
     } else {
       e.act(eng.ActionType.raise, amount: desired);
     }
+    _closeActionGateAfterStreetChange(e, phaseBefore);
   }
 
   void _doHeroAllIn() {
     final e = _engine;
-    if (!_isHeroTurn || e == null) return;
+    if (e == null || !_heroCanActNow()) return;
     _disarmHeroTurnClock();
     _cancelBotScheduling();
+    final eng.GamePhase phaseBefore = e.phase;
     e.act(eng.ActionType.allIn);
+    _closeActionGateAfterStreetChange(e, phaseBefore);
+  }
+
+  void _closeActionGateAfterStreetChange(
+    eng.GameEngine e,
+    eng.GamePhase phaseBefore,
+  ) {
+    if (e.phase == phaseBefore) return;
+    RenoirSignals.canAct.value = false;
+    ActionGate.disable();
   }
 
   /* ============================ UI ======================================= */
@@ -3463,20 +3823,85 @@ class _GameScreenState extends State<GameScreen>
       );
     }
 
+    if (_isCampaignEvent && !_campaignEntryCommitted) {
+      final bool failed = _entryCommitFailure.isNotEmpty;
+      return WillPopScope(
+        onWillPop: () async {
+          unawaited(_exitToVenue());
+          return false;
+        },
+        child: GameViewport(
+          backgroundColor: bg,
+          child: Scaffold(
+            backgroundColor: bg,
+            body: Center(
+              child: Semantics(
+                liveRegion: true,
+                label:
+                    failed ? _entryCommitFailure : 'Securing tournament entry',
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    if (!failed)
+                      const CircularProgressIndicator(
+                        color: Color(0xFFFFD100),
+                      ),
+                    if (!failed) const SizedBox(height: 18),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Text(
+                        failed
+                            ? _entryCommitFailure
+                            : 'SECURING TOURNAMENT ENTRY…',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                    if (failed) ...<Widget>[
+                      const SizedBox(height: 18),
+                      FilledButton(
+                        onPressed: _exitToVenue,
+                        child: const Text('RETURN'),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     final bool isHeroTurn = _isHeroTurn;
     final int toCall = _heroToCall;
+    final bool reduceMotion =
+        context.watch<AppSettingsService>().reduceMotionFor(context);
 
     final e = _engine;
     final int bb = e?.config.bigBlind ?? 200;
     int minTo = bb;
     int maxTo = bb * 20;
+    Set<eng.ActionType> heroLegalActions = const <eng.ActionType>{};
     if (e != null && e.players.isNotEmpty && _heroIndex >= 0) {
+      heroLegalActions = e.legalActionsFor(_heroIndex);
       final bounds = e.raiseBoundsTo(_heroIndex);
       minTo = bounds.minTo;
-      maxTo = math.max(bounds.maxTo, minTo);
+      maxTo = bounds.maxTo;
     }
+    final bool heroCanRaise = heroLegalActions.contains(eng.ActionType.bet) ||
+        heroLegalActions.contains(eng.ActionType.raise);
+    final bool heroCanCallOrCheck =
+        heroLegalActions.contains(eng.ActionType.call) ||
+            heroLegalActions.contains(eng.ActionType.check);
+    final bool heroCanAllIn = heroLegalActions.contains(eng.ActionType.allIn);
+    final bool heroCanFold = heroLegalActions.contains(eng.ActionType.fold);
     final double sliderMin = minTo.toDouble();
-    final double sliderMax = math.max(sliderMin, maxTo.toDouble());
+    final double sliderMax = heroCanRaise ? maxTo.toDouble() : sliderMin;
     final double raiseAmount =
         _snapRaiseAmount(_raiseAmount, sliderMin, sliderMax);
 
@@ -3484,8 +3909,10 @@ class _GameScreenState extends State<GameScreen>
     const Offset deckOffset = Offset.zero;
     const double deckScale = 0.0;
 
-    // 🔹 Venue time (fixed offsets as per your spec, DST where applicable)
-    final int venueOffset = offsetMinutesForVenue(kingdomName);
+    // The device supplies the current instant; IANA rules convert it to the
+    // representative local time for this venue.
+    final String venueTimeZoneId =
+        (venue?.timeZoneId ?? 'Asia/Kolkata').toString();
 
     // 🔸 Last-action ticker: show live hero timer while awaiting hero action.
     List<SeatActionSnapshot> tickerActions = _recentActions;
@@ -3510,207 +3937,82 @@ class _GameScreenState extends State<GameScreen>
 
     return WillPopScope(
       onWillPop: _handleBackPressed,
-      child: GameScreenUI(
-        bg: bg,
-        venueName: venueName,
-        flagPath: flagPath,
-        onShowHandExamples: _showHandExamples,
-        onShowHandRankings: _showHandRankings,
-        onShowBotLearning: _showBotLearningDialog,
-        showBotLearning: AppBuild.current.enableBotTraining,
-        felt: felt,
-        wood: _currentWood,
-        monumentPath: _monumentPath,
-        renoirAsset: renoirNow,
-        defaultProfileAsset: _defaultProfile,
-        cardBackAsset: CardBackTheme.current,
-        pot: pot,
-        board: board,
-        seats: seats,
-        activeBloodStains: _activeBloodStains,
-        currentTurn: currentTurn,
-        dealerIndex: dealerIndex,
-        sbIndex: sbIndex,
-        bbIndex: bbIndex,
-        heroIndex: _heroIndex,
-        recentActions: tickerActions,
-        isHeroTurn: isHeroTurn,
-        heroTurnSecondsRemaining: _heroTurnSecondsRemaining,
-        showHandHighlight: _showHandRankHighlight,
-        handHighlightCards: _handRankHighlightCards,
-        showActionFlash: _showActionFlash,
-        actionFlashName: _actionFlashName,
-        actionFlashLabel: _actionFlashLabel,
-        paused: _paused,
-        onTogglePause: _togglePaused,
-        toCall: toCall,
-        showShuffle: _uiShowShuffle,
-        showDeckPile: false,
-        deckHeightPx: deckHeightPx,
-        deckOffset: deckOffset,
-        deckScale: deckScale,
-        renoirLiftPx: _kRenoirLiftPx,
-        showToggleVisible: (phase == _Phase.showdown),
-        heroShow: false,
-        playIntroWelcome: widget.playIntroWelcome,
-        potPulse: _potPulse,
-        raiseAmount: raiseAmount,
-        minRaise: sliderMin,
-        maxRaise: sliderMax,
-        onRaiseAmountChanged: (v) => setState(() {
-          _raiseAmount = _snapRaiseAmount(v, sliderMin, sliderMax);
-        }),
-        onCheckOrCall: _doHeroCheckOrCall,
-        onFold: _doHeroFold,
-        onBetOrRaise: () => _doHeroBetOrRaise(raiseAmount.round()),
-        onAllIn: _doHeroAllIn,
-        onToggleShow: () {},
-        startingStack: _startingStackChips,
-        venueOffsetMinutes: venueOffset,
-        engineEvents: _dealEventCtrl.stream,
-        engine: _engine,
-        onRenoirShuffle: _handleRenoirShuffle,
-        dealerAvatarStyle: _dealerAvatarStyle,
+      child: GameViewport(
+        backgroundColor: bg,
+        child: GameScreenUI(
+          bg: bg,
+          venueName: venueName,
+          flagPath: flagPath,
+          onShowHandExamples: _showHandExamples,
+          onShowHandRankings: _showHandRankings,
+          onShowBotLearning: _showBotLearningDialog,
+          onShowScoreboard: _showScoreboard,
+          onShowPreviousHand: _showPreviousHand,
+          onShowSettings: _showSettings,
+          showBotLearning: AppBuild.current.enableBotTraining,
+          reduceMotion: reduceMotion,
+          felt: felt,
+          wood: _currentWood,
+          monumentPath: _monumentPath,
+          renoirAsset: renoirNow,
+          defaultProfileAsset: _defaultProfile,
+          cardBackAsset: CardBackTheme.current,
+          pot: pot,
+          board: board,
+          seats: seats,
+          activeBloodStains: _activeBloodStains,
+          currentTurn: currentTurn,
+          dealerIndex: dealerIndex,
+          sbIndex: sbIndex,
+          bbIndex: bbIndex,
+          heroIndex: _heroIndex,
+          recentActions: tickerActions,
+          isHeroTurn: isHeroTurn,
+          heroTurnSecondsRemaining: _heroTurnSecondsRemaining,
+          showHandHighlight: _showHandRankHighlight,
+          handHighlightCards: _handRankHighlightCards,
+          showActionFlash: _showActionFlash,
+          actionFlashName: _actionFlashName,
+          actionFlashLabel: _actionFlashLabel,
+          liveAnnouncement: _accessibilityAnnouncement,
+          paused: _gameplayPaused,
+          showPauseOverlay: _paused,
+          onTogglePause: _togglePaused,
+          toCall: toCall,
+          showShuffle: _uiShowShuffle,
+          showDeckPile: false,
+          deckHeightPx: deckHeightPx,
+          deckOffset: deckOffset,
+          deckScale: deckScale,
+          renoirLiftPx: _kRenoirLiftPx,
+          showToggleVisible: (phase == _Phase.showdown),
+          heroShow: false,
+          playIntroWelcome: widget.playIntroWelcome,
+          potPulse: _potPulse,
+          raiseAmount: raiseAmount,
+          minRaise: sliderMin,
+          maxRaise: sliderMax,
+          canCallOrCheck: heroCanCallOrCheck,
+          canRaise: heroCanRaise,
+          canAllIn: heroCanAllIn,
+          canFold: heroCanFold,
+          onRaiseAmountChanged: (v) => setState(() {
+            _raiseAmount = _snapRaiseAmount(v, sliderMin, sliderMax);
+          }),
+          onCheckOrCall: _doHeroCheckOrCall,
+          onFold: _doHeroFold,
+          onBetOrRaise: () => _doHeroBetOrRaise(raiseAmount.round()),
+          onAllIn: _doHeroAllIn,
+          onToggleShow: () {},
+          startingStack: _startingStackChips,
+          venueTimeZoneId: venueTimeZoneId,
+          engineEvents: _dealEventCtrl.stream,
+          engine: _engine,
+          onRenoirShuffle: _handleRenoirShuffle,
+          dealerAvatarStyle: _dealerAvatarStyle,
+        ),
       ),
     );
-  }
-
-  /* ================= Venue → offset (minutes east of UTC) ================= */
-
-  /// Primary helper used in build()
-  int offsetMinutesForVenue(String venueName, {DateTime? nowUtc}) {
-    nowUtc ??= DateTime.now().toUtc();
-    final v = venueName.toLowerCase().trim();
-
-    // ——— Your explicit spec ———
-    if (v.contains('america')) {
-      // Washington, DC (US Eastern) with DST
-      return _usEasternOffsetMinutes(nowUtc);
-    }
-    if (v.contains('arabia')) {
-      // UAE/Dubai (no DST)
-      return 240; // UTC+4
-    }
-    if (v.contains('southeast')) {
-      // Singapore (no DST)
-      return 480; // UTC+8
-    }
-    if (v.contains('amazon')) {
-      // São Paulo reference (no DST since 2019)
-      return -180; // UTC-3
-    }
-    if (v.contains('africa')) {
-      // Cairo baseline per your note (keep fixed)
-      return 120; // UTC+2
-    }
-
-    // ——— “Just in case” fallbacks you noted earlier ———
-    if (v.contains('europe') || v.contains('paris')) {
-      return _europeParisOffsetMinutes(nowUtc);
-    }
-    if (v.contains('russia') || v.contains('moscow')) {
-      return 180; // UTC+3
-    }
-    if (v.contains('australia') ||
-        v.contains('sydney') ||
-        v.contains('melbourne')) {
-      return _australiaSydneyOffsetMinutes(nowUtc);
-    }
-    if (v.contains('china') || v.contains('hong kong') || v.contains('macau')) {
-      return 480; // UTC+8
-    }
-
-    // Indian venues & defaults → IST
-    if (v.contains('india') ||
-        v.contains('delhi') ||
-        v.contains('new delhi') ||
-        v.contains('jaipur') ||
-        v.contains('baroda') ||
-        v.contains('hyderabad') ||
-        v.contains('mysore') ||
-        v.contains('sikkim') ||
-        v.contains('indore') ||
-        v.contains('travancore') ||
-        v.contains('sikh empire') ||
-        v.contains('maratha')) {
-      return 330; // UTC+5:30
-    }
-
-    return 330; // safe default IST
-  }
-
-  /// US Eastern DST: -300 (EST) vs -240 (EDT)
-  int _usEasternOffsetMinutes(DateTime nowUtc) {
-    // Approximate by computing local-like dates.
-    final asEasternStd = nowUtc.add(const Duration(minutes: -300));
-    final year = asEasternStd.year;
-
-    final secondSunMar = _nthWeekdayOfMonth(year, 3, DateTime.sunday, 2);
-    final firstSunNov = _nthWeekdayOfMonth(year, 11, DateTime.sunday, 1);
-
-    final dstStartLocal = DateTime(year, 3, secondSunMar.day, 2); // 02:00 local
-    final dstEndLocal = DateTime(year, 11, firstSunNov.day, 2);
-
-    final dstStartUtc =
-        dstStartLocal.subtract(const Duration(hours: 5)); // EST=UTC-5
-    final dstEndUtc =
-        dstEndLocal.subtract(const Duration(hours: 4)); // EDT=UTC-4
-
-    final inDst = nowUtc.isAfter(dstStartUtc) && nowUtc.isBefore(dstEndUtc);
-    return inDst ? -240 : -300;
-  }
-
-  /// Paris CET/CEST: +60 / +120
-  int _europeParisOffsetMinutes(DateTime nowUtc) {
-    final year = nowUtc.year;
-    final lastSunMar = _lastWeekdayOfMonth(year, 3, DateTime.sunday);
-    final lastSunOct = _lastWeekdayOfMonth(year, 10, DateTime.sunday);
-
-    final dstStartLocal = DateTime(year, 3, lastSunMar.day, 2); // 02:00 CET
-    final dstEndLocal = DateTime(year, 10, lastSunOct.day, 3); // 03:00 CEST
-
-    final dstStartUtc =
-        dstStartLocal.subtract(const Duration(hours: 1)); // CET=UTC+1
-    final dstEndUtc =
-        dstEndLocal.subtract(const Duration(hours: 2)); // CEST=UTC+2
-
-    final inDst = nowUtc.isAfter(dstStartUtc) && nowUtc.isBefore(dstEndUtc);
-    return inDst ? 120 : 60;
-  }
-
-  /// Sydney AEST/AEDT: +600 / +660
-  int _australiaSydneyOffsetMinutes(DateTime nowUtc) {
-    final asSydneyStd = nowUtc.add(const Duration(hours: 10));
-    final year = asSydneyStd.year;
-
-    final firstSunOct = _nthWeekdayOfMonth(year, 10, DateTime.sunday, 1);
-    final firstSunApr = _nthWeekdayOfMonth(year + 1, 4, DateTime.sunday, 1);
-
-    final dstStartLocal = DateTime(year, 10, firstSunOct.day, 2);
-    final dstEndLocal = DateTime(year + 1, 4, firstSunApr.day, 3);
-
-    final dstStartUtc =
-        dstStartLocal.subtract(const Duration(hours: 10)); // AEST
-    final dstEndUtc = dstEndLocal.subtract(const Duration(hours: 11)); // AEDT
-
-    final inDst = nowUtc.isAfter(dstStartUtc) && nowUtc.isBefore(dstEndUtc);
-    return inDst ? 660 : 600;
-  }
-
-  // Calendar helpers
-  DateTime _nthWeekdayOfMonth(int year, int month, int weekday, int nth) {
-    final first = DateTime(year, month, 1);
-    int shift = (weekday - first.weekday) % 7;
-    final day = 1 + shift + (nth - 1) * 7;
-    return DateTime(year, month, day);
-  }
-
-  DateTime _lastWeekdayOfMonth(int year, int month, int weekday) {
-    final firstNext =
-        (month == 12) ? DateTime(year + 1, 1, 1) : DateTime(year, month + 1, 1);
-    final last = firstNext.subtract(const Duration(days: 1));
-    int shift = (last.weekday - weekday) % 7;
-    return DateTime(year, month, last.day - shift);
   }
 
   /* ============================ Misc UI helpers =========================== */
@@ -3732,30 +4034,54 @@ class _GameScreenState extends State<GameScreen>
     return fallback;
   }
 
-  void _showHandExamples() {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xFF141414),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetContext) {
-        final Size size = MediaQuery.of(sheetContext).size;
-        final double maxHeight = math.min(size.height * 0.82, 720.0);
-
-        return SafeArea(
-          top: false,
-          child: SizedBox(
-            height: maxHeight,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
-              child: const HandExamplesSheet(),
-            ),
+  Future<void> _showHandExamples() {
+    return _withGameplayPaused<void>(() => showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: const Color(0xFF141414),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
-        );
-      },
+          builder: (sheetContext) {
+            final Size size = MediaQuery.of(sheetContext).size;
+            final double maxHeight = math.min(size.height * 0.82, 720.0);
+
+            return SafeArea(
+              top: false,
+              child: SizedBox(
+                height: maxHeight,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
+                  child: const HandExamplesSheet(),
+                ),
+              ),
+            );
+          },
+        ));
+  }
+
+  Future<void> _showScoreboard() {
+    return _withGameplayPaused<void>(() async {
+      Seat? heroSeat;
+      if (_heroIndex >= 0 && _heroIndex < seats.length) {
+        heroSeat = seats[_heroIndex];
+      }
+      await scoreboard_sheet.showScoreboardSheet(
+        context,
+        seats,
+        heroSeat: heroSeat,
+      );
+    });
+  }
+
+  Future<void> _showPreviousHand() {
+    return _withGameplayPaused<void>(
+      () => go.showPreviousHandOverlay(context),
     );
+  }
+
+  Future<void> _showSettings() {
+    return _withGameplayPaused<void>(() => showAppSettingsSheet(context));
   }
 
   void _showHandRankings() {

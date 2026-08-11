@@ -2,7 +2,7 @@ name: ten_of_a_kind_poker
 description: A Flutter app for Ten Of A Kind poker tournament
 publish_to: 'none'
 
-version: 1.2.8+64
+version: 1.2.8+77
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -44,6 +44,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  crypto: ^3.0.7
   flutter_lints: ^4.0.0
 
 dependency_overrides:
@@ -56,13 +57,19 @@ flutter:
   uses-material-design: true
 
   assets:
-    # Main images
-    - assets/images/
+    # Root images are explicit so unused legacy multi-megabyte artwork is not
+    # shipped in every app/web release.
+    - assets/images/app_icon.png
+    - assets/images/banner.png
+    - assets/images/card_back.png
+    - assets/images/default_profile.png
+    - assets/images/renoir_tux.png
     - assets/images/flags/
     - assets/images/flags/euro/
     - assets/images/flags/indian/
     - assets/images/flags/international/
     - assets/images/flags/oceania/
+    - assets/images/flags/us/
     - assets/images/cards/
     - assets/images/watermarks/
     - assets/images/watermarks/Africa/
@@ -109,14 +116,8 @@ flutter:
     - assets/sounds/announcer/
     - assets/sounds/announcer/female/
 
-    # Explicit single assets
-    - assets/images/default_profile.png
-
     # Card backs (randomly selected each game)
     # Included via `- assets/images/cards/` above (see: tools/generate_card_backs.py)
-
-    # Legacy/fallback
-    - assets/images/card_back.png
 
     # Env file
 

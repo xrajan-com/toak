@@ -148,6 +148,17 @@ const Map<String, String> _monumentForVenue = {
   'French Isles': 'assets/images/watermarks/french_isles.svg',
   'Dutch Isles': 'assets/images/watermarks/dutch_isles.svg',
   'American Isles': 'assets/images/watermarks/american_isles.svg',
+  // North American circuit
+  'Dominion of Canada': 'assets/images/watermarks/n_america.svg',
+  'Massachusetts': 'assets/images/watermarks/n_america.svg',
+  'New York': 'assets/images/watermarks/n_america.svg',
+  'Virginia': 'assets/images/watermarks/n_america.svg',
+  'Illinois': 'assets/images/watermarks/n_america.svg',
+  'Florida': 'assets/images/watermarks/n_america.svg',
+  'Texas': 'assets/images/watermarks/n_america.svg',
+  'Kansas': 'assets/images/watermarks/n_america.svg',
+  'Colorado': 'assets/images/watermarks/n_america.svg',
+  'California': 'assets/images/watermarks/n_america.svg',
 };
 
 String _toSnake(String s) =>
@@ -164,6 +175,56 @@ String? monumentPathForVenue(String? name) {
 ───────────────────────────────────────────────*/
 Path _stadiumPath(Rect r) =>
     Path()..addRRect(RRect.fromRectAndRadius(r, Radius.circular(r.height / 2)));
+
+const double kInnerFeltBandStrokeWidth = 1.4;
+
+double innerFeltBandInsetForRail(double railWidth) =>
+    math.max(6.0, railWidth * 0.18);
+
+Rect innerFeltBandRect(Size size, double railWidth) {
+  final Rect tableRect = Offset.zero & size;
+  final Rect feltRect = tableRect.deflate(math.max(0.0, railWidth));
+  return feltRect.deflate(innerFeltBandInsetForRail(railWidth));
+}
+
+/// Hard boundary for player avatars and settled hole cards. The extra
+/// half-stroke guard keeps pixels off the visible inset line itself.
+RRect playerSafeFeltRRect(
+  Size size,
+  double railWidth, {
+  double extraGuard = kInnerFeltBandStrokeWidth / 2,
+}) {
+  final Rect safeRect =
+      innerFeltBandRect(size, railWidth).deflate(math.max(0.0, extraGuard));
+  return RRect.fromRectAndRadius(
+    safeRect,
+    Radius.circular(math.max(0.0, safeRect.height / 2)),
+  );
+}
+
+class PlayerSafeFeltClipper extends CustomClipper<Path> {
+  const PlayerSafeFeltClipper({
+    required this.railWidth,
+    this.extraGuard = kInnerFeltBandStrokeWidth / 2,
+  });
+
+  final double railWidth;
+  final double extraGuard;
+
+  @override
+  Path getClip(Size size) => Path()
+    ..addRRect(
+      playerSafeFeltRRect(
+        size,
+        railWidth,
+        extraGuard: extraGuard,
+      ),
+    );
+
+  @override
+  bool shouldReclip(covariant PlayerSafeFeltClipper oldClipper) =>
+      railWidth != oldClipper.railWidth || extraGuard != oldClipper.extraGuard;
+}
 
 /*───────────────────────────────────────────────
  🎨 Table Painter
@@ -185,7 +246,7 @@ class RacetrackTablePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
     final innerRect = rect.deflate(railWidth);
-    final innerInsetRect = innerRect.deflate(math.max(6.0, railWidth * 0.18));
+    final innerInsetRect = innerFeltBandRect(size, railWidth);
 
     final outer = _stadiumPath(rect);
     final inner = _stadiumPath(innerRect);
@@ -249,7 +310,7 @@ class RacetrackTablePainter extends CustomPainter {
       ..color = Colors.white.withValues(alpha: 0.12);
     final feltBandPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.4
+      ..strokeWidth = kInnerFeltBandStrokeWidth
       ..color = Colors.white.withValues(alpha: 0.08);
     final feltShadowPaint = Paint()
       ..style = PaintingStyle.stroke

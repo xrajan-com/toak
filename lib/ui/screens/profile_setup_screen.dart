@@ -9,18 +9,19 @@ import 'package:provider/provider.dart';
 
 import 'package:ten_of_a_kind_poker/config/venues.dart'
     show kVenueGroups, venueGroupLabel, venuesForGroup;
-import 'package:ten_of_a_kind_poker/features/venue/game_mode.dart';
 import 'package:ten_of_a_kind_poker/services/profile_service.dart';
-import 'package:ten_of_a_kind_poker/ui/screens/venue_screen.dart';
+import 'package:ten_of_a_kind_poker/ui/screens/game_mode_screen.dart';
 import 'package:ten_of_a_kind_poker/ui/theme/colors.dart';
 import 'package:ten_of_a_kind_poker/ui/widgets/stadium_banner.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   final Widget? destination;
+  final bool managedByAuthGate;
 
   const ProfileSetupScreen({
     super.key,
     this.destination,
+    this.managedByAuthGate = false,
   });
 
   @override
@@ -37,6 +38,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   Uint8List? _pickedImageBytes;
   String? _selectedKingdom;
   bool _saving = false;
+  bool _seededFromProfile = false;
+  String? _errorText;
 
   @override
   void initState() {
@@ -51,6 +54,23 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         _nameController.text = email.split('@').first.trim();
       }
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_seededFromProfile) return;
+    _seededFromProfile = true;
+    final profile = context.read<ProfileService>();
+    final profileName = (profile.displayName ?? '').trim();
+    if (_nameController.text.trim().isEmpty && profileName.isNotEmpty) {
+      _nameController.text = profileName;
+    }
+    final profileKingdom = (profile.kingdom ?? '').trim();
+    if (profileKingdom.isNotEmpty) {
+      _selectedKingdom = profileKingdom;
+    }
+    _aboutController.text = ProfileService.normalizeAbout(profile.about);
   }
 
   @override
@@ -131,6 +151,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       );
 
   Future<void> _pickImage() async {
+    if (_saving) return;
     try {
       final x = await ImagePicker().pickImage(
         source: ImageSource.gallery,
@@ -176,22 +197,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       return;
     }
 
-    setState(() => _saving = true);
+    final userId = user.uid;
+    setState(() {
+      _saving = true;
+      _errorText = null;
+    });
     try {
       final about = ProfileService.normalizeAbout(_aboutController.text);
       if ((user.displayName ?? '').trim() != displayName) {
         await user.updateDisplayName(displayName);
-      }
-
-      await context.read<ProfileService>().setLocalProfile(
-            displayName: displayName,
-            email: user.email,
-            about: about,
-            kingdom: kingdom,
-          );
-      final bytes = _pickedImageBytes;
-      if (bytes != null) {
-        await context.read<ProfileService>().setLocalAvatarBytes(bytes);
       }
 
       await FirebaseFirestore.instance.collection('users').doc(user.uid).set(
@@ -208,20 +222,40 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         SetOptions(merge: true),
       );
 
+      final currentUser = _authOrNull()?.currentUser;
+      if (currentUser == null || currentUser.uid != userId) {
+        throw StateError('The signed-in account changed while saving.');
+      }
+
+      final profile = context.read<ProfileService>();
+      profile.bindUserId(userId);
+      await profile.setLocalProfile(
+        displayName: displayName,
+        email: user.email,
+        about: about,
+        kingdom: kingdom,
+        profileComplete: true,
+      );
+      final bytes = _pickedImageBytes;
+      if (bytes != null) {
+        await profile.setLocalAvatarBytes(bytes);
+      }
+
       if (!mounted) return;
-      Navigator.of(context, rootNavigator: true).pushReplacement(
+      if (widget.managedByAuthGate) return;
+      Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) =>
-              widget.destination ??
-              const VenueScreen(mode: VenueEntryMode.career),
+          builder: (_) => widget.destination ?? const GameModeScreen(),
         ),
       );
-    } catch (e) {
-      debugPrint('Profile setup save failed: $e');
+    } catch (error) {
+      debugPrint('Profile setup save failed: $error');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not save profile details')),
-      );
+      setState(() {
+        _errorText = error is StateError
+            ? 'Your account changed. Please try again.'
+            : 'We could not save your profile. Check your connection and retry.';
+      });
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -229,18 +263,21 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenH = MediaQuery.of(context).size.height;
+    final media = MediaQuery.of(context);
+    final screenH = media.size.height;
     final compact = screenH < 540;
+    final horizontalPadding =
+        media.size.width > 552 ? (media.size.width - 520) / 2 : 16.0;
     return Scaffold(
       backgroundColor: AppColors.black,
       resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: ListView(
           padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
+            left: horizontalPadding,
+            right: horizontalPadding,
             top: compact ? 12 : 18,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 18,
+            bottom: media.viewInsets.bottom + 18,
           ),
           children: [
             StadiumBanner(
@@ -270,22 +307,31 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             ),
             SizedBox(height: compact ? 14 : 22),
             Center(
-              child: MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  onTap: _pickImage,
-                  child: CircleAvatar(
-                    radius: compact ? 34 : 42,
-                    backgroundColor: Colors.white10,
-                    foregroundImage: _pickedImageBytes != null
-                        ? MemoryImage(_pickedImageBytes!)
-                        : null,
-                    child: _pickedImageBytes == null
-                        ? const Icon(
-                            Icons.add_a_photo,
-                            color: AppColors.white,
-                          )
-                        : null,
+              child: Semantics(
+                button: true,
+                enabled: !_saving,
+                label: _pickedImageBytes == null
+                    ? 'Choose a profile image'
+                    : 'Change profile image',
+                child: MouseRegion(
+                  cursor: _saving
+                      ? SystemMouseCursors.basic
+                      : SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: _saving ? null : _pickImage,
+                    child: CircleAvatar(
+                      radius: compact ? 34 : 42,
+                      backgroundColor: Colors.white10,
+                      foregroundImage: _pickedImageBytes != null
+                          ? MemoryImage(_pickedImageBytes!)
+                          : null,
+                      child: _pickedImageBytes == null
+                          ? const Icon(
+                              Icons.add_a_photo,
+                              color: AppColors.white,
+                            )
+                          : null,
+                    ),
                   ),
                 ),
               ),
@@ -293,15 +339,21 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             SizedBox(height: compact ? 14 : 18),
             TextField(
               controller: _nameController,
+              enabled: !_saving,
               maxLength: 40,
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.nickname],
               style: const TextStyle(color: AppColors.white),
               decoration: _field('Player Name'),
             ),
             const SizedBox(height: 10),
             DropdownButtonFormField<String>(
+              isExpanded: true,
               dropdownColor: const Color(0xFF141414),
               value: _selectedKingdom,
-              onChanged: (val) => setState(() => _selectedKingdom = val),
+              onChanged: _saving
+                  ? null
+                  : (val) => setState(() => _selectedKingdom = val),
               items: _kingdomMenuItems(),
               decoration: _field('Select Kingdom'),
               style: const TextStyle(color: AppColors.white),
@@ -310,6 +362,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             const SizedBox(height: 12),
             TextField(
               controller: _aboutController,
+              enabled: !_saving,
               maxLength: 30,
               maxLines: kIsWeb ? 1 : 2,
               style: const TextStyle(color: AppColors.white),
@@ -318,6 +371,21 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               ),
             ),
             const SizedBox(height: 18),
+            if (_errorText case final error?)
+              Semantics(
+                liveRegion: true,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    error,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Color(0xFFFF8A80),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
             SizedBox(
               height: 50,
               width: double.infinity,
@@ -332,7 +400,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                         ),
                       )
                     : const Icon(Icons.check_circle_outline),
-                label: Text(_saving ? 'Saving...' : 'Continue to Career'),
+                label: Text(_saving ? 'Saving…' : 'Continue'),
                 onPressed: _saving ? null : _save,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.red,

@@ -26,6 +26,37 @@ void main() {
     expect(_totalPayout(e), 150);
   });
 
+  test('all-in big blind stays live against a raise and tables its cards', () {
+    final e = eng.GameEngine(
+      config: const eng.GameConfig(
+        tableSeed: 704,
+        smallBlind: 50,
+        bigBlind: 100,
+        maxPlayers: 3,
+      ),
+    );
+    e.animateStreets = false;
+
+    e.addPlayer(eng.Player(id: 'hero', name: 'Hero', chips: 1000));
+    e.addPlayer(eng.Player(id: 'sb', name: 'SB', chips: 1000));
+    e.addPlayer(eng.Player(id: 'bb', name: 'BB', chips: 100));
+
+    expect(e.startNewHand(seed: 31), eng.ActionResult.ok);
+    expect(e.bigBlindIndex, 2);
+    expect(e.players[2].allIn, isTrue);
+    expect(e.act(eng.ActionType.raise, amount: 500), eng.ActionResult.ok);
+    expect(e.act(eng.ActionType.fold), eng.ActionResult.ok);
+
+    expect(e.phase, eng.GamePhase.handOver);
+    expect(e.community, hasLength(5));
+    expect(e.players[2].folded, isFalse);
+    expect(e.players[2].contributedThisHand, 100);
+
+    final snapshot = e.snapshotForViewer(viewerIndex: 0);
+    expect(snapshot.players[2].hole, hasLength(2));
+    expect(_totalPayout(e), greaterThan(0));
+  });
+
   test('all-in side pots with unmatched live bets still run out immediately',
       () {
     final e = eng.GameEngine(

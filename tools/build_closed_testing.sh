@@ -8,7 +8,16 @@ OUTPUT_AAB="$OUTPUT_DIR/toak-closed-testing.aab"
 
 cd "$ROOT_DIR"
 
-flutter build appbundle --release -t lib/main_testing.dart "$@"
+API_BASE_URL="${API_BASE_URL:-}"
+bash "$ROOT_DIR/tools/verify_android_signing.sh"
+bash "$ROOT_DIR/tools/verify_release_prereqs.sh"
+echo "Building backend-authoritative closed-testing bundle."
+flutter build appbundle \
+  --release \
+  -t lib/main_testing.dart \
+  --dart-define="API_BASE_URL=$API_BASE_URL" \
+  --dart-define="ALLOW_LOCAL_ECONOMY_DEV=false" \
+  "$@"
 mkdir -p "$OUTPUT_DIR"
 cp "$SOURCE_AAB" "$OUTPUT_AAB"
 

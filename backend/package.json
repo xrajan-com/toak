@@ -5,24 +5,35 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon src/index.js",
+    "test": "npm run test:unit",
+    "test:unit": "node --test test/*.test.js",
+    "test:emulator": "node --test --test-concurrency=1 test_emulator/*.test.js"
   },
   "keywords": [
     "javascript",
     "backend",
     "ten"
   ],
+  "engines": {
+    "node": ">=22"
+  },
   "author": "xrajan",
   "license": "ISC",
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "@firebase/rules-unit-testing": "^5.0.1",
+    "nodemon": "^3.1.14"
   },
   "dependencies": {
-    "cors": "^2.8.5",
+    "cors": "^2.8.6",
     "dotenv": "^16.6.1",
-    "express": "^4.22.1",
+    "express": "^4.22.2",
     "express-rate-limit": "^7.5.1",
-    "firebase-admin": "^13.10.0",
+    "firebase-admin": "^14.2.0",
     "helmet": "^7.2.0"
+  },
+  "overrides": {
+    "brace-expansion": "^5.0.8",
+    "uuid": "^11.1.1"
   }
 }

@@ -13,8 +13,7 @@ class GCard {
   String toString() => '$rank$suit';
 
   /// Null/invalid safety check.
-  bool get isValid =>
-      rank.isNotEmpty && suit.isNotEmpty;
+  bool get isValid => rank.isNotEmpty && suit.isNotEmpty;
 
   /// Quick conversion to code format (like "As" for Ace of spades).
   String get code => '$rank$suit';

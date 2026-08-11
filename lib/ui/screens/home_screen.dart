@@ -54,7 +54,6 @@ class HomeScreen extends StatelessWidget {
                 );
               },
             ),
-
             const SizedBox(height: 32),
             _buildSection('BATTLE MODES'),
             _buildActionButton(
@@ -76,7 +75,6 @@ class HomeScreen extends StatelessWidget {
                 // TODO: Navigator.push to CareerScreen
               },
             ),
-
             const SizedBox(height: 32),
             _buildSection('TOOLS'),
             _buildActionButton(
@@ -88,7 +86,6 @@ class HomeScreen extends StatelessWidget {
                 // TODO: Show Poker Chart
               },
             ),
-
             const SizedBox(height: 32),
             _buildSection('ABOUT & FEEDBACK'),
             _buildOutlinedButton(

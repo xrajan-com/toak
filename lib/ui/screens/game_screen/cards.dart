@@ -38,8 +38,9 @@ class ActionGate {
  * Geometry
  * =========================================================== */
 
-const double _kCornerFactor = 0.30; // softened rounding so fronts/backs match without clipping ranks
-const double _kCardAspect = 1.4;     // height = width * aspect
+const double _kCornerFactor =
+    0.30; // softened rounding so fronts/backs match without clipping ranks
+const double _kCardAspect = 1.4; // height = width * aspect
 // Slight inset so face art doesn't get its rounded corners clipped relative to backs.
 const double _kFaceZoom = 0.98;
 // Slight zoom-in to reduce baked-in white border on back assets.
@@ -78,6 +79,7 @@ const String _kFallbackBackAsset = kFallbackCardBackAsset;
  * =========================================================== */
 
 enum CornerStyle { rounded, continuous }
+
 const CornerStyle _kCornerStyle = CornerStyle.continuous;
 
 ShapeBorder _cardShape(double radius, CornerStyle style) {
@@ -109,6 +111,17 @@ Widget _clipCard({
       clipBehavior: Clip.antiAlias,
       child: child,
     ),
+  );
+}
+
+Widget _semanticPlayingCard({
+  required String label,
+  required Widget child,
+}) {
+  return Semantics(
+    image: true,
+    label: label,
+    child: ExcludeSemantics(child: child),
   );
 }
 
@@ -145,6 +158,7 @@ String _safeBackAsset(String? asset) {
 
 class CardBack extends StatelessWidget {
   final double w, h;
+
   /// If null, uses CardBackTheme.current.
   final String? asset;
   final CornerStyle cornerStyle;
@@ -171,39 +185,45 @@ class CardBack extends StatelessWidget {
         final chosen = _safeBackAsset(asset ?? CardBackTheme.current);
         final dpr = MediaQuery.of(context).devicePixelRatio;
 
-        return _clipCard(
-          w: w,
-          h: h,
-          style: cornerStyle,
-          child: DecoratedBox(
-            decoration: const BoxDecoration(color: Color(0x11000000)), // subtle bg
-            child: Transform.scale(
-              scale: _kBackZoom,
-              child: Image.asset(
-                chosen,
-                fit: BoxFit.cover,
-                filterQuality: FilterQuality.high,
-                cacheWidth: (w * dpr * _kBackZoom).round(),
-                cacheHeight: (h * dpr * _kBackZoom).round(),
-                gaplessPlayback: true,
-                errorBuilder: (_, __, ___) {
-                  debugPrint('CardBack: failed to load "$chosen"; using fallback.');
-                  return Image.asset(
-                    _kFallbackBackAsset,
-                    fit: BoxFit.cover,
-                    filterQuality: FilterQuality.high,
-                    cacheWidth: (w * dpr * _kBackZoom).round(),
-                    cacheHeight: (h * dpr * _kBackZoom).round(),
-                    errorBuilder: (_, __, ___) {
-                      return const ColoredBox(
-                        color: Colors.black26,
-                        child: Center(
-                          child: Icon(Icons.style, color: Colors.white70, size: 28),
-                        ),
-                      );
-                    },
-                  );
-                },
+        return _semanticPlayingCard(
+          label: 'Face-down playing card',
+          child: _clipCard(
+            w: w,
+            h: h,
+            style: cornerStyle,
+            child: DecoratedBox(
+              decoration:
+                  const BoxDecoration(color: Color(0x11000000)), // subtle bg
+              child: Transform.scale(
+                scale: _kBackZoom,
+                child: Image.asset(
+                  chosen,
+                  fit: BoxFit.cover,
+                  filterQuality: FilterQuality.high,
+                  cacheWidth: (w * dpr * _kBackZoom).round(),
+                  cacheHeight: (h * dpr * _kBackZoom).round(),
+                  gaplessPlayback: true,
+                  errorBuilder: (_, __, ___) {
+                    debugPrint(
+                        'CardBack: failed to load "$chosen"; using fallback.');
+                    return Image.asset(
+                      _kFallbackBackAsset,
+                      fit: BoxFit.cover,
+                      filterQuality: FilterQuality.high,
+                      cacheWidth: (w * dpr * _kBackZoom).round(),
+                      cacheHeight: (h * dpr * _kBackZoom).round(),
+                      errorBuilder: (_, __, ___) {
+                        return const ColoredBox(
+                          color: Colors.black26,
+                          child: Center(
+                            child: Icon(Icons.style,
+                                color: Colors.white70, size: 28),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
             ),
           ),
@@ -274,26 +294,29 @@ class FaceCard extends StatelessWidget {
         }
         final pcCard = pc.PlayingCard(suit, value);
 
-        return _clipCard(
-          w: w,
-          h: h,
-          style: cornerStyle,
-          child: ColoredBox(
-            color: bgColor,
-            child: LayoutBuilder(
-              builder: (context, c) => Center(
-                child: Transform.scale(
-                  scale: zoom,
-                  child: SizedBox(
-                    width: c.maxWidth,
-                    height: c.maxHeight,
-                    child: pc.PlayingCardView(
-                      card: pcCard,
-                      showBack: false,
-                      // Match the outer clip radius so fronts/backs align.
-                      shape: _cardShape(
-                        _cornerRadiusFor(w, h),
-                        cornerStyle,
+        return _semanticPlayingCard(
+          label: _cardSemanticLabel(card!),
+          child: _clipCard(
+            w: w,
+            h: h,
+            style: cornerStyle,
+            child: ColoredBox(
+              color: bgColor,
+              child: LayoutBuilder(
+                builder: (context, c) => Center(
+                  child: Transform.scale(
+                    scale: zoom,
+                    child: SizedBox(
+                      width: c.maxWidth,
+                      height: c.maxHeight,
+                      child: pc.PlayingCardView(
+                        card: pcCard,
+                        showBack: false,
+                        // Match the outer clip radius so fronts/backs align.
+                        shape: _cardShape(
+                          _cornerRadiusFor(w, h),
+                          cornerStyle,
+                        ),
                       ),
                     ),
                   ),
@@ -307,6 +330,30 @@ class FaceCard extends StatelessWidget {
   }
 }
 
+String _cardSemanticLabel(CardSpec card) {
+  const Map<String, String> ranks = <String, String>{
+    'A': 'Ace',
+    'K': 'King',
+    'Q': 'Queen',
+    'J': 'Jack',
+    'T': 'Ten',
+    '10': 'Ten',
+  };
+  const Map<String, String> suits = <String, String>{
+    'S': 'spades',
+    '♠': 'spades',
+    'H': 'hearts',
+    '♥': 'hearts',
+    'D': 'diamonds',
+    '♦': 'diamonds',
+    'C': 'clubs',
+    '♣': 'clubs',
+  };
+  final String rank = ranks[card.rank.trim().toUpperCase()] ?? card.rank.trim();
+  final String suit = suits[card.suit.trim().toUpperCase()] ?? card.suit.trim();
+  return '$rank of $suit';
+}
+
 /* =============================================================
  * Front/Back wrapper
  * =========================================================== */
@@ -317,6 +364,7 @@ class PlayingCardWidget extends StatelessWidget {
   final CardSpec? card; // nullable → nothing when absent
   /// Optional override; null → CardBackTheme.current.
   final String? backAsset;
+
   /// If true and card is null, render a back as a placeholder.
   final bool showBackWhenNull;
   final double zoom;
@@ -346,11 +394,13 @@ class PlayingCardWidget extends StatelessWidget {
         if (!on) return const SizedBox.shrink();
         if (faceUp) {
           if (card == null) return const SizedBox.shrink();
-          final child = FaceCard(card, w: w, h: h, zoom: zoom, cornerStyle: cornerStyle);
+          final child =
+              FaceCard(card, w: w, h: h, zoom: zoom, cornerStyle: cornerStyle);
           return SizedBox(width: w, height: h, child: child);
         } else {
           if (card == null && !showBackWhenNull) return const SizedBox.shrink();
-          final child = CardBack(w: w, h: h, asset: backAsset, cornerStyle: cornerStyle);
+          final child =
+              CardBack(w: w, h: h, asset: backAsset, cornerStyle: cornerStyle);
           return SizedBox(width: w, height: h, child: child);
         }
       },
@@ -419,7 +469,8 @@ CardSpec? _coerceToCardSpec(Object? any) {
     final rU = ('$rank').toUpperCase().trim();
     final r = (rU == 'T')
         ? '10'
-        : (const {'ACE': 'A', 'KING': 'K', 'QUEEN': 'Q', 'JACK': 'J'}[rU] ?? rU);
+        : (const {'ACE': 'A', 'KING': 'K', 'QUEEN': 'Q', 'JACK': 'J'}[rU] ??
+            rU);
 
     final s = _normalizeSuit('$suit');
     if (s.isEmpty) return null;
@@ -566,8 +617,8 @@ class HoleCards extends StatelessWidget {
     required this.faceUp,
     required this.cardWidth,
     this.aspect = _kCardAspect,
-    this.overlap = 0.5,       // ← 50% as requested
-    this.fanAngleDeg = 8,     // small tasteful fan; try 4–10
+    this.overlap = 0.5, // ← 50% as requested
+    this.fanAngleDeg = 8, // small tasteful fan; try 4–10
     this.backAsset,
     this.pivot = Alignment.centerLeft,
     this.rightmostOnTop = true,

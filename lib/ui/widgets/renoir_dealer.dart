@@ -1,8 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
-import 'slash_avatar.dart'
-    show DealerAvatarStyle, SlashAvatar, SlashJacketTone;
+import 'slash_avatar.dart' show DealerAvatarStyle, SlashAvatar, SlashJacketTone;
 
 enum DealerAct { idle, shuffle }
 
@@ -46,12 +45,9 @@ class RenoirDealer extends StatefulWidget {
 }
 
 class _RenoirDealerState extends State<RenoirDealer> {
-  static const _idlePath = 'assets/images/renoir/renoir_tux.png';
+  static const _idlePath = 'assets/images/renoir_tux.png';
   static const _shufflePaths = <String>[
-    'assets/images/renoir/renoir_shuffle1.png',
-    'assets/images/renoir/renoir_shuffle2.png',
-    'assets/images/renoir/renoir_shuffle3.png',
-    'assets/images/renoir/renoir_shuffle4.png',
+    'assets/images/renoir_tux.png',
   ];
 
   static const List<double> _slashTimeline = <double>[
@@ -82,9 +78,11 @@ class _RenoirDealerState extends State<RenoirDealer> {
   void initState() {
     super.initState();
     if (!_usesCustomAvatar) {
-      _idle = Image.asset(_idlePath, filterQuality: FilterQuality.high, isAntiAlias: true);
+      _idle = Image.asset(_idlePath,
+          filterQuality: FilterQuality.high, isAntiAlias: true);
       _shuffleFrames = _shufflePaths
-          .map((p) => Image.asset(p, filterQuality: FilterQuality.high, isAntiAlias: true))
+          .map((p) => Image.asset(p,
+              filterQuality: FilterQuality.high, isAntiAlias: true))
           .toList();
     }
     _currentAct = widget.act;
@@ -117,7 +115,8 @@ class _RenoirDealerState extends State<RenoirDealer> {
         _idle ??= Image.asset(_idlePath,
             filterQuality: FilterQuality.high, isAntiAlias: true);
         _shuffleFrames ??= _shufflePaths
-            .map((p) => Image.asset(p, filterQuality: FilterQuality.high, isAntiAlias: true))
+            .map((p) => Image.asset(p,
+                filterQuality: FilterQuality.high, isAntiAlias: true))
             .toList();
       } else {
         _idle = null;

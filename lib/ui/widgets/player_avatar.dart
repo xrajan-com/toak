@@ -65,12 +65,16 @@ class PlayerAvatar extends StatelessWidget {
           ),
         ),
 
-        // Chips
-        Text(
-          '₹$chips',
-          style: const TextStyle(
-            fontSize: 12,
-            color: AppColors.white70,
+        // Tournament chips are play-only and are deliberately not presented
+        // with a real-world currency symbol.
+        Semantics(
+          label: '$chips chips',
+          child: Text(
+            '$chips chips',
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.white70,
+            ),
           ),
         ),
       ],

@@ -6,7 +6,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:math' as math;
 import 'dart:ui' show Offset;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 
 import 'package:flutter/material.dart';
 import 'package:ten_of_a_kind_poker/core/sound_fx.dart';
@@ -22,7 +22,21 @@ import 'cards.dart' as cardui show PlayingCard, CardBack;
 import 'cards.dart' show CardVisibilityGate, ActionGate;
 import '../../../game/events.dart' show CardDealt, EngineEvent;
 import 'pacing.dart' as pace;
-import 'table.dart' show WoodType, WoodPalette, WoodTypeX;
+import 'seat_card_layout.dart'
+    show
+        SeatCardFanLayout,
+        centeredFanCardCenters,
+        fitHeroCardRow,
+        fitSeatCardFanBehindAvatar,
+        kHeroHoleCardScale,
+        kBotHoleCardScale;
+import 'table.dart'
+    show
+        PlayerSafeFeltClipper,
+        WoodPalette,
+        WoodType,
+        WoodTypeX,
+        playerSafeFeltRRect;
 
 /// Public signals for table/players UI to react to Renoir flow.
 /// Listen to these to know when hole cards are visible and when acting is allowed.
@@ -36,6 +50,54 @@ class RenoirSignals {
 
   /// True while Renoir is actively dealing (any card flight in progress).
   static final ValueNotifier<bool> dealingActive = ValueNotifier<bool>(false);
+}
+
+class _PresentationTimer {
+  _PresentationTimer(
+    Duration duration,
+    this._callback, {
+    bool startPaused = false,
+  }) : _remaining = duration {
+    if (!startPaused) _schedule();
+  }
+
+  final VoidCallback _callback;
+  Duration _remaining;
+  Timer? _timer;
+  DateTime? _deadline;
+  bool _cancelled = false;
+
+  void _schedule() {
+    if (_cancelled || _timer != null) return;
+    _deadline = DateTime.now().add(_remaining);
+    _timer = Timer(_remaining, () {
+      _timer = null;
+      _deadline = null;
+      if (_cancelled) return;
+      _cancelled = true;
+      _callback();
+    });
+  }
+
+  void pause() {
+    final Timer? timer = _timer;
+    final DateTime? deadline = _deadline;
+    if (timer == null || deadline == null) return;
+    final Duration left = deadline.difference(DateTime.now());
+    _remaining = left.isNegative ? Duration.zero : left;
+    timer.cancel();
+    _timer = null;
+    _deadline = null;
+  }
+
+  void resume() => _schedule();
+
+  void cancel() {
+    _cancelled = true;
+    _timer?.cancel();
+    _timer = null;
+    _deadline = null;
+  }
 }
 
 // Global constant: number of shuffle loops (controls total shuffle duration)
@@ -116,6 +178,8 @@ class RenoirLayer extends StatefulWidget {
   final Set<int> hiddenSeats; // seats that shouldn't show cards (e.g., empty)
   final bool showToggleVisible; // global “Show” toggle
   final bool heroShow; // whether hero shows when Show is on
+  final bool paused;
+  final bool reduceMotion;
 
   // --- Engine (optional) ---
   final Stream<EngineEvent>? engineEvents;
@@ -170,6 +234,8 @@ class RenoirLayer extends StatefulWidget {
     required this.hiddenSeats,
     required this.showToggleVisible,
     required this.heroShow,
+    this.paused = false,
+    this.reduceMotion = false,
     this.engineEvents,
     this.showWelcomeOnInit = true,
     this.welcomeTitle = 'Ladies and gentlemen, welcome to the table.',
@@ -267,7 +333,7 @@ class _RenoirLayerState extends State<RenoirLayer>
 
   // Winners overlay bus subscription and next-hand timer
   StreamSubscription? _winnersSub;
-  Timer? _nextHandTimer;
+  _PresentationTimer? _nextHandTimer;
   bool _winnerOverlayVisible = false;
   Set<int> _winningSeats = const {};
   Map<int, Set<String>> _winningHoleCodes = const {};
@@ -276,19 +342,45 @@ class _RenoirLayerState extends State<RenoirLayer>
   Map<int, bool> _winnerShowPref = const {};
   bool _nextHandPending = false;
   // Reveals are now tied to the actual end of Renoir's shuffle
-  Timer? _shuffleWatchTimer; // polls dealer or runs expected-end fallback
-  Timer? _revealTimer; // fires when shuffle window ends
+  _PresentationTimer? _shuffleWatchTimer;
+  _PresentationTimer? _revealTimer;
+  _PresentationTimer? _welcomeStartTimer;
+  _PresentationTimer? _shuffleFlightTimer;
 
   // Action gating: open actions only after the initial hole-card deal completes.
   bool _actionOpenScheduled = false;
-  Timer? _actionOpenTimer;
-  Timer? _actionSafeguardTimer;
+  _PresentationTimer? _actionOpenTimer;
+  _PresentationTimer? _actionSafeguardTimer;
+  bool _presentationPaused = false;
+  bool _resumeDealAnimation = false;
+  bool _resumeHandAnimation = false;
 
   // Dealer wardrobe
   SlashJacketTone _jacketTone = SlashJacketTone.black;
   final math.Random _jacketRand = math.Random();
 
   SlashJacketTone get currentJacketTone => _jacketTone;
+
+  @visibleForTesting
+  double get debugDealProgress => _dealCtrl.value;
+
+  @visibleForTesting
+  bool get debugDealAnimating => _dealCtrl.isAnimating;
+
+  @visibleForTesting
+  AnimationStatus get debugDealStatus => _dealCtrl.status;
+
+  @visibleForTesting
+  int get debugActiveFlightCount => _script.length;
+
+  @visibleForTesting
+  int get debugBoardCardCount => _boardCardCount;
+
+  @visibleForTesting
+  int get debugPendingDealCount => _pendingEngineDeals.length;
+
+  @visibleForTesting
+  bool get debugRevealAllowed => _allowReveal;
 
   // Cached geometry
   late Offset _lastOrigin;
@@ -297,8 +389,8 @@ class _RenoirLayerState extends State<RenoirLayer>
   int _boardCardCount = 0; // number of community cards visibly on the table
 
   // Tunables (relaxed pace via pacing.dart)
-  int get _kPerCardMs => pace.kDealCardFlightMs;
-  int get _kBetweenSeatMs => pace.kDealGapMs;
+  int get _kPerCardMs => widget.reduceMotion ? 1 : pace.kDealCardFlightMs;
+  int get _kBetweenSeatMs => widget.reduceMotion ? 0 : pace.kDealGapMs;
   int get _shuffleFrameMsReduced => pace.kShuffleFrameMs;
 
   static const double _kHandSlidePx = 6.0;
@@ -310,15 +402,13 @@ class _RenoirLayerState extends State<RenoirLayer>
   static const double _kShuffleTimingBias = 0.50; // tweak if art/loops change
 
   // Visual constants
-  static const double _kOppSmallScale = 0.62; // face-down opponents shrink
-  static const double _kOppShowScale = 1.25;
-  // Shrink hero/community cards slightly to reduce overlap with board.
-  static const double _kHeroScale = 1.24;
+  static const double _kOppSmallScale = kBotHoleCardScale;
+  static const double _kOppShowScale = 1.00;
+  static const double _kHeroScale = kHeroHoleCardScale;
   static const double _kFanOverlap = 0.50;
   static const double _kHeroFanDeg = 10.0;
   static const double _kOppFanDeg = 8.0;
   static const double _kHiddenFanDeg = 6.0;
-  static const double _kRailPadMin = 12.0;
 
   // Demo / test-flow timings
   static const int _kWelcomeExtraDelayMs = 1000; // 1s after welcome
@@ -334,6 +424,7 @@ class _RenoirLayerState extends State<RenoirLayer>
   @override
   void initState() {
     super.initState();
+    _presentationPaused = widget.paused;
     _jacketTone = _randomJacketTone();
     CardVisibilityGate.hide(); // start with a blank table
 
@@ -398,18 +489,28 @@ class _RenoirLayerState extends State<RenoirLayer>
           duration: const Duration(seconds: 4),
         );
         if (!mounted) return;
-        Future.delayed(const Duration(milliseconds: _kWelcomeExtraDelayMs), () {
-          if (!mounted) return;
-          startNewHand();
-        });
+        _welcomeStartTimer?.cancel();
+        _welcomeStartTimer = _PresentationTimer(
+          const Duration(milliseconds: _kWelcomeExtraDelayMs),
+          () {
+            if (!mounted) return;
+            startNewHand();
+          },
+          startPaused: _presentationPaused,
+        );
       });
     } else {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        Future.delayed(const Duration(milliseconds: _kWelcomeExtraDelayMs), () {
-          if (!mounted) return;
-          startNewHand();
-        });
+        _welcomeStartTimer?.cancel();
+        _welcomeStartTimer = _PresentationTimer(
+          const Duration(milliseconds: _kWelcomeExtraDelayMs),
+          () {
+            if (!mounted) return;
+            startNewHand();
+          },
+          startPaused: _presentationPaused,
+        );
       });
     }
   }
@@ -418,8 +519,10 @@ class _RenoirLayerState extends State<RenoirLayer>
     if (!mounted) return;
 
     final hadScript = _script.isNotEmpty;
-    final shouldClear =
-        s == AnimationStatus.completed || s == AnimationStatus.dismissed;
+    // Every scripted flight starts with `forward(from: 0)`. When a previous
+    // flight left the controller completed, assigning zero can briefly report
+    // `dismissed`; that is the *start* of the next flight, not its landing.
+    final bool shouldClear = s == AnimationStatus.completed;
 
     if (shouldClear) {
       final completed = _script;
@@ -484,6 +587,12 @@ class _RenoirLayerState extends State<RenoirLayer>
     if (widget.engineEvents == null) return;
     _engineSub = widget.engineEvents!.listen((e) {
       if (e is! CardDealt) return;
+      if (e.isBoard) {
+        _cancelActionTimers();
+        _actionOpenScheduled = false;
+        RenoirSignals.canAct.value = false;
+        ActionGate.disable();
+      }
       _pendingEngineDeals.add(e);
       _scheduleEngineDrain();
     });
@@ -492,6 +601,13 @@ class _RenoirLayerState extends State<RenoirLayer>
   @override
   void didUpdateWidget(covariant RenoirLayer oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.paused != widget.paused) {
+      _setPresentationPaused(widget.paused);
+    }
+    if (widget.reduceMotion && !oldWidget.reduceMotion) {
+      _resetHandAnimation();
+      _shuffleCuesActive = false;
+    }
     if (oldWidget.engineEvents != widget.engineEvents) {
       _attachEngine();
     }
@@ -520,6 +636,51 @@ class _RenoirLayerState extends State<RenoirLayer>
     }
   }
 
+  Iterable<_PresentationTimer?> get _presentationTimers sync* {
+    yield _nextHandTimer;
+    yield _shuffleWatchTimer;
+    yield _revealTimer;
+    yield _welcomeStartTimer;
+    yield _shuffleFlightTimer;
+    yield _actionOpenTimer;
+    yield _actionSafeguardTimer;
+  }
+
+  void _setPresentationPaused(bool paused) {
+    if (_presentationPaused == paused) return;
+    _presentationPaused = paused;
+    if (paused) {
+      for (final timer in _presentationTimers) {
+        timer?.pause();
+      }
+      _resumeDealAnimation = _dealCtrl.isAnimating;
+      _resumeHandAnimation = _handCtrl.isAnimating;
+      if (_resumeDealAnimation) _dealCtrl.stop(canceled: false);
+      if (_resumeHandAnimation) _handCtrl.stop(canceled: false);
+      try {
+        _dealerKey.currentState?.pause();
+      } catch (_) {}
+      return;
+    }
+
+    for (final timer in _presentationTimers) {
+      timer?.resume();
+    }
+    try {
+      _dealerKey.currentState?.resume();
+    } catch (_) {}
+    if (_resumeDealAnimation && _dealCtrl.value < 1) {
+      _dealCtrl.forward();
+    }
+    if (_resumeHandAnimation && _handCtrl.value < 1) {
+      _handCtrl.forward();
+    }
+    _resumeDealAnimation = false;
+    _resumeHandAnimation = false;
+    _scheduleEngineDrain();
+    _maybeOpenActionAfterDeal();
+  }
+
   @override
   void dispose() {
     _ensureDealerMotionOff();
@@ -532,6 +693,10 @@ class _RenoirLayerState extends State<RenoirLayer>
     _shuffleWatchTimer = null;
     _revealTimer?.cancel();
     _revealTimer = null;
+    _welcomeStartTimer?.cancel();
+    _welcomeStartTimer = null;
+    _shuffleFlightTimer?.cancel();
+    _shuffleFlightTimer = null;
     _cancelActionTimers();
     _resetHandAnimation();
     _dealCtrl.dispose();
@@ -577,6 +742,10 @@ class _RenoirLayerState extends State<RenoirLayer>
   }
 
   void _ensureDealerMotionOn({bool restart = false}) {
+    if (widget.reduceMotion) {
+      _ensureDealerMotionOff();
+      return;
+    }
     if (!restart && _dealerMotionActive) return;
     _dealerMotionActive = true;
     try {
@@ -623,24 +792,34 @@ class _RenoirLayerState extends State<RenoirLayer>
 
     // Human-like pause before players may act: 0.8s–2.0s after deal completes
     final int actDelayMs = 800 + math.Random().nextInt(1201); // 800..2000
-    _actionOpenTimer = Timer(Duration(milliseconds: actDelayMs), () {
-      if (!mounted) return;
-      if (_winnerOverlayVisible) return;
-      if (!RenoirSignals.holeCardsVisible.value) return;
-      RenoirSignals.canAct.value = true;
-      ActionGate.enable();
-    });
+    _actionOpenTimer = _PresentationTimer(
+      Duration(milliseconds: actDelayMs),
+      () {
+        if (!mounted) return;
+        if (_presentationPaused) return;
+        if (_winnerOverlayVisible) return;
+        if (!RenoirSignals.holeCardsVisible.value) return;
+        ActionGate.enable();
+        RenoirSignals.canAct.value = true;
+      },
+      startPaused: _presentationPaused,
+    );
 
     // Web safeguard: if canAct never flips (e.g., web throttling), force-enable after grace.
-    _actionSafeguardTimer = Timer(const Duration(seconds: 3), () {
-      if (!mounted) return;
-      if (_winnerOverlayVisible) return;
-      if (!RenoirSignals.holeCardsVisible.value) return;
-      if (kIsWeb && !RenoirSignals.canAct.value) {
-        RenoirSignals.canAct.value = true;
-        ActionGate.enable();
-      }
-    });
+    _actionSafeguardTimer = _PresentationTimer(
+      const Duration(seconds: 3),
+      () {
+        if (!mounted) return;
+        if (_presentationPaused) return;
+        if (_winnerOverlayVisible) return;
+        if (!RenoirSignals.holeCardsVisible.value) return;
+        if (kIsWeb && !RenoirSignals.canAct.value) {
+          ActionGate.enable();
+          RenoirSignals.canAct.value = true;
+        }
+      },
+      startPaused: _presentationPaused,
+    );
   }
 
   void _maybeOpenActionAfterDeal() {
@@ -858,6 +1037,7 @@ class _RenoirLayerState extends State<RenoirLayer>
   }
 
   void _scheduleEngineDrain() {
+    if (_presentationPaused) return;
     if (!_geomReady) return;
     if (widget.engineEvents == null) return;
     if (!_allowReveal) return; // wait until shuffle fully ends (+delay)
@@ -868,6 +1048,7 @@ class _RenoirLayerState extends State<RenoirLayer>
     Timer.run(() {
       _engineDrainScheduled = false;
       if (!mounted) return;
+      if (_presentationPaused) return;
       if (widget.engineEvents == null) return;
       if (!_allowReveal) return;
       if (_pendingEngineDeals.isEmpty) return;
@@ -878,35 +1059,45 @@ class _RenoirLayerState extends State<RenoirLayer>
 
   void _scheduleRevealAfter(int ms) {
     _revealTimer?.cancel();
-    _revealTimer = Timer(Duration(milliseconds: ms), () {
-      if (!mounted) return;
-      _allowReveal = true;
-      if (widget.engineEvents != null) {
-        // Start the hole-card deal after shuffle ends.
-        showCardsForDealing();
-        _normalizeInitialHoleDealOrderIfNeeded();
-        if (_pendingEngineDeals.isNotEmpty) {
-          _scheduleEngineDrain();
+    _revealTimer = _PresentationTimer(
+      Duration(milliseconds: ms),
+      () {
+        if (!mounted) return;
+        if (_presentationPaused) return;
+        _allowReveal = true;
+        if (widget.engineEvents != null) {
+          // Start the hole-card deal after shuffle ends.
+          showCardsForDealing();
+          _normalizeInitialHoleDealOrderIfNeeded();
+          if (_pendingEngineDeals.isNotEmpty) {
+            _scheduleEngineDrain();
+          } else {
+            _ensureDealerMotionOff();
+            // Safety: if no deal events arrive, still open action.
+            _actionOpenScheduled = true;
+            _scheduleActionOpenAfterHumanPause();
+          }
         } else {
-          _ensureDealerMotionOff();
-          // Safety: if no deal events arrive, still open action.
-          _actionOpenScheduled = true;
-          _scheduleActionOpenAfterHumanPause();
+          showAllCardsNow();
         }
-      } else {
-        showAllCardsNow();
-      }
-    });
+      },
+      startPaused: _presentationPaused,
+    );
   }
 
   void _queueNextHandAfterOverlay() {
     if (_winnerOverlayVisible || !_nextHandPending) return;
     _nextHandTimer?.cancel();
-    _nextHandTimer = Timer(const Duration(seconds: 1), () {
-      if (!mounted) return;
-      _nextHandPending = false;
-      startNewHand();
-    });
+    _nextHandTimer = _PresentationTimer(
+      const Duration(seconds: 1),
+      () {
+        if (!mounted) return;
+        if (_presentationPaused) return;
+        _nextHandPending = false;
+        startNewHand();
+      },
+      startPaused: _presentationPaused,
+    );
   }
 
   int? _seatIndexForName(String winnerName) {
@@ -1011,10 +1202,16 @@ class _RenoirLayerState extends State<RenoirLayer>
     final int totalMs = _shuffleTotalMs();
 
     // During shuffle: stagger light back-card flights to seats (visual cue only)
-    Future.delayed(Duration(milliseconds: (totalMs * 0.10).round()), () {
-      if (!mounted) return;
-      _scheduleShuffleFlights(totalMs);
-    });
+    _shuffleFlightTimer?.cancel();
+    _shuffleFlightTimer = _PresentationTimer(
+      Duration(milliseconds: (totalMs * 0.10).round()),
+      () {
+        if (!mounted) return;
+        if (_presentationPaused || widget.reduceMotion) return;
+        _scheduleShuffleFlights(totalMs);
+      },
+      startPaused: _presentationPaused,
+    );
 
     // Prefer a native dealer callback if available; else fall back to watcher
     _shuffleWatchTimer?.cancel();
@@ -1046,14 +1243,20 @@ class _RenoirLayerState extends State<RenoirLayer>
       final int dealStartMs = (totalMs * 0.60).round();
 
       _shuffleWatchTimer?.cancel();
-      _shuffleWatchTimer = Timer(Duration(milliseconds: dealStartMs), () {
-        if (!mounted) return;
-        _scheduleRevealAfter(_kPostShuffleShowDelayMs);
-      });
+      _shuffleWatchTimer = _PresentationTimer(
+        Duration(milliseconds: dealStartMs),
+        () {
+          if (!mounted) return;
+          if (_presentationPaused) return;
+          _scheduleRevealAfter(_kPostShuffleShowDelayMs);
+        },
+        startPaused: _presentationPaused,
+      );
     }
   }
 
   void _scheduleShuffleFlights(int totalMs) {
+    if (_presentationPaused || widget.reduceMotion) return;
     if (!_geomReady || _lastSeatTargets.isEmpty) return;
 
     // Collect visible seats
@@ -1098,6 +1301,7 @@ class _RenoirLayerState extends State<RenoirLayer>
   }
 
   int _shuffleTotalMs() {
+    if (widget.reduceMotion) return 1;
     const int frames = 3; // renoir_shuffle1..3 (reduced from 4)
     final raw = frames * _shuffleFrameMsReduced * kRenoirShuffleLoops;
     return (raw * _kShuffleTimingBias).round();
@@ -1106,6 +1310,7 @@ class _RenoirLayerState extends State<RenoirLayer>
   void _queueHandBeat(
       {Duration duration = const Duration(milliseconds: 220),
       double amplitude = 1.0}) {
+    if (widget.reduceMotion) return;
     _handBeats.add(
         _HandBeat(duration: duration, amplitude: amplitude.clamp(0.3, 1.5)));
     if (!_handBeatActive && !_handCtrl.isAnimating) {
@@ -1211,8 +1416,9 @@ class _RenoirLayerState extends State<RenoirLayer>
       handAnchor: RenoirLayer.kRenoirHandAnchor,
     );
     final headroom = math.max(0.0, -renoirTranslateY + 8.0);
-    final bool hasHandMotion =
-        !_kLockRenoirChair && (_handBeatActive || _handCtrl.isAnimating);
+    final bool hasHandMotion = !widget.reduceMotion &&
+        !_kLockRenoirChair &&
+        (_handBeatActive || _handCtrl.isAnimating);
     final double handPhase = hasHandMotion ? _handCurve.value : 0.0;
     final double handPulse =
         hasHandMotion ? math.sin(handPhase * math.pi) : 0.0;
@@ -1429,6 +1635,7 @@ class _RenoirLayerState extends State<RenoirLayer>
 
   // NOTE: We never trigger shuffle here; community dealing occurs without shuffle.
   void _drainNextEngineCard() {
+    if (_presentationPaused) return;
     if (!_geomReady || _pendingEngineDeals.isEmpty) return;
     if (!_allowReveal) return;
 
@@ -1578,6 +1785,7 @@ class _RenoirLayerState extends State<RenoirLayer>
 
   // NOTE: We never trigger shuffle here; community dealing occurs without shuffle.
   void _dealNextRound() {
+    if (_presentationPaused) return;
     if (widget.engineEvents != null) return;
     if (!_geomReady || _dealtRounds >= 2) return;
 
@@ -1806,24 +2014,16 @@ class _SeatHoleCardsLayer extends StatelessWidget {
         final w = c.maxWidth;
         final h = c.maxHeight;
 
-        final List<Widget> layers = [];
+        final List<Widget> layers = <Widget>[];
+        final List<Rect> placedFanBounds = <Rect>[];
         final List<Rect> seatRects = _seatPanelRects(
           positions: seatPanelPositions,
           seatWidth: seatPanelWidth,
           seatHeight: seatPanelHeight,
         );
-        final Offset centerScreen = seatRects.isNotEmpty
-            ? _rectCloudCenter(seatRects)
-            : _feltCenterFromTargets(seatTargets) + Offset(railW, railW);
+        final Offset centerScreen = Offset(w / 2, h / 2);
 
-        // Safe padding away from rail for cards as well
-        final double pad =
-            math.max(_RenoirLayerState._kRailPadMin, railW * 0.35);
-
-        double clampX(double x, double halfW) =>
-            x.clamp(railW + pad + halfW, w - railW - pad - halfW).toDouble();
-        double clampY(double y, double halfH) =>
-            y.clamp(railW + pad + halfH, h - railW - pad - halfH).toDouble();
+        final RRect cardSafeBoundary = playerSafeFeltRRect(Size(w, h), railW);
 
         for (int i = 0; i < seats.length && i < seatTargets.length; i++) {
           if (hiddenSeats.contains(i)) continue;
@@ -1846,7 +2046,7 @@ class _SeatHoleCardsLayer extends StatelessWidget {
           final bool facesUp = winnerMode
               ? (isHero || (isWinner && winnerShows))
               : (isHero ? revealHero : revealOpp);
-          // Face-up cards are rendered in the UI overlay above seat widgets.
+          // Face-up cards are rendered by the settled-card layer behind seats.
           if (facesUp) continue;
 
           // Sizes
@@ -1861,65 +2061,77 @@ class _SeatHoleCardsLayer extends StatelessWidget {
                   ? baseCardH * _RenoirLayerState._kOppShowScale
                   : baseCardH * _RenoirLayerState._kOppSmallScale);
           final bool heroSideBySide = isHero && nToDraw > 1;
+          final double totalAngleDeg = heroSideBySide
+              ? 0.0
+              : (facesUp
+                  ? (isHero
+                      ? _RenoirLayerState._kHeroFanDeg
+                      : (winnerMode && isWinner
+                          ? _RenoirLayerState._kHeroFanDeg * 0.8
+                          : _RenoirLayerState._kOppFanDeg))
+                  : _RenoirLayerState._kHiddenFanDeg);
+          final double totalAngle = totalAngleDeg * (math.pi / 180.0);
+          final double stepFactor =
+              heroSideBySide ? 1.05 : 1 - _RenoirLayerState._kFanOverlap;
 
           Offset anchor;
           double fittedCardW = cardW;
           double fittedCardH = cardH;
+          SeatCardFanLayout? fanLayout;
           if (seatRects.length > i) {
-            final fit = _fitSeatCardLayout(
-              seatRect: seatRects[i],
-              otherSeatRects: [
-                for (int j = 0; j < seatRects.length && j < seats.length; j++)
-                  if (j != i && !hiddenSeats.contains(j)) seatRects[j],
-              ],
-              tableCenter: centerScreen,
-              isHero: isHero,
-              nToDraw: nToDraw,
-              cardW: cardW,
-              cardH: cardH,
-              heroSideBySide: heroSideBySide,
-              fanOverlap: _RenoirLayerState._kFanOverlap,
-              heroSideBySideGap: 1.05,
-            );
-            anchor = fit.anchor;
-            fittedCardW *= fit.scale;
-            fittedCardH *= fit.scale;
+            final List<Rect> otherSeatRects = [
+              for (int j = 0; j < seatRects.length && j < seats.length; j++)
+                if (j != i && !hiddenSeats.contains(j)) seatRects[j],
+              ...placedFanBounds,
+            ];
+            fanLayout = isHero
+                ? fitHeroCardRow(
+                    seatRect: seatRects[i],
+                    tableCenter: centerScreen,
+                    safeBoundary: cardSafeBoundary,
+                    tableMidpointY: h / 2,
+                    cardCount: nToDraw,
+                    cardW: cardW,
+                    cardH: cardH,
+                    stepFactor: stepFactor,
+                  )
+                : fitSeatCardFanBehindAvatar(
+                    seatRect: seatRects[i],
+                    obstacleRects: otherSeatRects,
+                    tableCenter: centerScreen,
+                    safeBoundary: cardSafeBoundary,
+                    cardCount: nToDraw,
+                    cardW: cardW,
+                    cardH: cardH,
+                    stepFactor: stepFactor,
+                    totalFanAngleRadians: totalAngle,
+                    minimumScale: 0.78,
+                  );
+            anchor = fanLayout.anchor;
+            fittedCardW *= fanLayout.scale;
+            fittedCardH *= fanLayout.scale;
+            placedFanBounds.add(fanLayout.bounds);
           } else {
-            final feltAnchor = seatTargets[i];
-            anchor = Offset(feltAnchor.dx + railW, feltAnchor.dy + railW);
-            final dirToCenter = _unitVec(centerScreen - anchor);
-            double pushBase = (facesUp ? 6.0 : 2.0) + (baseCardH / 2);
-            if (winnerMode && isWinner) pushBase += baseCardH * 0.35;
-            final double push = isHero ? pushBase : pushBase - 6.0;
-            final anchorPushed =
-                anchor + Offset(dirToCenter.dx * push, dirToCenter.dy * push);
-            anchor = isHero
-                ? anchorPushed + Offset(0, baseCardH * 0.14)
-                : anchorPushed;
+            anchor = seatTargets[i];
           }
 
           // Fan
-          final double step =
-              fittedCardW * (1 - _RenoirLayerState._kFanOverlap);
-          final double totalAngleDeg = facesUp
-              ? (isHero
-                  ? _RenoirLayerState._kHeroFanDeg
-                  : (winnerMode && isWinner
-                      ? _RenoirLayerState._kHeroFanDeg * 0.8
-                      : _RenoirLayerState._kOppFanDeg))
-              : _RenoirLayerState._kHiddenFanDeg;
-          final double totalAngle = totalAngleDeg * (math.pi / 180.0);
+          final double step = fanLayout?.step ?? fittedCardW * stepFactor;
           final double anglePer =
               (nToDraw > 1) ? (totalAngle / (nToDraw - 1)) : 0.0;
           final double startAngle = (nToDraw > 1) ? (-totalAngle / 2) : 0.0;
+          final List<Offset> cardCenters = centeredFanCardCenters(
+            anchor: anchor,
+            cardCount: nToDraw,
+            step: step,
+          );
 
           for (int k = 0; k < nToDraw; k++) {
-            final double cxRaw = anchor.dx + (k - (nToDraw - 1)) * 0.5 * step;
-            final double cyRaw = anchor.dy;
+            final double cxRaw = cardCenters[k].dx;
+            final double cyRaw = cardCenters[k].dy;
 
-            // Clamp so cards can’t touch the rail
-            final double cx = clampX(cxRaw, fittedCardW / 2);
-            final double cy = clampY(cyRaw, fittedCardH / 2);
+            final double cx = cxRaw;
+            final double cy = cyRaw;
             final double ang = startAngle + k * anglePer;
 
             final String code =
@@ -1979,6 +2191,7 @@ class _SeatHoleCardsLayer extends StatelessWidget {
                 width: fittedCardW,
                 height: fittedCardH,
                 child: Transform.rotate(
+                  key: ValueKey<String>('seat-hole-back-$i-$k'),
                   angle: ang,
                   alignment: Alignment.center,
                   child: card,
@@ -1988,21 +2201,12 @@ class _SeatHoleCardsLayer extends StatelessWidget {
           }
         }
 
-        return Stack(clipBehavior: Clip.none, children: layers);
+        return ClipPath(
+          clipper: PlayerSafeFeltClipper(railWidth: railW),
+          child: Stack(clipBehavior: Clip.none, children: layers),
+        );
       },
     );
-  }
-
-  Offset _feltCenterFromTargets(List<Offset> targets) {
-    double minX = double.infinity, minY = double.infinity;
-    double maxX = -double.infinity, maxY = -double.infinity;
-    for (final p in targets) {
-      if (p.dx < minX) minX = p.dx;
-      if (p.dy < minY) minY = p.dy;
-      if (p.dx > maxX) maxX = p.dx;
-      if (p.dy > maxY) maxY = p.dy;
-    }
-    return Offset((minX + maxX) / 2, (minY + maxY) / 2);
   }
 
   String _cardKeySeat(GCard c) => _cardCode(c.rank, c.suit);
@@ -2239,22 +2443,6 @@ Offset _quad(Offset a, Offset b, double t, {double rise = 56.0}) {
 
 double _ease(double x) => 0.5 - 0.5 * math.cos(x * math.pi);
 
-Offset _unitVec(Offset v) {
-  final len = math.sqrt(v.dx * v.dx + v.dy * v.dy);
-  if (len == 0) return const Offset(0, -1);
-  return Offset(v.dx / len, v.dy / len);
-}
-
-class _SeatCardLayout {
-  final Offset anchor;
-  final double scale;
-
-  const _SeatCardLayout({
-    required this.anchor,
-    required this.scale,
-  });
-}
-
 List<Rect> _seatPanelRects({
   required List<Offset> positions,
   required double seatWidth,
@@ -2266,190 +2454,4 @@ List<Rect> _seatPanelRects({
   return [
     for (final p in positions) Rect.fromLTWH(p.dx, p.dy, seatWidth, seatHeight),
   ];
-}
-
-Offset _rectCloudCenter(List<Rect> rects) {
-  double minX = double.infinity, minY = double.infinity;
-  double maxX = -double.infinity, maxY = -double.infinity;
-  for (final r in rects) {
-    if (r.left < minX) minX = r.left;
-    if (r.top < minY) minY = r.top;
-    if (r.right > maxX) maxX = r.right;
-    if (r.bottom > maxY) maxY = r.bottom;
-  }
-  return Offset((minX + maxX) / 2, (minY + maxY) / 2);
-}
-
-double _rectExtentAlong(Rect rect, Offset unitDir) {
-  final halfW = rect.width / 2;
-  final halfH = rect.height / 2;
-  final double dx = unitDir.dx.abs();
-  final double dy = unitDir.dy.abs();
-  final double tx = dx < 1e-4 ? double.infinity : halfW / dx;
-  final double ty = dy < 1e-4 ? double.infinity : halfH / dy;
-  return math.min(tx, ty);
-}
-
-Offset _along(Offset unitDir, double distance) =>
-    Offset(unitDir.dx * distance, unitDir.dy * distance);
-
-Rect _seatCardFanBounds({
-  required Offset anchor,
-  required double cardW,
-  required double cardH,
-  required double step,
-  required int nToDraw,
-  required bool heroSideBySide,
-}) {
-  final double fanWidth = cardW + math.max(0, nToDraw - 1) * step;
-  return Rect.fromCenter(
-    center: anchor,
-    width: fanWidth + cardW * 0.16,
-    height: cardH * (heroSideBySide ? 1.08 : 1.20),
-  );
-}
-
-_SeatCardLayout _fitSeatCardLayout({
-  required Rect seatRect,
-  required List<Rect> otherSeatRects,
-  required Offset tableCenter,
-  required bool isHero,
-  required int nToDraw,
-  required double cardW,
-  required double cardH,
-  required bool heroSideBySide,
-  required double fanOverlap,
-  required double heroSideBySideGap,
-}) {
-  final double maxExtraPush = math.max(24.0, cardH * 0.72);
-  final double minScale = isHero ? 0.78 : 0.72;
-  final Offset dirToCenter =
-      _seatCardAttachmentDir(seatRect: seatRect, tableCenter: tableCenter);
-  Offset fallbackAnchor = _seatAvatarFacingCardAnchor(
-    seatRect: seatRect,
-    dirToCenter: dirToCenter,
-    cardClusterHalfExtent: _seatCardClusterHalfExtent(
-      dirToCenter: dirToCenter,
-      fittedCardW: cardW * minScale,
-      fittedCardH: cardH * minScale,
-      heroSideBySide: heroSideBySide,
-      nToDraw: nToDraw,
-      step: heroSideBySide
-          ? cardW * minScale * heroSideBySideGap
-          : cardW * minScale * (1 - fanOverlap),
-    ),
-  );
-  double fallbackScale = minScale;
-
-  const int attempts = 6;
-  for (int attempt = 0; attempt < attempts; attempt++) {
-    final double t = attempts == 1 ? 1.0 : attempt / (attempts - 1);
-    final double scale = 1.0 - (1.0 - minScale) * t;
-    final double fittedCardW = cardW * scale;
-    final double fittedCardH = cardH * scale;
-    final double step = heroSideBySide
-        ? fittedCardW * heroSideBySideGap
-        : fittedCardW * (1 - fanOverlap);
-    final double outwardNudge = maxExtraPush * t * 0.08;
-    final Offset anchor = _seatAvatarFacingCardAnchor(
-      seatRect: seatRect,
-      dirToCenter: dirToCenter,
-      cardClusterHalfExtent: _seatCardClusterHalfExtent(
-        dirToCenter: dirToCenter,
-        fittedCardW: fittedCardW,
-        fittedCardH: fittedCardH,
-        heroSideBySide: heroSideBySide,
-        nToDraw: nToDraw,
-        step: step,
-      ),
-      outwardNudge: outwardNudge,
-    );
-    fallbackAnchor = anchor;
-    fallbackScale = scale;
-    final Rect fanBounds = _seatCardFanBounds(
-      anchor: anchor,
-      cardW: fittedCardW,
-      cardH: fittedCardH,
-      step: step,
-      nToDraw: nToDraw,
-      heroSideBySide: heroSideBySide,
-    );
-    final bool clearsOthers = otherSeatRects.every(
-      (r) => !fanBounds.overlaps(r.inflate(math.max(8.0, fittedCardH * 0.10))),
-    );
-    if (clearsOthers) {
-      return _SeatCardLayout(anchor: anchor, scale: scale);
-    }
-  }
-
-  return _SeatCardLayout(anchor: fallbackAnchor, scale: fallbackScale);
-}
-
-Rect _seatAvatarRect(Rect seatRect) {
-  final double pillH = seatRect.height;
-  final double avatarBaseSize = (pillH * 0.94).clamp(40.0, pillH).toDouble();
-  final double avatarSize =
-      (avatarBaseSize * 0.85).clamp(34.0, pillH).toDouble();
-  final double avatarInset =
-      ((pillH - avatarSize) / 2).clamp(2.0, pillH * 0.18).toDouble();
-  return Rect.fromLTWH(
-    seatRect.left + avatarInset,
-    seatRect.top + avatarInset,
-    avatarSize,
-    avatarSize,
-  );
-}
-
-Offset _seatCardAttachmentDir({
-  required Rect seatRect,
-  required Offset tableCenter,
-}) {
-  final Offset delta = tableCenter - seatRect.center;
-  final double absDx = delta.dx.abs();
-  final double absDy = delta.dy.abs();
-  if (absDx < 1e-3 && absDy < 1e-3) {
-    return const Offset(0, -1);
-  }
-  if (absDy >= absDx * 0.85) {
-    return Offset(0, delta.dy >= 0 ? 1 : -1);
-  }
-  return Offset(delta.dx >= 0 ? 1 : -1, 0);
-}
-
-double _seatCardClusterHalfExtent({
-  required Offset dirToCenter,
-  required double fittedCardW,
-  required double fittedCardH,
-  required bool heroSideBySide,
-  required int nToDraw,
-  required double step,
-}) {
-  final Rect fanRect = _seatCardFanBounds(
-    anchor: Offset.zero,
-    cardW: fittedCardW,
-    cardH: fittedCardH,
-    step: step,
-    nToDraw: nToDraw,
-    heroSideBySide: heroSideBySide,
-  );
-  return _rectExtentAlong(fanRect, dirToCenter);
-}
-
-Offset _seatAvatarFacingCardAnchor({
-  required Rect seatRect,
-  required Offset dirToCenter,
-  required double cardClusterHalfExtent,
-  double outwardNudge = 0.0,
-}) {
-  final Rect avatarRect = _seatAvatarRect(seatRect);
-  final double avatarRadius = avatarRect.shortestSide / 2;
-  final Offset avatarEdge =
-      avatarRect.center + _along(dirToCenter, avatarRadius);
-  final double touchAllowance =
-      math.min(10.0, cardClusterHalfExtent * 0.18).toDouble();
-  final double distance =
-      (cardClusterHalfExtent - touchAllowance + outwardNudge)
-          .clamp(0.0, 9999.0)
-          .toDouble();
-  return avatarEdge + _along(dirToCenter, distance);
 }

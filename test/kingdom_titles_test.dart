@@ -9,6 +9,7 @@ void main() {
       VenueGroup.india,
       VenueGroup.international,
       VenueGroup.oceania,
+      VenueGroup.northAmerica,
     ]);
     expect(venueGroupLabel(VenueGroup.oceania), 'Micro Circuit');
   });
@@ -62,15 +63,31 @@ void main() {
       'Dutch Isles': 'Burgher',
       'American Isles': 'Marshal',
     };
+    const expectedNorthAmericaTitles = <String, String>{
+      'Dominion of Canada': 'Mountie',
+      'Massachusetts': 'Patriot',
+      'New York': 'Maccabee',
+      'Virginia': 'Cavalier',
+      'Illinois': 'Loopmaster',
+      'Florida': 'Buccaneer',
+      'Texas': 'Longhorn',
+      'Kansas': 'Marshal',
+      'Colorado': 'Prospector',
+      'California': 'Rainmaker',
+    };
 
     expect(kKingdomTitles[VenueGroup.india], expectedIndianTitles);
     expect(
         kKingdomTitles[VenueGroup.international], expectedInternationalTitles);
     expect(kKingdomTitles[VenueGroup.euro], expectedEuroTitles);
     expect(kKingdomTitles[VenueGroup.oceania], expectedOceaniaTitles);
+    expect(
+      kKingdomTitles[VenueGroup.northAmerica],
+      expectedNorthAmericaTitles,
+    );
   });
 
-  test('euro and oceania circuit venues use their own flag assets', () {
+  test('euro, oceania, and US circuit venues use their own flag assets', () {
     const expectedEuroFlags = <String, String>{
       'Britain': 'assets/images/flags/euro/britain.png',
       'France': 'assets/images/flags/euro/france.png',
@@ -95,6 +112,18 @@ void main() {
       'Dutch Isles': 'assets/images/flags/oceania/dutch_isles.png',
       'American Isles': 'assets/images/flags/oceania/american_isles.png',
     };
+    const expectedNorthAmericaFlags = <String, String>{
+      'Dominion of Canada': 'assets/images/flags/us/canada.png',
+      'Massachusetts': 'assets/images/flags/us/massachusetts.png',
+      'New York': 'assets/images/flags/us/new_york.png',
+      'Virginia': 'assets/images/flags/us/virginia.png',
+      'Illinois': 'assets/images/flags/us/illinois.png',
+      'Florida': 'assets/images/flags/us/florida.png',
+      'Texas': 'assets/images/flags/us/texas.png',
+      'Kansas': 'assets/images/flags/us/kansas.png',
+      'Colorado': 'assets/images/flags/us/colorado.png',
+      'California': 'assets/images/flags/us/california.png',
+    };
 
     expect(
       {for (final venue in euroVenues) venue.name: venue.flagAsset},
@@ -103,6 +132,10 @@ void main() {
     expect(
       {for (final venue in oceaniaVenues) venue.name: venue.flagAsset},
       expectedOceaniaFlags,
+    );
+    expect(
+      {for (final venue in northAmericanVenues) venue.name: venue.flagAsset},
+      expectedNorthAmericaFlags,
     );
   });
 }

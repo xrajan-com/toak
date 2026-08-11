@@ -646,6 +646,7 @@ Future<void> showHeroFinishOverlay(
   required int handsPlayed,
   required int finalChips,
   required int winnings,
+  String? winningsLabel,
   String venueName = '',
   String venueFlagAsset = '',
   Future<void> Function()? onBeforeExit,
@@ -661,6 +662,10 @@ Future<void> showHeroFinishOverlay(
   final String finishLabel = rank > 0 ? _ordinalRank(rank) : '—';
   final String payoutLabel =
       NumberFormat.decimalPattern('en_IN').format(math.max(0, winnings));
+  final bool hasCustomWinningsLabel = winningsLabel?.trim().isNotEmpty == true;
+  final String payoutText = hasCustomWinningsLabel
+      ? '${winningsLabel!.trim().toUpperCase()} +$payoutLabel AUP'
+      : 'WINNINGS AUP $payoutLabel';
   final String finalStackLabel =
       NumberFormat.decimalPattern('en_IN').format(math.max(0, finalChips));
   final String netLabel =
@@ -1015,7 +1020,7 @@ Future<void> showHeroFinishOverlay(
                                 if (winnings > 0) ...[
                                   const SizedBox(height: 10),
                                   GoldenText(
-                                    'WINNINGS AUP $payoutLabel',
+                                    payoutText,
                                     style: const TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.w900,
@@ -2139,6 +2144,7 @@ class RenoirDealer extends StatefulWidget {
 
 class RenoirDealerState extends State<RenoirDealer> {
   DealerAct _act = DealerAct.idle;
+  bool _paused = false;
 
   static const List<double> _slashTimeline = <double>[
     0.00,
@@ -2173,6 +2179,18 @@ class RenoirDealerState extends State<RenoirDealer> {
     });
   }
 
+  void pause() {
+    if (_paused) return;
+    _paused = true;
+    _stopTimer();
+  }
+
+  void resume() {
+    if (!_paused) return;
+    _paused = false;
+    if (_act == DealerAct.shuffle) _startTimer();
+  }
+
   Future<void> shuffle() async {
     if (!mounted) return;
     if (_frameCount == 0) {
@@ -2184,7 +2202,7 @@ class RenoirDealerState extends State<RenoirDealer> {
       _frameIndex = 0;
       _completedLoops = 0;
     });
-    _startTimer();
+    if (!_paused) _startTimer();
 
     if (!widget.loopShuffle) {
       final totalFrames = _frameCount * widget.loops;
@@ -2192,6 +2210,7 @@ class RenoirDealerState extends State<RenoirDealer> {
       final total = widget.frameDuration * totalFrames;
       await Future.delayed(total);
       if (!mounted) return;
+      if (_paused) return;
       idle();
     }
   }
@@ -2755,6 +2774,16 @@ String _flagForKingdom(String kingdomRaw) {
     'french isles': 'assets/images/flags/oceania/french_isles.png',
     'dutch isles': 'assets/images/flags/oceania/dutch_isles.png',
     'american isles': 'assets/images/flags/oceania/american_isles.png',
+    'dominion of canada': 'assets/images/flags/us/canada.png',
+    'massachusetts': 'assets/images/flags/us/massachusetts.png',
+    'new york': 'assets/images/flags/us/new_york.png',
+    'virginia': 'assets/images/flags/us/virginia.png',
+    'illinois': 'assets/images/flags/us/illinois.png',
+    'florida': 'assets/images/flags/us/florida.png',
+    'texas': 'assets/images/flags/us/texas.png',
+    'kansas': 'assets/images/flags/us/kansas.png',
+    'colorado': 'assets/images/flags/us/colorado.png',
+    'california': 'assets/images/flags/us/california.png',
   };
   return flags[k] ?? '';
 }

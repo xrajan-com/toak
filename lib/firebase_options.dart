@@ -61,5 +61,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'ten-of-a-kind-poker.firebasestorage.app',
     measurementId: 'G-TFF4CPM2J6',
   );
-
 }

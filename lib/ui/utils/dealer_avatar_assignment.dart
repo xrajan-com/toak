@@ -75,6 +75,18 @@ const Map<VenueGroup, Map<String, DealerAvatarStyle>>
     'Dutch Isles': DealerAvatarStyle.india,
     'American Isles': DealerAvatarStyle.europe,
   },
+  VenueGroup.northAmerica: <String, DealerAvatarStyle>{
+    'Dominion of Canada': DealerAvatarStyle.northAmerica,
+    'Massachusetts': DealerAvatarStyle.baroda,
+    'New York': DealerAvatarStyle.europe,
+    'Virginia': DealerAvatarStyle.india,
+    'Illinois': DealerAvatarStyle.hyderabad,
+    'Florida': DealerAvatarStyle.southAmerica,
+    'Texas': DealerAvatarStyle.arabia,
+    'Kansas': DealerAvatarStyle.russia,
+    'Colorado': DealerAvatarStyle.africa,
+    'California': DealerAvatarStyle.australia,
+  },
 };
 
 DealerAvatarStyle dealerAvatarStyleForVenue({

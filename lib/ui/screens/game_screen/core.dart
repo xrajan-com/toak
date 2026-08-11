@@ -15,7 +15,21 @@ import 'dart:math' show Random;
 
 enum Suit { clubs, diamonds, hearts, spades }
 
-enum Rank { two, three, four, five, six, seven, eight, nine, ten, jack, queen, king, ace }
+enum Rank {
+  two,
+  three,
+  four,
+  five,
+  six,
+  seven,
+  eight,
+  nine,
+  ten,
+  jack,
+  queen,
+  king,
+  ace
+}
 
 /// Hand/round phases for the table flow (kept here so UI can reference safely)
 enum GamePhase { predeal, preflop, flop, turn, river, showdown, handOver }
@@ -38,7 +52,21 @@ class Card {
 
   @override
   String toString() {
-    const ranks = ['2','3','4','5','6','7','8','9','T','J','Q','K','A'];
+    const ranks = [
+      '2',
+      '3',
+      '4',
+      '5',
+      '6',
+      '7',
+      '8',
+      '9',
+      'T',
+      'J',
+      'Q',
+      'K',
+      'A'
+    ];
     const suits = {
       Suit.clubs: '♣',
       Suit.diamonds: '♦',

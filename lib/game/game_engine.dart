@@ -104,10 +104,24 @@ class GameEngine {
   final Map<String, BotHandTracker> _botHandTrackers =
       <String, BotHandTracker>{};
   final List<BotDecisionLogEntry> _botDecisionLog = <BotDecisionLogEntry>[];
-  final Set<String> _botAggressedThisStreet = <String>{};
   String? _preflopAggressorId;
   String? _streetVoluntaryAggressorId;
   String? _previousStreetAggressorId;
+  final Map<int, int> _lastActedAtBet = <int, int>{};
+  final Map<String, int> _handStartingChips = <String, int>{};
+  ({
+    int seat,
+    int handNumber,
+    GamePhase phase,
+    int currentBet,
+    int playerBet,
+    int playerChips,
+    int pot,
+    ActionType action,
+    int toAmount,
+    double confidence,
+    double strength,
+  })? _preparedBotDecision;
 
   // Hand state
   Deck _deck = Deck();
@@ -127,6 +141,7 @@ class GameEngine {
   int heroIndex = -1; // set from UI if you want precise skip logic
   int _firstActorThisStreet = -1;
   final Set<int> _actedThisStreet = <int>{};
+  bool _actionInProgress = false;
 
   /// Set the hero index (seat of the human). UI can update this when seats change.
   void setHeroIndex(int index) {
@@ -167,6 +182,55 @@ class GameEngine {
   int? _lastAggressor;
   int? get lastAggressorIndex => _lastAggressor;
   int _lastRaiseSize = 0;
+
+  /// Calculates a bot action once for the current immutable turn state.
+  ///
+  /// Presentation code may call this to choose a think delay. The actual bot
+  /// tick reuses the same result, so pausing or rebuilding the UI cannot
+  /// consume gameplay RNG again and silently change the decision.
+  ({
+    ActionType action,
+    int toAmount,
+    double confidence,
+    double strength,
+  }) prepareBotDecision(int seat) {
+    if (seat < 0 || seat >= players.length) {
+      throw RangeError.index(seat, players, 'seat');
+    }
+    final Player player = players[seat];
+    final cached = _preparedBotDecision;
+    if (cached != null &&
+        cached.seat == seat &&
+        cached.handNumber == handNumber &&
+        cached.phase == phase &&
+        cached.currentBet == currentBet &&
+        cached.playerBet == player.betThisStreet &&
+        cached.playerChips == player.chips &&
+        cached.pot == pot) {
+      return (
+        action: cached.action,
+        toAmount: cached.toAmount,
+        confidence: cached.confidence,
+        strength: cached.strength,
+      );
+    }
+
+    final advice = BotAdvisor.suggest(this, seat);
+    _preparedBotDecision = (
+      seat: seat,
+      handNumber: handNumber,
+      phase: phase,
+      currentBet: currentBet,
+      playerBet: player.betThisStreet,
+      playerChips: player.chips,
+      pot: pot,
+      action: advice.action,
+      toAmount: advice.toAmount,
+      confidence: advice.confidence,
+      strength: advice.strength,
+    );
+    return advice;
+  }
 
   // Output from last hand
   List<Payout> lastPayouts = const [];
@@ -352,7 +416,20 @@ class GameEngine {
   void _rotateButton() {
     // First hand: dealerIndex might be -1; pick the first eligible.
     final int prev = dealerIndex;
-    dealerIndex = _nextEligibleSeatFrom(dealerIndex);
+    final bool transitioningToHeadsUp = _eligibleCount() == 2 &&
+        dealerIndex >= 0 &&
+        smallBlindIndex >= 0 &&
+        smallBlindIndex != dealerIndex;
+    final bool priorBigBlindSurvives = bigBlindIndex >= 0 &&
+        bigBlindIndex < players.length &&
+        _isEligibleForHand(players[bigBlindIndex]);
+
+    // When a ring game becomes heads-up, the surviving player who most
+    // recently paid the big blind becomes the button/small blind. This keeps
+    // the other survivor from taking the big blind twice in succession.
+    dealerIndex = transitioningToHeadsUp && priorBigBlindSurvives
+        ? bigBlindIndex
+        : _nextEligibleSeatFrom(dealerIndex);
 
     // A completed orbit is when the dealer button wraps around the table.
     if (prev >= 0 && dealerIndex >= 0 && dealerIndex < prev) {
@@ -525,7 +602,9 @@ class GameEngine {
     handNumber = 0;
     _firstActorThisStreet = -1;
     _actedThisStreet.clear();
-    _botAggressedThisStreet.clear();
+    _lastActedAtBet.clear();
+    _handStartingChips.clear();
+    _preparedBotDecision = null;
     _preflopAggressorId = null;
     _streetVoluntaryAggressorId = null;
     _previousStreetAggressorId = null;
@@ -552,7 +631,6 @@ class GameEngine {
     _botStyleStates.clear();
     _botHandTrackers.clear();
     _botDecisionLog.clear();
-    _botAggressedThisStreet.clear();
     _preflopAggressorId = null;
     _streetVoluntaryAggressorId = null;
     _previousStreetAggressorId = null;
@@ -562,7 +640,6 @@ class GameEngine {
     _preflopAggressorId = null;
     _streetVoluntaryAggressorId = null;
     _previousStreetAggressorId = null;
-    _botAggressedThisStreet.clear();
     _botHandTrackers.clear();
     for (final p in players) {
       if (!_isEligibleForHand(p)) continue;
@@ -627,18 +704,22 @@ class GameEngine {
     phase = GamePhase.predeal;
     _lastAggressor = null;
     _lastRaiseSize = bigBlind;
+    _lastActedAtBet.clear();
+    _preparedBotDecision = null;
     _streetVoluntaryAggressorId = null;
     _previousStreetAggressorId = null;
     lastPayouts = const [];
     for (final p in players) {
       p.resetForNewHand(); // clears folded/allIn/bets/best/hole
     }
+    _captureHandStartingChips();
     _prepareBotLearningStateForHand();
+    final List<int> dealOrder = _eligibleDealOrder();
 
     _postAntesIfAny();
-    _dealHoleCardsInstant(); // emits CardDealt immediately per card
     _postBlinds(); // sets SB/BB based on dealer & eligibility
     if (config.allowButtonStraddle) _postStraddleIfAny();
+    _dealHoleCardsInstant(dealOrder); // emits CardDealt immediately per card
 
     phase = GamePhase.preflop;
     _setFirstToActPreflop(); // HU: SB/dealer acts first; else left of BB
@@ -684,16 +765,25 @@ class GameEngine {
     phase = GamePhase.predeal;
     _lastAggressor = null;
     _lastRaiseSize = bigBlind;
+    _lastActedAtBet.clear();
+    _preparedBotDecision = null;
     _streetVoluntaryAggressorId = null;
     _previousStreetAggressorId = null;
     lastPayouts = const [];
     for (final p in players) {
       p.resetForNewHand();
     }
+    _captureHandStartingChips();
     _prepareBotLearningStateForHand();
+    final List<int> dealOrder = _eligibleDealOrder();
 
     // Antes
     _postAntesIfAny();
+
+    // Establish and post positions before any hole-card event. Capturing the
+    // deal order above ensures an all-in ante/blind still receives cards.
+    _postBlinds();
+    if (config.allowButtonStraddle) _postStraddleIfAny();
 
     // Shuffle animation
     await _animateShuffle(
@@ -703,13 +793,10 @@ class GameEngine {
 
     // Deal hole cards with animation
     await _dealHoleCardsAnimated(
+      dealOrder: dealOrder,
       msPerCard: msPerHoleCard,
       msBetweenPlayers: msBetweenPlayers,
     );
-
-    // Blinds / straddle
-    _postBlinds();
-    if (config.allowButtonStraddle) _postStraddleIfAny();
 
     // Move to preflop
     phase = GamePhase.preflop;
@@ -736,17 +823,34 @@ class GameEngine {
 
   /* ==================== Dealing (Hole) ==================== */
 
-  void _dealHoleCardsInstant() {
-    final start = _nextEligibleSeatFrom(dealerIndex);
-    if (start < 0) return;
+  List<int> _eligibleDealOrder() {
+    if (players.isEmpty || dealerIndex < 0) return const <int>[];
+    final List<int> order = <int>[];
+    for (int hop = 1; hop <= players.length; hop++) {
+      final int index = (dealerIndex + hop) % players.length;
+      if (_isEligibleForHand(players[index])) order.add(index);
+    }
+    return order;
+  }
+
+  void _captureHandStartingChips() {
+    _handStartingChips
+      ..clear()
+      ..addEntries(
+        players
+            .where(_isEligibleForHand)
+            .map((Player player) => MapEntry(player.id, player.chips)),
+      );
+  }
+
+  void _dealHoleCardsInstant(List<int> dealOrder) {
+    if (dealOrder.isEmpty) return;
     _emit(const DealingStarted("hole"));
 
     // Two hole cards, round-robin from left of dealer
     for (int r = 0; r < 2; r++) {
-      for (int n = 0; n < players.length; n++) {
-        final idx = (start + n) % players.length;
+      for (final int idx in dealOrder) {
         final p = players[idx];
-        if (!_isEligibleForHand(p)) continue;
         final c = _deck.draw();
         if (p.hole.isEmpty) {
           p.hole = [c];
@@ -760,18 +864,17 @@ class GameEngine {
   }
 
   Future<void> _dealHoleCardsAnimated({
+    required List<int> dealOrder,
     required int msPerCard,
     required int msBetweenPlayers,
   }) async {
-    final start = _nextEligibleSeatFrom(dealerIndex);
-    if (start < 0) return;
+    if (dealOrder.isEmpty) return;
     _emit(const DealingStarted("hole"));
 
     for (int r = 0; r < 2; r++) {
-      for (int n = 0; n < players.length; n++) {
-        final idx = (start + n) % players.length;
+      for (int n = 0; n < dealOrder.length; n++) {
+        final idx = dealOrder[n];
         final p = players[idx];
-        if (!_isEligibleForHand(p)) continue;
 
         final c = _deck.draw();
         if (p.hole.isEmpty) {
@@ -784,7 +887,7 @@ class GameEngine {
         await Future.delayed(Duration(milliseconds: msPerCard));
 
         // Slight travel time to next player
-        if (n != players.length - 1) {
+        if (n != dealOrder.length - 1) {
           await Future.delayed(Duration(milliseconds: msBetweenPlayers));
         }
       }
@@ -894,12 +997,12 @@ class GameEngine {
       actingIndex = -1;
       _firstActorThisStreet = -1;
       _actedThisStreet.clear();
-      _botAggressedThisStreet.clear();
+      _lastActedAtBet.clear();
       return;
     }
     _firstActorThisStreet = actingIndex;
     _actedThisStreet.clear();
-    _botAggressedThisStreet.clear();
+    _lastActedAtBet.clear();
     _emit(NextToActChanged(actingIndex));
   }
 
@@ -909,17 +1012,17 @@ class GameEngine {
     _firstActorThisStreet = nextActor;
   }
 
-  bool _botAggressionLocked(int index) {
-    if (index < 0 || index >= players.length) return false;
-    final p = players[index];
-    if (!p.isBot) return false;
-    return _botAggressedThisStreet.contains(p.id);
-  }
-
   void _recordActed(int index) {
     if (index >= 0 && index < players.length) {
       _actedThisStreet.add(index);
+      _lastActedAtBet[index] = currentBet;
     }
+  }
+
+  bool _raiseActionIsOpenFor(int index) {
+    final int? lastActedAt = _lastActedAtBet[index];
+    if (lastActedAt == null) return true;
+    return currentBet - lastActedAt >= minRaiseSize();
   }
 
   bool _allLivePlayersActed(List<int> seats) {
@@ -1043,19 +1146,18 @@ class GameEngine {
 
     final p = players[index];
     if (p.folded || p.allIn || p.sittingOut || p.isOut) return out;
-    final bool botRaiseLocked = _botAggressionLocked(index);
-
     final toCall = toCallFor(index);
     final canMatch = p.chips >= toCall;
     final int shoveTo = p.betThisStreet + p.chips;
     final bool shoveWouldReopen = shoveTo > currentBet;
+    final bool raiseActionOpen = _raiseActionIsOpenFor(index);
 
     if (p.betThisStreet == currentBet) {
       out.add(ActionType.check);
-      if (!botRaiseLocked && currentBet == 0) {
+      if (raiseActionOpen && currentBet == 0) {
         final bounds = raiseBoundsTo(index);
         if (bounds.minTo <= bounds.maxTo) out.add(ActionType.bet);
-      } else if (!botRaiseLocked) {
+      } else if (raiseActionOpen) {
         final bounds = raiseBoundsTo(index);
         if (bounds.minTo <= bounds.maxTo && (bounds.minTo > currentBet)) {
           out.add(ActionType.raise);
@@ -1064,7 +1166,7 @@ class GameEngine {
     } else {
       out.add(ActionType.fold);
       if (toCall > 0) out.add(ActionType.call);
-      if (!botRaiseLocked) {
+      if (raiseActionOpen) {
         final bounds = raiseBoundsTo(index);
         if (bounds.minTo <= bounds.maxTo &&
             (bounds.minTo > currentBet) &&
@@ -1074,7 +1176,7 @@ class GameEngine {
       }
     }
 
-    if (!botRaiseLocked || !shoveWouldReopen) {
+    if (!shoveWouldReopen || raiseActionOpen) {
       out.add(ActionType.allIn);
     }
     return out;
@@ -1087,6 +1189,7 @@ class GameEngine {
     required ActionType type,
     required int toCallBefore,
     required int currentBetBefore,
+    int actionTo = 0,
   }) {
     final p = players[actorIndex];
     final memory = _memoryForPlayerId(p.id);
@@ -1095,6 +1198,14 @@ class GameEngine {
     final bool aggressiveAction = type == ActionType.bet ||
         type == ActionType.raise ||
         type == ActionType.allIn;
+    if (aggressiveAction) {
+      final int wager = max(0, actionTo - p.betThisStreet);
+      final int largeThreshold = max(bigBlind * 3, (pot * 0.55).round());
+      memory.observeAggression(
+        largePressure: type == ActionType.allIn || wager >= largeThreshold,
+        allIn: type == ActionType.allIn,
+      );
+    }
     final bool facingPressure = toCallBefore > 0;
     bool facingRaise = facingPressure && p.betThisStreet > 0;
     if (phase == GamePhase.preflop &&
@@ -1248,7 +1359,12 @@ class GameEngine {
   }
 
   ActionResult act(ActionType type, {int amount = 0}) {
-    if (phase == GamePhase.handOver || phase == GamePhase.showdown) {
+    if (_actionInProgress) {
+      return ActionResult.notYourTurn;
+    }
+    if (phase == GamePhase.predeal ||
+        phase == GamePhase.handOver ||
+        phase == GamePhase.showdown) {
       return ActionResult.illegalAtThisPhase;
     }
     if (actingIndex < 0 || actingIndex >= players.length) {
@@ -1263,54 +1379,59 @@ class GameEngine {
       return ActionResult.alreadyFoldedOrAllIn;
     }
 
-    switch (type) {
-      case ActionType.fold:
-        _recordBehaviorSignal(
-          actorIndex: actorIndex,
-          type: type,
-          toCallBefore: toCallBefore,
-          currentBetBefore: currentBetBefore,
-        );
-        p.folded = true;
-        _advanceFirstActorPastIneligible(actorIndex);
-        _recordActed(actorIndex);
-        _emit(ActionTaken(actorIndex, type, 0));
-        return _afterActionAdvance();
-
-      case ActionType.check:
-        if (p.betThisStreet != currentBet)
-          return ActionResult.cannotCheckFacingBet;
-        _recordBehaviorSignal(
-          actorIndex: actorIndex,
-          type: type,
-          toCallBefore: toCallBefore,
-          currentBetBefore: currentBetBefore,
-        );
-        _recordActed(actorIndex);
-        _emit(ActionTaken(actorIndex, type, 0));
-        return _afterActionAdvance();
-
-      case ActionType.call:
-        {
-          final need = toCallFor(actorIndex);
-          if (need <= 0) return ActionResult.nothingToCall;
+    _actionInProgress = true;
+    try {
+      switch (type) {
+        case ActionType.fold:
           _recordBehaviorSignal(
             actorIndex: actorIndex,
             type: type,
             toCallBefore: toCallBefore,
             currentBetBefore: currentBetBefore,
           );
-          final pay = min(need, p.chips);
-          _payIntoPot(p, pay);
+          p.folded = true;
+          _advanceFirstActorPastIneligible(actorIndex);
           _recordActed(actorIndex);
-          _emit(ActionTaken(actorIndex, type, pay));
+          _emit(ActionTaken(actorIndex, type, 0));
           return _afterActionAdvance();
-        }
 
-      case ActionType.bet:
-      case ActionType.raise:
-      case ActionType.allIn:
-        return _doBetOrRaise(type, amount);
+        case ActionType.check:
+          if (p.betThisStreet != currentBet)
+            return ActionResult.cannotCheckFacingBet;
+          _recordBehaviorSignal(
+            actorIndex: actorIndex,
+            type: type,
+            toCallBefore: toCallBefore,
+            currentBetBefore: currentBetBefore,
+          );
+          _recordActed(actorIndex);
+          _emit(ActionTaken(actorIndex, type, 0));
+          return _afterActionAdvance();
+
+        case ActionType.call:
+          {
+            final need = toCallFor(actorIndex);
+            if (need <= 0) return ActionResult.nothingToCall;
+            _recordBehaviorSignal(
+              actorIndex: actorIndex,
+              type: type,
+              toCallBefore: toCallBefore,
+              currentBetBefore: currentBetBefore,
+            );
+            final pay = min(need, p.chips);
+            _payIntoPot(p, pay);
+            _recordActed(actorIndex);
+            _emit(ActionTaken(actorIndex, type, pay));
+            return _afterActionAdvance();
+          }
+
+        case ActionType.bet:
+        case ActionType.raise:
+        case ActionType.allIn:
+          return _doBetOrRaise(type, amount);
+      }
+    } finally {
+      _actionInProgress = false;
     }
   }
 
@@ -1337,6 +1458,12 @@ class GameEngine {
     final p = players[idx];
     final int toCallBefore = toCallFor(idx);
     final int currentBetBefore = currentBet;
+    final Set<ActionType> legal = legalActionsFor(idx);
+    if (!legal.contains(type)) {
+      return currentBet == 0
+          ? ActionResult.invalidBetAmount
+          : ActionResult.invalidRaiseAmount;
+    }
 
     final bool forceAllIn = type == ActionType.allIn;
     if (forceAllIn) {
@@ -1347,12 +1474,25 @@ class GameEngine {
     if (delta <= 0) return ActionResult.invalidBetAmount;
 
     if (delta > p.chips) {
+      if (!forceAllIn) {
+        return currentBet == 0
+            ? ActionResult.invalidBetAmount
+            : ActionResult.invalidRaiseAmount;
+      }
       delta = p.chips;
       toAmount = p.betThisStreet + delta;
     }
 
     final bool isAllIn = forceAllIn || (delta == p.chips);
     bool _aligned(int amt) => amt % _kRaiseIncrement == 0;
+    final bool increasesBet = toAmount > currentBet;
+
+    if (increasesBet && !_raiseActionIsOpenFor(idx)) {
+      return ActionResult.invalidRaiseAmount;
+    }
+    if (!isAllIn && currentBet > 0 && !increasesBet) {
+      return ActionResult.invalidRaiseAmount;
+    }
 
     if (!isAllIn && !_aligned(toAmount)) {
       return currentBet == 0
@@ -1370,11 +1510,16 @@ class GameEngine {
         type: type,
         toCallBefore: toCallBefore,
         currentBetBefore: currentBetBefore,
+        actionTo: toAmount,
       );
-      _recordActed(idx);
       _payIntoPot(p, delta);
       _registerAggression(
-          raiseTo: p.betThisStreet, isAllIn: isAllIn, isNewBet: true);
+        raiseTo: p.betThisStreet,
+        isAllIn: isAllIn,
+        isNewBet: true,
+        isFullRaise: p.betThisStreet >= minBetTo,
+      );
+      _recordActed(idx);
       _emit(ActionTaken(idx, type, toAmount));
       return _afterActionAdvance();
     }
@@ -1392,18 +1537,23 @@ class GameEngine {
       type: type,
       toCallBefore: toCallBefore,
       currentBetBefore: currentBetBefore,
+      actionTo: toAmount,
     );
-    _recordActed(idx);
     _payIntoPot(p, delta);
 
     final reachedOrExceeded = p.betThisStreet >= minRaiseTo;
     if (p.betThisStreet > previousBet && reachedOrExceeded) {
       _registerAggression(
-          raiseTo: p.betThisStreet, isAllIn: isAllIn, isNewBet: false);
+        raiseTo: p.betThisStreet,
+        isAllIn: isAllIn,
+        isNewBet: false,
+        isFullRaise: true,
+      );
     } else {
       // Call that doesn't reach min raise (or all-in short raise)
       currentBet = max(currentBet, p.betThisStreet);
     }
+    _recordActed(idx);
 
     _emit(ActionTaken(idx, type, toAmount));
     return _afterActionAdvance();
@@ -1413,23 +1563,21 @@ class GameEngine {
     required int raiseTo,
     required bool isAllIn,
     required bool isNewBet,
+    required bool isFullRaise,
   }) {
     final previousBet = currentBet;
     currentBet = max(currentBet, raiseTo);
-    if (isNewBet) {
+    if (isNewBet && isFullRaise) {
       _lastRaiseSize = currentBet;
-    } else {
+    } else if (!isNewBet && isFullRaise) {
       final inc = currentBet - previousBet;
-      if (!isAllIn && inc > 0) {
+      if (inc > 0) {
         _lastRaiseSize = inc;
       }
     }
     _lastAggressor = actingIndex;
     if (actingIndex >= 0 && actingIndex < players.length) {
       final actor = players[actingIndex];
-      if (actor.isBot) {
-        _botAggressedThisStreet.add(actor.id);
-      }
       _streetVoluntaryAggressorId = actor.id;
     }
   }
@@ -1457,14 +1605,18 @@ class GameEngine {
       return;
     }
 
-    if (!_nextActor()) {
+    final int nextActor = _nextActingSeatFrom(actingIndex);
+    if (nextActor < 0) {
+      actingIndex = -1;
       _resolveClosedStateIfNeeded();
       return;
     }
+    actingIndex = nextActor;
     if (_bettingRoundComplete()) {
       _closeClosedRound();
       return;
     }
+    _emit(NextToActChanged(actingIndex));
   }
 
   bool _bettingRoundComplete() {
@@ -1863,7 +2015,7 @@ class GameEngine {
           continue;
         }
 
-        final advice = BotAdvisor.suggest(this, idx);
+        final advice = prepareBotDecision(idx);
         recordBotDecision(
           seat: idx,
           action: advice.action,
@@ -2178,6 +2330,21 @@ class GameEngine {
         bustedNow.add(i);
       }
     }
+    bustedNow.sort((int a, int b) {
+      final int aStart = _handStartingChips[players[a].id] ?? 0;
+      final int bStart = _handStartingChips[players[b].id] ?? 0;
+      final int byStack = aStart.compareTo(bStart);
+      if (byStack != 0) return byStack;
+
+      // Equal starting stacks use table position relative to the button,
+      // rather than raw seat index. Closest to the dealer's left ranks higher.
+      int leftDistance(int seat) {
+        if (players.isEmpty || dealerIndex < 0) return players.length;
+        return ((seat - dealerIndex - 1) % players.length) + 1;
+      }
+
+      return leftDistance(b).compareTo(leftDistance(a));
+    });
 
     for (int i = 0; i < players.length; i++) {
       final p = players[i];
@@ -2189,12 +2356,12 @@ class GameEngine {
 
     // Optional tournament winner (only one alive seat remains overall)
     final alive = _aliveSeats();
+    int? tournamentChampion;
+    int tournamentPrize = 0;
     if (alive.length == 1 && !_tournamentOver) {
-      final champ = alive.first;
-      final prize = _cfgPayoutForRank(1);
-      _eventLog.add(WinnerDeclared(champ, prize));
+      tournamentChampion = alive.first;
+      tournamentPrize = _cfgPayoutForRank(1);
       _tournamentOver = true;
-      _emit(TournamentEnded(champ, prize));
     }
 
     // Build winners set (anyone who received > 0 in lastPayouts)
@@ -2225,6 +2392,14 @@ class GameEngine {
         _eventLog.add(PlayerBusted(seat, finalRank, prize));
       }
       // (No null _emit calls — the log was updated above.)
+    }
+
+    // Emit the tournament terminal signal only after every eliminated player
+    // has received an exact rank. UI/economy listeners can then settle the
+    // hero's actual result instead of guessing from the table size.
+    if (tournamentChampion != null) {
+      _eventLog.add(WinnerDeclared(tournamentChampion, tournamentPrize));
+      _emit(TournamentEnded(tournamentChampion, tournamentPrize));
     }
 
     _emit(HandEnded());
@@ -2269,7 +2444,7 @@ class GameEngine {
         return false;
       }
       final p = players[idx];
-      return !p.folded && !p.sittingOut && !p.isOut;
+      return !p.folded && !p.sittingOut && p.best != null;
     }
 
     return GameSnapshot(

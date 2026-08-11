@@ -110,6 +110,16 @@ Future<void> showScoreboardSheet(
       'french isles': 'assets/images/flags/oceania/french_isles.png',
       'dutch isles': 'assets/images/flags/oceania/dutch_isles.png',
       'american isles': 'assets/images/flags/oceania/american_isles.png',
+      'dominion of canada': 'assets/images/flags/us/canada.png',
+      'massachusetts': 'assets/images/flags/us/massachusetts.png',
+      'new york': 'assets/images/flags/us/new_york.png',
+      'virginia': 'assets/images/flags/us/virginia.png',
+      'illinois': 'assets/images/flags/us/illinois.png',
+      'florida': 'assets/images/flags/us/florida.png',
+      'texas': 'assets/images/flags/us/texas.png',
+      'kansas': 'assets/images/flags/us/kansas.png',
+      'colorado': 'assets/images/flags/us/colorado.png',
+      'california': 'assets/images/flags/us/california.png',
     };
     return flags[k] ?? '';
   }

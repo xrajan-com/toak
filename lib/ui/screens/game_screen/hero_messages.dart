@@ -1,96 +1,12 @@
-import 'dart:math' as math;
-
-import 'package:ten_of_a_kind_poker/game/core.dart'
-    show Card, Rank, Suit, rankValue;
-import 'package:ten_of_a_kind_poker/game/hand_evaluator.dart'
-    show HandEvaluator, HandRank;
-
-double? estimateVisibleHeroWinProbability({
-  required int livePlayers,
-  required List<Card> heroHole,
-  required List<Card> revealedBoard,
-}) {
-  if (livePlayers <= 0) return null;
-  if (heroHole.length < 2) return null;
-
-  final int opponents = math.max(0, livePlayers - 1);
-  if (opponents == 0) return 1.0;
-
-  final List<Card> board = revealedBoard.take(5).toList(growable: false);
-  final List<Card> hole = heroHole.take(2).toList(growable: false);
-  final List<Card> visible = <Card>[...hole, ...board];
-  final Set<String> excluded = visible.map(_cardKey).toSet();
-  final List<Card> remaining = _standardDeck()
-      .where((card) => !excluded.contains(_cardKey(card)))
-      .toList(growable: false);
-
-  final int boardNeeded = 5 - board.length;
-  final int totalDraw = boardNeeded + opponents * 2;
-  if (boardNeeded < 0 || remaining.length < totalDraw) return null;
-
-  final int baseIterations = switch (board.length) {
-    0 => 220,
-    3 => 180,
-    4 => 140,
-    5 => 110,
-    _ => 160,
-  };
-  final int iterations =
-      (baseIterations / (1 + (opponents - 1) * 0.25)).round().clamp(80, 240);
-  final math.Random rng = math.Random(
-    _visibleStateSeed(
-      livePlayers: livePlayers,
-      heroHole: hole,
-      revealedBoard: board,
-    ),
-  );
-  final List<Card> sample = List<Card>.from(remaining);
-  double score = 0.0;
-
-  for (int i = 0; i < iterations; i++) {
-    _shuffleInPlace(sample, rng);
-    final List<Card> runout = sample.take(totalDraw).toList(growable: false);
-    int offset = 0;
-    final List<Card> fullBoard = <Card>[
-      ...board,
-      if (boardNeeded > 0) ...runout.take(boardNeeded),
-    ];
-    offset += boardNeeded;
-
-    final HandRank heroRank =
-        HandEvaluator.evaluate(<Card>[...hole, ...fullBoard]);
-    bool heroBest = true;
-    int ties = 1;
-
-    for (int opp = 0; opp < opponents; opp++) {
-      final List<Card> oppHole = <Card>[runout[offset], runout[offset + 1]];
-      offset += 2;
-      final HandRank oppRank = HandEvaluator.evaluate(<Card>[
-        ...oppHole,
-        ...fullBoard,
-      ]);
-      final int cmp = oppRank.compareTo(heroRank);
-      if (cmp > 0) {
-        heroBest = false;
-        break;
-      }
-      if (cmp == 0) {
-        ties += 1;
-      }
-    }
-
-    if (heroBest) {
-      score += 1.0 / ties;
-    }
-  }
-
-  return (score / iterations).clamp(0.0, 1.0).toDouble();
-}
+import 'package:ten_of_a_kind_poker/game/equity/hero_equity.dart'
+    show HeroEquityEstimate;
 
 String buildVisibleHeroGuidanceMessage({
   required int livePlayers,
   required bool canCheck,
-  required double? winProbability,
+  double? winProbability,
+  HeroEquityEstimate? equityEstimate,
+  bool useEquityBreakdown = false,
   required int revealedBoardCount,
   required int variantSeed,
   String? aggressorName,
@@ -99,7 +15,12 @@ String buildVisibleHeroGuidanceMessage({
   String? improvementHint,
   String? heroRecentActionLabel,
 }) {
-  final String chanceLabel = _chanceLabel(winProbability);
+  final double? recommendationEquity = equityEstimate?.equity ?? winProbability;
+  final String chanceLabel = _chanceLabel(
+    winProbability,
+    equityEstimate: equityEstimate,
+    useEquityBreakdown: useEquityBreakdown,
+  );
   final String resolvedHand = _resolvedHandLabel(
     handName: handName,
     improvementHint: improvementHint,
@@ -107,7 +28,7 @@ String buildVisibleHeroGuidanceMessage({
   final String actionLabel = _recommendedActionLabel(
     livePlayers: livePlayers,
     canCheck: canCheck,
-    winProbability: winProbability,
+    winProbability: recommendationEquity,
     revealedBoardCount: revealedBoardCount,
     variantSeed: variantSeed,
     aggressorAllIn: aggressorAllIn,
@@ -115,8 +36,28 @@ String buildVisibleHeroGuidanceMessage({
   return '$chanceLabel, $resolvedHand, $actionLabel';
 }
 
-String _chanceLabel(double? winProbability) {
-  if (winProbability == null) return '--% CHANCE';
+String _chanceLabel(
+  double? winProbability, {
+  HeroEquityEstimate? equityEstimate,
+  required bool useEquityBreakdown,
+}) {
+  if (equityEstimate != null) {
+    final int win =
+        (equityEstimate.winProbability * 100).round().clamp(0, 100).toInt();
+    final int tie =
+        (equityEstimate.tieProbability * 100).round().clamp(0, 100).toInt();
+    final int equity =
+        (equityEstimate.equity * 100).round().clamp(0, 100).toInt();
+    final String confidence = equityEstimate.exact ? '' : '~';
+    final String base =
+        'WIN $confidence$win% • TIE $confidence$tie% • EQUITY $confidence$equity%';
+    if (!equityEstimate.sidePotAware) return base;
+    final int potShare =
+        (equityEstimate.expectedPotShare * 100).round().clamp(0, 100).toInt();
+    return '$base • POT SHARE $confidence$potShare%';
+  }
+  if (useEquityBreakdown) return 'CALCULATING ODDS';
+  if (winProbability == null) return 'CALCULATING ODDS';
   final int pct = (winProbability * 100).round().clamp(0, 100).toInt();
   return '$pct% CHANCE';
 }
@@ -480,44 +421,4 @@ String _improvementHint(String? raw) {
   final String value = (raw ?? '').trim().toLowerCase();
   if (value.isEmpty) return '';
   return value;
-}
-
-int _visibleStateSeed({
-  required int livePlayers,
-  required List<Card> heroHole,
-  required List<Card> revealedBoard,
-}) {
-  final List<String> parts = <String>[
-    '$livePlayers',
-    ...heroHole.map(_cardKey).toList(growable: false)..sort(),
-    ...revealedBoard.map(_cardKey).toList(growable: false)..sort(),
-  ];
-  int hash = 216613626;
-  for (final part in parts) {
-    for (final int unit in part.codeUnits) {
-      hash ^= unit;
-      hash = (hash * 16777619) & 0x7fffffff;
-    }
-  }
-  return hash;
-}
-
-void _shuffleInPlace(List<Card> cards, math.Random rng) {
-  for (int i = cards.length - 1; i > 0; i--) {
-    final int j = rng.nextInt(i + 1);
-    final Card tmp = cards[i];
-    cards[i] = cards[j];
-    cards[j] = tmp;
-  }
-}
-
-List<Card> _standardDeck() {
-  return <Card>[
-    for (final Suit suit in Suit.values)
-      for (final Rank rank in Rank.values) Card(rank, suit),
-  ];
-}
-
-String _cardKey(Card card) {
-  return '${rankValue(card.rank)}:${card.suit.index}';
 }

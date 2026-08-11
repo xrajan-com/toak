@@ -1,0 +1,7761 @@
+{
+  "schemaVersion": 1,
+  "eventCount": 494,
+  "events": {
+    "me:euro:baltic_marches": {
+      "id": "me:euro:baltic_marches",
+      "group": "euro",
+      "kingdom": "Baltic Marches",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 1686000,
+      "payouts": [
+        8428000
+      ],
+      "requiredFortIds": [
+        "sk:euro:baltic_marches:1",
+        "sk:euro:baltic_marches:2",
+        "sk:euro:baltic_marches:3",
+        "sk:euro:baltic_marches:4",
+        "sk:euro:baltic_marches:5",
+        "sk:euro:baltic_marches:6",
+        "sk:euro:baltic_marches:7",
+        "sk:euro:baltic_marches:8",
+        "sk:euro:baltic_marches:9",
+        "sk:euro:baltic_marches:10"
+      ]
+    },
+    "me:euro:britain": {
+      "id": "me:euro:britain",
+      "group": "euro",
+      "kingdom": "Britain",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 2431000,
+      "payouts": [
+        12156000
+      ],
+      "requiredFortIds": [
+        "sk:euro:britain:1",
+        "sk:euro:britain:2",
+        "sk:euro:britain:3",
+        "sk:euro:britain:4",
+        "sk:euro:britain:5",
+        "sk:euro:britain:6",
+        "sk:euro:britain:7"
+      ]
+    },
+    "me:euro:france": {
+      "id": "me:euro:france",
+      "group": "euro",
+      "kingdom": "France",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 2301000,
+      "payouts": [
+        11507000
+      ],
+      "requiredFortIds": [
+        "sk:euro:france:1",
+        "sk:euro:france:2",
+        "sk:euro:france:3",
+        "sk:euro:france:4",
+        "sk:euro:france:5",
+        "sk:euro:france:6"
+      ]
+    },
+    "me:euro:italy": {
+      "id": "me:euro:italy",
+      "group": "euro",
+      "kingdom": "Italy",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 2204000,
+      "payouts": [
+        11022000
+      ],
+      "requiredFortIds": [
+        "sk:euro:italy:1",
+        "sk:euro:italy:2",
+        "sk:euro:italy:3",
+        "sk:euro:italy:4",
+        "sk:euro:italy:5",
+        "sk:euro:italy:6"
+      ]
+    },
+    "me:euro:mediterranean": {
+      "id": "me:euro:mediterranean",
+      "group": "euro",
+      "kingdom": "Mediterranean",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 2075000,
+      "payouts": [
+        10373000
+      ],
+      "requiredFortIds": [
+        "sk:euro:mediterranean:1",
+        "sk:euro:mediterranean:2",
+        "sk:euro:mediterranean:3",
+        "sk:euro:mediterranean:4",
+        "sk:euro:mediterranean:5",
+        "sk:euro:mediterranean:6",
+        "sk:euro:mediterranean:7",
+        "sk:euro:mediterranean:8",
+        "sk:euro:mediterranean:9",
+        "sk:euro:mediterranean:10",
+        "sk:euro:mediterranean:11",
+        "sk:euro:mediterranean:12",
+        "sk:euro:mediterranean:13",
+        "sk:euro:mediterranean:14",
+        "sk:euro:mediterranean:15",
+        "sk:euro:mediterranean:16",
+        "sk:euro:mediterranean:17"
+      ]
+    },
+    "me:euro:north_sea": {
+      "id": "me:euro:north_sea",
+      "group": "euro",
+      "kingdom": "North Sea",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 1621000,
+      "payouts": [
+        8104000
+      ],
+      "requiredFortIds": [
+        "sk:euro:north_sea:1",
+        "sk:euro:north_sea:2",
+        "sk:euro:north_sea:3",
+        "sk:euro:north_sea:4",
+        "sk:euro:north_sea:5",
+        "sk:euro:north_sea:6",
+        "sk:euro:north_sea:7",
+        "sk:euro:north_sea:8"
+      ]
+    },
+    "me:euro:portugal": {
+      "id": "me:euro:portugal",
+      "group": "euro",
+      "kingdom": "Portugal",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 1848000,
+      "payouts": [
+        9239000
+      ],
+      "requiredFortIds": [
+        "sk:euro:portugal:1",
+        "sk:euro:portugal:2",
+        "sk:euro:portugal:3",
+        "sk:euro:portugal:4",
+        "sk:euro:portugal:5",
+        "sk:euro:portugal:6"
+      ]
+    },
+    "me:euro:russia_siberia": {
+      "id": "me:euro:russia_siberia",
+      "group": "euro",
+      "kingdom": "Russia & Siberia",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 1912000,
+      "payouts": [
+        9562000
+      ],
+      "requiredFortIds": [
+        "sk:euro:russia_siberia:1",
+        "sk:euro:russia_siberia:2",
+        "sk:euro:russia_siberia:3",
+        "sk:euro:russia_siberia:4",
+        "sk:euro:russia_siberia:5",
+        "sk:euro:russia_siberia:6",
+        "sk:euro:russia_siberia:7",
+        "sk:euro:russia_siberia:8",
+        "sk:euro:russia_siberia:9",
+        "sk:euro:russia_siberia:10"
+      ]
+    },
+    "me:euro:scandinavia": {
+      "id": "me:euro:scandinavia",
+      "group": "euro",
+      "kingdom": "Scandinavia",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 1783000,
+      "payouts": [
+        8915000
+      ],
+      "requiredFortIds": [
+        "sk:euro:scandinavia:1",
+        "sk:euro:scandinavia:2",
+        "sk:euro:scandinavia:3",
+        "sk:euro:scandinavia:4",
+        "sk:euro:scandinavia:5",
+        "sk:euro:scandinavia:6",
+        "sk:euro:scandinavia:7"
+      ]
+    },
+    "me:euro:spain": {
+      "id": "me:euro:spain",
+      "group": "euro",
+      "kingdom": "Spain",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 2139000,
+      "payouts": [
+        10697000
+      ],
+      "requiredFortIds": [
+        "sk:euro:spain:1",
+        "sk:euro:spain:2",
+        "sk:euro:spain:3",
+        "sk:euro:spain:4",
+        "sk:euro:spain:5",
+        "sk:euro:spain:6"
+      ]
+    },
+    "me:india:baroda": {
+      "id": "me:india:baroda",
+      "group": "india",
+      "kingdom": "Baroda",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 1851000,
+      "payouts": [
+        9256000
+      ],
+      "requiredFortIds": [
+        "sk:india:baroda:1",
+        "sk:india:baroda:2",
+        "sk:india:baroda:3",
+        "sk:india:baroda:4",
+        "sk:india:baroda:5",
+        "sk:india:baroda:6",
+        "sk:india:baroda:7",
+        "sk:india:baroda:8"
+      ]
+    },
+    "me:india:hyderabad": {
+      "id": "me:india:hyderabad",
+      "group": "india",
+      "kingdom": "Hyderabad",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 1950000,
+      "payouts": [
+        9752000
+      ],
+      "requiredFortIds": [
+        "sk:india:hyderabad:1",
+        "sk:india:hyderabad:2",
+        "sk:india:hyderabad:3",
+        "sk:india:hyderabad:4",
+        "sk:india:hyderabad:5"
+      ]
+    },
+    "me:india:indore": {
+      "id": "me:india:indore",
+      "group": "india",
+      "kingdom": "Indore",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 1785000,
+      "payouts": [
+        8926000
+      ],
+      "requiredFortIds": [
+        "sk:india:indore:1",
+        "sk:india:indore:2",
+        "sk:india:indore:3",
+        "sk:india:indore:4",
+        "sk:india:indore:5"
+      ]
+    },
+    "me:india:jaipur": {
+      "id": "me:india:jaipur",
+      "group": "india",
+      "kingdom": "Jaipur",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 2281000,
+      "payouts": [
+        11405000
+      ],
+      "requiredFortIds": [
+        "sk:india:jaipur:1",
+        "sk:india:jaipur:2",
+        "sk:india:jaipur:3",
+        "sk:india:jaipur:4",
+        "sk:india:jaipur:5",
+        "sk:india:jaipur:6",
+        "sk:india:jaipur:7",
+        "sk:india:jaipur:8",
+        "sk:india:jaipur:9"
+      ]
+    },
+    "me:india:maratha_empire": {
+      "id": "me:india:maratha_empire",
+      "group": "india",
+      "kingdom": "Maratha Empire",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 2149000,
+      "payouts": [
+        10744000
+      ],
+      "requiredFortIds": [
+        "sk:india:maratha_empire:1",
+        "sk:india:maratha_empire:2",
+        "sk:india:maratha_empire:3",
+        "sk:india:maratha_empire:4",
+        "sk:india:maratha_empire:5",
+        "sk:india:maratha_empire:6",
+        "sk:india:maratha_empire:7",
+        "sk:india:maratha_empire:8"
+      ]
+    },
+    "me:india:mysore": {
+      "id": "me:india:mysore",
+      "group": "india",
+      "kingdom": "Mysore",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 2017000,
+      "payouts": [
+        10083000
+      ],
+      "requiredFortIds": [
+        "sk:india:mysore:1",
+        "sk:india:mysore:2",
+        "sk:india:mysore:3",
+        "sk:india:mysore:4",
+        "sk:india:mysore:5"
+      ]
+    },
+    "me:india:new_delhi": {
+      "id": "me:india:new_delhi",
+      "group": "india",
+      "kingdom": "New Delhi",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 2215000,
+      "payouts": [
+        11074000
+      ],
+      "requiredFortIds": [
+        "sk:india:new_delhi:1",
+        "sk:india:new_delhi:2",
+        "sk:india:new_delhi:3",
+        "sk:india:new_delhi:4",
+        "sk:india:new_delhi:5",
+        "sk:india:new_delhi:6",
+        "sk:india:new_delhi:7",
+        "sk:india:new_delhi:8",
+        "sk:india:new_delhi:9",
+        "sk:india:new_delhi:10",
+        "sk:india:new_delhi:11",
+        "sk:india:new_delhi:12"
+      ]
+    },
+    "me:india:sikh_empire": {
+      "id": "me:india:sikh_empire",
+      "group": "india",
+      "kingdom": "Sikh Empire",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 2479000,
+      "payouts": [
+        12397000
+      ],
+      "requiredFortIds": [
+        "sk:india:sikh_empire:1",
+        "sk:india:sikh_empire:2",
+        "sk:india:sikh_empire:3",
+        "sk:india:sikh_empire:4",
+        "sk:india:sikh_empire:5",
+        "sk:india:sikh_empire:6",
+        "sk:india:sikh_empire:7",
+        "sk:india:sikh_empire:8",
+        "sk:india:sikh_empire:9",
+        "sk:india:sikh_empire:10",
+        "sk:india:sikh_empire:11",
+        "sk:india:sikh_empire:12",
+        "sk:india:sikh_empire:13",
+        "sk:india:sikh_empire:14",
+        "sk:india:sikh_empire:15",
+        "sk:india:sikh_empire:16",
+        "sk:india:sikh_empire:17",
+        "sk:india:sikh_empire:18",
+        "sk:india:sikh_empire:19",
+        "sk:india:sikh_empire:20",
+        "sk:india:sikh_empire:21"
+      ]
+    },
+    "me:india:sikkim": {
+      "id": "me:india:sikkim",
+      "group": "india",
+      "kingdom": "Sikkim",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 1587000,
+      "payouts": [
+        7934000
+      ],
+      "requiredFortIds": [
+        "sk:india:sikkim:1",
+        "sk:india:sikkim:2",
+        "sk:india:sikkim:3",
+        "sk:india:sikkim:4",
+        "sk:india:sikkim:5",
+        "sk:india:sikkim:6",
+        "sk:india:sikkim:7",
+        "sk:india:sikkim:8",
+        "sk:india:sikkim:9",
+        "sk:india:sikkim:10"
+      ]
+    },
+    "me:india:travancore": {
+      "id": "me:india:travancore",
+      "group": "india",
+      "kingdom": "Travancore",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 1686000,
+      "payouts": [
+        8430000
+      ],
+      "requiredFortIds": [
+        "sk:india:travancore:1",
+        "sk:india:travancore:2",
+        "sk:india:travancore:3",
+        "sk:india:travancore:4",
+        "sk:india:travancore:5",
+        "sk:india:travancore:6"
+      ]
+    },
+    "me:international:africa": {
+      "id": "me:international:africa",
+      "group": "international",
+      "kingdom": "Africa",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 1836000,
+      "payouts": [
+        9180000
+      ],
+      "requiredFortIds": [
+        "sk:international:africa:1",
+        "sk:international:africa:2",
+        "sk:international:africa:3",
+        "sk:international:africa:4",
+        "sk:international:africa:5",
+        "sk:international:africa:6",
+        "sk:international:africa:7",
+        "sk:international:africa:8",
+        "sk:international:africa:9",
+        "sk:international:africa:10"
+      ]
+    },
+    "me:international:arabia": {
+      "id": "me:international:arabia",
+      "group": "international",
+      "kingdom": "Arabia",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 2000000,
+      "payouts": [
+        10001000
+      ],
+      "requiredFortIds": [
+        "sk:international:arabia:1",
+        "sk:international:arabia:2",
+        "sk:international:arabia:3",
+        "sk:international:arabia:4",
+        "sk:international:arabia:5",
+        "sk:international:arabia:6",
+        "sk:international:arabia:7",
+        "sk:international:arabia:8",
+        "sk:international:arabia:9"
+      ]
+    },
+    "me:international:asia_rest": {
+      "id": "me:international:asia_rest",
+      "group": "international",
+      "kingdom": "Asia Rest",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 1705000,
+      "payouts": [
+        8525000
+      ],
+      "requiredFortIds": [
+        "sk:international:asia_rest:1",
+        "sk:international:asia_rest:2",
+        "sk:international:asia_rest:3",
+        "sk:international:asia_rest:4",
+        "sk:international:asia_rest:5",
+        "sk:international:asia_rest:6",
+        "sk:international:asia_rest:7",
+        "sk:international:asia_rest:8"
+      ]
+    },
+    "me:international:central_asia": {
+      "id": "me:international:central_asia",
+      "group": "international",
+      "kingdom": "Central Asia",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 1607000,
+      "payouts": [
+        8033000
+      ],
+      "requiredFortIds": [
+        "sk:international:central_asia:1",
+        "sk:international:central_asia:2",
+        "sk:international:central_asia:3",
+        "sk:international:central_asia:4",
+        "sk:international:central_asia:5",
+        "sk:international:central_asia:6",
+        "sk:international:central_asia:7",
+        "sk:international:central_asia:8",
+        "sk:international:central_asia:9",
+        "sk:international:central_asia:10",
+        "sk:international:central_asia:11"
+      ]
+    },
+    "me:international:china": {
+      "id": "me:international:china",
+      "group": "international",
+      "kingdom": "China",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 2230000,
+      "payouts": [
+        11148000
+      ],
+      "requiredFortIds": [
+        "sk:international:china:1",
+        "sk:international:china:2",
+        "sk:international:china:3",
+        "sk:international:china:4",
+        "sk:international:china:5",
+        "sk:international:china:6",
+        "sk:international:china:7"
+      ]
+    },
+    "me:international:europe": {
+      "id": "me:international:europe",
+      "group": "international",
+      "kingdom": "Europe",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 2459000,
+      "payouts": [
+        12295000
+      ],
+      "requiredFortIds": [
+        "sk:international:europe:1",
+        "sk:international:europe:2",
+        "sk:international:europe:3",
+        "sk:international:europe:4",
+        "sk:international:europe:5",
+        "sk:international:europe:6",
+        "sk:international:europe:7",
+        "sk:international:europe:8",
+        "sk:international:europe:9",
+        "sk:international:europe:10",
+        "sk:international:europe:11",
+        "sk:international:europe:12",
+        "sk:international:europe:13",
+        "sk:international:europe:14",
+        "sk:international:europe:15",
+        "sk:international:europe:16",
+        "sk:international:europe:17"
+      ]
+    },
+    "me:international:far_east": {
+      "id": "me:international:far_east",
+      "group": "international",
+      "kingdom": "Far East",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 2131000,
+      "payouts": [
+        10656000
+      ],
+      "requiredFortIds": [
+        "sk:international:far_east:1",
+        "sk:international:far_east:2",
+        "sk:international:far_east:3",
+        "sk:international:far_east:4",
+        "sk:international:far_east:5",
+        "sk:international:far_east:6",
+        "sk:international:far_east:7",
+        "sk:international:far_east:8"
+      ]
+    },
+    "me:international:n_america": {
+      "id": "me:international:n_america",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 2361000,
+      "payouts": [
+        11803000
+      ],
+      "requiredFortIds": [
+        "sk:international:n_america:1",
+        "sk:international:n_america:2",
+        "sk:international:n_america:3",
+        "sk:international:n_america:4",
+        "sk:international:n_america:5",
+        "sk:international:n_america:6",
+        "sk:international:n_america:7",
+        "sk:international:n_america:8",
+        "sk:international:n_america:9",
+        "sk:international:n_america:10",
+        "sk:international:n_america:11",
+        "sk:international:n_america:12",
+        "sk:international:n_america:13",
+        "sk:international:n_america:14",
+        "sk:international:n_america:15",
+        "sk:international:n_america:16",
+        "sk:international:n_america:17",
+        "sk:international:n_america:18",
+        "sk:international:n_america:19",
+        "sk:international:n_america:20",
+        "sk:international:n_america:21",
+        "sk:international:n_america:22",
+        "sk:international:n_america:23",
+        "sk:international:n_america:24",
+        "sk:international:n_america:25",
+        "sk:international:n_america:26",
+        "sk:international:n_america:27",
+        "sk:international:n_america:28",
+        "sk:international:n_america:29",
+        "sk:international:n_america:30",
+        "sk:international:n_america:31",
+        "sk:international:n_america:32",
+        "sk:international:n_america:33",
+        "sk:international:n_america:34",
+        "sk:international:n_america:35",
+        "sk:international:n_america:36",
+        "sk:international:n_america:37",
+        "sk:international:n_america:38",
+        "sk:international:n_america:39",
+        "sk:international:n_america:40",
+        "sk:international:n_america:41",
+        "sk:international:n_america:42",
+        "sk:international:n_america:43"
+      ]
+    },
+    "me:international:persia": {
+      "id": "me:international:persia",
+      "group": "international",
+      "kingdom": "Persia",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 1902000,
+      "payouts": [
+        9508000
+      ],
+      "requiredFortIds": [
+        "sk:international:persia:1",
+        "sk:international:persia:2",
+        "sk:international:persia:3",
+        "sk:international:persia:4",
+        "sk:international:persia:5",
+        "sk:international:persia:6",
+        "sk:international:persia:7",
+        "sk:international:persia:8"
+      ]
+    },
+    "me:international:s_america": {
+      "id": "me:international:s_america",
+      "group": "international",
+      "kingdom": "S. America",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 1770000,
+      "payouts": [
+        8852000
+      ],
+      "requiredFortIds": [
+        "sk:international:s_america:1",
+        "sk:international:s_america:2",
+        "sk:international:s_america:3",
+        "sk:international:s_america:4",
+        "sk:international:s_america:5",
+        "sk:international:s_america:6",
+        "sk:international:s_america:7",
+        "sk:international:s_america:8"
+      ]
+    },
+    "me:northAmerica:california": {
+      "id": "me:northAmerica:california",
+      "group": "northAmerica",
+      "kingdom": "California",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 2427000,
+      "payouts": [
+        12136000
+      ],
+      "requiredFortIds": [
+        "sk:northAmerica:california:1",
+        "sk:northAmerica:california:2",
+        "sk:northAmerica:california:3",
+        "sk:northAmerica:california:4",
+        "sk:northAmerica:california:5",
+        "sk:northAmerica:california:6"
+      ]
+    },
+    "me:northAmerica:colorado": {
+      "id": "me:northAmerica:colorado",
+      "group": "northAmerica",
+      "kingdom": "Colorado",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 1748000,
+      "payouts": [
+        8738000
+      ],
+      "requiredFortIds": [
+        "sk:northAmerica:colorado:1",
+        "sk:northAmerica:colorado:2",
+        "sk:northAmerica:colorado:3"
+      ]
+    },
+    "me:northAmerica:dominion_of_canada": {
+      "id": "me:northAmerica:dominion_of_canada",
+      "group": "northAmerica",
+      "kingdom": "Dominion of Canada",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 1683000,
+      "payouts": [
+        8415000
+      ],
+      "requiredFortIds": [
+        "sk:northAmerica:dominion_of_canada:1",
+        "sk:northAmerica:dominion_of_canada:2"
+      ]
+    },
+    "me:northAmerica:florida": {
+      "id": "me:northAmerica:florida",
+      "group": "northAmerica",
+      "kingdom": "Florida",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 2136000,
+      "payouts": [
+        10680000
+      ],
+      "requiredFortIds": [
+        "sk:northAmerica:florida:1",
+        "sk:northAmerica:florida:2",
+        "sk:northAmerica:florida:3",
+        "sk:northAmerica:florida:4",
+        "sk:northAmerica:florida:5",
+        "sk:northAmerica:florida:6",
+        "sk:northAmerica:florida:7",
+        "sk:northAmerica:florida:8",
+        "sk:northAmerica:florida:9"
+      ]
+    },
+    "me:northAmerica:illinois": {
+      "id": "me:northAmerica:illinois",
+      "group": "northAmerica",
+      "kingdom": "Illinois",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 2039000,
+      "payouts": [
+        10195000
+      ],
+      "requiredFortIds": [
+        "sk:northAmerica:illinois:1",
+        "sk:northAmerica:illinois:2"
+      ]
+    },
+    "me:northAmerica:kansas": {
+      "id": "me:northAmerica:kansas",
+      "group": "northAmerica",
+      "kingdom": "Kansas",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 1618000,
+      "payouts": [
+        8091000
+      ],
+      "requiredFortIds": [
+        "sk:northAmerica:kansas:1",
+        "sk:northAmerica:kansas:2",
+        "sk:northAmerica:kansas:3"
+      ]
+    },
+    "me:northAmerica:massachusetts": {
+      "id": "me:northAmerica:massachusetts",
+      "group": "northAmerica",
+      "kingdom": "Massachusetts",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 1942000,
+      "payouts": [
+        9709000
+      ],
+      "requiredFortIds": [
+        "sk:northAmerica:massachusetts:1",
+        "sk:northAmerica:massachusetts:2"
+      ]
+    },
+    "me:northAmerica:new_york": {
+      "id": "me:northAmerica:new_york",
+      "group": "northAmerica",
+      "kingdom": "New York",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 2330000,
+      "payouts": [
+        11650000
+      ],
+      "requiredFortIds": [
+        "sk:northAmerica:new_york:1",
+        "sk:northAmerica:new_york:2",
+        "sk:northAmerica:new_york:3",
+        "sk:northAmerica:new_york:4",
+        "sk:northAmerica:new_york:5",
+        "sk:northAmerica:new_york:6",
+        "sk:northAmerica:new_york:7",
+        "sk:northAmerica:new_york:8",
+        "sk:northAmerica:new_york:9",
+        "sk:northAmerica:new_york:10"
+      ]
+    },
+    "me:northAmerica:texas": {
+      "id": "me:northAmerica:texas",
+      "group": "northAmerica",
+      "kingdom": "Texas",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 2233000,
+      "payouts": [
+        11165000
+      ],
+      "requiredFortIds": [
+        "sk:northAmerica:texas:1",
+        "sk:northAmerica:texas:2",
+        "sk:northAmerica:texas:3",
+        "sk:northAmerica:texas:4"
+      ]
+    },
+    "me:northAmerica:virginia": {
+      "id": "me:northAmerica:virginia",
+      "group": "northAmerica",
+      "kingdom": "Virginia",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 1845000,
+      "payouts": [
+        9224000
+      ],
+      "requiredFortIds": [
+        "sk:northAmerica:virginia:1",
+        "sk:northAmerica:virginia:2"
+      ]
+    },
+    "me:oceania:alaska": {
+      "id": "me:oceania:alaska",
+      "group": "oceania",
+      "kingdom": "Alaska",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 1983000,
+      "payouts": [
+        9916000
+      ],
+      "requiredFortIds": [
+        "sk:oceania:alaska:1",
+        "sk:oceania:alaska:2",
+        "sk:oceania:alaska:3",
+        "sk:oceania:alaska:4",
+        "sk:oceania:alaska:5",
+        "sk:oceania:alaska:6",
+        "sk:oceania:alaska:7"
+      ]
+    },
+    "me:oceania:american_isles": {
+      "id": "me:oceania:american_isles",
+      "group": "oceania",
+      "kingdom": "American Isles",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 1714000,
+      "payouts": [
+        8571000
+      ],
+      "requiredFortIds": [
+        "sk:oceania:american_isles:1",
+        "sk:oceania:american_isles:2",
+        "sk:oceania:american_isles:3",
+        "sk:oceania:american_isles:4",
+        "sk:oceania:american_isles:5",
+        "sk:oceania:american_isles:6",
+        "sk:oceania:american_isles:7",
+        "sk:oceania:american_isles:8",
+        "sk:oceania:american_isles:9",
+        "sk:oceania:american_isles:10"
+      ]
+    },
+    "me:oceania:british_isles": {
+      "id": "me:oceania:british_isles",
+      "group": "oceania",
+      "kingdom": "British Isles",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 2286000,
+      "payouts": [
+        11429000
+      ],
+      "requiredFortIds": [
+        "sk:oceania:british_isles:1",
+        "sk:oceania:british_isles:2",
+        "sk:oceania:british_isles:3",
+        "sk:oceania:british_isles:4",
+        "sk:oceania:british_isles:5",
+        "sk:oceania:british_isles:6",
+        "sk:oceania:british_isles:7",
+        "sk:oceania:british_isles:8",
+        "sk:oceania:british_isles:9",
+        "sk:oceania:british_isles:10",
+        "sk:oceania:british_isles:11"
+      ]
+    },
+    "me:oceania:caribbean": {
+      "id": "me:oceania:caribbean",
+      "group": "oceania",
+      "kingdom": "Caribbean",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 2387000,
+      "payouts": [
+        11933000
+      ],
+      "requiredFortIds": [
+        "sk:oceania:caribbean:1",
+        "sk:oceania:caribbean:2",
+        "sk:oceania:caribbean:3",
+        "sk:oceania:caribbean:4",
+        "sk:oceania:caribbean:5",
+        "sk:oceania:caribbean:6",
+        "sk:oceania:caribbean:7",
+        "sk:oceania:caribbean:8",
+        "sk:oceania:caribbean:9",
+        "sk:oceania:caribbean:10"
+      ]
+    },
+    "me:oceania:dragonland": {
+      "id": "me:oceania:dragonland",
+      "group": "oceania",
+      "kingdom": "Dragonland",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 1815000,
+      "payouts": [
+        9076000
+      ],
+      "requiredFortIds": [
+        "sk:oceania:dragonland:1",
+        "sk:oceania:dragonland:2",
+        "sk:oceania:dragonland:3",
+        "sk:oceania:dragonland:4",
+        "sk:oceania:dragonland:5",
+        "sk:oceania:dragonland:6",
+        "sk:oceania:dragonland:7",
+        "sk:oceania:dragonland:8"
+      ]
+    },
+    "me:oceania:dutch_isles": {
+      "id": "me:oceania:dutch_isles",
+      "group": "oceania",
+      "kingdom": "Dutch Isles",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 1748000,
+      "payouts": [
+        8740000
+      ],
+      "requiredFortIds": [
+        "sk:oceania:dutch_isles:1",
+        "sk:oceania:dutch_isles:2",
+        "sk:oceania:dutch_isles:3",
+        "sk:oceania:dutch_isles:4",
+        "sk:oceania:dutch_isles:5",
+        "sk:oceania:dutch_isles:6",
+        "sk:oceania:dutch_isles:7",
+        "sk:oceania:dutch_isles:8"
+      ]
+    },
+    "me:oceania:french_isles": {
+      "id": "me:oceania:french_isles",
+      "group": "oceania",
+      "kingdom": "French Isles",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 1849000,
+      "payouts": [
+        9244000
+      ],
+      "requiredFortIds": [
+        "sk:oceania:french_isles:1",
+        "sk:oceania:french_isles:2",
+        "sk:oceania:french_isles:3",
+        "sk:oceania:french_isles:4",
+        "sk:oceania:french_isles:5",
+        "sk:oceania:french_isles:6",
+        "sk:oceania:french_isles:7",
+        "sk:oceania:french_isles:8",
+        "sk:oceania:french_isles:9",
+        "sk:oceania:french_isles:10",
+        "sk:oceania:french_isles:11",
+        "sk:oceania:french_isles:12"
+      ]
+    },
+    "me:oceania:indian_ocean": {
+      "id": "me:oceania:indian_ocean",
+      "group": "oceania",
+      "kingdom": "Indian Ocean",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 2219000,
+      "payouts": [
+        11093000
+      ],
+      "requiredFortIds": [
+        "sk:oceania:indian_ocean:1",
+        "sk:oceania:indian_ocean:2",
+        "sk:oceania:indian_ocean:3",
+        "sk:oceania:indian_ocean:4",
+        "sk:oceania:indian_ocean:5",
+        "sk:oceania:indian_ocean:6",
+        "sk:oceania:indian_ocean:7",
+        "sk:oceania:indian_ocean:8",
+        "sk:oceania:indian_ocean:9",
+        "sk:oceania:indian_ocean:10"
+      ]
+    },
+    "me:oceania:pacific": {
+      "id": "me:oceania:pacific",
+      "group": "oceania",
+      "kingdom": "Pacific",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 2084000,
+      "payouts": [
+        10420000
+      ],
+      "requiredFortIds": [
+        "sk:oceania:pacific:1",
+        "sk:oceania:pacific:2",
+        "sk:oceania:pacific:3",
+        "sk:oceania:pacific:4",
+        "sk:oceania:pacific:5",
+        "sk:oceania:pacific:6",
+        "sk:oceania:pacific:7",
+        "sk:oceania:pacific:8",
+        "sk:oceania:pacific:9",
+        "sk:oceania:pacific:10",
+        "sk:oceania:pacific:11"
+      ]
+    },
+    "me:oceania:straits": {
+      "id": "me:oceania:straits",
+      "group": "oceania",
+      "kingdom": "Straits",
+      "kind": "main",
+      "maxPlayers": 10,
+      "entryFee": 1916000,
+      "payouts": [
+        9580000
+      ],
+      "requiredFortIds": [
+        "sk:oceania:straits:1",
+        "sk:oceania:straits:2",
+        "sk:oceania:straits:3",
+        "sk:oceania:straits:4",
+        "sk:oceania:straits:5",
+        "sk:oceania:straits:6",
+        "sk:oceania:straits:7",
+        "sk:oceania:straits:8",
+        "sk:oceania:straits:9",
+        "sk:oceania:straits:10",
+        "sk:oceania:straits:11",
+        "sk:oceania:straits:12",
+        "sk:oceania:straits:13"
+      ]
+    },
+    "sk:euro:baltic_marches:1": {
+      "id": "sk:euro:baltic_marches:1",
+      "group": "euro",
+      "kingdom": "Baltic Marches",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 96000,
+      "payouts": [
+        578400,
+        241000,
+        144600
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:baltic_marches:10": {
+      "id": "sk:euro:baltic_marches:10",
+      "group": "euro",
+      "kingdom": "Baltic Marches",
+      "kind": "fort",
+      "subKingdomIndex": 10,
+      "maxPlayers": 6,
+      "entryFee": 86000,
+      "payouts": [
+        516000,
+        215000,
+        129000
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:baltic_marches:2": {
+      "id": "sk:euro:baltic_marches:2",
+      "group": "euro",
+      "kingdom": "Baltic Marches",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 84000,
+      "payouts": [
+        503400,
+        209750,
+        125850
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:baltic_marches:3": {
+      "id": "sk:euro:baltic_marches:3",
+      "group": "euro",
+      "kingdom": "Baltic Marches",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 85000,
+      "payouts": [
+        507000,
+        211250,
+        126750
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:baltic_marches:4": {
+      "id": "sk:euro:baltic_marches:4",
+      "group": "euro",
+      "kingdom": "Baltic Marches",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 8,
+      "entryFee": 101000,
+      "payouts": [
+        608400,
+        253500,
+        152100
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:baltic_marches:5": {
+      "id": "sk:euro:baltic_marches:5",
+      "group": "euro",
+      "kingdom": "Baltic Marches",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 99000,
+      "payouts": [
+        592200,
+        246750,
+        148050
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:baltic_marches:6": {
+      "id": "sk:euro:baltic_marches:6",
+      "group": "euro",
+      "kingdom": "Baltic Marches",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 8,
+      "entryFee": 85000,
+      "payouts": [
+        511800,
+        213250,
+        127950
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:baltic_marches:7": {
+      "id": "sk:euro:baltic_marches:7",
+      "group": "euro",
+      "kingdom": "Baltic Marches",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        84000,
+        35000,
+        21000
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:baltic_marches:8": {
+      "id": "sk:euro:baltic_marches:8",
+      "group": "euro",
+      "kingdom": "Baltic Marches",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 6,
+      "entryFee": 91000,
+      "payouts": [
+        546600,
+        227750,
+        136650
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:baltic_marches:9": {
+      "id": "sk:euro:baltic_marches:9",
+      "group": "euro",
+      "kingdom": "Baltic Marches",
+      "kind": "fort",
+      "subKingdomIndex": 9,
+      "maxPlayers": 8,
+      "entryFee": 102000,
+      "payouts": [
+        609000,
+        253750,
+        152250
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:britain:1": {
+      "id": "sk:euro:britain:1",
+      "group": "euro",
+      "kingdom": "Britain",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 8,
+      "entryFee": 195000,
+      "payouts": [
+        1171200,
+        488000,
+        292800
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:britain:2": {
+      "id": "sk:euro:britain:2",
+      "group": "euro",
+      "kingdom": "Britain",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 172000,
+      "payouts": [
+        1031400,
+        429750,
+        257850
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:britain:3": {
+      "id": "sk:euro:britain:3",
+      "group": "euro",
+      "kingdom": "Britain",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        172200,
+        71750,
+        43050
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:britain:4": {
+      "id": "sk:euro:britain:4",
+      "group": "euro",
+      "kingdom": "Britain",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 194000,
+      "payouts": [
+        1161600,
+        484000,
+        290400
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:britain:5": {
+      "id": "sk:euro:britain:5",
+      "group": "euro",
+      "kingdom": "Britain",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 8,
+      "entryFee": 217000,
+      "payouts": [
+        1302600,
+        542750,
+        325650
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:britain:6": {
+      "id": "sk:euro:britain:6",
+      "group": "euro",
+      "kingdom": "Britain",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 207000,
+      "payouts": [
+        1243200,
+        518000,
+        310800
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:britain:7": {
+      "id": "sk:euro:britain:7",
+      "group": "euro",
+      "kingdom": "Britain",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 6,
+      "entryFee": 202000,
+      "payouts": [
+        1210800,
+        504500,
+        302700
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:france:1": {
+      "id": "sk:euro:france:1",
+      "group": "euro",
+      "kingdom": "France",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 205000,
+      "payouts": [
+        1227000,
+        511250,
+        306750
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:france:2": {
+      "id": "sk:euro:france:2",
+      "group": "euro",
+      "kingdom": "France",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        163800,
+        68250,
+        40950
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:france:3": {
+      "id": "sk:euro:france:3",
+      "group": "euro",
+      "kingdom": "France",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 164000,
+      "payouts": [
+        985800,
+        410750,
+        246450
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:france:4": {
+      "id": "sk:euro:france:4",
+      "group": "euro",
+      "kingdom": "France",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 178000,
+      "payouts": [
+        1068000,
+        445000,
+        267000
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:france:5": {
+      "id": "sk:euro:france:5",
+      "group": "euro",
+      "kingdom": "France",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 8,
+      "entryFee": 182000,
+      "payouts": [
+        1089000,
+        453750,
+        272250
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:france:6": {
+      "id": "sk:euro:france:6",
+      "group": "euro",
+      "kingdom": "France",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 8,
+      "entryFee": 395000,
+      "payouts": [
+        2370600,
+        987750,
+        592650
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:italy:1": {
+      "id": "sk:euro:italy:1",
+      "group": "euro",
+      "kingdom": "Italy",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        158400,
+        66000,
+        39600
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:italy:2": {
+      "id": "sk:euro:italy:2",
+      "group": "euro",
+      "kingdom": "Italy",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 159000,
+      "payouts": [
+        955200,
+        398000,
+        238800
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:italy:3": {
+      "id": "sk:euro:italy:3",
+      "group": "euro",
+      "kingdom": "Italy",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 8,
+      "entryFee": 249000,
+      "payouts": [
+        1491000,
+        621250,
+        372750
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:italy:4": {
+      "id": "sk:euro:italy:4",
+      "group": "euro",
+      "kingdom": "Italy",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 212000,
+      "payouts": [
+        1269600,
+        529000,
+        317400
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:italy:5": {
+      "id": "sk:euro:italy:5",
+      "group": "euro",
+      "kingdom": "Italy",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 8,
+      "entryFee": 208000,
+      "payouts": [
+        1247400,
+        519750,
+        311850
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:italy:6": {
+      "id": "sk:euro:italy:6",
+      "group": "euro",
+      "kingdom": "Italy",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 249000,
+      "payouts": [
+        1491000,
+        621250,
+        372750
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:mediterranean:1": {
+      "id": "sk:euro:mediterranean:1",
+      "group": "euro",
+      "kingdom": "Mediterranean",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 90000,
+      "payouts": [
+        537600,
+        224000,
+        134400
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:mediterranean:10": {
+      "id": "sk:euro:mediterranean:10",
+      "group": "euro",
+      "kingdom": "Mediterranean",
+      "kind": "fort",
+      "subKingdomIndex": 10,
+      "maxPlayers": 6,
+      "entryFee": 50000,
+      "payouts": [
+        298800,
+        124500,
+        74700
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:mediterranean:11": {
+      "id": "sk:euro:mediterranean:11",
+      "group": "euro",
+      "kingdom": "Mediterranean",
+      "kind": "fort",
+      "subKingdomIndex": 11,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        50400,
+        21000,
+        12600
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:mediterranean:12": {
+      "id": "sk:euro:mediterranean:12",
+      "group": "euro",
+      "kingdom": "Mediterranean",
+      "kind": "fort",
+      "subKingdomIndex": 12,
+      "maxPlayers": 6,
+      "entryFee": 54000,
+      "payouts": [
+        322800,
+        134500,
+        80700
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:mediterranean:13": {
+      "id": "sk:euro:mediterranean:13",
+      "group": "euro",
+      "kingdom": "Mediterranean",
+      "kind": "fort",
+      "subKingdomIndex": 13,
+      "maxPlayers": 6,
+      "entryFee": 93000,
+      "payouts": [
+        557400,
+        232250,
+        139350
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:mediterranean:14": {
+      "id": "sk:euro:mediterranean:14",
+      "group": "euro",
+      "kingdom": "Mediterranean",
+      "kind": "fort",
+      "subKingdomIndex": 14,
+      "maxPlayers": 6,
+      "entryFee": 56000,
+      "payouts": [
+        335400,
+        139750,
+        83850
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:mediterranean:15": {
+      "id": "sk:euro:mediterranean:15",
+      "group": "euro",
+      "kingdom": "Mediterranean",
+      "kind": "fort",
+      "subKingdomIndex": 15,
+      "maxPlayers": 8,
+      "entryFee": 63000,
+      "payouts": [
+        379800,
+        158250,
+        94950
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:mediterranean:16": {
+      "id": "sk:euro:mediterranean:16",
+      "group": "euro",
+      "kingdom": "Mediterranean",
+      "kind": "fort",
+      "subKingdomIndex": 16,
+      "maxPlayers": 6,
+      "entryFee": 60000,
+      "payouts": [
+        359400,
+        149750,
+        89850
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:mediterranean:17": {
+      "id": "sk:euro:mediterranean:17",
+      "group": "euro",
+      "kingdom": "Mediterranean",
+      "kind": "fort",
+      "subKingdomIndex": 17,
+      "maxPlayers": 8,
+      "entryFee": 107000,
+      "payouts": [
+        639000,
+        266250,
+        159750
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:mediterranean:2": {
+      "id": "sk:euro:mediterranean:2",
+      "group": "euro",
+      "kingdom": "Mediterranean",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 8,
+      "entryFee": 59000,
+      "payouts": [
+        354000,
+        147500,
+        88500
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:mediterranean:3": {
+      "id": "sk:euro:mediterranean:3",
+      "group": "euro",
+      "kingdom": "Mediterranean",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 49000,
+      "payouts": [
+        292200,
+        121750,
+        73050
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:mediterranean:4": {
+      "id": "sk:euro:mediterranean:4",
+      "group": "euro",
+      "kingdom": "Mediterranean",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 8,
+      "entryFee": 52000,
+      "payouts": [
+        313800,
+        130750,
+        78450
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:mediterranean:5": {
+      "id": "sk:euro:mediterranean:5",
+      "group": "euro",
+      "kingdom": "Mediterranean",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 66000,
+      "payouts": [
+        394200,
+        164250,
+        98550
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:mediterranean:6": {
+      "id": "sk:euro:mediterranean:6",
+      "group": "euro",
+      "kingdom": "Mediterranean",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 58000,
+      "payouts": [
+        346200,
+        144250,
+        86550
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:mediterranean:7": {
+      "id": "sk:euro:mediterranean:7",
+      "group": "euro",
+      "kingdom": "Mediterranean",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 6,
+      "entryFee": 62000,
+      "payouts": [
+        370200,
+        154250,
+        92550
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:mediterranean:8": {
+      "id": "sk:euro:mediterranean:8",
+      "group": "euro",
+      "kingdom": "Mediterranean",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 8,
+      "entryFee": 55000,
+      "payouts": [
+        328200,
+        136750,
+        82050
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:mediterranean:9": {
+      "id": "sk:euro:mediterranean:9",
+      "group": "euro",
+      "kingdom": "Mediterranean",
+      "kind": "fort",
+      "subKingdomIndex": 9,
+      "maxPlayers": 6,
+      "entryFee": 57000,
+      "payouts": [
+        343800,
+        143250,
+        85950
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:north_sea:1": {
+      "id": "sk:euro:north_sea:1",
+      "group": "euro",
+      "kingdom": "North Sea",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 8,
+      "entryFee": 118000,
+      "payouts": [
+        706200,
+        294250,
+        176550
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:north_sea:2": {
+      "id": "sk:euro:north_sea:2",
+      "group": "euro",
+      "kingdom": "North Sea",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 107000,
+      "payouts": [
+        639600,
+        266500,
+        159900
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:north_sea:3": {
+      "id": "sk:euro:north_sea:3",
+      "group": "euro",
+      "kingdom": "North Sea",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 128000,
+      "payouts": [
+        768000,
+        320000,
+        192000
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:north_sea:4": {
+      "id": "sk:euro:north_sea:4",
+      "group": "euro",
+      "kingdom": "North Sea",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 108000,
+      "payouts": [
+        649800,
+        270750,
+        162450
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:north_sea:5": {
+      "id": "sk:euro:north_sea:5",
+      "group": "euro",
+      "kingdom": "North Sea",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 105000,
+      "payouts": [
+        629400,
+        262250,
+        157350
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:north_sea:6": {
+      "id": "sk:euro:north_sea:6",
+      "group": "euro",
+      "kingdom": "North Sea",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 8,
+      "entryFee": 106000,
+      "payouts": [
+        634200,
+        264250,
+        158550
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:north_sea:7": {
+      "id": "sk:euro:north_sea:7",
+      "group": "euro",
+      "kingdom": "North Sea",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        118200,
+        49250,
+        29550
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:north_sea:8": {
+      "id": "sk:euro:north_sea:8",
+      "group": "euro",
+      "kingdom": "North Sea",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 6,
+      "entryFee": 119000,
+      "payouts": [
+        716400,
+        298500,
+        179100
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:portugal:1": {
+      "id": "sk:euro:portugal:1",
+      "group": "euro",
+      "kingdom": "Portugal",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 133000,
+      "payouts": [
+        798000,
+        332500,
+        199500
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:portugal:2": {
+      "id": "sk:euro:portugal:2",
+      "group": "euro",
+      "kingdom": "Portugal",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 8,
+      "entryFee": 185000,
+      "payouts": [
+        1110600,
+        462750,
+        277650
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:portugal:3": {
+      "id": "sk:euro:portugal:3",
+      "group": "euro",
+      "kingdom": "Portugal",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        133200,
+        55500,
+        33300
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:portugal:4": {
+      "id": "sk:euro:portugal:4",
+      "group": "euro",
+      "kingdom": "Portugal",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 198000,
+      "payouts": [
+        1185600,
+        494000,
+        296400
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:portugal:5": {
+      "id": "sk:euro:portugal:5",
+      "group": "euro",
+      "kingdom": "Portugal",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 196000,
+      "payouts": [
+        1176000,
+        490000,
+        294000
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:portugal:6": {
+      "id": "sk:euro:portugal:6",
+      "group": "euro",
+      "kingdom": "Portugal",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 8,
+      "entryFee": 190000,
+      "payouts": [
+        1139400,
+        474750,
+        284850
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:russia_siberia:1": {
+      "id": "sk:euro:russia_siberia:1",
+      "group": "euro",
+      "kingdom": "Russia & Siberia",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 8,
+      "entryFee": 147000,
+      "payouts": [
+        880200,
+        366750,
+        220050
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:russia_siberia:10": {
+      "id": "sk:euro:russia_siberia:10",
+      "group": "euro",
+      "kingdom": "Russia & Siberia",
+      "kind": "fort",
+      "subKingdomIndex": 10,
+      "maxPlayers": 6,
+      "entryFee": 83000,
+      "payouts": [
+        498000,
+        207500,
+        124500
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:russia_siberia:2": {
+      "id": "sk:euro:russia_siberia:2",
+      "group": "euro",
+      "kingdom": "Russia & Siberia",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        80400,
+        33500,
+        20100
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:russia_siberia:3": {
+      "id": "sk:euro:russia_siberia:3",
+      "group": "euro",
+      "kingdom": "Russia & Siberia",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 92000,
+      "payouts": [
+        550800,
+        229500,
+        137700
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:russia_siberia:4": {
+      "id": "sk:euro:russia_siberia:4",
+      "group": "euro",
+      "kingdom": "Russia & Siberia",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 151000,
+      "payouts": [
+        904200,
+        376750,
+        226050
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:russia_siberia:5": {
+      "id": "sk:euro:russia_siberia:5",
+      "group": "euro",
+      "kingdom": "Russia & Siberia",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 80000,
+      "payouts": [
+        480600,
+        200250,
+        120150
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:russia_siberia:6": {
+      "id": "sk:euro:russia_siberia:6",
+      "group": "euro",
+      "kingdom": "Russia & Siberia",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 93000,
+      "payouts": [
+        559800,
+        233250,
+        139950
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:russia_siberia:7": {
+      "id": "sk:euro:russia_siberia:7",
+      "group": "euro",
+      "kingdom": "Russia & Siberia",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 6,
+      "entryFee": 153000,
+      "payouts": [
+        918600,
+        382750,
+        229650
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:russia_siberia:8": {
+      "id": "sk:euro:russia_siberia:8",
+      "group": "euro",
+      "kingdom": "Russia & Siberia",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 8,
+      "entryFee": 79000,
+      "payouts": [
+        471000,
+        196250,
+        117750
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:russia_siberia:9": {
+      "id": "sk:euro:russia_siberia:9",
+      "group": "euro",
+      "kingdom": "Russia & Siberia",
+      "kind": "fort",
+      "subKingdomIndex": 9,
+      "maxPlayers": 8,
+      "entryFee": 66000,
+      "payouts": [
+        393600,
+        164000,
+        98400
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:scandinavia:1": {
+      "id": "sk:euro:scandinavia:1",
+      "group": "euro",
+      "kingdom": "Scandinavia",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 137000,
+      "payouts": [
+        821400,
+        342250,
+        205350
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:scandinavia:2": {
+      "id": "sk:euro:scandinavia:2",
+      "group": "euro",
+      "kingdom": "Scandinavia",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 109000,
+      "payouts": [
+        652800,
+        272000,
+        163200
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:scandinavia:3": {
+      "id": "sk:euro:scandinavia:3",
+      "group": "euro",
+      "kingdom": "Scandinavia",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        108600,
+        45250,
+        27150
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:scandinavia:4": {
+      "id": "sk:euro:scandinavia:4",
+      "group": "euro",
+      "kingdom": "Scandinavia",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 8,
+      "entryFee": 225000,
+      "payouts": [
+        1351200,
+        563000,
+        337800
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:scandinavia:5": {
+      "id": "sk:euro:scandinavia:5",
+      "group": "euro",
+      "kingdom": "Scandinavia",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 8,
+      "entryFee": 127000,
+      "payouts": [
+        763200,
+        318000,
+        190800
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:scandinavia:6": {
+      "id": "sk:euro:scandinavia:6",
+      "group": "euro",
+      "kingdom": "Scandinavia",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 147000,
+      "payouts": [
+        880200,
+        366750,
+        220050
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:scandinavia:7": {
+      "id": "sk:euro:scandinavia:7",
+      "group": "euro",
+      "kingdom": "Scandinavia",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 6,
+      "entryFee": 129000,
+      "payouts": [
+        771000,
+        321250,
+        192750
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:spain:1": {
+      "id": "sk:euro:spain:1",
+      "group": "euro",
+      "kingdom": "Spain",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 215000,
+      "payouts": [
+        1287000,
+        536250,
+        321750
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:spain:2": {
+      "id": "sk:euro:spain:2",
+      "group": "euro",
+      "kingdom": "Spain",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 8,
+      "entryFee": 206000,
+      "payouts": [
+        1233600,
+        514000,
+        308400
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:spain:3": {
+      "id": "sk:euro:spain:3",
+      "group": "euro",
+      "kingdom": "Spain",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 8,
+      "entryFee": 231000,
+      "payouts": [
+        1384800,
+        577000,
+        346200
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:spain:4": {
+      "id": "sk:euro:spain:4",
+      "group": "euro",
+      "kingdom": "Spain",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 180000,
+      "payouts": [
+        1077000,
+        448750,
+        269250
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:spain:5": {
+      "id": "sk:euro:spain:5",
+      "group": "euro",
+      "kingdom": "Spain",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 209000,
+      "payouts": [
+        1255800,
+        523250,
+        313950
+      ],
+      "predecessorId": null
+    },
+    "sk:euro:spain:6": {
+      "id": "sk:euro:spain:6",
+      "group": "euro",
+      "kingdom": "Spain",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        180000,
+        75000,
+        45000
+      ],
+      "predecessorId": null
+    },
+    "sk:india:baroda:1": {
+      "id": "sk:india:baroda:1",
+      "group": "india",
+      "kingdom": "Baroda",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 132000,
+      "payouts": [
+        792000,
+        330000,
+        198000
+      ],
+      "predecessorId": null
+    },
+    "sk:india:baroda:2": {
+      "id": "sk:india:baroda:2",
+      "group": "india",
+      "kingdom": "Baroda",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 145000,
+      "payouts": [
+        870600,
+        362750,
+        217650
+      ],
+      "predecessorId": null
+    },
+    "sk:india:baroda:3": {
+      "id": "sk:india:baroda:3",
+      "group": "india",
+      "kingdom": "Baroda",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 8,
+      "entryFee": 143000,
+      "payouts": [
+        857400,
+        357250,
+        214350
+      ],
+      "predecessorId": null
+    },
+    "sk:india:baroda:4": {
+      "id": "sk:india:baroda:4",
+      "group": "india",
+      "kingdom": "Baroda",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        119400,
+        49750,
+        29850
+      ],
+      "predecessorId": null
+    },
+    "sk:india:baroda:5": {
+      "id": "sk:india:baroda:5",
+      "group": "india",
+      "kingdom": "Baroda",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 118000,
+      "payouts": [
+        707400,
+        294750,
+        176850
+      ],
+      "predecessorId": null
+    },
+    "sk:india:baroda:6": {
+      "id": "sk:india:baroda:6",
+      "group": "india",
+      "kingdom": "Baroda",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 126000,
+      "payouts": [
+        753000,
+        313750,
+        188250
+      ],
+      "predecessorId": null
+    },
+    "sk:india:baroda:7": {
+      "id": "sk:india:baroda:7",
+      "group": "india",
+      "kingdom": "Baroda",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 8,
+      "entryFee": 123000,
+      "payouts": [
+        740400,
+        308500,
+        185100
+      ],
+      "predecessorId": null
+    },
+    "sk:india:baroda:8": {
+      "id": "sk:india:baroda:8",
+      "group": "india",
+      "kingdom": "Baroda",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 6,
+      "entryFee": 119000,
+      "payouts": [
+        713400,
+        297250,
+        178350
+      ],
+      "predecessorId": null
+    },
+    "sk:india:hyderabad:1": {
+      "id": "sk:india:hyderabad:1",
+      "group": "india",
+      "kingdom": "Hyderabad",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 223000,
+      "payouts": [
+        1336800,
+        557000,
+        334200
+      ],
+      "predecessorId": null
+    },
+    "sk:india:hyderabad:2": {
+      "id": "sk:india:hyderabad:2",
+      "group": "india",
+      "kingdom": "Hyderabad",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 309000,
+      "payouts": [
+        1851000,
+        771250,
+        462750
+      ],
+      "predecessorId": null
+    },
+    "sk:india:hyderabad:3": {
+      "id": "sk:india:hyderabad:3",
+      "group": "india",
+      "kingdom": "Hyderabad",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 211000,
+      "payouts": [
+        1265400,
+        527250,
+        316350
+      ],
+      "predecessorId": null
+    },
+    "sk:india:hyderabad:4": {
+      "id": "sk:india:hyderabad:4",
+      "group": "india",
+      "kingdom": "Hyderabad",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 8,
+      "entryFee": 196000,
+      "payouts": [
+        1176600,
+        490250,
+        294150
+      ],
+      "predecessorId": null
+    },
+    "sk:india:hyderabad:5": {
+      "id": "sk:india:hyderabad:5",
+      "group": "india",
+      "kingdom": "Hyderabad",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        221400,
+        92250,
+        55350
+      ],
+      "predecessorId": null
+    },
+    "sk:india:indore:1": {
+      "id": "sk:india:indore:1",
+      "group": "india",
+      "kingdom": "Indore",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 236000,
+      "payouts": [
+        1416000,
+        590000,
+        354000
+      ],
+      "predecessorId": null
+    },
+    "sk:india:indore:2": {
+      "id": "sk:india:indore:2",
+      "group": "india",
+      "kingdom": "Indore",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 152000,
+      "payouts": [
+        909000,
+        378750,
+        227250
+      ],
+      "predecessorId": null
+    },
+    "sk:india:indore:3": {
+      "id": "sk:india:indore:3",
+      "group": "india",
+      "kingdom": "Indore",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        152400,
+        63500,
+        38100
+      ],
+      "predecessorId": null
+    },
+    "sk:india:indore:4": {
+      "id": "sk:india:indore:4",
+      "group": "india",
+      "kingdom": "Indore",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 8,
+      "entryFee": 238000,
+      "payouts": [
+        1427400,
+        594750,
+        356850
+      ],
+      "predecessorId": null
+    },
+    "sk:india:indore:5": {
+      "id": "sk:india:indore:5",
+      "group": "india",
+      "kingdom": "Indore",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 242000,
+      "payouts": [
+        1450200,
+        604250,
+        362550
+      ],
+      "predecessorId": null
+    },
+    "sk:india:jaipur:1": {
+      "id": "sk:india:jaipur:1",
+      "group": "india",
+      "kingdom": "Jaipur",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        148200,
+        61750,
+        37050
+      ],
+      "predecessorId": null
+    },
+    "sk:india:jaipur:2": {
+      "id": "sk:india:jaipur:2",
+      "group": "india",
+      "kingdom": "Jaipur",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 8,
+      "entryFee": 220000,
+      "payouts": [
+        1317600,
+        549000,
+        329400
+      ],
+      "predecessorId": null
+    },
+    "sk:india:jaipur:3": {
+      "id": "sk:india:jaipur:3",
+      "group": "india",
+      "kingdom": "Jaipur",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 8,
+      "entryFee": 107000,
+      "payouts": [
+        639000,
+        266250,
+        159750
+      ],
+      "predecessorId": null
+    },
+    "sk:india:jaipur:4": {
+      "id": "sk:india:jaipur:4",
+      "group": "india",
+      "kingdom": "Jaipur",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 101000,
+      "payouts": [
+        606600,
+        252750,
+        151650
+      ],
+      "predecessorId": null
+    },
+    "sk:india:jaipur:5": {
+      "id": "sk:india:jaipur:5",
+      "group": "india",
+      "kingdom": "Jaipur",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 178000,
+      "payouts": [
+        1068000,
+        445000,
+        267000
+      ],
+      "predecessorId": null
+    },
+    "sk:india:jaipur:6": {
+      "id": "sk:india:jaipur:6",
+      "group": "india",
+      "kingdom": "Jaipur",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 8,
+      "entryFee": 108000,
+      "payouts": [
+        650400,
+        271000,
+        162600
+      ],
+      "predecessorId": null
+    },
+    "sk:india:jaipur:7": {
+      "id": "sk:india:jaipur:7",
+      "group": "india",
+      "kingdom": "Jaipur",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 6,
+      "entryFee": 204000,
+      "payouts": [
+        1223400,
+        509750,
+        305850
+      ],
+      "predecessorId": null
+    },
+    "sk:india:jaipur:8": {
+      "id": "sk:india:jaipur:8",
+      "group": "india",
+      "kingdom": "Jaipur",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 6,
+      "entryFee": 100000,
+      "payouts": [
+        600000,
+        250000,
+        150000
+      ],
+      "predecessorId": null
+    },
+    "sk:india:jaipur:9": {
+      "id": "sk:india:jaipur:9",
+      "group": "india",
+      "kingdom": "Jaipur",
+      "kind": "fort",
+      "subKingdomIndex": 9,
+      "maxPlayers": 6,
+      "entryFee": 98000,
+      "payouts": [
+        589800,
+        245750,
+        147450
+      ],
+      "predecessorId": null
+    },
+    "sk:india:maratha_empire:1": {
+      "id": "sk:india:maratha_empire:1",
+      "group": "india",
+      "kingdom": "Maratha Empire",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 8,
+      "entryFee": 136000,
+      "payouts": [
+        815400,
+        339750,
+        203850
+      ],
+      "predecessorId": null
+    },
+    "sk:india:maratha_empire:2": {
+      "id": "sk:india:maratha_empire:2",
+      "group": "india",
+      "kingdom": "Maratha Empire",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 143000,
+      "payouts": [
+        858000,
+        357500,
+        214500
+      ],
+      "predecessorId": null
+    },
+    "sk:india:maratha_empire:3": {
+      "id": "sk:india:maratha_empire:3",
+      "group": "india",
+      "kingdom": "Maratha Empire",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        119400,
+        49750,
+        29850
+      ],
+      "predecessorId": null
+    },
+    "sk:india:maratha_empire:4": {
+      "id": "sk:india:maratha_empire:4",
+      "group": "india",
+      "kingdom": "Maratha Empire",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 265000,
+      "payouts": [
+        1591800,
+        663250,
+        397950
+      ],
+      "predecessorId": null
+    },
+    "sk:india:maratha_empire:5": {
+      "id": "sk:india:maratha_empire:5",
+      "group": "india",
+      "kingdom": "Maratha Empire",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 137000,
+      "payouts": [
+        823200,
+        343000,
+        205800
+      ],
+      "predecessorId": null
+    },
+    "sk:india:maratha_empire:6": {
+      "id": "sk:india:maratha_empire:6",
+      "group": "india",
+      "kingdom": "Maratha Empire",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 8,
+      "entryFee": 126000,
+      "payouts": [
+        754200,
+        314250,
+        188550
+      ],
+      "predecessorId": null
+    },
+    "sk:india:maratha_empire:7": {
+      "id": "sk:india:maratha_empire:7",
+      "group": "india",
+      "kingdom": "Maratha Empire",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 6,
+      "entryFee": 128000,
+      "payouts": [
+        768600,
+        320250,
+        192150
+      ],
+      "predecessorId": null
+    },
+    "sk:india:maratha_empire:8": {
+      "id": "sk:india:maratha_empire:8",
+      "group": "india",
+      "kingdom": "Maratha Empire",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 6,
+      "entryFee": 119000,
+      "payouts": [
+        715800,
+        298250,
+        178950
+      ],
+      "predecessorId": null
+    },
+    "sk:india:mysore:1": {
+      "id": "sk:india:mysore:1",
+      "group": "india",
+      "kingdom": "Mysore",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 163000,
+      "payouts": [
+        980400,
+        408500,
+        245100
+      ],
+      "predecessorId": null
+    },
+    "sk:india:mysore:2": {
+      "id": "sk:india:mysore:2",
+      "group": "india",
+      "kingdom": "Mysore",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 247000,
+      "payouts": [
+        1482600,
+        617750,
+        370650
+      ],
+      "predecessorId": null
+    },
+    "sk:india:mysore:3": {
+      "id": "sk:india:mysore:3",
+      "group": "india",
+      "kingdom": "Mysore",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 195000,
+      "payouts": [
+        1167000,
+        486250,
+        291750
+      ],
+      "predecessorId": null
+    },
+    "sk:india:mysore:4": {
+      "id": "sk:india:mysore:4",
+      "group": "india",
+      "kingdom": "Mysore",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        163200,
+        68000,
+        40800
+      ],
+      "predecessorId": null
+    },
+    "sk:india:mysore:5": {
+      "id": "sk:india:mysore:5",
+      "group": "india",
+      "kingdom": "Mysore",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 8,
+      "entryFee": 376000,
+      "payouts": [
+        2256600,
+        940250,
+        564150
+      ],
+      "predecessorId": null
+    },
+    "sk:india:new_delhi:1": {
+      "id": "sk:india:new_delhi:1",
+      "group": "india",
+      "kingdom": "New Delhi",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 86000,
+      "payouts": [
+        513600,
+        214000,
+        128400
+      ],
+      "predecessorId": null
+    },
+    "sk:india:new_delhi:10": {
+      "id": "sk:india:new_delhi:10",
+      "group": "india",
+      "kingdom": "New Delhi",
+      "kind": "fort",
+      "subKingdomIndex": 10,
+      "maxPlayers": 8,
+      "entryFee": 169000,
+      "payouts": [
+        1012800,
+        422000,
+        253200
+      ],
+      "predecessorId": null
+    },
+    "sk:india:new_delhi:11": {
+      "id": "sk:india:new_delhi:11",
+      "group": "india",
+      "kingdom": "New Delhi",
+      "kind": "fort",
+      "subKingdomIndex": 11,
+      "maxPlayers": 8,
+      "entryFee": 90000,
+      "payouts": [
+        541800,
+        225750,
+        135450
+      ],
+      "predecessorId": null
+    },
+    "sk:india:new_delhi:12": {
+      "id": "sk:india:new_delhi:12",
+      "group": "india",
+      "kingdom": "New Delhi",
+      "kind": "fort",
+      "subKingdomIndex": 12,
+      "maxPlayers": 6,
+      "entryFee": 85000,
+      "payouts": [
+        512400,
+        213500,
+        128100
+      ],
+      "predecessorId": null
+    },
+    "sk:india:new_delhi:2": {
+      "id": "sk:india:new_delhi:2",
+      "group": "india",
+      "kingdom": "New Delhi",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 8,
+      "entryFee": 177000,
+      "payouts": [
+        1063200,
+        443000,
+        265800
+      ],
+      "predecessorId": null
+    },
+    "sk:india:new_delhi:3": {
+      "id": "sk:india:new_delhi:3",
+      "group": "india",
+      "kingdom": "New Delhi",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 91000,
+      "payouts": [
+        546600,
+        227750,
+        136650
+      ],
+      "predecessorId": null
+    },
+    "sk:india:new_delhi:4": {
+      "id": "sk:india:new_delhi:4",
+      "group": "india",
+      "kingdom": "New Delhi",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 8,
+      "entryFee": 85000,
+      "payouts": [
+        508800,
+        212000,
+        127200
+      ],
+      "predecessorId": null
+    },
+    "sk:india:new_delhi:5": {
+      "id": "sk:india:new_delhi:5",
+      "group": "india",
+      "kingdom": "New Delhi",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 86000,
+      "payouts": [
+        517200,
+        215500,
+        129300
+      ],
+      "predecessorId": null
+    },
+    "sk:india:new_delhi:6": {
+      "id": "sk:india:new_delhi:6",
+      "group": "india",
+      "kingdom": "New Delhi",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 80000,
+      "payouts": [
+        481200,
+        200500,
+        120300
+      ],
+      "predecessorId": null
+    },
+    "sk:india:new_delhi:7": {
+      "id": "sk:india:new_delhi:7",
+      "group": "india",
+      "kingdom": "New Delhi",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        79800,
+        33250,
+        19950
+      ],
+      "predecessorId": null
+    },
+    "sk:india:new_delhi:8": {
+      "id": "sk:india:new_delhi:8",
+      "group": "india",
+      "kingdom": "New Delhi",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 6,
+      "entryFee": 70000,
+      "payouts": [
+        417000,
+        173750,
+        104250
+      ],
+      "predecessorId": null
+    },
+    "sk:india:new_delhi:9": {
+      "id": "sk:india:new_delhi:9",
+      "group": "india",
+      "kingdom": "New Delhi",
+      "kind": "fort",
+      "subKingdomIndex": 9,
+      "maxPlayers": 6,
+      "entryFee": 75000,
+      "payouts": [
+        450000,
+        187500,
+        112500
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikh_empire:1": {
+      "id": "sk:india:sikh_empire:1",
+      "group": "india",
+      "kingdom": "Sikh Empire",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 63000,
+      "payouts": [
+        377400,
+        157250,
+        94350
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikh_empire:10": {
+      "id": "sk:india:sikh_empire:10",
+      "group": "india",
+      "kingdom": "Sikh Empire",
+      "kind": "fort",
+      "subKingdomIndex": 10,
+      "maxPlayers": 6,
+      "entryFee": 56000,
+      "payouts": [
+        337800,
+        140750,
+        84450
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikh_empire:11": {
+      "id": "sk:india:sikh_empire:11",
+      "group": "india",
+      "kingdom": "Sikh Empire",
+      "kind": "fort",
+      "subKingdomIndex": 11,
+      "maxPlayers": 6,
+      "entryFee": 58000,
+      "payouts": [
+        349800,
+        145750,
+        87450
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikh_empire:12": {
+      "id": "sk:india:sikh_empire:12",
+      "group": "india",
+      "kingdom": "Sikh Empire",
+      "kind": "fort",
+      "subKingdomIndex": 12,
+      "maxPlayers": 6,
+      "entryFee": 63000,
+      "payouts": [
+        379800,
+        158250,
+        94950
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikh_empire:13": {
+      "id": "sk:india:sikh_empire:13",
+      "group": "india",
+      "kingdom": "Sikh Empire",
+      "kind": "fort",
+      "subKingdomIndex": 13,
+      "maxPlayers": 8,
+      "entryFee": 65000,
+      "payouts": [
+        387000,
+        161250,
+        96750
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikh_empire:14": {
+      "id": "sk:india:sikh_empire:14",
+      "group": "india",
+      "kingdom": "Sikh Empire",
+      "kind": "fort",
+      "subKingdomIndex": 14,
+      "maxPlayers": 8,
+      "entryFee": 59000,
+      "payouts": [
+        351000,
+        146250,
+        87750
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikh_empire:15": {
+      "id": "sk:india:sikh_empire:15",
+      "group": "india",
+      "kingdom": "Sikh Empire",
+      "kind": "fort",
+      "subKingdomIndex": 15,
+      "maxPlayers": 6,
+      "entryFee": 68000,
+      "payouts": [
+        408000,
+        170000,
+        102000
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikh_empire:16": {
+      "id": "sk:india:sikh_empire:16",
+      "group": "india",
+      "kingdom": "Sikh Empire",
+      "kind": "fort",
+      "subKingdomIndex": 16,
+      "maxPlayers": 6,
+      "entryFee": 52000,
+      "payouts": [
+        311400,
+        129750,
+        77850
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikh_empire:17": {
+      "id": "sk:india:sikh_empire:17",
+      "group": "india",
+      "kingdom": "Sikh Empire",
+      "kind": "fort",
+      "subKingdomIndex": 17,
+      "maxPlayers": 8,
+      "entryFee": 56000,
+      "payouts": [
+        335400,
+        139750,
+        83850
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikh_empire:18": {
+      "id": "sk:india:sikh_empire:18",
+      "group": "india",
+      "kingdom": "Sikh Empire",
+      "kind": "fort",
+      "subKingdomIndex": 18,
+      "maxPlayers": 8,
+      "entryFee": 60000,
+      "payouts": [
+        358800,
+        149500,
+        89700
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikh_empire:19": {
+      "id": "sk:india:sikh_empire:19",
+      "group": "india",
+      "kingdom": "Sikh Empire",
+      "kind": "fort",
+      "subKingdomIndex": 19,
+      "maxPlayers": 8,
+      "entryFee": 61000,
+      "payouts": [
+        363000,
+        151250,
+        90750
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikh_empire:2": {
+      "id": "sk:india:sikh_empire:2",
+      "group": "india",
+      "kingdom": "Sikh Empire",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 66000,
+      "payouts": [
+        397800,
+        165750,
+        99450
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikh_empire:20": {
+      "id": "sk:india:sikh_empire:20",
+      "group": "india",
+      "kingdom": "Sikh Empire",
+      "kind": "fort",
+      "subKingdomIndex": 20,
+      "maxPlayers": 6,
+      "entryFee": 65000,
+      "payouts": [
+        389400,
+        162250,
+        97350
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikh_empire:21": {
+      "id": "sk:india:sikh_empire:21",
+      "group": "india",
+      "kingdom": "Sikh Empire",
+      "kind": "fort",
+      "subKingdomIndex": 21,
+      "maxPlayers": 6,
+      "entryFee": 65000,
+      "payouts": [
+        392400,
+        163500,
+        98100
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikh_empire:3": {
+      "id": "sk:india:sikh_empire:3",
+      "group": "india",
+      "kingdom": "Sikh Empire",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 8,
+      "entryFee": 67000,
+      "payouts": [
+        404400,
+        168500,
+        101100
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikh_empire:4": {
+      "id": "sk:india:sikh_empire:4",
+      "group": "india",
+      "kingdom": "Sikh Empire",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 55000,
+      "payouts": [
+        331800,
+        138250,
+        82950
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikh_empire:5": {
+      "id": "sk:india:sikh_empire:5",
+      "group": "india",
+      "kingdom": "Sikh Empire",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 62000,
+      "payouts": [
+        374400,
+        156000,
+        93600
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikh_empire:6": {
+      "id": "sk:india:sikh_empire:6",
+      "group": "india",
+      "kingdom": "Sikh Empire",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 59000,
+      "payouts": [
+        353400,
+        147250,
+        88350
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikh_empire:7": {
+      "id": "sk:india:sikh_empire:7",
+      "group": "india",
+      "kingdom": "Sikh Empire",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 8,
+      "entryFee": 66000,
+      "payouts": [
+        395400,
+        164750,
+        98850
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikh_empire:8": {
+      "id": "sk:india:sikh_empire:8",
+      "group": "india",
+      "kingdom": "Sikh Empire",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        56400,
+        23500,
+        14100
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikh_empire:9": {
+      "id": "sk:india:sikh_empire:9",
+      "group": "india",
+      "kingdom": "Sikh Empire",
+      "kind": "fort",
+      "subKingdomIndex": 9,
+      "maxPlayers": 6,
+      "entryFee": 64000,
+      "payouts": [
+        382800,
+        159500,
+        95700
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikkim:1": {
+      "id": "sk:india:sikkim:1",
+      "group": "india",
+      "kingdom": "Sikkim",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 8,
+      "entryFee": 98000,
+      "payouts": [
+        589200,
+        245500,
+        147300
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikkim:10": {
+      "id": "sk:india:sikkim:10",
+      "group": "india",
+      "kingdom": "Sikkim",
+      "kind": "fort",
+      "subKingdomIndex": 10,
+      "maxPlayers": 6,
+      "entryFee": 89000,
+      "payouts": [
+        532200,
+        221750,
+        133050
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikkim:2": {
+      "id": "sk:india:sikkim:2",
+      "group": "india",
+      "kingdom": "Sikkim",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 8,
+      "entryFee": 81000,
+      "payouts": [
+        484200,
+        201750,
+        121050
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikkim:3": {
+      "id": "sk:india:sikkim:3",
+      "group": "india",
+      "kingdom": "Sikkim",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 91000,
+      "payouts": [
+        544800,
+        227000,
+        136200
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikkim:4": {
+      "id": "sk:india:sikkim:4",
+      "group": "india",
+      "kingdom": "Sikkim",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 86000,
+      "payouts": [
+        516000,
+        215000,
+        129000
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikkim:5": {
+      "id": "sk:india:sikkim:5",
+      "group": "india",
+      "kingdom": "Sikkim",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        86400,
+        36000,
+        21600
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikkim:6": {
+      "id": "sk:india:sikkim:6",
+      "group": "india",
+      "kingdom": "Sikkim",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 87000,
+      "payouts": [
+        519000,
+        216250,
+        129750
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikkim:7": {
+      "id": "sk:india:sikkim:7",
+      "group": "india",
+      "kingdom": "Sikkim",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 6,
+      "entryFee": 81000,
+      "payouts": [
+        484800,
+        202000,
+        121200
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikkim:8": {
+      "id": "sk:india:sikkim:8",
+      "group": "india",
+      "kingdom": "Sikkim",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 8,
+      "entryFee": 85000,
+      "payouts": [
+        510600,
+        212750,
+        127650
+      ],
+      "predecessorId": null
+    },
+    "sk:india:sikkim:9": {
+      "id": "sk:india:sikkim:9",
+      "group": "india",
+      "kingdom": "Sikkim",
+      "kind": "fort",
+      "subKingdomIndex": 9,
+      "maxPlayers": 6,
+      "entryFee": 82000,
+      "payouts": [
+        493200,
+        205500,
+        123300
+      ],
+      "predecessorId": null
+    },
+    "sk:india:travancore:1": {
+      "id": "sk:india:travancore:1",
+      "group": "india",
+      "kingdom": "Travancore",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 151000,
+      "payouts": [
+        905400,
+        377250,
+        226350
+      ],
+      "predecessorId": null
+    },
+    "sk:india:travancore:2": {
+      "id": "sk:india:travancore:2",
+      "group": "india",
+      "kingdom": "Travancore",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 8,
+      "entryFee": 165000,
+      "payouts": [
+        990000,
+        412500,
+        247500
+      ],
+      "predecessorId": null
+    },
+    "sk:india:travancore:3": {
+      "id": "sk:india:travancore:3",
+      "group": "india",
+      "kingdom": "Travancore",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        146400,
+        61000,
+        36600
+      ],
+      "predecessorId": null
+    },
+    "sk:india:travancore:4": {
+      "id": "sk:india:travancore:4",
+      "group": "india",
+      "kingdom": "Travancore",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 146000,
+      "payouts": [
+        876000,
+        365000,
+        219000
+      ],
+      "predecessorId": null
+    },
+    "sk:india:travancore:5": {
+      "id": "sk:india:travancore:5",
+      "group": "india",
+      "kingdom": "Travancore",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 174000,
+      "payouts": [
+        1041000,
+        433750,
+        260250
+      ],
+      "predecessorId": null
+    },
+    "sk:india:travancore:6": {
+      "id": "sk:india:travancore:6",
+      "group": "india",
+      "kingdom": "Travancore",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 8,
+      "entryFee": 183000,
+      "payouts": [
+        1099200,
+        458000,
+        274800
+      ],
+      "predecessorId": null
+    },
+    "sk:international:africa:1": {
+      "id": "sk:international:africa:1",
+      "group": "international",
+      "kingdom": "Africa",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        80400,
+        33500,
+        20100
+      ],
+      "predecessorId": null
+    },
+    "sk:international:africa:10": {
+      "id": "sk:international:africa:10",
+      "group": "international",
+      "kingdom": "Africa",
+      "kind": "fort",
+      "subKingdomIndex": 10,
+      "maxPlayers": 8,
+      "entryFee": 81000,
+      "payouts": [
+        487200,
+        203000,
+        121800
+      ],
+      "predecessorId": null
+    },
+    "sk:international:africa:2": {
+      "id": "sk:international:africa:2",
+      "group": "international",
+      "kingdom": "Africa",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 84000,
+      "payouts": [
+        506400,
+        211000,
+        126600
+      ],
+      "predecessorId": null
+    },
+    "sk:international:africa:3": {
+      "id": "sk:international:africa:3",
+      "group": "international",
+      "kingdom": "Africa",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 94000,
+      "payouts": [
+        561000,
+        233750,
+        140250
+      ],
+      "predecessorId": null
+    },
+    "sk:international:africa:4": {
+      "id": "sk:international:africa:4",
+      "group": "international",
+      "kingdom": "Africa",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 8,
+      "entryFee": 80000,
+      "payouts": [
+        478200,
+        199250,
+        119550
+      ],
+      "predecessorId": null
+    },
+    "sk:international:africa:5": {
+      "id": "sk:international:africa:5",
+      "group": "international",
+      "kingdom": "Africa",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 8,
+      "entryFee": 151000,
+      "payouts": [
+        907800,
+        378250,
+        226950
+      ],
+      "predecessorId": null
+    },
+    "sk:international:africa:6": {
+      "id": "sk:international:africa:6",
+      "group": "international",
+      "kingdom": "Africa",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 89000,
+      "payouts": [
+        536400,
+        223500,
+        134100
+      ],
+      "predecessorId": null
+    },
+    "sk:international:africa:7": {
+      "id": "sk:international:africa:7",
+      "group": "international",
+      "kingdom": "Africa",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 6,
+      "entryFee": 80000,
+      "payouts": [
+        480600,
+        200250,
+        120150
+      ],
+      "predecessorId": null
+    },
+    "sk:international:africa:8": {
+      "id": "sk:international:africa:8",
+      "group": "international",
+      "kingdom": "Africa",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 6,
+      "entryFee": 83000,
+      "payouts": [
+        499800,
+        208250,
+        124950
+      ],
+      "predecessorId": null
+    },
+    "sk:international:africa:9": {
+      "id": "sk:international:africa:9",
+      "group": "international",
+      "kingdom": "Africa",
+      "kind": "fort",
+      "subKingdomIndex": 9,
+      "maxPlayers": 6,
+      "entryFee": 162000,
+      "payouts": [
+        970200,
+        404250,
+        242550
+      ],
+      "predecessorId": null
+    },
+    "sk:international:arabia:1": {
+      "id": "sk:international:arabia:1",
+      "group": "international",
+      "kingdom": "Arabia",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 8,
+      "entryFee": 99000,
+      "payouts": [
+        594600,
+        247750,
+        148650
+      ],
+      "predecessorId": null
+    },
+    "sk:international:arabia:2": {
+      "id": "sk:international:arabia:2",
+      "group": "international",
+      "kingdom": "Arabia",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 96000,
+      "payouts": [
+        573000,
+        238750,
+        143250
+      ],
+      "predecessorId": null
+    },
+    "sk:international:arabia:3": {
+      "id": "sk:international:arabia:3",
+      "group": "international",
+      "kingdom": "Arabia",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        129000,
+        53750,
+        32250
+      ],
+      "predecessorId": null
+    },
+    "sk:international:arabia:4": {
+      "id": "sk:international:arabia:4",
+      "group": "international",
+      "kingdom": "Arabia",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 8,
+      "entryFee": 155000,
+      "payouts": [
+        927600,
+        386500,
+        231900
+      ],
+      "predecessorId": null
+    },
+    "sk:international:arabia:5": {
+      "id": "sk:international:arabia:5",
+      "group": "international",
+      "kingdom": "Arabia",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 93000,
+      "payouts": [
+        558000,
+        232500,
+        139500
+      ],
+      "predecessorId": null
+    },
+    "sk:international:arabia:6": {
+      "id": "sk:international:arabia:6",
+      "group": "international",
+      "kingdom": "Arabia",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 187000,
+      "payouts": [
+        1123200,
+        468000,
+        280800
+      ],
+      "predecessorId": null
+    },
+    "sk:international:arabia:7": {
+      "id": "sk:international:arabia:7",
+      "group": "international",
+      "kingdom": "Arabia",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 6,
+      "entryFee": 151000,
+      "payouts": [
+        903600,
+        376500,
+        225900
+      ],
+      "predecessorId": null
+    },
+    "sk:international:arabia:8": {
+      "id": "sk:international:arabia:8",
+      "group": "international",
+      "kingdom": "Arabia",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 6,
+      "entryFee": 95000,
+      "payouts": [
+        568200,
+        236750,
+        142050
+      ],
+      "predecessorId": null
+    },
+    "sk:international:arabia:9": {
+      "id": "sk:international:arabia:9",
+      "group": "international",
+      "kingdom": "Arabia",
+      "kind": "fort",
+      "subKingdomIndex": 9,
+      "maxPlayers": 8,
+      "entryFee": 104000,
+      "payouts": [
+        622800,
+        259500,
+        155700
+      ],
+      "predecessorId": null
+    },
+    "sk:international:asia_rest:1": {
+      "id": "sk:international:asia_rest:1",
+      "group": "international",
+      "kingdom": "Asia Rest",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        85800,
+        35750,
+        21450
+      ],
+      "predecessorId": null
+    },
+    "sk:international:asia_rest:2": {
+      "id": "sk:international:asia_rest:2",
+      "group": "international",
+      "kingdom": "Asia Rest",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 101000,
+      "payouts": [
+        605400,
+        252250,
+        151350
+      ],
+      "predecessorId": null
+    },
+    "sk:international:asia_rest:3": {
+      "id": "sk:international:asia_rest:3",
+      "group": "international",
+      "kingdom": "Asia Rest",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 99000,
+      "payouts": [
+        591600,
+        246500,
+        147900
+      ],
+      "predecessorId": null
+    },
+    "sk:international:asia_rest:4": {
+      "id": "sk:international:asia_rest:4",
+      "group": "international",
+      "kingdom": "Asia Rest",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 86000,
+      "payouts": [
+        517200,
+        215500,
+        129300
+      ],
+      "predecessorId": null
+    },
+    "sk:international:asia_rest:5": {
+      "id": "sk:international:asia_rest:5",
+      "group": "international",
+      "kingdom": "Asia Rest",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 94000,
+      "payouts": [
+        565800,
+        235750,
+        141450
+      ],
+      "predecessorId": null
+    },
+    "sk:international:asia_rest:6": {
+      "id": "sk:international:asia_rest:6",
+      "group": "international",
+      "kingdom": "Asia Rest",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 96000,
+      "payouts": [
+        574200,
+        239250,
+        143550
+      ],
+      "predecessorId": null
+    },
+    "sk:international:asia_rest:7": {
+      "id": "sk:international:asia_rest:7",
+      "group": "international",
+      "kingdom": "Asia Rest",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 8,
+      "entryFee": 94000,
+      "payouts": [
+        561000,
+        233750,
+        140250
+      ],
+      "predecessorId": null
+    },
+    "sk:international:asia_rest:8": {
+      "id": "sk:international:asia_rest:8",
+      "group": "international",
+      "kingdom": "Asia Rest",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 8,
+      "entryFee": 269000,
+      "payouts": [
+        1614000,
+        672500,
+        403500
+      ],
+      "predecessorId": null
+    },
+    "sk:international:central_asia:1": {
+      "id": "sk:international:central_asia:1",
+      "group": "international",
+      "kingdom": "Central Asia",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 8,
+      "entryFee": 72000,
+      "payouts": [
+        434400,
+        181000,
+        108600
+      ],
+      "predecessorId": null
+    },
+    "sk:international:central_asia:10": {
+      "id": "sk:international:central_asia:10",
+      "group": "international",
+      "kingdom": "Central Asia",
+      "kind": "fort",
+      "subKingdomIndex": 10,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        71400,
+        29750,
+        17850
+      ],
+      "predecessorId": null
+    },
+    "sk:international:central_asia:11": {
+      "id": "sk:international:central_asia:11",
+      "group": "international",
+      "kingdom": "Central Asia",
+      "kind": "fort",
+      "subKingdomIndex": 11,
+      "maxPlayers": 6,
+      "entryFee": 63000,
+      "payouts": [
+        378000,
+        157500,
+        94500
+      ],
+      "predecessorId": null
+    },
+    "sk:international:central_asia:2": {
+      "id": "sk:international:central_asia:2",
+      "group": "international",
+      "kingdom": "Central Asia",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 69000,
+      "payouts": [
+        411000,
+        171250,
+        102750
+      ],
+      "predecessorId": null
+    },
+    "sk:international:central_asia:3": {
+      "id": "sk:international:central_asia:3",
+      "group": "international",
+      "kingdom": "Central Asia",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 72000,
+      "payouts": [
+        430800,
+        179500,
+        107700
+      ],
+      "predecessorId": null
+    },
+    "sk:international:central_asia:4": {
+      "id": "sk:international:central_asia:4",
+      "group": "international",
+      "kingdom": "Central Asia",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 74000,
+      "payouts": [
+        444600,
+        185250,
+        111150
+      ],
+      "predecessorId": null
+    },
+    "sk:international:central_asia:5": {
+      "id": "sk:international:central_asia:5",
+      "group": "international",
+      "kingdom": "Central Asia",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 8,
+      "entryFee": 116000,
+      "payouts": [
+        694200,
+        289250,
+        173550
+      ],
+      "predecessorId": null
+    },
+    "sk:international:central_asia:6": {
+      "id": "sk:international:central_asia:6",
+      "group": "international",
+      "kingdom": "Central Asia",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 67000,
+      "payouts": [
+        404400,
+        168500,
+        101100
+      ],
+      "predecessorId": null
+    },
+    "sk:international:central_asia:7": {
+      "id": "sk:international:central_asia:7",
+      "group": "international",
+      "kingdom": "Central Asia",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 8,
+      "entryFee": 110000,
+      "payouts": [
+        657000,
+        273750,
+        164250
+      ],
+      "predecessorId": null
+    },
+    "sk:international:central_asia:8": {
+      "id": "sk:international:central_asia:8",
+      "group": "international",
+      "kingdom": "Central Asia",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 6,
+      "entryFee": 83000,
+      "payouts": [
+        496200,
+        206750,
+        124050
+      ],
+      "predecessorId": null
+    },
+    "sk:international:central_asia:9": {
+      "id": "sk:international:central_asia:9",
+      "group": "international",
+      "kingdom": "Central Asia",
+      "kind": "fort",
+      "subKingdomIndex": 9,
+      "maxPlayers": 6,
+      "entryFee": 66000,
+      "payouts": [
+        397800,
+        165750,
+        99450
+      ],
+      "predecessorId": null
+    },
+    "sk:international:china:1": {
+      "id": "sk:international:china:1",
+      "group": "international",
+      "kingdom": "China",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        183600,
+        76500,
+        45900
+      ],
+      "predecessorId": null
+    },
+    "sk:international:china:2": {
+      "id": "sk:international:china:2",
+      "group": "international",
+      "kingdom": "China",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 258000,
+      "payouts": [
+        1545600,
+        644000,
+        386400
+      ],
+      "predecessorId": null
+    },
+    "sk:international:china:3": {
+      "id": "sk:international:china:3",
+      "group": "international",
+      "kingdom": "China",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 183000,
+      "payouts": [
+        1097400,
+        457250,
+        274350
+      ],
+      "predecessorId": null
+    },
+    "sk:international:china:4": {
+      "id": "sk:international:china:4",
+      "group": "international",
+      "kingdom": "China",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 8,
+      "entryFee": 169000,
+      "payouts": [
+        1011000,
+        421250,
+        252750
+      ],
+      "predecessorId": null
+    },
+    "sk:international:china:5": {
+      "id": "sk:international:china:5",
+      "group": "international",
+      "kingdom": "China",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 8,
+      "entryFee": 155000,
+      "payouts": [
+        931200,
+        388000,
+        232800
+      ],
+      "predecessorId": null
+    },
+    "sk:international:china:6": {
+      "id": "sk:international:china:6",
+      "group": "international",
+      "kingdom": "China",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 162000,
+      "payouts": [
+        971400,
+        404750,
+        242850
+      ],
+      "predecessorId": null
+    },
+    "sk:international:china:7": {
+      "id": "sk:international:china:7",
+      "group": "international",
+      "kingdom": "China",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 6,
+      "entryFee": 158000,
+      "payouts": [
+        948600,
+        395250,
+        237150
+      ],
+      "predecessorId": null
+    },
+    "sk:international:europe:1": {
+      "id": "sk:international:europe:1",
+      "group": "international",
+      "kingdom": "Europe",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 86000,
+      "payouts": [
+        518400,
+        216000,
+        129600
+      ],
+      "predecessorId": null
+    },
+    "sk:international:europe:10": {
+      "id": "sk:international:europe:10",
+      "group": "international",
+      "kingdom": "Europe",
+      "kind": "fort",
+      "subKingdomIndex": 10,
+      "maxPlayers": 6,
+      "entryFee": 51000,
+      "payouts": [
+        307200,
+        128000,
+        76800
+      ],
+      "predecessorId": null
+    },
+    "sk:international:europe:11": {
+      "id": "sk:international:europe:11",
+      "group": "international",
+      "kingdom": "Europe",
+      "kind": "fort",
+      "subKingdomIndex": 11,
+      "maxPlayers": 6,
+      "entryFee": 91000,
+      "payouts": [
+        547800,
+        228250,
+        136950
+      ],
+      "predecessorId": null
+    },
+    "sk:international:europe:12": {
+      "id": "sk:international:europe:12",
+      "group": "international",
+      "kingdom": "Europe",
+      "kind": "fort",
+      "subKingdomIndex": 12,
+      "maxPlayers": 8,
+      "entryFee": 46000,
+      "payouts": [
+        276000,
+        115000,
+        69000
+      ],
+      "predecessorId": null
+    },
+    "sk:international:europe:13": {
+      "id": "sk:international:europe:13",
+      "group": "international",
+      "kingdom": "Europe",
+      "kind": "fort",
+      "subKingdomIndex": 13,
+      "maxPlayers": 6,
+      "entryFee": 46000,
+      "payouts": [
+        274200,
+        114250,
+        68550
+      ],
+      "predecessorId": null
+    },
+    "sk:international:europe:14": {
+      "id": "sk:international:europe:14",
+      "group": "international",
+      "kingdom": "Europe",
+      "kind": "fort",
+      "subKingdomIndex": 14,
+      "maxPlayers": 6,
+      "entryFee": 54000,
+      "payouts": [
+        326400,
+        136000,
+        81600
+      ],
+      "predecessorId": null
+    },
+    "sk:international:europe:15": {
+      "id": "sk:international:europe:15",
+      "group": "international",
+      "kingdom": "Europe",
+      "kind": "fort",
+      "subKingdomIndex": 15,
+      "maxPlayers": 6,
+      "entryFee": 93000,
+      "payouts": [
+        559200,
+        233000,
+        139800
+      ],
+      "predecessorId": null
+    },
+    "sk:international:europe:16": {
+      "id": "sk:international:europe:16",
+      "group": "international",
+      "kingdom": "Europe",
+      "kind": "fort",
+      "subKingdomIndex": 16,
+      "maxPlayers": 8,
+      "entryFee": 98000,
+      "payouts": [
+        585000,
+        243750,
+        146250
+      ],
+      "predecessorId": null
+    },
+    "sk:international:europe:17": {
+      "id": "sk:international:europe:17",
+      "group": "international",
+      "kingdom": "Europe",
+      "kind": "fort",
+      "subKingdomIndex": 17,
+      "maxPlayers": 6,
+      "entryFee": 96000,
+      "payouts": [
+        576600,
+        240250,
+        144150
+      ],
+      "predecessorId": null
+    },
+    "sk:international:europe:2": {
+      "id": "sk:international:europe:2",
+      "group": "international",
+      "kingdom": "Europe",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 95000,
+      "payouts": [
+        568800,
+        237000,
+        142200
+      ],
+      "predecessorId": null
+    },
+    "sk:international:europe:3": {
+      "id": "sk:international:europe:3",
+      "group": "international",
+      "kingdom": "Europe",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 8,
+      "entryFee": 50000,
+      "payouts": [
+        300600,
+        125250,
+        75150
+      ],
+      "predecessorId": null
+    },
+    "sk:international:europe:4": {
+      "id": "sk:international:europe:4",
+      "group": "international",
+      "kingdom": "Europe",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 8,
+      "entryFee": 88000,
+      "payouts": [
+        527400,
+        219750,
+        131850
+      ],
+      "predecessorId": null
+    },
+    "sk:international:europe:5": {
+      "id": "sk:international:europe:5",
+      "group": "international",
+      "kingdom": "Europe",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 88000,
+      "payouts": [
+        527400,
+        219750,
+        131850
+      ],
+      "predecessorId": null
+    },
+    "sk:international:europe:6": {
+      "id": "sk:international:europe:6",
+      "group": "international",
+      "kingdom": "Europe",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        46200,
+        19250,
+        11550
+      ],
+      "predecessorId": null
+    },
+    "sk:international:europe:7": {
+      "id": "sk:international:europe:7",
+      "group": "international",
+      "kingdom": "Europe",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 6,
+      "entryFee": 46000,
+      "payouts": [
+        275400,
+        114750,
+        68850
+      ],
+      "predecessorId": null
+    },
+    "sk:international:europe:8": {
+      "id": "sk:international:europe:8",
+      "group": "international",
+      "kingdom": "Europe",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 8,
+      "entryFee": 99000,
+      "payouts": [
+        592200,
+        246750,
+        148050
+      ],
+      "predecessorId": null
+    },
+    "sk:international:europe:9": {
+      "id": "sk:international:europe:9",
+      "group": "international",
+      "kingdom": "Europe",
+      "kind": "fort",
+      "subKingdomIndex": 9,
+      "maxPlayers": 6,
+      "entryFee": 95000,
+      "payouts": [
+        568200,
+        236750,
+        142050
+      ],
+      "predecessorId": null
+    },
+    "sk:international:far_east:1": {
+      "id": "sk:international:far_east:1",
+      "group": "international",
+      "kingdom": "Far East",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 110000,
+      "payouts": [
+        658800,
+        274500,
+        164700
+      ],
+      "predecessorId": null
+    },
+    "sk:international:far_east:2": {
+      "id": "sk:international:far_east:2",
+      "group": "international",
+      "kingdom": "Far East",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 8,
+      "entryFee": 198000,
+      "payouts": [
+        1185000,
+        493750,
+        296250
+      ],
+      "predecessorId": null
+    },
+    "sk:international:far_east:3": {
+      "id": "sk:international:far_east:3",
+      "group": "international",
+      "kingdom": "Far East",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 84000,
+      "payouts": [
+        502200,
+        209250,
+        125550
+      ],
+      "predecessorId": null
+    },
+    "sk:international:far_east:4": {
+      "id": "sk:international:far_east:4",
+      "group": "international",
+      "kingdom": "Far East",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 8,
+      "entryFee": 111000,
+      "payouts": [
+        664200,
+        276750,
+        166050
+      ],
+      "predecessorId": null
+    },
+    "sk:international:far_east:5": {
+      "id": "sk:international:far_east:5",
+      "group": "international",
+      "kingdom": "Far East",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 186000,
+      "payouts": [
+        1114800,
+        464500,
+        278700
+      ],
+      "predecessorId": null
+    },
+    "sk:international:far_east:6": {
+      "id": "sk:international:far_east:6",
+      "group": "international",
+      "kingdom": "Far East",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        155400,
+        64750,
+        38850
+      ],
+      "predecessorId": null
+    },
+    "sk:international:far_east:7": {
+      "id": "sk:international:far_east:7",
+      "group": "international",
+      "kingdom": "Far East",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 6,
+      "entryFee": 185000,
+      "payouts": [
+        1111200,
+        463000,
+        277800
+      ],
+      "predecessorId": null
+    },
+    "sk:international:far_east:8": {
+      "id": "sk:international:far_east:8",
+      "group": "international",
+      "kingdom": "Far East",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 6,
+      "entryFee": 167000,
+      "payouts": [
+        1001400,
+        417250,
+        250350
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:1": {
+      "id": "sk:international:n_america:1",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 26000,
+      "payouts": [
+        154200,
+        64250,
+        38550
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:10": {
+      "id": "sk:international:n_america:10",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 10,
+      "maxPlayers": 8,
+      "entryFee": 27000,
+      "payouts": [
+        163800,
+        68250,
+        40950
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:11": {
+      "id": "sk:international:n_america:11",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 11,
+      "maxPlayers": 6,
+      "entryFee": 28000,
+      "payouts": [
+        166200,
+        69250,
+        41550
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:12": {
+      "id": "sk:international:n_america:12",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 12,
+      "maxPlayers": 6,
+      "entryFee": 29000,
+      "payouts": [
+        175200,
+        73000,
+        43800
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:13": {
+      "id": "sk:international:n_america:13",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 13,
+      "maxPlayers": 6,
+      "entryFee": 23000,
+      "payouts": [
+        137400,
+        57250,
+        34350
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:14": {
+      "id": "sk:international:n_america:14",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 14,
+      "maxPlayers": 6,
+      "entryFee": 28000,
+      "payouts": [
+        167400,
+        69750,
+        41850
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:15": {
+      "id": "sk:international:n_america:15",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 15,
+      "maxPlayers": 6,
+      "entryFee": 24000,
+      "payouts": [
+        142800,
+        59500,
+        35700
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:16": {
+      "id": "sk:international:n_america:16",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 16,
+      "maxPlayers": 8,
+      "entryFee": 23000,
+      "payouts": [
+        136200,
+        56750,
+        34050
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:17": {
+      "id": "sk:international:n_america:17",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 17,
+      "maxPlayers": 6,
+      "entryFee": 27000,
+      "payouts": [
+        159000,
+        66250,
+        39750
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:18": {
+      "id": "sk:international:n_america:18",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 18,
+      "maxPlayers": 8,
+      "entryFee": 48000,
+      "payouts": [
+        287400,
+        119750,
+        71850
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:19": {
+      "id": "sk:international:n_america:19",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 19,
+      "maxPlayers": 8,
+      "entryFee": 27000,
+      "payouts": [
+        163800,
+        68250,
+        40950
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:2": {
+      "id": "sk:international:n_america:2",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 8,
+      "entryFee": 49000,
+      "payouts": [
+        293400,
+        122250,
+        73350
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:20": {
+      "id": "sk:international:n_america:20",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 20,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        25200,
+        10500,
+        6300
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:21": {
+      "id": "sk:international:n_america:21",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 21,
+      "maxPlayers": 8,
+      "entryFee": 27000,
+      "payouts": [
+        163200,
+        68000,
+        40800
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:22": {
+      "id": "sk:international:n_america:22",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 22,
+      "maxPlayers": 6,
+      "entryFee": 26000,
+      "payouts": [
+        157200,
+        65500,
+        39300
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:23": {
+      "id": "sk:international:n_america:23",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 23,
+      "maxPlayers": 6,
+      "entryFee": 26000,
+      "payouts": [
+        154200,
+        64250,
+        38550
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:24": {
+      "id": "sk:international:n_america:24",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 24,
+      "maxPlayers": 6,
+      "entryFee": 28000,
+      "payouts": [
+        165600,
+        69000,
+        41400
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:25": {
+      "id": "sk:international:n_america:25",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 25,
+      "maxPlayers": 8,
+      "entryFee": 27000,
+      "payouts": [
+        162000,
+        67500,
+        40500
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:26": {
+      "id": "sk:international:n_america:26",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 26,
+      "maxPlayers": 8,
+      "entryFee": 26000,
+      "payouts": [
+        154800,
+        64500,
+        38700
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:27": {
+      "id": "sk:international:n_america:27",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 27,
+      "maxPlayers": 8,
+      "entryFee": 29000,
+      "payouts": [
+        173400,
+        72250,
+        43350
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:28": {
+      "id": "sk:international:n_america:28",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 28,
+      "maxPlayers": 6,
+      "entryFee": 27000,
+      "payouts": [
+        164400,
+        68500,
+        41100
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:29": {
+      "id": "sk:international:n_america:29",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 29,
+      "maxPlayers": 6,
+      "entryFee": 24000,
+      "payouts": [
+        141000,
+        58750,
+        35250
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:3": {
+      "id": "sk:international:n_america:3",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 27000,
+      "payouts": [
+        163200,
+        68000,
+        40800
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:30": {
+      "id": "sk:international:n_america:30",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 30,
+      "maxPlayers": 6,
+      "entryFee": 26000,
+      "payouts": [
+        154200,
+        64250,
+        38550
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:31": {
+      "id": "sk:international:n_america:31",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 31,
+      "maxPlayers": 8,
+      "entryFee": 26000,
+      "payouts": [
+        156600,
+        65250,
+        39150
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:32": {
+      "id": "sk:international:n_america:32",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 32,
+      "maxPlayers": 6,
+      "entryFee": 27000,
+      "payouts": [
+        163200,
+        68000,
+        40800
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:33": {
+      "id": "sk:international:n_america:33",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 33,
+      "maxPlayers": 8,
+      "entryFee": 46000,
+      "payouts": [
+        274200,
+        114250,
+        68550
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:34": {
+      "id": "sk:international:n_america:34",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 34,
+      "maxPlayers": 6,
+      "entryFee": 23000,
+      "payouts": [
+        136800,
+        57000,
+        34200
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:35": {
+      "id": "sk:international:n_america:35",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 35,
+      "maxPlayers": 6,
+      "entryFee": 23000,
+      "payouts": [
+        138000,
+        57500,
+        34500
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:36": {
+      "id": "sk:international:n_america:36",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 36,
+      "maxPlayers": 6,
+      "entryFee": 28000,
+      "payouts": [
+        166200,
+        69250,
+        41550
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:37": {
+      "id": "sk:international:n_america:37",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 37,
+      "maxPlayers": 8,
+      "entryFee": 28000,
+      "payouts": [
+        168000,
+        70000,
+        42000
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:38": {
+      "id": "sk:international:n_america:38",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 38,
+      "maxPlayers": 6,
+      "entryFee": 26000,
+      "payouts": [
+        156600,
+        65250,
+        39150
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:39": {
+      "id": "sk:international:n_america:39",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 39,
+      "maxPlayers": 6,
+      "entryFee": 25000,
+      "payouts": [
+        151200,
+        63000,
+        37800
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:4": {
+      "id": "sk:international:n_america:4",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 26000,
+      "payouts": [
+        154200,
+        64250,
+        38550
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:40": {
+      "id": "sk:international:n_america:40",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 40,
+      "maxPlayers": 6,
+      "entryFee": 26000,
+      "payouts": [
+        157200,
+        65500,
+        39300
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:41": {
+      "id": "sk:international:n_america:41",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 41,
+      "maxPlayers": 6,
+      "entryFee": 26000,
+      "payouts": [
+        154800,
+        64500,
+        38700
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:42": {
+      "id": "sk:international:n_america:42",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 42,
+      "maxPlayers": 6,
+      "entryFee": 23000,
+      "payouts": [
+        138000,
+        57500,
+        34500
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:43": {
+      "id": "sk:international:n_america:43",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 43,
+      "maxPlayers": 6,
+      "entryFee": 49000,
+      "payouts": [
+        296400,
+        123500,
+        74100
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:5": {
+      "id": "sk:international:n_america:5",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 8,
+      "entryFee": 26000,
+      "payouts": [
+        153000,
+        63750,
+        38250
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:6": {
+      "id": "sk:international:n_america:6",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 8,
+      "entryFee": 24000,
+      "payouts": [
+        144000,
+        60000,
+        36000
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:7": {
+      "id": "sk:international:n_america:7",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 6,
+      "entryFee": 24000,
+      "payouts": [
+        141600,
+        59000,
+        35400
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:8": {
+      "id": "sk:international:n_america:8",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 6,
+      "entryFee": 26000,
+      "payouts": [
+        154800,
+        64500,
+        38700
+      ],
+      "predecessorId": null
+    },
+    "sk:international:n_america:9": {
+      "id": "sk:international:n_america:9",
+      "group": "international",
+      "kingdom": "N. America",
+      "kind": "fort",
+      "subKingdomIndex": 9,
+      "maxPlayers": 6,
+      "entryFee": 25000,
+      "payouts": [
+        151800,
+        63250,
+        37950
+      ],
+      "predecessorId": null
+    },
+    "sk:international:persia:1": {
+      "id": "sk:international:persia:1",
+      "group": "international",
+      "kingdom": "Persia",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        123000,
+        51250,
+        30750
+      ],
+      "predecessorId": null
+    },
+    "sk:international:persia:2": {
+      "id": "sk:international:persia:2",
+      "group": "international",
+      "kingdom": "Persia",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 108000,
+      "payouts": [
+        645000,
+        268750,
+        161250
+      ],
+      "predecessorId": null
+    },
+    "sk:international:persia:3": {
+      "id": "sk:international:persia:3",
+      "group": "international",
+      "kingdom": "Persia",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 213000,
+      "payouts": [
+        1276200,
+        531750,
+        319050
+      ],
+      "predecessorId": null
+    },
+    "sk:international:persia:4": {
+      "id": "sk:international:persia:4",
+      "group": "international",
+      "kingdom": "Persia",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 123000,
+      "payouts": [
+        735000,
+        306250,
+        183750
+      ],
+      "predecessorId": null
+    },
+    "sk:international:persia:5": {
+      "id": "sk:international:persia:5",
+      "group": "international",
+      "kingdom": "Persia",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 8,
+      "entryFee": 126000,
+      "payouts": [
+        753600,
+        314000,
+        188400
+      ],
+      "predecessorId": null
+    },
+    "sk:international:persia:6": {
+      "id": "sk:international:persia:6",
+      "group": "international",
+      "kingdom": "Persia",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 8,
+      "entryFee": 117000,
+      "payouts": [
+        702600,
+        292750,
+        175650
+      ],
+      "predecessorId": null
+    },
+    "sk:international:persia:7": {
+      "id": "sk:international:persia:7",
+      "group": "international",
+      "kingdom": "Persia",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 6,
+      "entryFee": 118000,
+      "payouts": [
+        708600,
+        295250,
+        177150
+      ],
+      "predecessorId": null
+    },
+    "sk:international:persia:8": {
+      "id": "sk:international:persia:8",
+      "group": "international",
+      "kingdom": "Persia",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 6,
+      "entryFee": 127000,
+      "payouts": [
+        760800,
+        317000,
+        190200
+      ],
+      "predecessorId": null
+    },
+    "sk:international:s_america:1": {
+      "id": "sk:international:s_america:1",
+      "group": "international",
+      "kingdom": "S. America",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 8,
+      "entryFee": 116000,
+      "payouts": [
+        696000,
+        290000,
+        174000
+      ],
+      "predecessorId": null
+    },
+    "sk:international:s_america:2": {
+      "id": "sk:international:s_america:2",
+      "group": "international",
+      "kingdom": "S. America",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        92400,
+        38500,
+        23100
+      ],
+      "predecessorId": null
+    },
+    "sk:international:s_america:3": {
+      "id": "sk:international:s_america:3",
+      "group": "international",
+      "kingdom": "S. America",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 140000,
+      "payouts": [
+        841200,
+        350500,
+        210300
+      ],
+      "predecessorId": null
+    },
+    "sk:international:s_america:4": {
+      "id": "sk:international:s_america:4",
+      "group": "international",
+      "kingdom": "S. America",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 8,
+      "entryFee": 115000,
+      "payouts": [
+        690000,
+        287500,
+        172500
+      ],
+      "predecessorId": null
+    },
+    "sk:international:s_america:5": {
+      "id": "sk:international:s_america:5",
+      "group": "international",
+      "kingdom": "S. America",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 133000,
+      "payouts": [
+        797400,
+        332250,
+        199350
+      ],
+      "predecessorId": null
+    },
+    "sk:international:s_america:6": {
+      "id": "sk:international:s_america:6",
+      "group": "international",
+      "kingdom": "S. America",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 135000,
+      "payouts": [
+        810000,
+        337500,
+        202500
+      ],
+      "predecessorId": null
+    },
+    "sk:international:s_america:7": {
+      "id": "sk:international:s_america:7",
+      "group": "international",
+      "kingdom": "S. America",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 6,
+      "entryFee": 138000,
+      "payouts": [
+        828000,
+        345000,
+        207000
+      ],
+      "predecessorId": null
+    },
+    "sk:international:s_america:8": {
+      "id": "sk:international:s_america:8",
+      "group": "international",
+      "kingdom": "S. America",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 6,
+      "entryFee": 93000,
+      "payouts": [
+        556200,
+        231750,
+        139050
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:california:1": {
+      "id": "sk:northAmerica:california:1",
+      "group": "northAmerica",
+      "kingdom": "California",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        211200,
+        88000,
+        52800
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:california:2": {
+      "id": "sk:northAmerica:california:2",
+      "group": "northAmerica",
+      "kingdom": "California",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 8,
+      "entryFee": 243000,
+      "payouts": [
+        1459200,
+        608000,
+        364800
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:california:3": {
+      "id": "sk:northAmerica:california:3",
+      "group": "northAmerica",
+      "kingdom": "California",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 8,
+      "entryFee": 247000,
+      "payouts": [
+        1483800,
+        618250,
+        370950
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:california:4": {
+      "id": "sk:northAmerica:california:4",
+      "group": "northAmerica",
+      "kingdom": "California",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 211000,
+      "payouts": [
+        1266600,
+        527750,
+        316650
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:california:5": {
+      "id": "sk:northAmerica:california:5",
+      "group": "northAmerica",
+      "kingdom": "California",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 261000,
+      "payouts": [
+        1567200,
+        653000,
+        391800
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:california:6": {
+      "id": "sk:northAmerica:california:6",
+      "group": "northAmerica",
+      "kingdom": "California",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 216000,
+      "payouts": [
+        1293600,
+        539000,
+        323400
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:colorado:1": {
+      "id": "sk:northAmerica:colorado:1",
+      "group": "northAmerica",
+      "kingdom": "Colorado",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 8,
+      "entryFee": 526000,
+      "payouts": [
+        3157200,
+        1315500,
+        789300
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:colorado:2": {
+      "id": "sk:northAmerica:colorado:2",
+      "group": "northAmerica",
+      "kingdom": "Colorado",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 298000,
+      "payouts": [
+        1787400,
+        744750,
+        446850
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:colorado:3": {
+      "id": "sk:northAmerica:colorado:3",
+      "group": "northAmerica",
+      "kingdom": "Colorado",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        297600,
+        124000,
+        74400
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:dominion_of_canada:1": {
+      "id": "sk:northAmerica:dominion_of_canada:1",
+      "group": "northAmerica",
+      "kingdom": "Dominion of Canada",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 770000,
+      "payouts": [
+        4617000,
+        1923750,
+        1154250
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:dominion_of_canada:2": {
+      "id": "sk:northAmerica:dominion_of_canada:2",
+      "group": "northAmerica",
+      "kingdom": "Dominion of Canada",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        431400,
+        179750,
+        107850
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:florida:1": {
+      "id": "sk:northAmerica:florida:1",
+      "group": "northAmerica",
+      "kingdom": "Florida",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 8,
+      "entryFee": 201000,
+      "payouts": [
+        1205400,
+        502250,
+        301350
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:florida:2": {
+      "id": "sk:northAmerica:florida:2",
+      "group": "northAmerica",
+      "kingdom": "Florida",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 118000,
+      "payouts": [
+        708600,
+        295250,
+        177150
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:florida:3": {
+      "id": "sk:northAmerica:florida:3",
+      "group": "northAmerica",
+      "kingdom": "Florida",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 8,
+      "entryFee": 102000,
+      "payouts": [
+        613200,
+        255500,
+        153300
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:florida:4": {
+      "id": "sk:northAmerica:florida:4",
+      "group": "northAmerica",
+      "kingdom": "Florida",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 125000,
+      "payouts": [
+        748200,
+        311750,
+        187050
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:florida:5": {
+      "id": "sk:northAmerica:florida:5",
+      "group": "northAmerica",
+      "kingdom": "Florida",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        99000,
+        41250,
+        24750
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:florida:6": {
+      "id": "sk:northAmerica:florida:6",
+      "group": "northAmerica",
+      "kingdom": "Florida",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 8,
+      "entryFee": 103000,
+      "payouts": [
+        620400,
+        258500,
+        155100
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:florida:7": {
+      "id": "sk:northAmerica:florida:7",
+      "group": "northAmerica",
+      "kingdom": "Florida",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 6,
+      "entryFee": 101000,
+      "payouts": [
+        608400,
+        253500,
+        152100
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:florida:8": {
+      "id": "sk:northAmerica:florida:8",
+      "group": "northAmerica",
+      "kingdom": "Florida",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 6,
+      "entryFee": 99000,
+      "payouts": [
+        594000,
+        247500,
+        148500
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:florida:9": {
+      "id": "sk:northAmerica:florida:9",
+      "group": "northAmerica",
+      "kingdom": "Florida",
+      "kind": "fort",
+      "subKingdomIndex": 9,
+      "maxPlayers": 6,
+      "entryFee": 202000,
+      "payouts": [
+        1210200,
+        504250,
+        302550
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:illinois:1": {
+      "id": "sk:northAmerica:illinois:1",
+      "group": "northAmerica",
+      "kingdom": "Illinois",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 937000,
+      "payouts": [
+        5620200,
+        2341750,
+        1405050
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:illinois:2": {
+      "id": "sk:northAmerica:illinois:2",
+      "group": "northAmerica",
+      "kingdom": "Illinois",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        496200,
+        206750,
+        124050
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:kansas:1": {
+      "id": "sk:northAmerica:kansas:1",
+      "group": "northAmerica",
+      "kingdom": "Kansas",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 262000,
+      "payouts": [
+        1572600,
+        655250,
+        393150
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:kansas:2": {
+      "id": "sk:northAmerica:kansas:2",
+      "group": "northAmerica",
+      "kingdom": "Kansas",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 8,
+      "entryFee": 503000,
+      "payouts": [
+        3020400,
+        1258500,
+        755100
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:kansas:3": {
+      "id": "sk:northAmerica:kansas:3",
+      "group": "northAmerica",
+      "kingdom": "Kansas",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        261600,
+        109000,
+        65400
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:massachusetts:1": {
+      "id": "sk:northAmerica:massachusetts:1",
+      "group": "northAmerica",
+      "kingdom": "Massachusetts",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        460800,
+        192000,
+        115200
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:massachusetts:2": {
+      "id": "sk:northAmerica:massachusetts:2",
+      "group": "northAmerica",
+      "kingdom": "Massachusetts",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 894000,
+      "payouts": [
+        5364000,
+        2235000,
+        1341000
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:new_york:1": {
+      "id": "sk:northAmerica:new_york:1",
+      "group": "northAmerica",
+      "kingdom": "New York",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 127000,
+      "payouts": [
+        760200,
+        316750,
+        190050
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:new_york:10": {
+      "id": "sk:northAmerica:new_york:10",
+      "group": "northAmerica",
+      "kingdom": "New York",
+      "kind": "fort",
+      "subKingdomIndex": 10,
+      "maxPlayers": 6,
+      "entryFee": 127000,
+      "payouts": [
+        760200,
+        316750,
+        190050
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:new_york:2": {
+      "id": "sk:northAmerica:new_york:2",
+      "group": "northAmerica",
+      "kingdom": "New York",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 201000,
+      "payouts": [
+        1205400,
+        502250,
+        301350
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:new_york:3": {
+      "id": "sk:northAmerica:new_york:3",
+      "group": "northAmerica",
+      "kingdom": "New York",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 96000,
+      "payouts": [
+        577200,
+        240500,
+        144300
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:new_york:4": {
+      "id": "sk:northAmerica:new_york:4",
+      "group": "northAmerica",
+      "kingdom": "New York",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        95400,
+        39750,
+        23850
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:new_york:5": {
+      "id": "sk:northAmerica:new_york:5",
+      "group": "northAmerica",
+      "kingdom": "New York",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 8,
+      "entryFee": 113000,
+      "payouts": [
+        677400,
+        282250,
+        169350
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:new_york:6": {
+      "id": "sk:northAmerica:new_york:6",
+      "group": "northAmerica",
+      "kingdom": "New York",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 108000,
+      "payouts": [
+        646200,
+        269250,
+        161550
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:new_york:7": {
+      "id": "sk:northAmerica:new_york:7",
+      "group": "northAmerica",
+      "kingdom": "New York",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 8,
+      "entryFee": 122000,
+      "payouts": [
+        729600,
+        304000,
+        182400
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:new_york:8": {
+      "id": "sk:northAmerica:new_york:8",
+      "group": "northAmerica",
+      "kingdom": "New York",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 6,
+      "entryFee": 128000,
+      "payouts": [
+        766200,
+        319250,
+        191550
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:new_york:9": {
+      "id": "sk:northAmerica:new_york:9",
+      "group": "northAmerica",
+      "kingdom": "New York",
+      "kind": "fort",
+      "subKingdomIndex": 9,
+      "maxPlayers": 8,
+      "entryFee": 129000,
+      "payouts": [
+        772200,
+        321750,
+        193050
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:texas:1": {
+      "id": "sk:northAmerica:texas:1",
+      "group": "northAmerica",
+      "kingdom": "Texas",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 312000,
+      "payouts": [
+        1870800,
+        779500,
+        467700
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:texas:2": {
+      "id": "sk:northAmerica:texas:2",
+      "group": "northAmerica",
+      "kingdom": "Texas",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        313800,
+        130750,
+        78450
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:texas:3": {
+      "id": "sk:northAmerica:texas:3",
+      "group": "northAmerica",
+      "kingdom": "Texas",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 8,
+      "entryFee": 330000,
+      "payouts": [
+        1978200,
+        824250,
+        494550
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:texas:4": {
+      "id": "sk:northAmerica:texas:4",
+      "group": "northAmerica",
+      "kingdom": "Texas",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 423000,
+      "payouts": [
+        2536200,
+        1056750,
+        634050
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:virginia:1": {
+      "id": "sk:northAmerica:virginia:1",
+      "group": "northAmerica",
+      "kingdom": "Virginia",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        451200,
+        188000,
+        112800
+      ],
+      "predecessorId": null
+    },
+    "sk:northAmerica:virginia:2": {
+      "id": "sk:northAmerica:virginia:2",
+      "group": "northAmerica",
+      "kingdom": "Virginia",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 847000,
+      "payouts": [
+        5082600,
+        2117750,
+        1270650
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:alaska:1": {
+      "id": "sk:oceania:alaska:1",
+      "group": "oceania",
+      "kingdom": "Alaska",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 147000,
+      "payouts": [
+        882600,
+        367750,
+        220650
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:alaska:2": {
+      "id": "sk:oceania:alaska:2",
+      "group": "oceania",
+      "kingdom": "Alaska",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 170000,
+      "payouts": [
+        1021200,
+        425500,
+        255300
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:alaska:3": {
+      "id": "sk:oceania:alaska:3",
+      "group": "oceania",
+      "kingdom": "Alaska",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        138000,
+        57500,
+        34500
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:alaska:4": {
+      "id": "sk:oceania:alaska:4",
+      "group": "oceania",
+      "kingdom": "Alaska",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 8,
+      "entryFee": 176000,
+      "payouts": [
+        1054200,
+        439250,
+        263550
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:alaska:5": {
+      "id": "sk:oceania:alaska:5",
+      "group": "oceania",
+      "kingdom": "Alaska",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 173000,
+      "payouts": [
+        1037400,
+        432250,
+        259350
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:alaska:6": {
+      "id": "sk:oceania:alaska:6",
+      "group": "oceania",
+      "kingdom": "Alaska",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 138000,
+      "payouts": [
+        826200,
+        344250,
+        206550
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:alaska:7": {
+      "id": "sk:oceania:alaska:7",
+      "group": "oceania",
+      "kingdom": "Alaska",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 8,
+      "entryFee": 165000,
+      "payouts": [
+        989400,
+        412250,
+        247350
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:american_isles:1": {
+      "id": "sk:oceania:american_isles:1",
+      "group": "oceania",
+      "kingdom": "American Isles",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 94000,
+      "payouts": [
+        564000,
+        235000,
+        141000
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:american_isles:10": {
+      "id": "sk:oceania:american_isles:10",
+      "group": "oceania",
+      "kingdom": "American Isles",
+      "kind": "fort",
+      "subKingdomIndex": 10,
+      "maxPlayers": 8,
+      "entryFee": 93000,
+      "payouts": [
+        560400,
+        233500,
+        140100
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:american_isles:2": {
+      "id": "sk:oceania:american_isles:2",
+      "group": "oceania",
+      "kingdom": "American Isles",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 87000,
+      "payouts": [
+        519000,
+        216250,
+        129750
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:american_isles:3": {
+      "id": "sk:oceania:american_isles:3",
+      "group": "oceania",
+      "kingdom": "American Isles",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 84000,
+      "payouts": [
+        504600,
+        210250,
+        126150
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:american_isles:4": {
+      "id": "sk:oceania:american_isles:4",
+      "group": "oceania",
+      "kingdom": "American Isles",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 103000,
+      "payouts": [
+        619800,
+        258250,
+        154950
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:american_isles:5": {
+      "id": "sk:oceania:american_isles:5",
+      "group": "oceania",
+      "kingdom": "American Isles",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        87600,
+        36500,
+        21900
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:american_isles:6": {
+      "id": "sk:oceania:american_isles:6",
+      "group": "oceania",
+      "kingdom": "American Isles",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 88000,
+      "payouts": [
+        527400,
+        219750,
+        131850
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:american_isles:7": {
+      "id": "sk:oceania:american_isles:7",
+      "group": "oceania",
+      "kingdom": "American Isles",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 8,
+      "entryFee": 87000,
+      "payouts": [
+        519000,
+        216250,
+        129750
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:american_isles:8": {
+      "id": "sk:oceania:american_isles:8",
+      "group": "oceania",
+      "kingdom": "American Isles",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 8,
+      "entryFee": 104000,
+      "payouts": [
+        625800,
+        260750,
+        156450
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:american_isles:9": {
+      "id": "sk:oceania:american_isles:9",
+      "group": "oceania",
+      "kingdom": "American Isles",
+      "kind": "fort",
+      "subKingdomIndex": 9,
+      "maxPlayers": 6,
+      "entryFee": 103000,
+      "payouts": [
+        615000,
+        256250,
+        153750
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:british_isles:1": {
+      "id": "sk:oceania:british_isles:1",
+      "group": "oceania",
+      "kingdom": "British Isles",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 8,
+      "entryFee": 112000,
+      "payouts": [
+        672600,
+        280250,
+        168150
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:british_isles:10": {
+      "id": "sk:oceania:british_isles:10",
+      "group": "oceania",
+      "kingdom": "British Isles",
+      "kind": "fort",
+      "subKingdomIndex": 10,
+      "maxPlayers": 6,
+      "entryFee": 172000,
+      "payouts": [
+        1034400,
+        431000,
+        258600
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:british_isles:11": {
+      "id": "sk:oceania:british_isles:11",
+      "group": "oceania",
+      "kingdom": "British Isles",
+      "kind": "fort",
+      "subKingdomIndex": 11,
+      "maxPlayers": 6,
+      "entryFee": 93000,
+      "payouts": [
+        556800,
+        232000,
+        139200
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:british_isles:2": {
+      "id": "sk:oceania:british_isles:2",
+      "group": "oceania",
+      "kingdom": "British Isles",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 8,
+      "entryFee": 106000,
+      "payouts": [
+        636600,
+        265250,
+        159150
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:british_isles:3": {
+      "id": "sk:oceania:british_isles:3",
+      "group": "oceania",
+      "kingdom": "British Isles",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 100000,
+      "payouts": [
+        599400,
+        249750,
+        149850
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:british_isles:4": {
+      "id": "sk:oceania:british_isles:4",
+      "group": "oceania",
+      "kingdom": "British Isles",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 113000,
+      "payouts": [
+        678000,
+        282500,
+        169500
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:british_isles:5": {
+      "id": "sk:oceania:british_isles:5",
+      "group": "oceania",
+      "kingdom": "British Isles",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 8,
+      "entryFee": 111000,
+      "payouts": [
+        667800,
+        278250,
+        166950
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:british_isles:6": {
+      "id": "sk:oceania:british_isles:6",
+      "group": "oceania",
+      "kingdom": "British Isles",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 93000,
+      "payouts": [
+        556800,
+        232000,
+        139200
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:british_isles:7": {
+      "id": "sk:oceania:british_isles:7",
+      "group": "oceania",
+      "kingdom": "British Isles",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        100200,
+        41750,
+        25050
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:british_isles:8": {
+      "id": "sk:oceania:british_isles:8",
+      "group": "oceania",
+      "kingdom": "British Isles",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 6,
+      "entryFee": 112000,
+      "payouts": [
+        673200,
+        280500,
+        168300
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:british_isles:9": {
+      "id": "sk:oceania:british_isles:9",
+      "group": "oceania",
+      "kingdom": "British Isles",
+      "kind": "fort",
+      "subKingdomIndex": 9,
+      "maxPlayers": 6,
+      "entryFee": 114000,
+      "payouts": [
+        681600,
+        284000,
+        170400
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:caribbean:1": {
+      "id": "sk:oceania:caribbean:1",
+      "group": "oceania",
+      "kingdom": "Caribbean",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 8,
+      "entryFee": 223000,
+      "payouts": [
+        1337400,
+        557250,
+        334350
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:caribbean:10": {
+      "id": "sk:oceania:caribbean:10",
+      "group": "oceania",
+      "kingdom": "Caribbean",
+      "kind": "fort",
+      "subKingdomIndex": 10,
+      "maxPlayers": 6,
+      "entryFee": 108000,
+      "payouts": [
+        647400,
+        269750,
+        161850
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:caribbean:2": {
+      "id": "sk:oceania:caribbean:2",
+      "group": "oceania",
+      "kingdom": "Caribbean",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 107000,
+      "payouts": [
+        642000,
+        267500,
+        160500
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:caribbean:3": {
+      "id": "sk:oceania:caribbean:3",
+      "group": "oceania",
+      "kingdom": "Caribbean",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 122000,
+      "payouts": [
+        730800,
+        304500,
+        182700
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:caribbean:4": {
+      "id": "sk:oceania:caribbean:4",
+      "group": "oceania",
+      "kingdom": "Caribbean",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 8,
+      "entryFee": 129000,
+      "payouts": [
+        772200,
+        321750,
+        193050
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:caribbean:5": {
+      "id": "sk:oceania:caribbean:5",
+      "group": "oceania",
+      "kingdom": "Caribbean",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        117600,
+        49000,
+        29400
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:caribbean:6": {
+      "id": "sk:oceania:caribbean:6",
+      "group": "oceania",
+      "kingdom": "Caribbean",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 126000,
+      "payouts": [
+        755400,
+        314750,
+        188850
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:caribbean:7": {
+      "id": "sk:oceania:caribbean:7",
+      "group": "oceania",
+      "kingdom": "Caribbean",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 6,
+      "entryFee": 118000,
+      "payouts": [
+        706200,
+        294250,
+        176550
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:caribbean:8": {
+      "id": "sk:oceania:caribbean:8",
+      "group": "oceania",
+      "kingdom": "Caribbean",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 8,
+      "entryFee": 120000,
+      "payouts": [
+        719400,
+        299750,
+        179850
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:caribbean:9": {
+      "id": "sk:oceania:caribbean:9",
+      "group": "oceania",
+      "kingdom": "Caribbean",
+      "kind": "fort",
+      "subKingdomIndex": 9,
+      "maxPlayers": 6,
+      "entryFee": 122000,
+      "payouts": [
+        731400,
+        304750,
+        182850
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:dragonland:1": {
+      "id": "sk:oceania:dragonland:1",
+      "group": "oceania",
+      "kingdom": "Dragonland",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 124000,
+      "payouts": [
+        742800,
+        309500,
+        185700
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:dragonland:2": {
+      "id": "sk:oceania:dragonland:2",
+      "group": "oceania",
+      "kingdom": "Dragonland",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 139000,
+      "payouts": [
+        832800,
+        347000,
+        208200
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:dragonland:3": {
+      "id": "sk:oceania:dragonland:3",
+      "group": "oceania",
+      "kingdom": "Dragonland",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        111600,
+        46500,
+        27900
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:dragonland:4": {
+      "id": "sk:oceania:dragonland:4",
+      "group": "oceania",
+      "kingdom": "Dragonland",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 8,
+      "entryFee": 136000,
+      "payouts": [
+        813600,
+        339000,
+        203400
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:dragonland:5": {
+      "id": "sk:oceania:dragonland:5",
+      "group": "oceania",
+      "kingdom": "Dragonland",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 125000,
+      "payouts": [
+        750000,
+        312500,
+        187500
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:dragonland:6": {
+      "id": "sk:oceania:dragonland:6",
+      "group": "oceania",
+      "kingdom": "Dragonland",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 112000,
+      "payouts": [
+        669600,
+        279000,
+        167400
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:dragonland:7": {
+      "id": "sk:oceania:dragonland:7",
+      "group": "oceania",
+      "kingdom": "Dragonland",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 8,
+      "entryFee": 130000,
+      "payouts": [
+        781800,
+        325750,
+        195450
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:dragonland:8": {
+      "id": "sk:oceania:dragonland:8",
+      "group": "oceania",
+      "kingdom": "Dragonland",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 6,
+      "entryFee": 124000,
+      "payouts": [
+        742800,
+        309500,
+        185700
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:dutch_isles:1": {
+      "id": "sk:oceania:dutch_isles:1",
+      "group": "oceania",
+      "kingdom": "Dutch Isles",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 125000,
+      "payouts": [
+        748800,
+        312000,
+        187200
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:dutch_isles:2": {
+      "id": "sk:oceania:dutch_isles:2",
+      "group": "oceania",
+      "kingdom": "Dutch Isles",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        94800,
+        39500,
+        23700
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:dutch_isles:3": {
+      "id": "sk:oceania:dutch_isles:3",
+      "group": "oceania",
+      "kingdom": "Dutch Isles",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 8,
+      "entryFee": 134000,
+      "payouts": [
+        803400,
+        334750,
+        200850
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:dutch_isles:4": {
+      "id": "sk:oceania:dutch_isles:4",
+      "group": "oceania",
+      "kingdom": "Dutch Isles",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 95000,
+      "payouts": [
+        571200,
+        238000,
+        142800
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:dutch_isles:5": {
+      "id": "sk:oceania:dutch_isles:5",
+      "group": "oceania",
+      "kingdom": "Dutch Isles",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 109000,
+      "payouts": [
+        654000,
+        272500,
+        163500
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:dutch_isles:6": {
+      "id": "sk:oceania:dutch_isles:6",
+      "group": "oceania",
+      "kingdom": "Dutch Isles",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 133000,
+      "payouts": [
+        796200,
+        331750,
+        199050
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:dutch_isles:7": {
+      "id": "sk:oceania:dutch_isles:7",
+      "group": "oceania",
+      "kingdom": "Dutch Isles",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 6,
+      "entryFee": 135000,
+      "payouts": [
+        808200,
+        336750,
+        202050
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:dutch_isles:8": {
+      "id": "sk:oceania:dutch_isles:8",
+      "group": "oceania",
+      "kingdom": "Dutch Isles",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 8,
+      "entryFee": 128000,
+      "payouts": [
+        766800,
+        319500,
+        191700
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:french_isles:1": {
+      "id": "sk:oceania:french_isles:1",
+      "group": "oceania",
+      "kingdom": "French Isles",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 83000,
+      "payouts": [
+        498600,
+        207750,
+        124650
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:french_isles:10": {
+      "id": "sk:oceania:french_isles:10",
+      "group": "oceania",
+      "kingdom": "French Isles",
+      "kind": "fort",
+      "subKingdomIndex": 10,
+      "maxPlayers": 8,
+      "entryFee": 85000,
+      "payouts": [
+        507600,
+        211500,
+        126900
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:french_isles:11": {
+      "id": "sk:oceania:french_isles:11",
+      "group": "oceania",
+      "kingdom": "French Isles",
+      "kind": "fort",
+      "subKingdomIndex": 11,
+      "maxPlayers": 6,
+      "entryFee": 85000,
+      "payouts": [
+        511200,
+        213000,
+        127800
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:french_isles:12": {
+      "id": "sk:oceania:french_isles:12",
+      "group": "oceania",
+      "kingdom": "French Isles",
+      "kind": "fort",
+      "subKingdomIndex": 12,
+      "maxPlayers": 8,
+      "entryFee": 74000,
+      "payouts": [
+        443400,
+        184750,
+        110850
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:french_isles:2": {
+      "id": "sk:oceania:french_isles:2",
+      "group": "oceania",
+      "kingdom": "French Isles",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 88000,
+      "payouts": [
+        529800,
+        220750,
+        132450
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:french_isles:3": {
+      "id": "sk:oceania:french_isles:3",
+      "group": "oceania",
+      "kingdom": "French Isles",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 90000,
+      "payouts": [
+        537600,
+        224000,
+        134400
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:french_isles:4": {
+      "id": "sk:oceania:french_isles:4",
+      "group": "oceania",
+      "kingdom": "French Isles",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 93000,
+      "payouts": [
+        558000,
+        232500,
+        139500
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:french_isles:5": {
+      "id": "sk:oceania:french_isles:5",
+      "group": "oceania",
+      "kingdom": "French Isles",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 8,
+      "entryFee": 82000,
+      "payouts": [
+        493800,
+        205750,
+        123450
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:french_isles:6": {
+      "id": "sk:oceania:french_isles:6",
+      "group": "oceania",
+      "kingdom": "French Isles",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 73000,
+      "payouts": [
+        436800,
+        182000,
+        109200
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:french_isles:7": {
+      "id": "sk:oceania:french_isles:7",
+      "group": "oceania",
+      "kingdom": "French Isles",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 6,
+      "entryFee": 78000,
+      "payouts": [
+        465600,
+        194000,
+        116400
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:french_isles:8": {
+      "id": "sk:oceania:french_isles:8",
+      "group": "oceania",
+      "kingdom": "French Isles",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        72600,
+        30250,
+        18150
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:french_isles:9": {
+      "id": "sk:oceania:french_isles:9",
+      "group": "oceania",
+      "kingdom": "French Isles",
+      "kind": "fort",
+      "subKingdomIndex": 9,
+      "maxPlayers": 8,
+      "entryFee": 82000,
+      "payouts": [
+        491400,
+        204750,
+        122850
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:indian_ocean:1": {
+      "id": "sk:oceania:indian_ocean:1",
+      "group": "oceania",
+      "kingdom": "Indian Ocean",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 98000,
+      "payouts": [
+        586800,
+        244500,
+        146700
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:indian_ocean:10": {
+      "id": "sk:oceania:indian_ocean:10",
+      "group": "oceania",
+      "kingdom": "Indian Ocean",
+      "kind": "fort",
+      "subKingdomIndex": 10,
+      "maxPlayers": 6,
+      "entryFee": 94000,
+      "payouts": [
+        565800,
+        235750,
+        141450
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:indian_ocean:2": {
+      "id": "sk:oceania:indian_ocean:2",
+      "group": "oceania",
+      "kingdom": "Indian Ocean",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 8,
+      "entryFee": 94000,
+      "payouts": [
+        561000,
+        233750,
+        140250
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:indian_ocean:3": {
+      "id": "sk:oceania:indian_ocean:3",
+      "group": "oceania",
+      "kingdom": "Indian Ocean",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 96000,
+      "payouts": [
+        576000,
+        240000,
+        144000
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:indian_ocean:4": {
+      "id": "sk:oceania:indian_ocean:4",
+      "group": "oceania",
+      "kingdom": "Indian Ocean",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 115000,
+      "payouts": [
+        692400,
+        288500,
+        173100
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:indian_ocean:5": {
+      "id": "sk:oceania:indian_ocean:5",
+      "group": "oceania",
+      "kingdom": "Indian Ocean",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 117000,
+      "payouts": [
+        702600,
+        292750,
+        175650
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:indian_ocean:6": {
+      "id": "sk:oceania:indian_ocean:6",
+      "group": "oceania",
+      "kingdom": "Indian Ocean",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 100000,
+      "payouts": [
+        601800,
+        250750,
+        150450
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:indian_ocean:7": {
+      "id": "sk:oceania:indian_ocean:7",
+      "group": "oceania",
+      "kingdom": "Indian Ocean",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 8,
+      "entryFee": 186000,
+      "payouts": [
+        1116000,
+        465000,
+        279000
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:indian_ocean:8": {
+      "id": "sk:oceania:indian_ocean:8",
+      "group": "oceania",
+      "kingdom": "Indian Ocean",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 8,
+      "entryFee": 192000,
+      "payouts": [
+        1153200,
+        480500,
+        288300
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:indian_ocean:9": {
+      "id": "sk:oceania:indian_ocean:9",
+      "group": "oceania",
+      "kingdom": "Indian Ocean",
+      "kind": "fort",
+      "subKingdomIndex": 9,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        99600,
+        41500,
+        24900
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:pacific:1": {
+      "id": "sk:oceania:pacific:1",
+      "group": "oceania",
+      "kingdom": "Pacific",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        89400,
+        37250,
+        22350
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:pacific:10": {
+      "id": "sk:oceania:pacific:10",
+      "group": "oceania",
+      "kingdom": "Pacific",
+      "kind": "fort",
+      "subKingdomIndex": 10,
+      "maxPlayers": 8,
+      "entryFee": 110000,
+      "payouts": [
+        661800,
+        275750,
+        165450
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:pacific:11": {
+      "id": "sk:oceania:pacific:11",
+      "group": "oceania",
+      "kingdom": "Pacific",
+      "kind": "fort",
+      "subKingdomIndex": 11,
+      "maxPlayers": 6,
+      "entryFee": 98000,
+      "payouts": [
+        586200,
+        244250,
+        146550
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:pacific:2": {
+      "id": "sk:oceania:pacific:2",
+      "group": "oceania",
+      "kingdom": "Pacific",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 91000,
+      "payouts": [
+        543600,
+        226500,
+        135900
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:pacific:3": {
+      "id": "sk:oceania:pacific:3",
+      "group": "oceania",
+      "kingdom": "Pacific",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 89000,
+      "payouts": [
+        536400,
+        223500,
+        134100
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:pacific:4": {
+      "id": "sk:oceania:pacific:4",
+      "group": "oceania",
+      "kingdom": "Pacific",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 6,
+      "entryFee": 119000,
+      "payouts": [
+        711000,
+        296250,
+        177750
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:pacific:5": {
+      "id": "sk:oceania:pacific:5",
+      "group": "oceania",
+      "kingdom": "Pacific",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 120000,
+      "payouts": [
+        720600,
+        300250,
+        180150
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:pacific:6": {
+      "id": "sk:oceania:pacific:6",
+      "group": "oceania",
+      "kingdom": "Pacific",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 8,
+      "entryFee": 97000,
+      "payouts": [
+        580800,
+        242000,
+        145200
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:pacific:7": {
+      "id": "sk:oceania:pacific:7",
+      "group": "oceania",
+      "kingdom": "Pacific",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 8,
+      "entryFee": 100000,
+      "payouts": [
+        597000,
+        248750,
+        149250
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:pacific:8": {
+      "id": "sk:oceania:pacific:8",
+      "group": "oceania",
+      "kingdom": "Pacific",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 6,
+      "entryFee": 104000,
+      "payouts": [
+        623400,
+        259750,
+        155850
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:pacific:9": {
+      "id": "sk:oceania:pacific:9",
+      "group": "oceania",
+      "kingdom": "Pacific",
+      "kind": "fort",
+      "subKingdomIndex": 9,
+      "maxPlayers": 6,
+      "entryFee": 100000,
+      "payouts": [
+        601800,
+        250750,
+        150450
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:straits:1": {
+      "id": "sk:oceania:straits:1",
+      "group": "oceania",
+      "kingdom": "Straits",
+      "kind": "fort",
+      "subKingdomIndex": 1,
+      "maxPlayers": 6,
+      "entryFee": 62000,
+      "payouts": [
+        369000,
+        153750,
+        92250
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:straits:10": {
+      "id": "sk:oceania:straits:10",
+      "group": "oceania",
+      "kingdom": "Straits",
+      "kind": "fort",
+      "subKingdomIndex": 10,
+      "maxPlayers": 6,
+      "entryFee": 66000,
+      "payouts": [
+        397200,
+        165500,
+        99300
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:straits:11": {
+      "id": "sk:oceania:straits:11",
+      "group": "oceania",
+      "kingdom": "Straits",
+      "kind": "fort",
+      "subKingdomIndex": 11,
+      "maxPlayers": 6,
+      "entryFee": 0,
+      "payouts": [
+        63600,
+        26500,
+        15900
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:straits:12": {
+      "id": "sk:oceania:straits:12",
+      "group": "oceania",
+      "kingdom": "Straits",
+      "kind": "fort",
+      "subKingdomIndex": 12,
+      "maxPlayers": 8,
+      "entryFee": 66000,
+      "payouts": [
+        394200,
+        164250,
+        98550
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:straits:13": {
+      "id": "sk:oceania:straits:13",
+      "group": "oceania",
+      "kingdom": "Straits",
+      "kind": "fort",
+      "subKingdomIndex": 13,
+      "maxPlayers": 8,
+      "entryFee": 72000,
+      "payouts": [
+        433800,
+        180750,
+        108450
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:straits:2": {
+      "id": "sk:oceania:straits:2",
+      "group": "oceania",
+      "kingdom": "Straits",
+      "kind": "fort",
+      "subKingdomIndex": 2,
+      "maxPlayers": 6,
+      "entryFee": 80000,
+      "payouts": [
+        480600,
+        200250,
+        120150
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:straits:3": {
+      "id": "sk:oceania:straits:3",
+      "group": "oceania",
+      "kingdom": "Straits",
+      "kind": "fort",
+      "subKingdomIndex": 3,
+      "maxPlayers": 6,
+      "entryFee": 78000,
+      "payouts": [
+        469200,
+        195500,
+        117300
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:straits:4": {
+      "id": "sk:oceania:straits:4",
+      "group": "oceania",
+      "kingdom": "Straits",
+      "kind": "fort",
+      "subKingdomIndex": 4,
+      "maxPlayers": 8,
+      "entryFee": 125000,
+      "payouts": [
+        749400,
+        312250,
+        187350
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:straits:5": {
+      "id": "sk:oceania:straits:5",
+      "group": "oceania",
+      "kingdom": "Straits",
+      "kind": "fort",
+      "subKingdomIndex": 5,
+      "maxPlayers": 6,
+      "entryFee": 74000,
+      "payouts": [
+        441600,
+        184000,
+        110400
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:straits:6": {
+      "id": "sk:oceania:straits:6",
+      "group": "oceania",
+      "kingdom": "Straits",
+      "kind": "fort",
+      "subKingdomIndex": 6,
+      "maxPlayers": 6,
+      "entryFee": 79000,
+      "payouts": [
+        476400,
+        198500,
+        119100
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:straits:7": {
+      "id": "sk:oceania:straits:7",
+      "group": "oceania",
+      "kingdom": "Straits",
+      "kind": "fort",
+      "subKingdomIndex": 7,
+      "maxPlayers": 6,
+      "entryFee": 64000,
+      "payouts": [
+        384000,
+        160000,
+        96000
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:straits:8": {
+      "id": "sk:oceania:straits:8",
+      "group": "oceania",
+      "kingdom": "Straits",
+      "kind": "fort",
+      "subKingdomIndex": 8,
+      "maxPlayers": 8,
+      "entryFee": 117000,
+      "payouts": [
+        702000,
+        292500,
+        175500
+      ],
+      "predecessorId": null
+    },
+    "sk:oceania:straits:9": {
+      "id": "sk:oceania:straits:9",
+      "group": "oceania",
+      "kingdom": "Straits",
+      "kind": "fort",
+      "subKingdomIndex": 9,
+      "maxPlayers": 6,
+      "entryFee": 65000,
+      "payouts": [
+        387000,
+        161250,
+        96750
+      ],
+      "predecessorId": null
+    }
+  },
+  "contentHash": "941a25a55ae5bb3d9d1fad40988b71b60d42480c2a9c16b8f49bd82889b0ea60"
+}

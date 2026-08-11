@@ -5,11 +5,14 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+import 'package:ten_of_a_kind_poker/services/api_client.dart';
+
 class AuthService extends ChangeNotifier {
   FirebaseAuth? _auth;
   StreamSubscription<User?>? _authSub;
+  final ApiClient _apiClient;
 
-  AuthService() {
+  AuthService({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient() {
     final auth = _authOrNull();
     _authSub = auth?.authStateChanges().listen((_) {
       notifyListeners();
@@ -85,15 +88,35 @@ class AuthService extends ChangeNotifier {
   }
 
   // 🔓 Sign out
-  Future<void> logout() async {
+  Future<bool> logout() async {
     final auth = _authOrNull();
-    if (auth == null) return;
+    if (auth == null) return false;
     try {
       await auth.signOut();
       notifyListeners();
+      return auth.currentUser == null;
     } catch (e) {
       debugPrint('Logout failed: $e');
+      return false;
     }
+  }
+
+  /// Deletes the current account through the authenticated backend endpoint.
+  ///
+  /// [ApiException] is intentionally allowed through so the UI can distinguish
+  /// a recent-login requirement from network and server failures.
+  Future<AccountDeletionResult> deleteCurrentAccount() async {
+    final result = await _apiClient.deleteCurrentAccount();
+    if (result.deleted) {
+      final auth = _authOrNull();
+      try {
+        await auth?.signOut();
+      } catch (error) {
+        debugPrint('Local sign-out after account deletion failed: $error');
+      }
+      notifyListeners();
+    }
+    return result;
   }
 
   // 🔐 Sign in with Google

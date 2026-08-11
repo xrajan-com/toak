@@ -90,8 +90,8 @@ class _BloodSplatterState extends State<BloodSplatter>
     for (int i = 0; i < trailCount; i++) {
       drops.add(
         _Drip(
-          position: Offset(0.2 + rand.nextDouble() * 0.6,
-              0.15 + rand.nextDouble() * 0.7),
+          position: Offset(
+              0.2 + rand.nextDouble() * 0.6, 0.15 + rand.nextDouble() * 0.7),
           radiusFrac: 0.08 + rand.nextDouble() * 0.12,
           stretch: 1.0,
           rotation: 0.0,
@@ -214,8 +214,8 @@ List<_SmokePlume> _generateSmoke(int seed) {
   for (int i = 0; i < count; i++) {
     plumes.add(
       _SmokePlume(
-        position: Offset(0.25 + rand.nextDouble() * 0.5,
-            0.1 + rand.nextDouble() * 0.4),
+        position: Offset(
+            0.25 + rand.nextDouble() * 0.5, 0.1 + rand.nextDouble() * 0.4),
         radiusFrac: 0.12 + rand.nextDouble() * 0.14,
         blur: 10 + rand.nextDouble() * 10,
       ),

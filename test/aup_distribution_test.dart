@@ -5,19 +5,20 @@ import 'package:ten_of_a_kind_poker/config/campaign_events.dart' as ce;
 import 'package:ten_of_a_kind_poker/config/venues.dart'
     show VenueGroup, VenueTheme, kVenueGroups, venuesForGroup;
 import 'package:ten_of_a_kind_poker/core/aup.dart' as aup;
+import 'package:ten_of_a_kind_poker/game/models.dart' show PayoutTable;
 
 void main() {
-  test('AUP economy tops out at 100 Aura across four circuits', () {
+  test('AUP economy tops out at 100 Aura across five circuits', () {
     expect(aup.kAupPerAura, 10000000);
-    expect(aup.kAupPerCircuit, 250000000);
+    expect(aup.kAupPerCircuit, 200000000);
     expect(aup.kAupMaxTotal, 1000000000);
-    expect(aup.kAupMaxAuraPerCircuit, 25);
+    expect(aup.kAupMaxAuraPerCircuit, 20);
     expect(aup.kAupMaxAuraTotal, 100);
     expect(aup.auraValueFromAup(aup.kAupMaxTotal), 100);
-    expect(aup.auraValueFromAup(aup.kAupPerCircuit), 25);
+    expect(aup.auraValueFromAup(aup.kAupPerCircuit), 20);
   });
 
-  test('Circuit kingdom totals sum to 250,000,000 AUP', () {
+  test('Circuit kingdom totals sum to 200,000,000 AUP', () {
     for (final group in kVenueGroups) {
       final sum = venuesForGroup(group).fold<int>(
         0,
@@ -168,6 +169,89 @@ void main() {
 
     for (final group in kVenueGroups) {
       checkGroup(group, venuesForGroup(group));
+    }
+  });
+
+  test('Every legitimate single campaign reward fits the backend event limit',
+      () {
+    const backendCampaignWinLimit = 25000000;
+    for (final group in kVenueGroups) {
+      for (final venue in venuesForGroup(group)) {
+        expect(
+          aup.aupForKingdomMainEvent(
+            group: group,
+            kingdomName: venue.name,
+          ),
+          lessThanOrEqualTo(backendCampaignWinLimit),
+          reason: 'Main-event reward exceeds backend limit: '
+              '${group.name}:${venue.name}',
+        );
+
+        final count = subKingdomCountFor(
+          group: group,
+          kingdomName: venue.name,
+        );
+        for (int i = 1; i <= count; i++) {
+          expect(
+            aup.aupForSubKingdomEvent(
+              group: group,
+              kingdomName: venue.name,
+              subKingdomIndex: i,
+            ),
+            lessThanOrEqualTo(backendCampaignWinLimit),
+            reason: 'Fort reward exceeds backend limit: '
+                '${group.name}:${venue.name}:$i',
+          );
+        }
+      }
+    }
+  });
+
+  test('Every free fort prize is below 200% of its kingdom average entry fee',
+      () {
+    const expectedRebalancedFreePrizes = <String, int>{
+      'euro:North Sea': 197000,
+      'india:Hyderabad': 369000,
+      'india:Jaipur': 247000,
+      'international:Arabia': 215000,
+      'international:China': 306000,
+      'international:Far East': 259000,
+    };
+    for (final group in kVenueGroups) {
+      for (final venue in venuesForGroup(group)) {
+        final freeIndex = ce.freeSubKingdomIndexFor(
+          group: group,
+          kingdomName: venue.name,
+        );
+        final freePool = aup.aupForSubKingdomEvent(
+          group: group,
+          kingdomName: venue.name,
+          subKingdomIndex: freeIndex,
+        );
+        final fortCount = subKingdomCountFor(
+          group: group,
+          kingdomName: venue.name,
+        );
+        final totalEntryFees = <int>[
+          for (int index = 1; index <= fortCount; index++)
+            aup.entryFeeForSubKingdomEvent(
+              group: group,
+              kingdomName: venue.name,
+              subKingdomIndex: index,
+            ),
+        ].fold<int>(0, (sum, fee) => sum + fee);
+
+        expect(
+          freePool * fortCount,
+          lessThan(2 * totalEntryFees),
+          reason: '${group.name}:${venue.name}',
+        );
+        final expected =
+            expectedRebalancedFreePrizes['${group.name}:${venue.name}'];
+        if (expected != null) {
+          expect(freePool, expected, reason: '${group.name}:${venue.name}');
+        }
+      }
     }
   });
 

@@ -1,5 +1,12 @@
 platform :ios, '15.0'
 
+# google_sign_in_ios 5.9.0 resolves GoogleSignIn 8.x, whose App Check
+# dependency requires GoogleUtilities 8.x. FlutterFire 2.x defaults to the
+# older Firebase Apple SDK 10.x/GoogleUtilities 7.x, which cannot coexist with
+# that dependency graph. Keep the native Firebase line explicit and locked so
+# local and CI installs resolve the same compatible SDK family.
+$FirebaseSDKVersion = '11.15.0'
+
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 

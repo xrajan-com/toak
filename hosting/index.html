@@ -3,15 +3,48 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Ten of a Kind Poker - Winner Takes All</title>
+  <title>X Poker | Ten of a Kind Poker</title>
+  <meta name="description" content="X Poker is the simulated Texas Hold'em strategy game from Ten of a Kind. Play against AI opponents on Android or in your browser—no real-money gambling, wagering, or prizes." />
+  <meta name="author" content="Kapil Poonia" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Ten of a Kind Poker" />
+  <meta property="og:title" content="X Poker | Ten of a Kind Poker" />
+  <meta property="og:description" content="The official website for X Poker, a simulated Texas Hold'em strategy game from Ten of a Kind." />
+  <meta property="og:url" content="https://tenofakind.com/" />
+  <meta property="og:image" content="https://tenofakind.com/Logo.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="X Poker | Ten of a Kind Poker" />
+  <meta name="twitter:description" content="The official website for X Poker, a simulated Texas Hold'em strategy game from Ten of a Kind." />
+  <meta name="twitter:image" content="https://tenofakind.com/Logo.png" />
   <link rel="stylesheet" href="styles.css" />
-  <link rel="icon" href="favicon.ico" sizes="any">
-  <link rel="icon" href="favicon.png" type="image/png">
-  <link rel="icon" href="favicon-32x32.png" type="image/png" sizes="32x32">
-  <link rel="icon" href="favicon-16x16.png" type="image/png" sizes="16x16">
+  <link rel="icon" href="favicon.ico?v=20260705" sizes="any">
+  <link rel="icon" href="favicon.png?v=20260705" type="image/png">
+  <link rel="icon" href="favicon-32x32.png?v=20260705" type="image/png" sizes="32x32">
+  <link rel="icon" href="favicon-16x16.png?v=20260705" type="image/png" sizes="16x16">
   <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
   <link rel="manifest" href="site.webmanifest">
   <link rel="canonical" href="https://tenofakind.com/">
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "X Poker",
+      "alternateName": "Ten of a Kind Poker",
+      "applicationCategory": "GameApplication",
+      "operatingSystem": "Android, Web",
+      "url": "https://tenofakind.com/",
+      "downloadUrl": "https://play.google.com/store/apps/details?id=com.tenofakind.poker",
+      "description": "A simulated Texas Hold'em strategy game with AI opponents and no real-money gambling, wagering, or prizes.",
+      "publisher": {
+        "@type": "Organization",
+        "name": "Ten of a Kind",
+        "url": "https://tenofakind.com/"
+      },
+      "sameAs": [
+        "https://play.google.com/store/apps/details?id=com.tenofakind.poker"
+      ]
+    }
+  </script>
 </head>
 <body>
   <div class="demo-loader" id="demoLoader">
@@ -40,8 +73,6 @@
       <a
         class="download-pill web-play-pill"
         href="/web/"
-        target="_blank"
-        rel="noopener"
         aria-label="Play Ten of a Kind Poker on the web"
       >
         <svg class="web-play-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -128,65 +159,36 @@
         <div class="venue-tab-item venue-tab-item-euro">
           <button class="venue-tab active" data-target="euro" role="tab" aria-selected="true">Euro Circuit</button>
           <ol class="venue-leaderboard-menu" aria-label="Euro Circuit leaderboard">
-            <li class="venue-leaderboard-heading">Leaderboard</li>
-            <li><span>Mei Lin Tan</span><strong>99 AURA</strong></li>
-            <li><span>Darren Lim</span><strong>98 AURA</strong></li>
-            <li><span>Luca Bianchi</span><strong>97 AURA</strong></li>
-            <li><span>Nattida Kwan</span><strong>96 AURA</strong></li>
-            <li><span>Maximilian Keller</span><strong>95 AURA</strong></li>
-            <li><span>Sophie Dubois</span><strong>94 AURA</strong></li>
-            <li><span>Linh Pham</span><strong>93 AURA</strong></li>
-            <li><span>Nikos Papadakis</span><strong>92 AURA</strong></li>
-            <li><span>Sari Wijaya</span><strong>91 AURA</strong></li>
-            <li><span>Van Nguyen</span><strong>90 AURA</strong></li>
+            <li class="venue-leaderboard-heading">Live Overall Leaderboard</li>
+            <li class="venue-leaderboard-status"><span>Loading live rankings…</span><strong>—</strong></li>
           </ol>
         </div>
         <div class="venue-tab-item venue-tab-item-india">
           <button class="venue-tab" data-target="india" role="tab" aria-selected="false">Indian Circuit</button>
           <ol class="venue-leaderboard-menu" aria-label="Indian Circuit leaderboard">
-            <li class="venue-leaderboard-heading">Leaderboard</li>
-            <li><span>Bajirao Kale</span><strong>99 AURA</strong></li>
-            <li><span>Jaspreet Dhillon</span><strong>98 AURA</strong></li>
-            <li><span>Siddharth Gaekwad</span><strong>97 AURA</strong></li>
-            <li><span>Tenzin Lama</span><strong>96 AURA</strong></li>
-            <li><span>Kabir Verma</span><strong>95 AURA</strong></li>
-            <li><span>Kaveri Rao</span><strong>94 AURA</strong></li>
-            <li><span>Arjun Deshmukh</span><strong>93 AURA</strong></li>
-            <li><span>Savitri Shinde</span><strong>92 AURA</strong></li>
-            <li><span>Harleen Kaur</span><strong>91 AURA</strong></li>
-            <li><span>Hari Krishnan</span><strong>90 AURA</strong></li>
+            <li class="venue-leaderboard-heading">Live Overall Leaderboard</li>
+            <li class="venue-leaderboard-status"><span>Loading live rankings…</span><strong>—</strong></li>
           </ol>
         </div>
         <div class="venue-tab-item venue-tab-item-world">
           <button class="venue-tab" data-target="world" role="tab" aria-selected="false">International Circuit</button>
           <ol class="venue-leaderboard-menu" aria-label="International Circuit leaderboard">
-            <li class="venue-leaderboard-heading">Leaderboard</li>
-            <li><span>Jordan Walker</span><strong>99 AURA</strong></li>
-            <li><span>Ling Zhao</span><strong>98 AURA</strong></li>
-            <li><span>Casey Morgan</span><strong>97 AURA</strong></li>
-            <li><span>Kofi Adeyemi</span><strong>96 AURA</strong></li>
-            <li><span>Mei Chen</span><strong>95 AURA</strong></li>
-            <li><span>Hassan Al Noor</span><strong>94 AURA</strong></li>
-            <li><span>Rafael Mendes</span><strong>93 AURA</strong></li>
-            <li><span>Amara Ndlovu</span><strong>92 AURA</strong></li>
-            <li><span>Brianna Lee</span><strong>91 AURA</strong></li>
-            <li><span>Elena Rossi</span><strong>90 AURA</strong></li>
+            <li class="venue-leaderboard-heading">Live Overall Leaderboard</li>
+            <li class="venue-leaderboard-status"><span>Loading live rankings…</span><strong>—</strong></li>
           </ol>
         </div>
         <div class="venue-tab-item venue-tab-item-oceania">
           <button class="venue-tab" data-target="oceania" role="tab" aria-selected="false">Micro Circuit</button>
           <ol class="venue-leaderboard-menu" aria-label="Micro Circuit leaderboard">
-            <li class="venue-leaderboard-heading">Leaderboard</li>
-            <li><span>Nur Aisyah</span><strong>99 AURA</strong></li>
-            <li><span>Rosa Delgado</span><strong>98 AURA</strong></li>
-            <li><span>Anong Srisai</span><strong>97 AURA</strong></li>
-            <li><span>Fitri Halim</span><strong>96 AURA</strong></li>
-            <li><span>Thandar Hlaing</span><strong>95 AURA</strong></li>
-            <li><span>Kanya Vong</span><strong>94 AURA</strong></li>
-            <li><span>Liyana Salleh</span><strong>93 AURA</strong></li>
-            <li><span>Minh Tran</span><strong>92 AURA</strong></li>
-            <li><span>Sreymom Vann</span><strong>91 AURA</strong></li>
-            <li><span>Chaiwat Rattan</span><strong>90 AURA</strong></li>
+            <li class="venue-leaderboard-heading">Live Overall Leaderboard</li>
+            <li class="venue-leaderboard-status"><span>Loading live rankings…</span><strong>—</strong></li>
+          </ol>
+        </div>
+        <div class="venue-tab-item venue-tab-item-us">
+          <button class="venue-tab" data-target="us" role="tab" aria-selected="false">US Circuit</button>
+          <ol class="venue-leaderboard-menu" aria-label="US Circuit leaderboard">
+            <li class="venue-leaderboard-heading">Live Overall Leaderboard</li>
+            <li class="venue-leaderboard-status"><span>Loading live rankings…</span><strong>—</strong></li>
           </ol>
         </div>
       </div>
@@ -559,82 +561,51 @@
             </div>
           </article>
         </div>
-      </div>
-    </section>
-
-    <section class="feature-panel" id="features">
-      <div class="section-heading center">
-        <p class="eyebrow">Everything synced with the app</p>
-        <h3>Jump into the circuit however you like.</h3>
-        <p>Guest mode, careers, hosts, and Texas Hold’em rules mirror the in-game experience.</p>
-      </div>
-      <div class="features" id="about-content">
-        <div class="feature" data-feature="play" tabindex="0">
-          <div class="feature-inner">
-            <div class="feature-face feature-front">
-              <h4>Play</h4>
-              <p>Guest</p>
-            </div>
-            <div class="feature-face feature-back">
-              <h4>Play as Guest</h4>
-              <p>Train yourself before the big game.</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="feature" data-feature="career" tabindex="0">
-          <div class="feature-inner">
-            <div class="feature-face feature-front">
-              <h4>Start</h4>
-              <p>Career</p>
-            </div>
-            <div class="feature-face feature-back">
-              <h4>Start Your Career</h4>
-              <p>Compete like a true poker king.</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="feature" data-feature="host" tabindex="0">
-          <div class="feature-inner">
-            <div class="feature-face feature-front">
-              <h4>Host An Event</h4>
-              <p>Invite Your Pals</p>
-            </div>
-            <div class="feature-face feature-back">
-              <h4>Host an Event</h4>
-              <p>Host your own table and invite friends.</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="feature" data-feature="free" tabindex="0">
-          <div class="feature-inner">
-            <div class="feature-face feature-front">
-              <h4>It's Free!</h4>
-              <p>For Now</p>
-            </div>
-            <div class="feature-face feature-back">
-              <h4>It's Free!</h4>
-              <p>Yes, it’s free — but maybe not forever.</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="feature" data-feature="rules" tabindex="0">
-          <div class="feature-inner">
-            <div class="feature-face feature-front">
-              <h4>Rules</h4>
-              <p>Texas Hold'em</p>
-            </div>
-            <div class="feature-face feature-back">
-              <h4>Texas Hold'em Rules</h4>
-              <p>We follow tournament-standard Texas Hold’em rules.</p>
-            </div>
-          </div>
+        <div class="venue-grid" data-group="us" role="tabpanel">
+          <article class="venue-card" style="--felt:#8B0000">
+            <div class="venue-card-flag"><img src="images/venues/us/canada.png" alt="Dominion of Canada flag" loading="lazy"></div>
+            <div class="venue-card-body"><h4>Dominion of Canada</h4><p>9 Forts, Title: Mountie</p></div>
+          </article>
+          <article class="venue-card" style="--felt:#24247A">
+            <div class="venue-card-flag"><img src="images/venues/us/massachusetts.png" alt="Massachusetts flag" loading="lazy"></div>
+            <div class="venue-card-body"><h4>Massachusetts</h4><p>10 Forts, Title: Patriot</p></div>
+          </article>
+          <article class="venue-card" style="--felt:#00A6E8">
+            <div class="venue-card-flag"><img src="images/venues/us/new_york.png" alt="New York flag" loading="lazy"></div>
+            <div class="venue-card-body"><h4>New York</h4><p>10 Forts, Title: Maccabee</p></div>
+          </article>
+          <article class="venue-card" style="--felt:#761EB4">
+            <div class="venue-card-flag"><img src="images/venues/us/virginia.png" alt="Virginia flag" loading="lazy"></div>
+            <div class="venue-card-body"><h4>Virginia</h4><p>10 Forts, Title: Cavalier</p></div>
+          </article>
+          <article class="venue-card" style="--felt:#013220">
+            <div class="venue-card-flag"><img src="images/venues/us/illinois.png" alt="Illinois flag" loading="lazy"></div>
+            <div class="venue-card-body"><h4>Illinois</h4><p>10 Forts, Title: Loopmaster</p></div>
+          </article>
+          <article class="venue-card" style="--felt:#CBA014">
+            <div class="venue-card-flag"><img src="images/venues/us/florida.png" alt="Florida flag" loading="lazy"></div>
+            <div class="venue-card-body"><h4>Florida</h4><p>10 Forts, Title: Buccaneer</p></div>
+          </article>
+          <article class="venue-card" style="--felt:#5F413A">
+            <div class="venue-card-flag"><img src="images/venues/us/texas.png" alt="Texas flag" loading="lazy"></div>
+            <div class="venue-card-body"><h4>Texas</h4><p>10 Forts, Title: Longhorn</p></div>
+          </article>
+          <article class="venue-card" style="--felt:#556B2F">
+            <div class="venue-card-flag"><img src="images/venues/us/kansas.png" alt="Kansas flag" loading="lazy"></div>
+            <div class="venue-card-body"><h4>Kansas</h4><p>10 Forts, Title: Marshal</p></div>
+          </article>
+          <article class="venue-card" style="--felt:#FF6B01">
+            <div class="venue-card-flag"><img src="images/venues/us/colorado.png" alt="Colorado flag" loading="lazy"></div>
+            <div class="venue-card-body"><h4>Colorado</h4><p>10 Forts, Title: Prospector</p></div>
+          </article>
+          <article class="venue-card" style="--felt:#DC53DC">
+            <div class="venue-card-flag"><img src="images/venues/us/california.png" alt="California flag" loading="lazy"></div>
+            <div class="venue-card-body"><h4>California</h4><p>10 Forts, Title: Rainmaker</p></div>
+          </article>
         </div>
       </div>
     </section>
+
   </main>
 
   <footer id="footer-section">
@@ -659,13 +630,13 @@
                 <p>Hey there!</p>
                 <p>Meet Renoir</p>
                 <p>The Dealer</p>
-                <p>💌: xrajan.com@gmail.com</p>
+                <p>💌: <a href="mailto:pooniaone@gmail.com">pooniaone@gmail.com</a></p>
                 <button class="close-popup">&times;</button>
             </div>
         </div>
         <div class="footer-link-container">
             <a href="disclaimer.html" id="disclaimerLink" target="_blank" rel="noopener noreferrer">Disclaimer</a>
-            <div class="popup-message" id="disclaimerPopup">
+            <div class="popup-message disclaimer-popup" id="disclaimerPopup">
                 <h2>Disclaimer</h2>
                 <p>This experience is for entertainment and skill-building only.</p>
                 <p>No real-money gambling, prizes, or wagering.</p>
@@ -702,7 +673,6 @@
         </form>
         <form id="registerForm" style="display: none;">
           <label for="userPhoto">Upload Photo:</label>
-          <input type="file" id="userPhoto" name="userPhoto" accept="image/*"><br>
           <label for="registerUsername">Username:</label>
           <input type="text" id="registerUsername" name="registerUsername" required><br>
           <label for="registerKingdom">Choose Your Kingdom:</label>
@@ -743,7 +713,6 @@
           <input type="text" id="aboutUser" name="aboutUser" maxlength="30"><br>
           <button type="submit">Register</button>
           <p class="modal-switch-text">Already have an account? <a href="#" id="switchToLogin">Login here</a></p>
-<div class="g-recaptcha" data-sitekey="YOUR_SITE_KEY_HERE"></div>
 </form>
         </div>
     </div>
@@ -754,42 +723,42 @@
         <div class="dashboard-panel">
           <div class="dashboard-identity" data-profile-section>
             <div class="profile-avatar-container">
-                <img id="profileAvatar" src="placeholder.jpg" alt="User Avatar">
+                <img id="profileAvatar" src="Renoir.png" alt="Player avatar">
             </div>
             <div>
               <p class="dashboard-kicker">Player</p>
               <h3 id="profileUsername">Guest</h3>
-              <p><span id="profileEmail">guest@example.com</span></p>
+              <p><span id="profileEmail">Not signed in</span></p>
               <p><strong>Kingdom:</strong> <span id="profileKingdom">Not Set</span></p>
             </div>
           </div>
           <div class="dashboard-stats" aria-label="Career progress" data-dashboard-section>
             <div class="dashboard-stat">
-              <span id="dashboardFortWins">0</span>
-              <strong>Forts Won</strong>
+              <span id="dashboardFortWins">—</span>
+              <strong>Forts Cleared</strong>
             </div>
             <div class="dashboard-stat">
-              <span id="dashboardKingdomWins">0</span>
-              <strong>Kingdoms Won</strong>
+              <span id="dashboardKingdomWins">—</span>
+              <strong>Main Events Won</strong>
             </div>
             <div class="dashboard-stat">
-              <span id="dashboardCircuitWins">0</span>
-              <strong>Circuits Won</strong>
+              <span id="dashboardCircuitWins">—</span>
+              <strong>Circuits Cleared</strong>
             </div>
             <div class="dashboard-stat">
-              <span id="dashboardTitlesWon">0</span>
+              <span id="dashboardTitlesWon">—</span>
               <strong>Titles Won</strong>
             </div>
             <div class="dashboard-stat">
-              <span id="dashboardAura">0</span>
+              <span id="dashboardAura">—</span>
               <strong>Aura</strong>
             </div>
             <div class="dashboard-stat">
-              <span id="dashboardAupTotal">0</span>
-              <strong>AUP Won</strong>
+              <span id="dashboardAupTotal">—</span>
+              <strong>AUP Balance</strong>
             </div>
             <div class="dashboard-stat">
-              <span id="dashboardAupLeft">0</span>
+              <span id="dashboardAupLeft">—</span>
               <strong>AUP to 100 Aura</strong>
             </div>
           </div>
@@ -798,10 +767,11 @@
             <p><strong>Info:</strong> <span id="dashboardAbout">Ready to win!</span></p>
           </div>
           <div class="dashboard-meta" data-dashboard-section>
-            <p><strong>Euro AUP:</strong> <span id="dashboardAupEuro">0</span></p>
-            <p><strong>India AUP:</strong> <span id="dashboardAupIndia">0</span></p>
-            <p><strong>International AUP:</strong> <span id="dashboardAupInternational">0</span></p>
-            <p><strong>Micro AUP:</strong> <span id="dashboardAupOceania">0</span></p>
+            <p><strong>Euro AUP:</strong> <span id="dashboardAupEuro">—</span></p>
+            <p><strong>India AUP:</strong> <span id="dashboardAupIndia">—</span></p>
+            <p><strong>International AUP:</strong> <span id="dashboardAupInternational">—</span></p>
+            <p><strong>Micro AUP:</strong> <span id="dashboardAupOceania">—</span></p>
+            <p><strong>US Circuit AUP:</strong> <span id="dashboardAupNorthAmerica">—</span></p>
           </div>
         </div>
         <div class="profile-actions" data-profile-section>
@@ -852,13 +822,6 @@
 </form>
       </div>
   </div>
-<div class="modal-overlay" id="featureModal">
-  <div class="modal-content">
-    <button class="modal-close-button" id="closeFeatureModal">&times;</button>
-    <h2 id="featureModalTitle">Feature Info</h2>
-    <p id="featureModalMessage"></p>
-  </div>
-</div>
 <div class="modal-overlay" id="venueDetailModal">
   <div class="modal-content venue-detail-modal">
     <button class="modal-close-button" id="closeVenueModal">&times;</button>
@@ -868,12 +831,6 @@
     <div class="venue-fort-list" id="venueFortList"></div>
   </div>
 </div>
-<div class="popup-message" id="featurePopup">
-  <h2 id="featurePopupTitle">Feature Info</h2>
-  <p id="featurePopupText"></p>
-  <button class="close-popup" id="closeFeaturePopup">&times;</button>
-</div>
-
 <!-- Firebase Auth (Web) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -891,6 +848,5 @@
 </script>
 
   <script src="scripts.js" defer></script>
-  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </body>
 </html>

@@ -1,11 +1,6 @@
 // scripts/main.js
 
 document.addEventListener("DOMContentLoaded", () => {
-  const API_URL =
-    window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-      ? "http://localhost:3000"
-      : "https://api.tenofakind.com";
-
   const auth =
     window.firebase && typeof firebase.auth === "function" ? firebase.auth() : null;
   const db =
@@ -54,9 +49,6 @@ document.addEventListener("DOMContentLoaded", () => {
     leaderboardModal: document.getElementById("leaderboardModal"),
     aboutPopup: document.getElementById("aboutPopup"),
     supportPopup: document.getElementById("supportPopup"),
-    featurePopup: document.getElementById("featurePopup"),
-    featureTitle: document.getElementById("featurePopupTitle"),
-    featureText: document.getElementById("featurePopupText"),
     venueModal: document.getElementById("venueDetailModal"),
     venueModalGroup: document.getElementById("venueModalGroup"),
     venueModalTitle: document.getElementById("venueModalTitle"),
@@ -104,7 +96,17 @@ document.addEventListener("DOMContentLoaded", () => {
     "British Isles": "oceania/british_isles.png",
     "French Isles": "oceania/french_isles.png",
     "Dutch Isles": "oceania/dutch_isles.png",
-    "American Isles": "oceania/american_isles.png"
+    "American Isles": "oceania/american_isles.png",
+    "Dominion of Canada": "us/canada.png",
+    "Massachusetts": "us/massachusetts.png",
+    "New York": "us/new_york.png",
+    "Virginia": "us/virginia.png",
+    "Illinois": "us/illinois.png",
+    "Florida": "us/florida.png",
+    "Texas": "us/texas.png",
+    "Kansas": "us/kansas.png",
+    "Colorado": "us/colorado.png",
+    "California": "us/california.png"
   };
 
   const toggleModal = (el, show = true) => el.classList[show ? 'add' : 'remove']("active");
@@ -168,7 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  ["closeModal", "closeProfileModal", "closeLeaderboardModal", "closeFeatureModal", "closeVenueModal"].forEach(id => {
+  ["closeModal", "closeProfileModal", "closeLeaderboardModal", "closeVenueModal"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener("click", closeAllModals);
   });
@@ -223,49 +225,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.querySelectorAll(".close-popup").forEach(btn => {
     btn.addEventListener("click", () => {
-      [DOM.aboutPopup, DOM.supportPopup, document.getElementById("aboutPopupVenue"), document.getElementById("supportPopupVenue"), document.getElementById("disclaimerPopup"), document.getElementById("disclaimerPopupVenue"), DOM.featurePopup].forEach(p => p && toggleModal(p, false));
+      [DOM.aboutPopup, DOM.supportPopup, document.getElementById("aboutPopupVenue"), document.getElementById("supportPopupVenue"), document.getElementById("disclaimerPopup"), document.getElementById("disclaimerPopupVenue")].forEach(p => p && toggleModal(p, false));
     });
   });
-
-  const featureInfo = {
-    play: { title: "Play as Guest", text: "Train yourself before the big game." },
-    career: { title: "Start Your Career", text: "Compete like a true poker king." },
-    host: { title: "Host an Event", text: "Host your own table and invite friends." },
-    free: { title: "It's Free!", text: "Yes, it’s free — but maybe not forever." },
-    rules: { title: "Texas Hold'em Rules", text: "We follow tournament-standard Texas Hold’em rules." }
-  };
-
-  const flipFeature = (el) => {
-    document.querySelectorAll(".feature").forEach(other => {
-      if (other !== el) other.classList.remove("is-flipped");
-    });
-    el.classList.toggle("is-flipped");
-  };
-
-  document.querySelectorAll(".feature").forEach(el => {
-    const type = el.dataset.feature;
-    const info = featureInfo[type];
-    const backTitle = el.querySelector(".feature-back h4");
-    const backText = el.querySelector(".feature-back p");
-    if (info && backTitle && backText) {
-      backTitle.innerText = info.title;
-      backText.innerText = info.text;
-    }
-
-    el.addEventListener("click", (e) => {
-      e.preventDefault();
-      flipFeature(el);
-    });
-
-    el.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        flipFeature(el);
-      }
-    });
-  });
-
-  document.getElementById("closeFeaturePopup").addEventListener("click", () => toggleModal(DOM.featurePopup, false));
 
   const venueInfo = {
     "Baroda": {
@@ -1111,6 +1073,125 @@ document.addEventListener("DOMContentLoaded", () => {
     "Fort Armstrong (United States)",
     "Fort Ruger (United States)",
     "Fort Hase (United States)"
+  ],
+  "Dominion of Canada": [
+    "CFB Halifax",
+    "CFB Esquimalt",
+    "CFB Kingston",
+    "CFB Petawawa",
+    "CFB Gagetown",
+    "CFB Borden",
+    "CFB Trenton",
+    "CFB Cold Lake",
+    "CFB Valcartier"
+  ],
+  "Massachusetts": [
+    "Hanscom Air Force Base",
+    "Springfield Armory",
+    "Charlestown Navy Yard",
+    "Fort Andrews",
+    "Fort Revere",
+    "Fort Banks",
+    "Fort Sewall",
+    "Fort Strong",
+    "Fort Phoenix",
+    "Otis Air National Guard Base"
+  ],
+  "New York": [
+    "West Point Military Academy",
+    "Fort Drum",
+    "Fort Totten",
+    "Fort Montgomery",
+    "Fort Clinton",
+    "Brooklyn Navy Yard",
+    "Watervliet Arsenal",
+    "Madison Barracks",
+    "Fort Wood",
+    "Camp Smith"
+  ],
+  "Virginia": [
+    "Fort Belvoir",
+    "Fort Gregg-Adams",
+    "Fort Eustis",
+    "Fort Story",
+    "Fort Myer",
+    "Fort Hunt",
+    "Norfolk Naval Station",
+    "Marine Corps Base Quantico",
+    "Joint Base Langley-Eustis",
+    "Naval Air Station Oceana"
+  ],
+  "Illinois": [
+    "Rock Island Arsenal",
+    "Great Lakes Naval Station",
+    "Camp Grant",
+    "Camp Lincoln",
+    "Fort Sheridan",
+    "Fort Massac",
+    "Fort de Chartres",
+    "Camp Ellis",
+    "Fort Crevecoeur",
+    "Joliet Army Ammunition Plant"
+  ],
+  "Florida": [
+    "Fort Jefferson",
+    "Fort Clinch",
+    "Fort Barrancas",
+    "Fort Zachary Taylor",
+    "Fort Brooke",
+    "Naval Air Station Pensacola",
+    "Naval Station Mayport",
+    "Cape Canaveral Space Force Station",
+    "Patrick Space Force Base",
+    "Homestead Air Reserve Base"
+  ],
+  "Texas": [
+    "Fort Bliss",
+    "Fort Cavazos",
+    "Fort Sam Houston",
+    "Laughlin Air Force Base",
+    "Corpus Christi Naval Air Station",
+    "Fort McKavett",
+    "Presidio La Bahía",
+    "Fort Chadbourne",
+    "Fort McIntosh",
+    "Fort Stockton"
+  ],
+  "Kansas": [
+    "Fort Riley",
+    "Fort Larned",
+    "Fort Harker",
+    "Fort Wallace",
+    "Fort Zarah",
+    "Fort Dodge",
+    "Camp Funston",
+    "Smoky Hill Depot",
+    "Fort Mann",
+    "Fort Aubrey"
+  ],
+  "Colorado": [
+    "Fort Garland",
+    "Fort Logan",
+    "Camp Hale",
+    "Fort Lyon",
+    "Fort Vasquez",
+    "Fort St. Vrain",
+    "Rocky Mountain Arsenal",
+    "Buckley Space Force Base",
+    "Fort Sedgwick",
+    "Fort Lupton"
+  ],
+  "California": [
+    "Vandenberg Space Force Base",
+    "Edwards Air Force Base",
+    "China Lake Naval Weapons Station",
+    "Camp Pendleton",
+    "Fort Irwin",
+    "Travis Air Force Base",
+    "Naval Base San Diego",
+    "Mare Island Naval Shipyard",
+    "Moffett Federal Airfield",
+    "Lawrence Livermore National Laboratory"
   ]
 };
 
@@ -1154,7 +1235,17 @@ document.addEventListener("DOMContentLoaded", () => {
   "British Isles": "Warden",
   "French Isles": "Seigneur",
   "Dutch Isles": "Burgher",
-  "American Isles": "Marshal"
+  "American Isles": "Marshal",
+  "Dominion of Canada": "Mountie",
+  "Massachusetts": "Patriot",
+  "New York": "Maccabee",
+  "Virginia": "Cavalier",
+  "Illinois": "Loopmaster",
+  "Florida": "Buccaneer",
+  "Texas": "Longhorn",
+  "Kansas": "Marshal",
+  "Colorado": "Prospector",
+  "California": "Rainmaker"
 };
 
   const venueGroups = {
@@ -1197,7 +1288,17 @@ document.addEventListener("DOMContentLoaded", () => {
   "British Isles": "Micro Circuit",
   "French Isles": "Micro Circuit",
   "Dutch Isles": "Micro Circuit",
-  "American Isles": "Micro Circuit"
+  "American Isles": "Micro Circuit",
+  "Dominion of Canada": "US Circuit",
+  "Massachusetts": "US Circuit",
+  "New York": "US Circuit",
+  "Virginia": "US Circuit",
+  "Illinois": "US Circuit",
+  "Florida": "US Circuit",
+  "Texas": "US Circuit",
+  "Kansas": "US Circuit",
+  "Colorado": "US Circuit",
+  "California": "US Circuit"
 };
 
   const venueTileSummary = (key) => {
@@ -1661,11 +1762,10 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   document.addEventListener("click", (event) => {
-    const inPopup = [DOM.aboutPopup, DOM.supportPopup, DOM.featurePopup].some(p => p.contains(event.target));
-    const inTrigger = event.target.closest(".feature") || ["aboutLink", "supportLink"].includes(event.target.id);
+    const inPopup = [DOM.aboutPopup, DOM.supportPopup].some(p => p.contains(event.target));
+    const inTrigger = ["aboutLink", "supportLink"].includes(event.target.id);
     if (!inPopup && !inTrigger) {
-      [DOM.aboutPopup, DOM.supportPopup, DOM.featurePopup].forEach(p => toggleModal(p, false));
-      document.querySelectorAll(".feature").forEach(f => f.classList.remove("is-flipped"));
+      [DOM.aboutPopup, DOM.supportPopup].forEach(p => toggleModal(p, false));
     }
   });
 
@@ -1722,11 +1822,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   setupVenueCards();
 
-  const parseAuraText = (raw) => {
-    const value = Number.parseFloat(String(raw || "").replace(/[^0-9.]/g, ""));
-    return Number.isFinite(value) ? value : 0;
-  };
-
   const formatAuraText = (aura) => {
     const rounded = Math.round(aura * 10) / 10;
     return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
@@ -1737,58 +1832,44 @@ document.addEventListener("DOMContentLoaded", () => {
     return name ? name.slice(0, 40) : "Player";
   };
 
-  const leaderboardFallbacks = new Map();
-  document.querySelectorAll(".venue-tab-item").forEach(item => {
-    const target = item.querySelector(".venue-tab")?.dataset.target;
-    const menu = item.querySelector(".venue-leaderboard-menu");
-    if (!target || !menu) return;
-    const rows = Array.from(menu.querySelectorAll("li:not(.venue-leaderboard-heading)"));
-    leaderboardFallbacks.set(target, rows.map(row => ({
-      name: row.querySelector("span")?.textContent.trim() || "Player",
-      aura: parseAuraText(row.querySelector("strong")?.textContent),
-      source: "fallback"
-    })));
-  });
+  const renderLiveLeaderboards = (entries, statusMessage = "") => {
+    const liveEntries = entries
+      .filter(entry => Number.isFinite(entry.aura) && entry.aura > 0 && entry.name)
+      .sort((a, b) => b.aura - a.aura)
+      .slice(0, 10);
 
-  const applyLeaderboardRows = (target, realEntries) => {
-    const item = document.querySelector(`.venue-tab-item .venue-tab[data-target="${target}"]`)?.closest(".venue-tab-item");
-    const menu = item?.querySelector(".venue-leaderboard-menu");
-    const rows = menu ? Array.from(menu.querySelectorAll("li:not(.venue-leaderboard-heading)")) : [];
-    const fallbacks = leaderboardFallbacks.get(target) || [];
-    if (!menu || rows.length === 0 || fallbacks.length === 0) return;
+    document.querySelectorAll(".venue-leaderboard-menu").forEach(menu => {
+      menu.querySelectorAll("li:not(.venue-leaderboard-heading)").forEach(row => row.remove());
+      if (liveEntries.length === 0) {
+        const status = document.createElement("li");
+        status.className = "venue-leaderboard-status";
+        const message = document.createElement("span");
+        message.textContent = statusMessage || "No published rankings yet.";
+        const value = document.createElement("strong");
+        value.textContent = "—";
+        status.append(message, value);
+        menu.appendChild(status);
+        return;
+      }
 
-    const candidates = [
-      ...fallbacks,
-      ...realEntries.map(entry => ({ ...entry, source: "real" }))
-    ].sort((a, b) => {
-      const auraDelta = b.aura - a.aura;
-      if (auraDelta !== 0) return auraDelta;
-      if (a.source === b.source) return 0;
-      return a.source === "fallback" ? -1 : 1;
-    }).slice(0, rows.length);
-
-    rows.forEach((row, index) => {
-      const candidate = candidates[index] || fallbacks[index];
-      const nameEl = row.querySelector("span");
-      const auraEl = row.querySelector("strong");
-      if (nameEl) nameEl.textContent = candidate.name;
-      if (auraEl) auraEl.textContent = `${formatAuraText(candidate.aura)} AURA`;
-      row.dataset.source = candidate.source;
+      liveEntries.forEach((entry, index) => {
+        const row = document.createElement("li");
+        row.dataset.source = "live";
+        const name = document.createElement("span");
+        name.textContent = `${index + 1}. ${entry.name}`;
+        const aura = document.createElement("strong");
+        aura.textContent = `${formatAuraText(entry.aura)} AURA`;
+        row.append(name, aura);
+        menu.appendChild(row);
+      });
     });
   };
 
-  const applyLeaderboards = (entries) => {
-    const realEntries = entries
-      .filter(entry => entry.aura > 0 && entry.name)
-      .sort((a, b) => b.aura - a.aura)
-      .slice(0, 10);
-    for (const target of leaderboardFallbacks.keys()) {
-      applyLeaderboardRows(target, realEntries);
-    }
-  };
-
   const loadAuraLeaderboards = async () => {
-    if (!db) return;
+    if (!db) {
+      renderLiveLeaderboards([], "Live rankings are unavailable.");
+      return;
+    }
     try {
       const snap = await db
         .collection("leaderboard")
@@ -1806,9 +1887,10 @@ document.addEventListener("DOMContentLoaded", () => {
           aura: auraMilli / 1000
         };
       });
-      applyLeaderboards(entries);
+      renderLiveLeaderboards(entries);
     } catch (err) {
       console.warn("Leaderboard fetch skipped.", err);
+      renderLiveLeaderboards([], "Live rankings are temporarily unavailable.");
     }
   };
 
@@ -1872,8 +1954,20 @@ document.addEventListener("DOMContentLoaded", () => {
         kingdom: updated.kingdom,
         about: updated.about
       });
+      if (db) {
+        await db.collection("users").doc(user.uid).set({
+          email: user.email || updated.email,
+          username: updated.username,
+          displayName: updated.username,
+          kingdom: updated.kingdom,
+          about: updated.about.slice(0, 30),
+          profileComplete: Boolean(updated.username && updated.kingdom),
+          schemaVersion: 1,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+      }
 
-      loadProfile(user);
+      await loadProfile(user);
       DOM.editProfileForm.style.display = "none";
       DOM.editProfileBtn.innerText = "Edit Profile";
       alert("Profile updated.");
@@ -1909,10 +2003,27 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       if (user) {
         writeExtraProfile(user.uid, { kingdom, about });
+        if (db) {
+          try {
+            await db.collection("users").doc(user.uid).set({
+              email,
+              username,
+              displayName: username,
+              kingdom,
+              about: about.slice(0, 30),
+              profileComplete: Boolean(username && kingdom),
+              schemaVersion: 1,
+              createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+          } catch (profileError) {
+            console.warn("Profile sync will retry in the app.", profileError);
+          }
+        }
       }
 
       alert("Registered successfully.");
-      if (user) loadProfile(user);
+      if (user) await loadProfile(user);
       document.getElementById("closeModal").click();
     } catch (err) {
       alert(firebaseErrorMessage(err));
@@ -1930,7 +2041,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const email = document.getElementById("loginEmail").value.trim();
       const password = document.getElementById("loginPassword").value;
       const cred = await auth.signInWithEmailAndPassword(email, password);
-      if (cred.user) loadProfile(cred.user);
+      if (cred.user) await loadProfile(cred.user);
       document.getElementById("closeModal").click();
     } catch (err) {
       alert(firebaseErrorMessage(err));
@@ -1969,27 +2080,29 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  async function populateLeaderboard() {
-    try {
-      const res = await fetch(`${API_URL}/api/leaderboard`);
-      const data = await res.json();
-      const tbody = document.getElementById("leaderboardTableBody");
-      tbody.innerHTML = "";
-      data.forEach(user => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td><img src="${user.photo}" alt="${user.username}" class="leaderboard-img"></td>
-          <td>${user.username}</td>
-          <td>${user.kingdom}</td>
-          <td>${user.winnings}</td>`;
-        tbody.appendChild(row);
-      });
-    } catch (err) {
-      alert("Failed to load leaderboard.");
-    }
-  }
+  const setDashboardValue = (id, value) => {
+    const element = document.getElementById(id);
+    if (element) element.innerText = String(value);
+  };
 
-  function loadProfile(user) {
+  const setDashboardUnavailable = () => {
+    [
+      "dashboardFortWins",
+      "dashboardKingdomWins",
+      "dashboardCircuitWins",
+      "dashboardTitlesWon",
+      "dashboardAura",
+      "dashboardAupTotal",
+      "dashboardAupLeft",
+      "dashboardAupOceania",
+      "dashboardAupEuro",
+      "dashboardAupIndia",
+      "dashboardAupInternational",
+      "dashboardAupNorthAmerica"
+    ].forEach(id => setDashboardValue(id, "—"));
+  };
+
+  async function loadProfile(user) {
     const isSignedIn = Boolean(user);
     const logoutBtn = document.getElementById("logoutBtn");
     if (logoutBtn) logoutBtn.style.display = isSignedIn ? "" : "none";
@@ -2010,17 +2123,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (user) {
       const extra = user.uid ? readExtraProfile(user.uid) : {};
-      const username = user.displayName || extra.username || "Player";
+      let remoteProfile = {};
+      let progress = null;
+      if (db) {
+        try {
+          const [profileSnap, progressSnap] = await Promise.all([
+            db.collection("users").doc(user.uid).get(),
+            db.collection("server_progress").doc(user.uid).get()
+          ]);
+          if (!auth || auth.currentUser?.uid !== user.uid) return;
+          remoteProfile = profileSnap.exists ? (profileSnap.data() || {}) : {};
+          progress = progressSnap.exists ? (progressSnap.data() || {}) : {};
+        } catch (error) {
+          console.warn("Authoritative player dashboard is unavailable.", error);
+        }
+      }
+
+      const username = remoteProfile.displayName || user.displayName || extra.username || "Player";
       const email = user.email || "—";
-      const kingdom = extra.kingdom || "Not Set";
-      const about = extra.about || "Ready to win!";
+      const kingdom = remoteProfile.kingdom || extra.kingdom || "Not Set";
+      const about = remoteProfile.about || extra.about || "Ready to win!";
       const avatarUrl = user.photoURL || "Renoir.png";
-      const progress = extra.progress || {};
-      const totalAup = Number(progress.totalAup ?? progress.aupTotal ?? extra.totalAup ?? 0);
-      const maxAup = 1000000000;
-      const rawAura = Number(progress.aura ?? extra.aura ?? (totalAup / maxAup) * 100);
-      const aura = Math.max(0, Math.min(100, rawAura));
-      const aupLeft = Math.max(0, maxAup - totalAup);
       const joined = user.metadata && user.metadata.creationTime
         ? new Date(user.metadata.creationTime).toLocaleDateString(undefined, {
             year: "numeric",
@@ -2034,37 +2157,56 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("profileKingdom").innerText = kingdom;
       document.getElementById("dashboardAbout").innerText = about;
       document.getElementById("dashboardJoined").innerText = joined;
-      document.getElementById("dashboardFortWins").innerText = String(progress.fortsWon || 0);
-      document.getElementById("dashboardKingdomWins").innerText = String(progress.kingdomsWon || 0);
-      document.getElementById("dashboardCircuitWins").innerText = String(progress.circuitsWon || 0);
-      document.getElementById("dashboardTitlesWon").innerText = String(progress.titlesWon || 0);
-      document.getElementById("dashboardAura").innerText = Number.isFinite(aura) ? String(Math.round(aura)) : "0";
-      document.getElementById("dashboardAupTotal").innerText = Number.isFinite(totalAup) ? totalAup.toLocaleString() : "0";
-      document.getElementById("dashboardAupLeft").innerText = Number.isFinite(aupLeft) ? aupLeft.toLocaleString() : "0";
-      document.getElementById("dashboardAupOceania").innerText = Number(progress.oceaniaAup || 0).toLocaleString();
-      document.getElementById("dashboardAupEuro").innerText = Number(progress.euroAup || 0).toLocaleString();
-      document.getElementById("dashboardAupIndia").innerText = Number(progress.indiaAup || 0).toLocaleString();
-      document.getElementById("dashboardAupInternational").innerText = Number(progress.internationalAup || 0).toLocaleString();
+      writeExtraProfile(user.uid, { username, kingdom, about });
+
+      if (progress == null) {
+        setDashboardUnavailable();
+      } else {
+        const indiaAup = Math.max(0, Number(progress.indiaAup) || 0);
+        const internationalAup = Math.max(0, Number(progress.internationalAup) || 0);
+        const euroAup = Math.max(0, Number(progress.euroAup) || 0);
+        const oceaniaAup = Math.max(0, Number(progress.oceaniaAup) || 0);
+        const northAmericaAup = Math.max(0, Number(progress.northAmericaAup) || 0);
+        const totalAup = indiaAup + internationalAup + euroAup + oceaniaAup + northAmericaAup;
+        const maxAup = 1000000000;
+        const aura = Math.max(0, Math.min(100, (totalAup / maxAup) * 100));
+        const aupLeft = Math.max(0, maxAup - totalAup);
+        const cleared = Array.isArray(progress.cleared) ? progress.cleared : [];
+        const mainEvents = Array.isArray(progress.mainEventsCleared)
+          ? progress.mainEventsCleared
+          : [];
+        const titlesByCircuit = new Map();
+        mainEvents.forEach(id => {
+          const group = String(id).split(":")[1] || "";
+          if (group) titlesByCircuit.set(group, (titlesByCircuit.get(group) || 0) + 1);
+        });
+        const circuitsCleared = ["india", "international", "euro", "oceania", "northAmerica"]
+          .filter(group => (titlesByCircuit.get(group) || 0) >= 10)
+          .length;
+
+        setDashboardValue("dashboardFortWins", cleared.length);
+        setDashboardValue("dashboardKingdomWins", mainEvents.length);
+        setDashboardValue("dashboardCircuitWins", circuitsCleared);
+        setDashboardValue("dashboardTitlesWon", mainEvents.length);
+        setDashboardValue("dashboardAura", Math.round(aura));
+        setDashboardValue("dashboardAupTotal", totalAup.toLocaleString());
+        setDashboardValue("dashboardAupLeft", aupLeft.toLocaleString());
+        setDashboardValue("dashboardAupOceania", oceaniaAup.toLocaleString());
+        setDashboardValue("dashboardAupEuro", euroAup.toLocaleString());
+        setDashboardValue("dashboardAupIndia", indiaAup.toLocaleString());
+        setDashboardValue("dashboardAupInternational", internationalAup.toLocaleString());
+        setDashboardValue("dashboardAupNorthAmerica", northAmericaAup.toLocaleString());
+      }
 
       const avatarEl = document.getElementById("profileAvatar");
       if (avatarEl) avatarEl.src = avatarUrl;
     } else {
       document.getElementById("profileUsername").innerText = "Guest";
-      document.getElementById("profileEmail").innerText = "guest@example.com";
+      document.getElementById("profileEmail").innerText = "Not signed in";
       document.getElementById("profileKingdom").innerText = "Not Set";
       document.getElementById("dashboardAbout").innerText = "Ready to win!";
       document.getElementById("dashboardJoined").innerText = "Guest session";
-      document.getElementById("dashboardFortWins").innerText = "0";
-      document.getElementById("dashboardKingdomWins").innerText = "0";
-      document.getElementById("dashboardCircuitWins").innerText = "0";
-      document.getElementById("dashboardTitlesWon").innerText = "0";
-      document.getElementById("dashboardAura").innerText = "0";
-      document.getElementById("dashboardAupTotal").innerText = "0";
-      document.getElementById("dashboardAupLeft").innerText = "1,000,000,000";
-      document.getElementById("dashboardAupOceania").innerText = "0";
-      document.getElementById("dashboardAupEuro").innerText = "0";
-      document.getElementById("dashboardAupIndia").innerText = "0";
-      document.getElementById("dashboardAupInternational").innerText = "0";
+      setDashboardUnavailable();
 
       const avatarEl = document.getElementById("profileAvatar");
       if (avatarEl) avatarEl.src = "Renoir.png";

@@ -30,8 +30,22 @@ class LeaderboardEntry {
   double get aura => cappedAuraMilli / 1000.0;
 }
 
+class LeaderboardLoadException implements Exception {
+  final String message;
+  final Object? cause;
+
+  const LeaderboardLoadException(this.message, {this.cause});
+
+  @override
+  String toString() => 'LeaderboardLoadException: $message';
+}
+
 class LeaderboardFirestoreService {
   static const String kCollection = 'leaderboard';
+  static const int _auraMilliMultiplier = 2000000000;
+  static const int _activityMultiplier = 100000;
+  static const int _efficiencyMultiplier = 45000;
+  static const int _finishMultiplier = 50000;
 
   final ApiClient _apiClient;
 
@@ -71,16 +85,92 @@ class LeaderboardFirestoreService {
     final user = auth.currentUser;
     if (user == null || user.isAnonymous) return;
 
-    try {
-      await _apiClient.post('/v1/leaderboard/sync', const <String, dynamic>{});
-    } catch (e) {
-      debugPrint('Leaderboard sync failed: $e');
+    if (_apiClient.isConfigured) {
+      // The authoritative backend updates Aura membership only when Aura
+      // changes. Opening a leaderboard is deliberately read-only.
+      return;
     }
+
+    await _syncCurrentUserClientSide(user: user, wallet: wallet);
+  }
+
+  String _displayNameFor(User user) {
+    final displayName = user.displayName?.trim();
+    if (displayName != null && displayName.isNotEmpty) {
+      return displayName.length <= 40
+          ? displayName
+          : displayName.substring(0, 40);
+    }
+
+    final email = user.email?.trim();
+    if (email != null && email.contains('@')) {
+      final localPart = email.split('@').first.trim();
+      if (localPart.isNotEmpty) {
+        return localPart.length <= 40 ? localPart : localPart.substring(0, 40);
+      }
+    }
+
+    return 'Player';
+  }
+
+  int _rankScoreFor(AuraPointsService wallet) {
+    final auraMilli = wallet.totalAuraMilli
+        .clamp(
+          0,
+          aup.kAupMaxAuraTotal * aup.kAuraMilliPerAura,
+        )
+        .toInt();
+    final efficiency = wallet.auraMilliPerMatch.clamp(0, 20000).toInt();
+    final finishSkill =
+        (1000 - wallet.avgFinishPermille).clamp(0, 1000).toInt();
+    final lastActiveAt = wallet.lastActiveAtUtc;
+    final lastActiveDay = lastActiveAt == null
+        ? 0
+        : lastActiveAt.millisecondsSinceEpoch ~/ Duration.millisecondsPerDay;
+
+    return (auraMilli * _auraMilliMultiplier) +
+        (efficiency * _efficiencyMultiplier) +
+        (finishSkill * _finishMultiplier) +
+        (wallet.activityScore * _activityMultiplier) +
+        lastActiveDay;
+  }
+
+  Future<void> _syncCurrentUserClientSide({
+    required User user,
+    required AuraPointsService wallet,
+  }) async {
+    final db = _firestoreOrNull();
+    if (db == null) return;
+
+    final ref = db.collection(kCollection).doc(user.uid);
+    if (wallet.totalAuraMilli <= 0) {
+      await ref.delete();
+      return;
+    }
+
+    await ref.set(
+      <String, Object?>{
+        'displayName': _displayNameFor(user),
+        'auraMilli': wallet.totalAuraMilli,
+        'totalAup': wallet.totalAup,
+        'activityScore': wallet.activityScore,
+        'matchesPlayed': wallet.matchesPlayed,
+        'auraMilliPerMatch': wallet.auraMilliPerMatch,
+        'avgFinishPermille': wallet.avgFinishPermille,
+        'rankScore': _rankScoreFor(wallet),
+        'updatedAt': FieldValue.serverTimestamp(),
+      },
+      SetOptions(merge: true),
+    );
   }
 
   Future<List<LeaderboardEntry>> fetchTop10() async {
     final db = _firestoreOrNull();
-    if (db == null) return const <LeaderboardEntry>[];
+    if (db == null) {
+      throw const LeaderboardLoadException(
+        'Leaderboard service is unavailable.',
+      );
+    }
 
     try {
       final snap = await db
@@ -89,16 +179,26 @@ class LeaderboardFirestoreService {
           .limit(10)
           .get();
 
-      return snap.docs.map(_entryFromDoc).toList(growable: false);
-    } catch (e) {
-      debugPrint('Leaderboard fetch failed: $e');
-      return const <LeaderboardEntry>[];
+      return snap.docs
+          .map(_entryFromDoc)
+          .where((entry) => entry.auraMilli > 0)
+          .toList(growable: false);
+    } catch (error) {
+      debugPrint('Leaderboard fetch failed: $error');
+      throw LeaderboardLoadException(
+        'Could not load the leaderboard.',
+        cause: error,
+      );
     }
   }
 
   Future<List<LeaderboardEntry>> fetchTop10ByAura() async {
     final db = _firestoreOrNull();
-    if (db == null) return const <LeaderboardEntry>[];
+    if (db == null) {
+      throw const LeaderboardLoadException(
+        'Leaderboard service is unavailable.',
+      );
+    }
 
     try {
       final snap = await db
@@ -107,10 +207,16 @@ class LeaderboardFirestoreService {
           .limit(10)
           .get();
 
-      return snap.docs.map(_entryFromDoc).toList(growable: false);
-    } catch (e) {
-      debugPrint('Aura leaderboard fetch failed: $e');
-      return const <LeaderboardEntry>[];
+      return snap.docs
+          .map(_entryFromDoc)
+          .where((entry) => entry.auraMilli > 0)
+          .toList(growable: false);
+    } catch (error) {
+      debugPrint('Aura leaderboard fetch failed: $error');
+      throw LeaderboardLoadException(
+        'Could not load the Aura leaderboard.',
+        cause: error,
+      );
     }
   }
 

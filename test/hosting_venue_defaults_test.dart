@@ -38,6 +38,13 @@ void main() {
     );
     expect(
       indexHtml,
+      contains(
+        '<button class="venue-tab" data-target="us" '
+        'role="tab" aria-selected="false">US Circuit</button>',
+      ),
+    );
+    expect(
+      indexHtml,
       contains('<div class="venue-grid active" data-group="euro"'),
     );
 
@@ -57,11 +64,16 @@ void main() {
       r'\.venue-tab\[data-target="oceania"\]\.active\s*\{[^}]*background:\s*#ffd400;[^}]*color:\s*#000000;',
       multiLine: true,
     );
+    final usActive = RegExp(
+      r'\.venue-tab\[data-target="us"\]\.active\s*\{[^}]*background:\s*#001f3f;[^}]*color:\s*#ffffff;',
+      multiLine: true,
+    );
 
     expect(styles, matches(worldActive));
     expect(styles, matches(indiaActive));
     expect(styles, matches(euroActive));
     expect(styles, matches(oceaniaActive));
+    expect(styles, matches(usActive));
   });
 
   test('hosting venue tabs expose circuit leaderboards on hover or touch', () {
@@ -90,18 +102,25 @@ void main() {
         indexHtml,
         contains(
             '<ol class="venue-leaderboard-menu" aria-label="Micro Circuit leaderboard">'));
+    expect(
+        indexHtml,
+        contains(
+            '<ol class="venue-leaderboard-menu" aria-label="US Circuit leaderboard">'));
 
-    final leaderboardHeadingRows =
-        RegExp(r'<li class="venue-leaderboard-heading">Leaderboard</li>')
-            .allMatches(indexHtml)
-            .length;
-    expect(leaderboardHeadingRows, 4);
+    final leaderboardHeadingRows = RegExp(
+      r'<li class="venue-leaderboard-heading">Live Overall Leaderboard</li>',
+    ).allMatches(indexHtml).length;
+    expect(leaderboardHeadingRows, 5);
 
     final firstMenu = RegExp(
       r'<ol class="venue-leaderboard-menu" aria-label="Euro Circuit leaderboard">([\s\S]*?)</ol>',
     ).firstMatch(indexHtml);
     expect(firstMenu, isNotNull);
-    expect(RegExp(r'<li').allMatches(firstMenu!.group(1)!).length, 11);
+    expect(RegExp(r'<li').allMatches(firstMenu!.group(1)!).length, 2);
+    expect(
+      RegExp(r'class="venue-leaderboard-status"').allMatches(indexHtml).length,
+      5,
+    );
 
     for (final topName in <String>[
       'Jordan Walker',
@@ -109,7 +128,7 @@ void main() {
       'Mei Lin Tan',
       'Nur Aisyah',
     ]) {
-      expect(indexHtml, contains(topName));
+      expect(indexHtml, isNot(contains(topName)));
     }
 
     expect(
@@ -165,6 +184,7 @@ void main() {
     expect(indexHtml, contains('id="dashboardAupEuro"'));
     expect(indexHtml, contains('id="dashboardAupIndia"'));
     expect(indexHtml, contains('id="dashboardAupInternational"'));
+    expect(indexHtml, contains('id="dashboardAupNorthAmerica"'));
     expect(indexHtml, isNot(contains('viewIdCardBtn')));
     expect(indexHtml, isNot(contains('id-card')));
     expect(indexHtml, isNot(contains('ID Card')));
@@ -178,6 +198,8 @@ void main() {
     expect(styles, contains('background: #0aa83f;'));
     expect(styles, contains('.venue-tab-item-oceania'));
     expect(styles, contains('background: #ffd400;'));
+    expect(styles, contains('.venue-tab-item-us'));
+    expect(styles, contains('background: #001f3f;'));
     expect(
       styles,
       matches(RegExp(
@@ -228,10 +250,46 @@ void main() {
         contains('setTimeout(() => closeLeaderboardMenu(item), 3000)'));
     expect(scripts, contains('aria-expanded'));
     expect(scripts, contains('orderBy("auraMilli", "desc")'));
-    expect(scripts, contains('applyLeaderboards(entries)'));
+    expect(scripts, contains('renderLiveLeaderboards(entries)'));
+    expect(scripts, isNot(contains('leaderboardFallbacks')));
     expect(scripts, contains('"Dashboard"'));
     expect(scripts, contains('"Open my profile"'));
     expect(scripts, contains('"Sign in to manage profile"'));
+  });
+
+  test('hosting shell has no orphan feature panel and stable favicon refresh',
+      () {
+    final indexHtml = File('hosting/index.html').readAsStringSync();
+    final webIndexHtml = File('web/index.html').readAsStringSync();
+    final styles = File('hosting/styles.css').readAsStringSync();
+    final scripts = File('hosting/scripts.js').readAsStringSync();
+    final firebaseJson = File('firebase.json').readAsStringSync();
+
+    for (final removed in <String>[
+      'feature-panel',
+      'featurePopup',
+      'featureModal',
+      'closeFeatureModal',
+      'closeFeaturePopup',
+      'Everything synced with the app',
+      'Jump into the circuit however you like',
+    ]) {
+      expect(indexHtml, isNot(contains(removed)));
+      expect(styles, isNot(contains(removed)));
+      expect(scripts, isNot(contains(removed)));
+    }
+
+    for (final href in <String>[
+      'favicon.ico?v=20260705',
+      'favicon-32x32.png?v=20260705',
+      'favicon-16x16.png?v=20260705',
+    ]) {
+      expect(indexHtml, contains(href));
+      expect(webIndexHtml, contains(href));
+    }
+    expect(indexHtml, contains('favicon.png?v=20260705'));
+    expect(firebaseJson, contains('"source": "/favicon.ico"'));
+    expect(firebaseJson, contains('"source": "/web/favicon.ico"'));
   });
 
   test('hosting venue cards show fort counts and title names', () {
@@ -279,6 +337,16 @@ void main() {
       '10 Forts, Title: Seigneur',
       '8 Forts, Title: Burgher',
       '10 Forts, Title: Marshal',
+      '9 Forts, Title: Mountie',
+      '10 Forts, Title: Patriot',
+      '10 Forts, Title: Maccabee',
+      '10 Forts, Title: Cavalier',
+      '10 Forts, Title: Loopmaster',
+      '10 Forts, Title: Buccaneer',
+      '10 Forts, Title: Longhorn',
+      '10 Forts, Title: Marshal',
+      '10 Forts, Title: Prospector',
+      '10 Forts, Title: Rainmaker',
     ];
 
     for (final summary in expectedSummaries) {

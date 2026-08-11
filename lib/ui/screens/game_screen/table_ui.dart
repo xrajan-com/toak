@@ -9,8 +9,9 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'seat_layout.dart' show balancedSeatArcFractions;
-import 'table.dart' show TableFelt, WoodType;
+import 'seat_layout.dart' show stadiumSeatTopLeftPositions;
+import 'seat_card_layout.dart' show seatAvatarVisualRect;
+import 'table.dart' show TableFelt, WoodType, playerSafeFeltRRect;
 import 'players.dart' show Seat, SeatWidget, seatFallbackAsset;
 import 'renoir_ui.dart' show RenoirSignals;
 
@@ -24,6 +25,7 @@ enum BlindChipPlacement {
 class TableGeometry {
   final double railWidth;
   final Rect feltRect; // inside-rail rect in local space
+  final RRect playerSafeRRect; // inside the visible inset felt line
   final Offset origin; // deck origin in FELT space
   final List<Offset> seatTargets; // per-seat target centers in FELT space
   final Offset boardCenter; // community row center in FELT space
@@ -31,6 +33,7 @@ class TableGeometry {
   const TableGeometry({
     required this.railWidth,
     required this.feltRect,
+    required this.playerSafeRRect,
     required this.origin,
     required this.seatTargets,
     required this.boardCenter,
@@ -159,6 +162,7 @@ class _GameTableLayerState extends State<GameTableLayer> {
   bool _geomsEqual(TableGeometry a, TableGeometry b) {
     if (a.railWidth != b.railWidth) return false;
     if (a.feltRect != b.feltRect) return false;
+    if (a.playerSafeRRect != b.playerSafeRRect) return false;
     if (a.origin != b.origin) return false;
     if (a.boardCenter != b.boardCenter) return false;
     final t1 = a.seatTargets, t2 = b.seatTargets;
@@ -190,125 +194,24 @@ class _GameTableLayerState extends State<GameTableLayer> {
     final seatW = widget.seatMaxW;
     final seatHpx = widget.seatH;
     final seatSide = math.min(seatW, seatHpx);
-
-    // Racetrack arc layout (matches top-layer seats): ~60–65% arc, with the
-    // hero anchored on the bottom midpoint and the remaining seats distributed
-    // by circular distance from the hero.
     final int seatCount = widget.seats.length;
-    final List<Offset> seatPositions = <Offset>[];
-    if (seatCount > 0) {
-      const double baseReservedTopFraction = 0.40;
-      const double minReservedTopFraction = 0.35;
-      const double superellipseN = 4.0;
-      final double radius = seatSide / 2;
-      final double cx = feltRect.center.dx;
-      final double cy = feltRect.center.dy;
-      final double railCenter = railW / 2;
-      final double a = math.max(radius, (w / 2) - railCenter);
-      final double b = math.max(radius, (h / 2) - railCenter);
+    final RRect playerSafeBoundary = playerSafeFeltRRect(Size(w, h), railW);
+    final List<Offset> seatPositions = stadiumSeatTopLeftPositions(
+      safeStadiumRect: playerSafeBoundary.outerRect,
+      seatCount: seatCount,
+      heroIndex: widget.heroIndex,
+      seatSize: seatSide,
+      visualFootprintSize: seatAvatarVisualRect(
+        Rect.fromLTWH(0, 0, seatSide, seatSide),
+      ).width,
+      maximumVisualScale: 1.10,
+      boundaryGap: widget.seatVisualMarginPx,
+    );
 
-      double reservedTopFraction = baseReservedTopFraction;
-      if (seatCount > 1) {
-        final double minSpacing = seatSide * 1.05;
-        final double rEff = math.min(a, b);
-        final double stepNeeded =
-            2 * math.asin((minSpacing / 2) / math.max(rEff, 1e-3));
-        final double requiredAngle = stepNeeded * seatCount;
-        final double candidateReserved = 1 - (requiredAngle / (2 * math.pi));
-        reservedTopFraction = math.max(
-          minReservedTopFraction,
-          math.min(baseReservedTopFraction, candidateReserved),
-        );
-      }
-
-      final double reservedAngle = reservedTopFraction * 2 * math.pi;
-      final double availableAngle = (2 * math.pi) - reservedAngle;
-      final double start = (math.pi / 2) - (availableAngle / 2);
-
-      Offset pointAt(double theta) {
-        final double cosT = math.cos(theta);
-        final double sinT = math.sin(theta);
-        final double px = a *
-            math.pow(cosT.abs(), 2 / superellipseN).toDouble() *
-            (cosT >= 0 ? 1 : -1);
-        final double py = b *
-            math.pow(sinT.abs(), 2 / superellipseN).toDouble() *
-            (sinT >= 0 ? 1 : -1);
-        return Offset(cx + px - radius, cy + py - radius);
-      }
-
-      const int samples = 400;
-      final List<double> angles = List<double>.generate(
-        samples,
-        (i) => start + (availableAngle * i) / (samples - 1),
-      );
-      final List<Offset> pts = [for (final ang in angles) pointAt(ang)];
-
-      final List<double> cumDist = [0];
-      for (int i = 1; i < pts.length; i++) {
-        cumDist.add(cumDist.last + (pts[i] - pts[i - 1]).distance);
-      }
-      final double totalLen = cumDist.last;
-
-      Offset pointAtDistance(double target) {
-        int idx = cumDist.indexWhere((d) => d >= target);
-        if (idx <= 0) {
-          return pts.first;
-        } else if (idx == -1 || idx >= cumDist.length) {
-          return pts.last;
-        } else {
-          final double prevD = cumDist[idx - 1];
-          final double nextD = cumDist[idx];
-          final double t = (nextD - prevD).abs() < 1e-6
-              ? 0.0
-              : ((target - prevD) / (nextD - prevD)).clamp(0.0, 1.0);
-          final Offset p = Offset.lerp(pts[idx - 1], pts[idx], t)!;
-          return p;
-        }
-      }
-
-      final List<double> seatFractions = balancedSeatArcFractions(
-        seatCount: seatCount,
-        heroIndex: widget.heroIndex,
-      );
-      for (final double fraction in seatFractions) {
-        seatPositions.add(pointAtDistance(totalLen * fraction));
-      }
-    }
-
-    // Clamp seats to table bounds so avatars can touch the outer rail edge.
-    final double seatPad = widget.seatVisualMarginPx;
-    final double railCenter = railW / 2;
-    final double seatRadius = seatSide / 2;
-    final double overflow = math.max(0.0, seatRadius - railCenter);
-    final double minX = -overflow + seatPad;
-    final double maxX = w - seatSide + overflow - seatPad;
-    final double minY = -overflow + seatPad;
-    final double maxY = h - seatSide + overflow - seatPad;
-    final Offset tableCenter = Offset(w / 2, h / 2);
-    const double inwardPx =
-        4.0; // slight nudge toward center so avatars just kiss the rail
-
-    for (int i = 0; i < seatPositions.length; i++) {
-      final p = seatPositions[i];
-      final Offset center =
-          Offset(p.dx + seatSide * 0.5, p.dy + seatSide * 0.5);
-      final Offset dir = center - tableCenter;
-      final double dist = dir.distance;
-      final Offset nudgedCenter =
-          dist < 1e-3 ? center : center - dir / dist * inwardPx;
-      final Offset topLeft = Offset(
-          nudgedCenter.dx - seatSide * 0.5, nudgedCenter.dy - seatSide * 0.5);
-      seatPositions[i] = Offset(
-        topLeft.dx.clamp(minX, maxX),
-        topLeft.dy.clamp(minY, maxY),
-      );
-    }
-
-    // 6) Seat card targets (a bit above seat mid)
+    // 6) Deal targets use the visible avatar centre.
     final seatTargets = <Offset>[
       for (final p in seatPositions)
-        Offset(p.dx + seatSide * 0.5, p.dy + seatSide * 0.32),
+        Offset(p.dx + seatSide * 0.5, p.dy + seatSide * 0.5),
     ];
 
     // 7) Board center — respects inner (so it won’t collide with rail either)
@@ -324,6 +227,7 @@ class _GameTableLayerState extends State<GameTableLayer> {
     final geom = TableGeometry(
       railWidth: railW,
       feltRect: feltRect,
+      playerSafeRRect: playerSafeBoundary,
       origin: origin,
       seatTargets: seatTargets,
       boardCenter: boardCenter,
@@ -345,7 +249,7 @@ class _GameTableLayerState extends State<GameTableLayer> {
     }
 
     final leaderIndex = _leaderIndex(widget.seats, widget.hiddenSeatIdx);
-    final double chipSize = (seatSide * 0.46).clamp(26.0, 52.0).toDouble();
+    final double chipSize = (seatSide * 0.34).clamp(24.0, 40.0).toDouble();
     final bool chipsOnRail =
         widget.blindChipPlacement == BlindChipPlacement.rail;
     final Rect chipClampRect = chipsOnRail ? Rect.fromLTWH(0, 0, w, h) : inner;
@@ -355,12 +259,9 @@ class _GameTableLayerState extends State<GameTableLayer> {
             hiddenSeatIdx: widget.hiddenSeatIdx,
             seatPositions: seatPositions,
             seatSide: seatSide,
-            boardCenter: boardCenter,
-            feltRect: feltRect,
+            tableCenter: feltRect.center,
             clampRect: chipClampRect,
             chipSize: chipSize,
-            placement: widget.blindChipPlacement,
-            railWidth: railW,
             dealerIndex: widget.dealerIndex,
             sbIndex: widget.sbIndex,
             bbIndex: widget.bbIndex,
@@ -487,12 +388,9 @@ List<Widget> buildBlindChips({
   required Set<int> hiddenSeatIdx,
   required List<Offset> seatPositions,
   required double seatSide,
-  required Offset boardCenter,
-  required Rect feltRect,
+  required Offset tableCenter,
   required Rect clampRect,
   required double chipSize,
-  required BlindChipPlacement placement,
-  required double railWidth,
   int dealerIndex = -1,
   required int sbIndex,
   required int bbIndex,
@@ -525,46 +423,30 @@ List<Widget> buildBlindChips({
     final Seat seat = seats[seatIdx];
     if (seat.busted) continue;
 
-    final Offset? baseCenter = _resolveBlindChipCenter(
+    final List<Offset> centers = positionChipCentersForSeat(
       seatTopLeft: seatPositions[seatIdx],
       seatSide: seatSide,
-      boardCenter: boardCenter,
+      tableCenter: tableCenter,
       clampRect: clampRect,
       chipSize: chipSize,
-      feltRect: feltRect,
-      placement: placement,
-      railWidth: railWidth,
-      heroSeat: seatIdx == heroIndex,
+      tagCount: entry.value.length,
     );
-    if (baseCenter == null) continue;
-
-    final Offset seatCenter = Offset(
-      seatPositions[seatIdx].dx + seatSide / 2,
-      seatPositions[seatIdx].dy + seatSide / 2,
-    );
-    final Offset radial = boardCenter - seatCenter;
-    final double dist = radial.distance;
-    final Offset tangent = dist <= 1e-3
-        ? const Offset(1, 0)
-        : Offset(-radial.dy / dist, radial.dx / dist);
     final List<_PositionChipKind> kinds = entry.value;
-    final double spacing = chipSize * 0.98;
 
     for (int i = 0; i < kinds.length; i++) {
-      final double offsetIndex = i - (kinds.length - 1) / 2;
-      final Offset center = _clampChipCenter(
-        baseCenter + tangent * (offsetIndex * spacing),
-        clampRect: clampRect,
-        chipSize: chipSize,
-      );
+      final Offset center = centers[i];
 
       chips.add(
         Positioned(
+          key: ValueKey<String>(
+            'position-chip-${kinds[i].name}-$seatIdx',
+          ),
           left: center.dx - chipSize / 2,
           top: center.dy - chipSize / 2,
           child: _PositionChip(
             kind: kinds[i],
             size: chipSize,
+            playerName: seat.name,
           ),
         ),
       );
@@ -589,36 +471,32 @@ Offset _clampChipCenter(
   );
 }
 
-Offset? _resolveBlindChipCenter({
+List<Offset> positionChipCentersForSeat({
   required Offset seatTopLeft,
   required double seatSide,
-  required Offset boardCenter,
+  required Offset tableCenter,
   required Rect clampRect,
   required double chipSize,
-  required Rect feltRect,
-  required BlindChipPlacement placement,
-  required double railWidth,
-  required bool heroSeat,
+  required int tagCount,
 }) {
+  if (tagCount <= 0) return const <Offset>[];
   final Offset seatCenter =
       Offset(seatTopLeft.dx + seatSide / 2, seatTopLeft.dy + seatSide / 2);
+  final double inwardSign = tableCenter.dx >= seatCenter.dx ? 1.0 : -1.0;
+  final double edgeX = inwardSign > 0
+      ? seatTopLeft.dx + seatSide - chipSize * 0.28
+      : seatTopLeft.dx + chipSize * 0.28;
+  final double topY = seatTopLeft.dy + chipSize * 0.38;
+  final double spacing = chipSize * 1.08;
 
-  // Slide the tag toward the table center so it sits between the seat and the felt center.
-  final Offset toCenter = boardCenter - seatCenter;
-  final double dist = toCenter.distance;
-  if (dist <= 1e-3) return null;
-  final Offset dir = toCenter / dist;
-  final double travel = seatSide * 0.55;
-  final Offset desired = seatCenter + dir * travel;
-
-  final double minDx = clampRect.left + chipSize / 2;
-  final double maxDx = clampRect.right - chipSize / 2;
-  final double minDy = clampRect.top + chipSize / 2;
-  final double maxDy = clampRect.bottom - chipSize / 2;
-
-  final double clampedX = desired.dx.clamp(minDx, math.max(minDx, maxDx));
-  final double clampedY = desired.dy.clamp(minDy, math.max(minDy, maxDy));
-  return Offset(clampedX, clampedY);
+  return List<Offset>.generate(tagCount, (int index) {
+    final double centeredIndex = index - (tagCount - 1) / 2;
+    return _clampChipCenter(
+      Offset(edgeX + inwardSign * centeredIndex * spacing, topY),
+      clampRect: clampRect,
+      chipSize: chipSize,
+    );
+  }, growable: false);
 }
 
 Rect _deflateClamped(Rect r, double pad) {
@@ -643,10 +521,12 @@ class _PositionChip extends StatelessWidget {
   const _PositionChip({
     required this.kind,
     required this.size,
+    required this.playerName,
   });
 
   final _PositionChipKind kind;
   final double size;
+  final String playerName;
 
   @override
   Widget build(BuildContext context) {
@@ -673,46 +553,57 @@ class _PositionChip extends StatelessWidget {
         break;
       case _PositionChipKind.bigBlind:
         label = 'BB';
-        gradient = const [Color(0xFFFFC61A), Color(0xFFFF6A00)];
-        textColor = const Color(0xFF2C1600);
-        glowColor = const Color(0xFFFF7A00);
-        borderColor = const Color(0xFFFFE0A3);
+        gradient = const [Color(0xFFFF8A00), Color(0xFFE63E00)];
+        textColor = Colors.white;
+        glowColor = const Color(0xFFFF4D00);
+        borderColor = const Color(0xFFFFC27A);
         break;
     }
 
+    final String roleName = switch (kind) {
+      _PositionChipKind.dealer => 'Dealer button',
+      _PositionChipKind.smallBlind => 'Small blind',
+      _PositionChipKind.bigBlind => 'Big blind',
+    };
+
     return IgnorePointer(
-      child: Opacity(
-        opacity: 0.375,
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              colors: gradient,
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            border: Border.all(
-              color: borderColor.withValues(alpha: 0.9),
-              width: size * 0.08,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: glowColor.withValues(alpha: 0.42),
-                blurRadius: size * 0.32,
-                offset: const Offset(0, 6),
+      child: Semantics(
+        label: '$roleName for $playerName',
+        child: ExcludeSemantics(
+          child: Opacity(
+            opacity: 0.82,
+            child: Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: gradient,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                border: Border.all(
+                  color: borderColor.withValues(alpha: 0.9),
+                  width: size * 0.08,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: glowColor.withValues(alpha: 0.42),
+                    blurRadius: size * 0.32,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-            ],
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: TextStyle(
-              color: textColor,
-              fontWeight: FontWeight.w900,
-              fontSize: size * 0.38,
-              letterSpacing: 0.6,
+              alignment: Alignment.center,
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: textColor,
+                  fontWeight: FontWeight.w900,
+                  fontSize: size * 0.38,
+                  letterSpacing: 0.4,
+                ),
+              ),
             ),
           ),
         ),

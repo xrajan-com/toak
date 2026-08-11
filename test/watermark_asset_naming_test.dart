@@ -106,6 +106,16 @@ const Map<String, String> _kingdomFolderAliases = <String, String>{
   'Asia Rest': 'Asia',
   'Central Asia': 'Russia',
   'Persia': 'Arabia',
+  'Dominion of Canada': 'N. America',
+  'Massachusetts': 'N. America',
+  'New York': 'N. America',
+  'Virginia': 'N. America',
+  'Illinois': 'N. America',
+  'Florida': 'N. America',
+  'Texas': 'N. America',
+  'Kansas': 'N. America',
+  'Colorado': 'N. America',
+  'California': 'N. America',
 };
 
 const Map<String, String> _assetSlugReplacements = <String, String>{

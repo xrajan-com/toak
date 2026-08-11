@@ -15,25 +15,33 @@ class LightCardExample extends StatelessWidget {
           // Scale the pip nicely within the slot
           builder: (context) => const FittedBox(
             fit: BoxFit.fitHeight,
-            child: Text('♠', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            child: Text('♠',
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.w600)),
           ),
         ),
         Suit.clubs: SuitStyle(
           builder: (context) => const FittedBox(
             fit: BoxFit.fitHeight,
-            child: Text('♣', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            child: Text('♣',
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.w600)),
           ),
         ),
         Suit.hearts: SuitStyle(
           builder: (context) => const FittedBox(
             fit: BoxFit.fitHeight,
-            child: Text('♥', style: TextStyle(color: Color(0xFFFF2800), fontWeight: FontWeight.w600)),
+            child: Text('♥',
+                style: TextStyle(
+                    color: Color(0xFFFF2800), fontWeight: FontWeight.w600)),
           ),
         ),
         Suit.diamonds: SuitStyle(
           builder: (context) => const FittedBox(
             fit: BoxFit.fitHeight,
-            child: Text('♦', style: TextStyle(color: Color(0xFF24B6FF), fontWeight: FontWeight.w600)),
+            child: Text('♦',
+                style: TextStyle(
+                    color: Color(0xFF24B6FF), fontWeight: FontWeight.w600)),
           ),
         ),
         // Optional, in case a joker is ever created:
@@ -46,7 +54,12 @@ class LightCardExample extends StatelessWidget {
           border: Border.all(color: Colors.white, width: 2),
         ),
         child: const Center(
-          child: Text('TOAK', style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: 2)),
+          child: Text('TOAK',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2)),
         ),
       ),
     );

@@ -2,9 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ten_of_a_kind_poker/game/game_engine.dart' as eng;
 
 void main() {
-  test(
-      'bot can only make one aggressive raise per street and regains it after a board reveal',
-      () {
+  test('a player can re-raise after a full raise reopens action', () {
     final e = eng.GameEngine(
       config: const eng.GameConfig(
         tableSeed: 91,
@@ -39,17 +37,18 @@ void main() {
     expect(legalFacingReraise, contains(eng.ActionType.call));
     expect(legalFacingReraise, contains(eng.ActionType.fold));
     expect(legalFacingReraise, isNot(contains(eng.ActionType.bet)));
-    expect(legalFacingReraise, isNot(contains(eng.ActionType.raise)));
-    expect(legalFacingReraise, isNot(contains(eng.ActionType.allIn)));
+    expect(legalFacingReraise, contains(eng.ActionType.raise));
+    expect(legalFacingReraise, contains(eng.ActionType.allIn));
 
-    expect(e.act(eng.ActionType.call), eng.ActionResult.ok);
+    expect(e.act(eng.ActionType.raise, amount: 700), eng.ActionResult.ok);
     expect(e.actingIndex, caller);
+    expect(e.act(eng.ActionType.call), eng.ActionResult.ok);
     expect(e.act(eng.ActionType.call), eng.ActionResult.ok);
 
     expect(e.phase, eng.GamePhase.flop);
     expect(e.community.length, 3);
 
-    final legalOnFlop = e.legalActionsFor(opener);
+    final legalOnFlop = e.legalActionsFor(e.actingIndex);
     expect(legalOnFlop, contains(eng.ActionType.bet));
     expect(legalOnFlop, isNot(contains(eng.ActionType.raise)));
   });

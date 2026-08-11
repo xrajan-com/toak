@@ -26,8 +26,8 @@ enum HandCategory {
 class HandRank implements Comparable<HandRank> {
   final HandCategory category;
   final List<int> tiebreakers; // descending priority
-  final String name;           // e.g. "Two Pair", "Flush"
-  final List<Card> bestFive;   // exact 5 used
+  final String name; // e.g. "Two Pair", "Flush"
+  final List<Card> bestFive; // exact 5 used
 
   const HandRank(this.category, this.tiebreakers, this.name, this.bestFive);
 
@@ -128,7 +128,8 @@ class HandEvaluator {
       ..sort((a, b) => b.compareTo(a));
     if (quads.isNotEmpty) {
       final q = quads.first;
-      final kickers = uniqueRanksDesc(byRank.keys).where((v) => v != q).toList();
+      final kickers =
+          uniqueRanksDesc(byRank.keys).where((v) => v != q).toList();
       final bestFive = [
         ...byRank[q]!.take(4),
         _highestCard(seven.where((c) => rv(c) != q)),
@@ -157,8 +158,9 @@ class HandEvaluator {
     if (trips.isNotEmpty && (pairs.isNotEmpty || trips.length >= 2)) {
       final topTrip = trips.first;
       final altTripAsPair = trips.where((t) => t != topTrip).toList();
-      final pairPart =
-          pairs.isNotEmpty ? pairs.first : (altTripAsPair.isNotEmpty ? altTripAsPair.first : null);
+      final pairPart = pairs.isNotEmpty
+          ? pairs.first
+          : (altTripAsPair.isNotEmpty ? altTripAsPair.first : null);
       if (pairPart != null) {
         final bestFive = [
           ...byRank[topTrip]!.take(3),
@@ -186,7 +188,8 @@ class HandEvaluator {
     if (straightHigh != null) {
       final seq = _straightSequence(straightHigh, allRanksDesc.toSet());
       final bestFive = _pickSequenceCards(sortDesc(seven), seq);
-      return HandRank(HandCategory.straight, [straightHigh], 'Straight', bestFive);
+      return HandRank(
+          HandCategory.straight, [straightHigh], 'Straight', bestFive);
     }
 
     // ---------- Three of a Kind ----------
@@ -194,8 +197,8 @@ class HandEvaluator {
       final t = trips.first;
 
       // pick top 2 kickers from non-trip cards
-      final nonTrip =
-          seven.where((c) => rv(c) != t).toList()..sort((a, b) => rv(b).compareTo(rv(a)));
+      final nonTrip = seven.where((c) => rv(c) != t).toList()
+        ..sort((a, b) => rv(b).compareTo(rv(a)));
       final k1 = nonTrip.isNotEmpty ? nonTrip[0] : seven.first;
       final k2 = nonTrip.length > 1 ? nonTrip[1] : seven.last;
 
@@ -223,7 +226,8 @@ class HandEvaluator {
         ...byRank[b]!.take(2),
         _highestCard(seven.where((c) => rv(c) != a && rv(c) != b)),
       ];
-      return HandRank(HandCategory.twoPair, [a, b, kicker], 'Two Pair', bestFive);
+      return HandRank(
+          HandCategory.twoPair, [a, b, kicker], 'Two Pair', bestFive);
     }
 
     // ---------- One Pair ----------

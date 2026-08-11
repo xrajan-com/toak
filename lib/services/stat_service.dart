@@ -6,12 +6,9 @@ class StatService extends ChangeNotifier {
   int _losses = 0;
   double _winRate = 0;
 
-  // Sample leaderboard (for now this is mock data)
-  final List<Map<String, dynamic>> _leaderboard = [
-    {'username': 'Player001', 'score': 1200},
-    {'username': 'Player002', 'score': 1100},
-    {'username': 'Player003', 'score': 900},
-  ];
+  // Never invent rankings. A caller without an authoritative source sees an
+  // honest empty state.
+  final List<Map<String, dynamic>> _leaderboard = const [];
 
   // Getters
   int get gamesPlayed => _gamesPlayed;

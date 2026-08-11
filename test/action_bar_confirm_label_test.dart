@@ -11,8 +11,7 @@ void main() {
     );
   }
 
-  testWidgets(
-      'raise button changes to confirm and shows a raise amount pill',
+  testWidgets('raise button changes to confirm and shows a raise amount pill',
       (tester) async {
     await tester.pumpWidget(
       _wrap(

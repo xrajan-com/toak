@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'package:ten_of_a_kind_poker/config/kingdom_titles.dart';
@@ -23,10 +24,12 @@ import 'package:ten_of_a_kind_poker/services/leaderboard_firestore_service.dart'
 import 'package:ten_of_a_kind_poker/services/profile_service.dart';
 import 'package:ten_of_a_kind_poker/core/aup.dart' as aup;
 import 'package:ten_of_a_kind_poker/ui/screens/profile_screen.dart';
+import 'package:ten_of_a_kind_poker/ui/widgets/app_settings_sheet.dart';
 import 'package:ten_of_a_kind_poker/ui/widgets/stadium_banner.dart';
 
 const _red = AppColors.red;
 const _blue = AppColors.blue;
+const _navyBlue = Color(0xFF001F3F);
 
 /* ----------------------- HEADER ----------------------- */
 
@@ -43,7 +46,7 @@ class _HeaderIcon extends StatelessWidget {
       icon: Icon(icon, color: Colors.white, size: 22),
       tooltip: tooltip,
       onPressed: onTap,
-      constraints: const BoxConstraints.tightFor(width: 40, height: 48),
+      constraints: const BoxConstraints.tightFor(width: 48, height: 48),
       padding: EdgeInsets.zero,
       splashRadius: 22,
       mouseCursor: SystemMouseCursors.click,
@@ -51,21 +54,26 @@ class _HeaderIcon extends StatelessWidget {
   }
 }
 
+enum _HeaderMenuAction { dashboard, settings }
+
 class _HeaderActions extends StatelessWidget {
-  static const double _w = 96; // keeps banner perfectly centered
   final bool mirrored;
   final VoidCallback? onProfile;
   final VoidCallback? onDashboard;
+  final VoidCallback? onSettings;
   const _HeaderActions({
     required this.mirrored,
     this.onProfile,
     this.onDashboard,
+    this.onSettings,
   });
   @override
   Widget build(BuildContext context) {
-    if (mirrored) return const SizedBox(width: _w, height: 48);
+    final compact = MediaQuery.sizeOf(context).width < 600;
+    final width = compact ? 96.0 : 144.0;
+    if (mirrored) return SizedBox(width: width, height: 48);
     return SizedBox(
-      width: _w,
+      width: width,
       height: 48,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
@@ -75,11 +83,50 @@ class _HeaderActions extends StatelessWidget {
             tooltip: 'My Profile',
             onTap: onProfile ?? () {},
           ),
-          _HeaderIcon(
-            icon: Icons.dashboard_customize_outlined,
-            tooltip: 'Dashboard',
-            onTap: onDashboard ?? () {},
-          ),
+          if (compact)
+            PopupMenuButton<_HeaderMenuAction>(
+              tooltip: 'More options',
+              icon: const Icon(Icons.more_horiz, color: Colors.white),
+              constraints: const BoxConstraints.tightFor(width: 48, height: 48),
+              onSelected: (action) {
+                switch (action) {
+                  case _HeaderMenuAction.dashboard:
+                    onDashboard?.call();
+                  case _HeaderMenuAction.settings:
+                    onSettings?.call();
+                }
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: _HeaderMenuAction.dashboard,
+                  child: ListTile(
+                    leading: Icon(Icons.dashboard_customize_outlined),
+                    title: Text('Dashboard'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                PopupMenuItem(
+                  value: _HeaderMenuAction.settings,
+                  child: ListTile(
+                    leading: Icon(Icons.settings_outlined),
+                    title: Text('Settings'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
+            )
+          else ...[
+            _HeaderIcon(
+              icon: Icons.dashboard_customize_outlined,
+              tooltip: 'Dashboard',
+              onTap: onDashboard ?? () {},
+            ),
+            _HeaderIcon(
+              icon: Icons.settings_outlined,
+              tooltip: 'Settings',
+              onTap: onSettings ?? () {},
+            ),
+          ],
         ],
       ),
     );
@@ -106,6 +153,8 @@ class _VenueScreenState extends State<VenueScreen>
   static const _bannerAsset = 'assets/images/banner.png';
   int? _activeLeaderboardIndex;
   List<LeaderboardEntry> _leaderboardEntries = const <LeaderboardEntry>[];
+  bool _leaderboardLoading = true;
+  String? _leaderboardError;
 
   @override
   void initState() {
@@ -114,7 +163,7 @@ class _VenueScreenState extends State<VenueScreen>
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       unawaited(_loadCircuitLeaderboardEntries());
-      await DeckCache.ensureDeckReady();
+      await DeckCache.ensureDeckReadySafely();
       if (!mounted) return;
       final ctx = context;
       for (final group in kVenueGroups) {
@@ -145,17 +194,35 @@ class _VenueScreenState extends State<VenueScreen>
   }
 
   Future<void> _loadCircuitLeaderboardEntries() async {
+    if (mounted) {
+      setState(() {
+        _leaderboardLoading = true;
+        _leaderboardError = null;
+      });
+    }
     try {
       final aura = context.read<AuraPointsService>();
       await aura.init();
       await leaderboardFirestoreService.syncCurrentUserIfTop10(wallet: aura);
       final entries = await leaderboardFirestoreService.fetchTop10ByAura();
       if (!mounted) return;
-      setState(() => _leaderboardEntries = entries);
+      setState(() {
+        _leaderboardEntries = entries;
+        _leaderboardLoading = false;
+      });
     } on ProviderNotFoundException {
-      return;
-    } catch (e) {
-      debugPrint('Venue leaderboard fetch skipped: $e');
+      if (!mounted) return;
+      setState(() {
+        _leaderboardLoading = false;
+        _leaderboardError = 'Leaderboard service is unavailable.';
+      });
+    } catch (error) {
+      debugPrint('Venue leaderboard fetch failed: $error');
+      if (!mounted) return;
+      setState(() {
+        _leaderboardLoading = false;
+        _leaderboardError = 'Could not load the leaderboard.';
+      });
     }
   }
 
@@ -179,7 +246,7 @@ class _VenueScreenState extends State<VenueScreen>
 
   Future<void> _openVenue(VenueTheme venue, VenueGroup group) async {
     unawaited(SoundFx.instance.unlock());
-    unawaited(DeckCache.ensureDeckReady());
+    unawaited(DeckCache.ensureDeckReadySafely());
     if (!mounted) return;
     if (widget.mode == VenueEntryMode.quickGame) {
       await _enterQuickGame(venue, group);
@@ -240,9 +307,18 @@ class _VenueScreenState extends State<VenueScreen>
 
   Future<void> _logoutFromProfileDialog(BuildContext dialogContext) async {
     Navigator.pop(dialogContext);
-    await context.read<AuthService>().logout();
+    final auth = context.read<AuthService>();
+    await auth.logout();
     if (!mounted) return;
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    if (auth.currentUser == null) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Could not log out. Check your connection and retry.'),
+      ),
+    );
   }
 
   void _showMyProfileDialog() {
@@ -278,112 +354,135 @@ class _VenueScreenState extends State<VenueScreen>
           backgroundColor: const Color(0xFF101010),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.person_outline, color: AppColors.blue),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'My Profile',
-                      style: TextStyle(
-                        color: AppColors.white,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 440,
+              maxHeight: MediaQuery.sizeOf(ctx).height * 0.86,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.person_outline, color: AppColors.blue),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'My Profile',
+                        style: TextStyle(
+                          color: AppColors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 18,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        splashRadius: 18,
+                        icon: const Icon(Icons.close, color: Colors.white70),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Center(
+                    child: CircleAvatar(
+                      radius: 38,
+                      backgroundImage: avatarImage,
+                      backgroundColor: Colors.white10,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Text(
+                      name,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
                         fontWeight: FontWeight.w800,
                         fontSize: 18,
                       ),
                     ),
-                    const Spacer(),
-                    IconButton(
-                      splashRadius: 18,
-                      icon: const Icon(Icons.close, color: Colors.white70),
-                      onPressed: () => Navigator.pop(ctx),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Center(
-                  child: CircleAvatar(
-                    radius: 38,
-                    backgroundImage: avatarImage,
-                    backgroundColor: Colors.white10,
                   ),
-                ),
-                const SizedBox(height: 12),
-                Center(
-                  child: Text(
-                    name,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
+                  const SizedBox(height: 4),
+                  Center(
+                    child: Text(
+                      isGuest
+                          ? 'Guest player'
+                          : (email.isNotEmpty ? email : 'Signed in player'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white60,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12.5,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Center(
-                  child: Text(
-                    isGuest
-                        ? 'Guest player'
-                        : (email.isNotEmpty ? email : 'Signed in player'),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white60,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12.5,
-                    ),
+                  const SizedBox(height: 16),
+                  _MetricRow(
+                    label: 'Kingdom',
+                    value: kingdom.isNotEmpty ? kingdom : 'Not set',
                   ),
-                ),
-                const SizedBox(height: 16),
-                _MetricRow(
-                  label: 'Kingdom',
-                  value: kingdom.isNotEmpty ? kingdom : 'Not set',
-                ),
-                _MetricRow(
-                  label: 'About',
-                  value: about.isNotEmpty ? about : ProfileService.defaultAbout,
-                ),
-                const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: isGuest
-                        ? () => _openSignIn(ctx)
-                        : () => _openProfileEditor(ctx),
-                    icon: Icon(
-                      isGuest ? Icons.login_rounded : Icons.edit_outlined,
-                    ),
-                    label: Text(isGuest ? 'Sign In' : 'Edit Profile'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.blue,
-                      side: const BorderSide(color: AppColors.blue),
-                      minimumSize: const Size(double.infinity, 46),
-                    ),
+                  _MetricRow(
+                    label: 'About',
+                    value:
+                        about.isNotEmpty ? about : ProfileService.defaultAbout,
                   ),
-                ),
-                if (!isGuest) ...[
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 14),
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: () {
-                        unawaited(_logoutFromProfileDialog(ctx));
-                      },
-                      icon: const Icon(Icons.logout),
-                      label: const Text('Log Out'),
+                      onPressed: isGuest
+                          ? () => _openSignIn(ctx)
+                          : () => _openProfileEditor(ctx),
+                      icon: Icon(
+                        isGuest ? Icons.login_rounded : Icons.edit_outlined,
+                      ),
+                      label: Text(isGuest ? 'Sign In' : 'Edit Profile'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.red,
-                        side: const BorderSide(color: AppColors.red),
+                        foregroundColor: AppColors.blue,
+                        side: const BorderSide(color: AppColors.blue),
                         minimumSize: const Size(double.infinity, 46),
                       ),
                     ),
                   ),
+                  if (isGuest) ...[
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _openProfileEditor(ctx),
+                        icon: const Icon(Icons.manage_accounts_outlined),
+                        label: const Text('Guest Account & Privacy'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white70,
+                          side: const BorderSide(color: Colors.white30),
+                          minimumSize: const Size(double.infinity, 46),
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (!isGuest) ...[
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          unawaited(_logoutFromProfileDialog(ctx));
+                        },
+                        icon: const Icon(Icons.logout),
+                        label: const Text('Log Out'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.red,
+                          side: const BorderSide(color: AppColors.red),
+                          minimumSize: const Size(double.infinity, 46),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         );
@@ -408,7 +507,7 @@ class _VenueScreenState extends State<VenueScreen>
     }
     if (name.isEmpty) name = 'Player';
 
-    final about = (profile.about ?? '').trim();
+    final about = profile.about.trim();
     final kingdom = (profile.kingdom ?? '').trim();
 
     final subProgress = <VenueGroup, ({int cleared, int total})>{
@@ -529,7 +628,7 @@ class _VenueScreenState extends State<VenueScreen>
                   const SizedBox(height: 14),
                   for (final group in kVenueGroups)
                     _MetricRow(
-                      label: 'Sub‑Kingdoms cleared (${venueGroupLabel(group)})',
+                      label: 'Forts cleared (${venueGroupLabel(group)})',
                       value:
                           '${subProgress[group]!.cleared} / ${subProgress[group]!.total}',
                     ),
@@ -561,6 +660,10 @@ class _VenueScreenState extends State<VenueScreen>
                   _MetricRow(
                     label: 'Micro AUP',
                     value: aup.formatAup(aura.oceaniaAup),
+                  ),
+                  _MetricRow(
+                    label: 'US Circuit AUP',
+                    value: aup.formatAup(aura.northAmericaAup),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -650,6 +753,9 @@ class _VenueScreenState extends State<VenueScreen>
                       mirrored: false,
                       onProfile: _showMyProfileDialog,
                       onDashboard: _showProgressDialog,
+                      onSettings: () {
+                        unawaited(showAppSettingsSheet(context));
+                      },
                     ),
                   ],
                 ),
@@ -699,6 +805,11 @@ class _VenueScreenState extends State<VenueScreen>
                   child: _CircuitLeaderboardPopover(
                     spec: _circuitLeaderboards[index],
                     entries: _leaderboardEntries,
+                    loading: _leaderboardLoading,
+                    errorMessage: _leaderboardError,
+                    onRetry: () {
+                      unawaited(_loadCircuitLeaderboardEntries());
+                    },
                   ),
                 ),
             ],
@@ -787,7 +898,7 @@ class _KennyInterludeState extends State<_KennyInterlude>
     )..repeat();
 
     // Allow assets to warm while showing the interlude.
-    DeckCache.ensureDeckReady();
+    unawaited(DeckCache.ensureDeckReadySafely());
     _navTimer = Timer(const Duration(seconds: 4), _goNext);
   }
 
@@ -934,6 +1045,7 @@ class _TitleAndTabs extends StatefulWidget {
 
 class _TitleAndTabsState extends State<_TitleAndTabs> {
   int _hoveredIndex = -1;
+  int _focusedIndex = -1;
 
   @override
   void initState() {
@@ -970,50 +1082,105 @@ class _TitleAndTabsState extends State<_TitleAndTabs> {
         _chip(1, 'India', color: _blue, textOn: Colors.black),
         _chip(2, 'International', color: _red, textOn: Colors.white),
         _chip(3, 'Micro', color: Colors.yellow, textOn: Colors.black),
+        _chip(
+          4,
+          'US Circuit',
+          color: _navyBlue,
+          textOn: Colors.white,
+          alwaysFilled: true,
+        ),
       ],
     );
   }
 
-  Widget _chip(int index, String label,
-      {required Color color, required Color textOn}) {
+  Widget _chip(
+    int index,
+    String label, {
+    required Color color,
+    required Color textOn,
+    bool alwaysFilled = false,
+  }) {
     final hovered = _hoveredIndex == index;
+    final focused = _focusedIndex == index;
     final selected = widget.controller.index == index;
-    final bg = (hovered || selected) ? color : Colors.transparent;
-    final fg = (hovered || selected) ? textOn : Colors.white70;
+    final highlighted = hovered || focused || selected;
+    final bg = (alwaysFilled || highlighted) ? color : Colors.transparent;
+    final fg = (alwaysFilled || highlighted) ? textOn : Colors.white70;
 
-    return MouseRegion(
-      onEnter: (_) {
-        setState(() => _hoveredIndex = index);
-        widget.onLeaderboardShown(index);
-      },
-      onExit: (_) {
-        setState(() => _hoveredIndex = -1);
-        widget.onLeaderboardHidden();
-      },
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () {
-          widget.controller.animateTo(index);
-          widget.onLeaderboardShown(index);
+    void activate() {
+      widget.controller.animateTo(index);
+      widget.onLeaderboardShown(index);
+    }
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: 'Switch to $label',
+      child: FocusableActionDetector(
+        mouseCursor: SystemMouseCursors.click,
+        onShowFocusHighlight: (value) {
+          setState(() => _focusedIndex = value ? index : -1);
         },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          decoration: const ShapeDecoration(
-            color: Colors.transparent,
-            shape: StadiumBorder(),
+        shortcuts: const <ShortcutActivator, Intent>{
+          SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
+          SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
+        },
+        actions: <Type, Action<Intent>>{
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              activate();
+              return null;
+            },
           ),
-          child: Container(
-            decoration:
-                ShapeDecoration(color: bg, shape: const StadiumBorder()),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            child: Text(
-              label,
-              style: TextStyle(
-                color: fg,
-                fontWeight: FontWeight.w800,
-                fontSize: 14,
-                letterSpacing: .2,
+        },
+        child: MouseRegion(
+          onEnter: (_) {
+            setState(() => _hoveredIndex = index);
+            widget.onLeaderboardShown(index);
+          },
+          onExit: (_) {
+            setState(() => _hoveredIndex = -1);
+            widget.onLeaderboardHidden();
+          },
+          cursor: SystemMouseCursors.click,
+          child: GestureDetector(
+            onTap: activate,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 140),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: ShapeDecoration(
+                color: Colors.transparent,
+                shape: StadiumBorder(
+                  side: focused
+                      ? const BorderSide(color: Colors.white, width: 2)
+                      : BorderSide.none,
+                ),
+              ),
+              child: Container(
+                decoration: ShapeDecoration(
+                  color: bg,
+                  shape: const StadiumBorder(),
+                  shadows: selected && alwaysFilled
+                      ? const <BoxShadow>[
+                          BoxShadow(
+                            color: Color(0x6600AEEF),
+                            blurRadius: 10,
+                            spreadRadius: 1,
+                          ),
+                        ]
+                      : const <BoxShadow>[],
+                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: fg,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                    letterSpacing: .2,
+                  ),
+                ),
               ),
             ),
           ),
@@ -1029,7 +1196,6 @@ class _CircuitLeaderboardSpec {
   final Color foreground;
   final Color headingBackground;
   final Color headingForeground;
-  final List<String> names;
 
   const _CircuitLeaderboardSpec({
     required this.label,
@@ -1037,7 +1203,6 @@ class _CircuitLeaderboardSpec {
     required this.foreground,
     required this.headingBackground,
     required this.headingForeground,
-    required this.names,
   });
 }
 
@@ -1048,18 +1213,6 @@ const _circuitLeaderboards = <_CircuitLeaderboardSpec>[
     foreground: Colors.white,
     headingBackground: Colors.white,
     headingForeground: Colors.green,
-    names: [
-      'Mei Lin Tan',
-      'Darren Lim',
-      'Luca Bianchi',
-      'Nattida Kwan',
-      'Maximilian Keller',
-      'Sophie Dubois',
-      'Linh Pham',
-      'Nikos Papadakis',
-      'Sari Wijaya',
-      'Van Nguyen',
-    ],
   ),
   _CircuitLeaderboardSpec(
     label: 'Indian Circuit',
@@ -1067,18 +1220,6 @@ const _circuitLeaderboards = <_CircuitLeaderboardSpec>[
     foreground: Colors.black,
     headingBackground: Colors.black,
     headingForeground: _blue,
-    names: [
-      'Bajirao Kale',
-      'Jaspreet Dhillon',
-      'Siddharth Gaekwad',
-      'Tenzin Lama',
-      'Kabir Verma',
-      'Kaveri Rao',
-      'Arjun Deshmukh',
-      'Savitri Shinde',
-      'Harleen Kaur',
-      'Hari Krishnan',
-    ],
   ),
   _CircuitLeaderboardSpec(
     label: 'International Circuit',
@@ -1086,18 +1227,6 @@ const _circuitLeaderboards = <_CircuitLeaderboardSpec>[
     foreground: Colors.white,
     headingBackground: Colors.white,
     headingForeground: _red,
-    names: [
-      'Jordan Walker',
-      'Ling Zhao',
-      'Casey Morgan',
-      'Kofi Adeyemi',
-      'Mei Chen',
-      'Hassan Al Noor',
-      'Rafael Mendes',
-      'Amara Ndlovu',
-      'Brianna Lee',
-      'Elena Rossi',
-    ],
   ),
   _CircuitLeaderboardSpec(
     label: 'Micro Circuit',
@@ -1105,36 +1234,38 @@ const _circuitLeaderboards = <_CircuitLeaderboardSpec>[
     foreground: Colors.black,
     headingBackground: Colors.black,
     headingForeground: Colors.yellow,
-    names: [
-      'Nur Aisyah',
-      'Rosa Delgado',
-      'Anong Srisai',
-      'Fitri Halim',
-      'Thandar Hlaing',
-      'Kanya Vong',
-      'Liyana Salleh',
-      'Minh Tran',
-      'Sreymom Vann',
-      'Chaiwat Rattan',
-    ],
+  ),
+  _CircuitLeaderboardSpec(
+    label: 'US Circuit',
+    background: _navyBlue,
+    foreground: Colors.white,
+    headingBackground: Colors.white,
+    headingForeground: _navyBlue,
   ),
 ];
 
 class _CircuitLeaderboardPopover extends StatelessWidget {
   final _CircuitLeaderboardSpec spec;
   final List<LeaderboardEntry> entries;
+  final bool loading;
+  final String? errorMessage;
+  final VoidCallback onRetry;
 
   const _CircuitLeaderboardPopover({
     required this.spec,
     required this.entries,
+    required this.loading,
+    required this.errorMessage,
+    required this.onRetry,
   });
 
   @override
   Widget build(BuildContext context) {
-    final rows = _leaderboardRowsFor(spec, entries);
+    final rows = _leaderboardRowsFor(entries);
 
     return Semantics(
-      label: '${spec.label} leaderboard',
+      label: '${spec.label} global Aura leaderboard',
+      liveRegion: true,
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 300),
@@ -1172,13 +1303,60 @@ class _CircuitLeaderboardPopover extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _LeaderboardHeadingRow(spec: spec),
-                    for (int i = 0; i < rows.length; i++)
-                      _LeaderboardNameRow(
-                        rank: i + 1,
-                        name: rows[i].name,
-                        auraText: rows[i].auraText,
-                        spec: spec,
-                      ),
+                    if (loading)
+                      Padding(
+                        padding: const EdgeInsets.all(18),
+                        child: CircularProgressIndicator(
+                          color: spec.foreground,
+                          strokeWidth: 2.5,
+                        ),
+                      )
+                    else if (errorMessage != null)
+                      Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              errorMessage!,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: spec.foreground,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            TextButton.icon(
+                              onPressed: onRetry,
+                              icon: const Icon(Icons.refresh_rounded),
+                              label: const Text('Retry'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: spec.foreground,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else if (rows.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(18),
+                        child: Text(
+                          'No ranked players yet.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: spec.foreground,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      )
+                    else
+                      for (int i = 0; i < rows.length; i++)
+                        _LeaderboardNameRow(
+                          rank: i + 1,
+                          name: rows[i].name,
+                          auraText: rows[i].auraText,
+                          spec: spec,
+                        ),
                   ],
                 ),
               ),
@@ -1193,12 +1371,10 @@ class _CircuitLeaderboardPopover extends StatelessWidget {
 class _LeaderboardRowData {
   final String name;
   final int auraMilli;
-  final bool fallback;
 
   const _LeaderboardRowData({
     required this.name,
     required this.auraMilli,
-    required this.fallback,
   });
 
   String get auraText {
@@ -1209,19 +1385,9 @@ class _LeaderboardRowData {
 }
 
 List<_LeaderboardRowData> _leaderboardRowsFor(
-  _CircuitLeaderboardSpec spec,
   List<LeaderboardEntry> entries,
 ) {
-  final fallbackRows = <_LeaderboardRowData>[
-    for (int i = 0; i < spec.names.length; i++)
-      _LeaderboardRowData(
-        name: spec.names[i],
-        auraMilli: (99 - i) * 1000,
-        fallback: true,
-      ),
-  ];
-
-  final realRows = entries
+  final rows = entries
       .where((entry) => entry.auraMilli > 0)
       .map(
         (entry) => _LeaderboardRowData(
@@ -1229,20 +1395,12 @@ List<_LeaderboardRowData> _leaderboardRowsFor(
               ? 'Player'
               : entry.displayName.trim(),
           auraMilli: entry.cappedAuraMilli,
-          fallback: false,
         ),
       )
-      .toList(growable: false);
+      .toList()
+    ..sort((a, b) => b.auraMilli.compareTo(a.auraMilli));
 
-  final rows = <_LeaderboardRowData>[...fallbackRows, ...realRows]
-    ..sort((a, b) {
-      final aura = b.auraMilli.compareTo(a.auraMilli);
-      if (aura != 0) return aura;
-      if (a.fallback == b.fallback) return 0;
-      return a.fallback ? -1 : 1;
-    });
-
-  return rows.take(spec.names.length).toList(growable: false);
+  return rows.take(10).toList(growable: false);
 }
 
 class _LeaderboardHeadingRow extends StatelessWidget {
@@ -1257,7 +1415,7 @@ class _LeaderboardHeadingRow extends StatelessWidget {
       color: spec.headingBackground,
       alignment: Alignment.center,
       child: Text(
-        'LEADERBOARD',
+        'GLOBAL AURA',
         style: TextStyle(
           color: spec.headingForeground,
           fontSize: 12,
