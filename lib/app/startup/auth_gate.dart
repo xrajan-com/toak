@@ -13,7 +13,8 @@ class AuthGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.read<AuthService>();
+    final auth = context.watch<AuthService>();
+    if (auth.isLocalGuest) return const GameModeScreen();
     return StreamBuilder<User?>(
       stream: auth.authStateChanges,
       initialData: auth.currentUser,

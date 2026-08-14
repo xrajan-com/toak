@@ -11,6 +11,7 @@ class AuthService extends ChangeNotifier {
   FirebaseAuth? _auth;
   StreamSubscription<User?>? _authSub;
   final ApiClient _apiClient;
+  bool _isLocalGuest = false;
 
   AuthService({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient() {
     final auth = _authOrNull();
@@ -38,6 +39,17 @@ class AuthService extends ChangeNotifier {
   }
 
   bool get isLoggedIn => currentUser != null;
+
+  /// True when the player chose guest play while Firebase Auth was unavailable.
+  ///
+  /// Quick Game is fully local, so a cloud outage must not block this path.
+  bool get isLocalGuest => _isLocalGuest;
+
+  void continueAsLocalGuest() {
+    if (_isLocalGuest) return;
+    _isLocalGuest = true;
+    notifyListeners();
+  }
 
   Stream<User?> get authStateChanges =>
       _authOrNull()?.authStateChanges() ?? Stream<User?>.empty();
@@ -89,6 +101,11 @@ class AuthService extends ChangeNotifier {
 
   // 🔓 Sign out
   Future<bool> logout() async {
+    if (_isLocalGuest) {
+      _isLocalGuest = false;
+      notifyListeners();
+      return true;
+    }
     final auth = _authOrNull();
     if (auth == null) return false;
     try {

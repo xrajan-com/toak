@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 
 import 'package:ten_of_a_kind_poker/ui/theme/colors.dart';
 import 'package:ten_of_a_kind_poker/services/aura_points_service.dart';
+import 'package:ten_of_a_kind_poker/services/auth_service.dart';
 import 'package:ten_of_a_kind_poker/services/campaign_progress_service.dart';
 import 'package:ten_of_a_kind_poker/services/profile_service.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/game_mode_screen.dart';
@@ -341,15 +342,13 @@ class _AuthScreenState extends State<AuthScreen> {
     try {
       final auth = _authOrNull();
       if (auth == null) {
-        _showError(
-          'Guest sign-in is unavailable right now. Please try again later.',
-        );
+        await _continueAsLocalGuest();
         return;
       }
       final credential = await auth.signInAnonymously();
       final user = credential.user ?? auth.currentUser;
       if (user == null || !user.isAnonymous) {
-        _showError('Guest sign-in did not finish. Please try again.');
+        await _continueAsLocalGuest();
         return;
       }
       if (!mounted) return;
@@ -359,13 +358,27 @@ class _AuthScreenState extends State<AuthScreen> {
       );
     } on FirebaseAuthException catch (error) {
       debugPrint('Guest login failed (${error.code}): ${error.message}');
-      _showError(friendlyAuthErrorMessage(error));
+      await _continueAsLocalGuest();
     } catch (error) {
       debugPrint('Guest login failed: $error');
-      _showError('Guest sign-in could not be completed. Please try again.');
+      await _continueAsLocalGuest();
     } finally {
       _setLoading(false);
     }
+  }
+
+  Future<void> _continueAsLocalGuest() async {
+    if (!mounted) return;
+    try {
+      context.read<AuthService>().continueAsLocalGuest();
+      if (widget.managedByAuthGate) return;
+    } on ProviderNotFoundException {
+      // Isolated screens can still enter the local-only Quick Game flow.
+    }
+    if (!mounted) return;
+    await Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const GameModeScreen()),
+    );
   }
 
   Future<void> _completeAuth(User user) async {

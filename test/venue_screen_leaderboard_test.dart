@@ -73,6 +73,58 @@ void main() {
     expect(find.text('GLOBAL AURA'), findsNothing);
   });
 
+  testWidgets('all circuit selectors share one row in phone landscape',
+      (tester) async {
+    await binding.setSurfaceSize(const Size(800, 360));
+    addTearDown(() => binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: VenueScreen(),
+      ),
+    );
+    await tester.pump();
+
+    final chipFinders = List.generate(
+      5,
+      (index) => find.byKey(ValueKey('circuit-chip-$index')),
+    );
+    final firstCenterY = tester.getCenter(chipFinders.first).dy;
+
+    for (final chipFinder in chipFinders.skip(1)) {
+      expect(tester.getCenter(chipFinder).dy, closeTo(firstCenterY, 0.5));
+    }
+
+    final usChip = tester.widget<Container>(chipFinders.last);
+    final usDecoration = usChip.decoration! as ShapeDecoration;
+    final usLabel = tester.widget<Text>(find.text('US Circuit'));
+
+    expect(usDecoration.color, Colors.transparent);
+    expect(usLabel.style?.color, Colors.white);
+
+    await tester.tap(find.text('US Circuit'));
+    await tester.pumpAndSettle();
+
+    final selectedUsChip = tester.widget<Container>(chipFinders.last);
+    final selectedUsDecoration = selectedUsChip.decoration! as ShapeDecoration;
+    final selectedUsLabel = tester.widget<Text>(find.text('US Circuit'));
+    final leaderboardHeading = tester.widget<Text>(find.text('GLOBAL AURA'));
+    final leaderboardHeadingBox = tester.widget<Container>(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Container &&
+            widget.child is Text &&
+            (widget.child! as Text).data == 'GLOBAL AURA',
+      ),
+    );
+
+    expect(selectedUsDecoration.color, Colors.white);
+    expect(selectedUsLabel.style?.color, Colors.black);
+    expect(leaderboardHeadingBox.color, Colors.white);
+    expect(leaderboardHeading.style?.color, Colors.black);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('venue exposes an accessible Settings entry', (tester) async {
     await binding.setSurfaceSize(const Size(1200, 900));
     addTearDown(() => binding.setSurfaceSize(null));

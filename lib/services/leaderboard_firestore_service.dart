@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 
 import 'package:ten_of_a_kind_poker/core/aup.dart' as aup;
 import 'package:ten_of_a_kind_poker/services/api_client.dart';
@@ -42,15 +45,20 @@ class LeaderboardLoadException implements Exception {
 
 class LeaderboardFirestoreService {
   static const String kCollection = 'leaderboard';
+  static const String _firestoreProjectId = 'ten-of-a-kind-poker';
   static const int _auraMilliMultiplier = 2000000000;
   static const int _activityMultiplier = 100000;
   static const int _efficiencyMultiplier = 45000;
   static const int _finishMultiplier = 50000;
 
   final ApiClient _apiClient;
+  final http.Client _httpClient;
 
-  LeaderboardFirestoreService({ApiClient? apiClient})
-      : _apiClient = apiClient ?? ApiClient();
+  LeaderboardFirestoreService({
+    ApiClient? apiClient,
+    http.Client? httpClient,
+  })  : _apiClient = apiClient ?? ApiClient(),
+        _httpClient = httpClient ?? http.Client();
 
   FirebaseAuth? _authOrNull() {
     try {
@@ -165,6 +173,8 @@ class LeaderboardFirestoreService {
   }
 
   Future<List<LeaderboardEntry>> fetchTop10() async {
+    if (kIsWeb) return _fetchTop10FromPublicRest(orderBy: 'rankScore');
+
     final db = _firestoreOrNull();
     if (db == null) {
       throw const LeaderboardLoadException(
@@ -193,6 +203,8 @@ class LeaderboardFirestoreService {
   }
 
   Future<List<LeaderboardEntry>> fetchTop10ByAura() async {
+    if (kIsWeb) return _fetchTop10FromPublicRest(orderBy: 'auraMilli');
+
     final db = _firestoreOrNull();
     if (db == null) {
       throw const LeaderboardLoadException(
@@ -218,6 +230,102 @@ class LeaderboardFirestoreService {
         cause: error,
       );
     }
+  }
+
+  Future<List<LeaderboardEntry>> _fetchTop10FromPublicRest({
+    required String orderBy,
+  }) async {
+    final uri = Uri.https(
+      'firestore.googleapis.com',
+      '/v1/projects/$_firestoreProjectId/databases/(default)/documents/'
+          '$kCollection',
+      <String, String>{
+        'pageSize': '10',
+        'orderBy': '$orderBy desc',
+      },
+    );
+
+    try {
+      final response = await _httpClient.get(uri).timeout(
+            const Duration(seconds: 12),
+          );
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw http.ClientException(
+          'Public leaderboard returned ${response.statusCode}.',
+          uri,
+        );
+      }
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map<String, dynamic>) {
+        throw const FormatException('Invalid leaderboard response.');
+      }
+      final documents = decoded['documents'];
+      if (documents == null) return const <LeaderboardEntry>[];
+      if (documents is! List) {
+        throw const FormatException('Invalid leaderboard documents.');
+      }
+
+      return documents
+          .whereType<Map>()
+          .map((document) => _entryFromRestDocument(
+                Map<String, dynamic>.from(document),
+              ))
+          .where((entry) => entry.auraMilli > 0)
+          .take(10)
+          .toList(growable: false);
+    } catch (error) {
+      debugPrint('Public leaderboard REST fetch failed: $error');
+      throw LeaderboardLoadException(
+        'Could not load the Aura leaderboard.',
+        cause: error,
+      );
+    }
+  }
+
+  @visibleForTesting
+  Future<List<LeaderboardEntry>> fetchTop10FromPublicRestForTesting({
+    String orderBy = 'auraMilli',
+  }) {
+    return _fetchTop10FromPublicRest(orderBy: orderBy);
+  }
+
+  LeaderboardEntry _entryFromRestDocument(Map<String, dynamic> document) {
+    final name = document['name']?.toString() ?? '';
+    final rawFields = document['fields'];
+    final fields = rawFields is Map
+        ? Map<String, dynamic>.from(rawFields)
+        : const <String, dynamic>{};
+    final legacyAura = _restInt(fields['aura']);
+    final auraMilli = _restInt(
+      fields['auraMilli'],
+      fallback: legacyAura * 1000,
+    );
+
+    return LeaderboardEntry(
+      uid: name.split('/').last,
+      displayName: _restString(fields['displayName'], fallback: 'Player'),
+      auraMilli: auraMilli,
+      totalAup: _restInt(fields['totalAup']),
+      activityScore: _restInt(fields['activityScore']),
+    );
+  }
+
+  static int _restInt(Object? field, {int fallback = 0}) {
+    if (field is! Map) return fallback;
+    final value = field['integerValue'] ?? field['doubleValue'];
+    return switch (value) {
+      int number => number,
+      num number => number.toInt(),
+      String text =>
+        int.tryParse(text) ?? double.tryParse(text)?.toInt() ?? fallback,
+      _ => fallback,
+    };
+  }
+
+  static String _restString(Object? field, {required String fallback}) {
+    if (field is! Map) return fallback;
+    final value = field['stringValue']?.toString().trim() ?? '';
+    return value.isEmpty ? fallback : value;
   }
 
   LeaderboardEntry _entryFromDoc(

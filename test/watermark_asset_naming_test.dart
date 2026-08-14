@@ -8,6 +8,7 @@ void main() {
     final expected = _expectedFortWatermarkAssets();
     final actual = _svgFilesUnder('assets/images/watermarks')
         .where((path) => path.split('/').length > 4)
+        .where((path) => !_nonVenueReferenceAssets.contains(path))
         .toSet();
 
     final missing = expected.difference(actual).toList()..sort();
@@ -20,6 +21,12 @@ void main() {
     expect(missing, isEmpty);
     expect(extra, isEmpty);
     expect(numbered, isEmpty);
+  });
+
+  test('non-venue watermark references remain available', () {
+    final actual = _svgFilesUnder('assets/images/watermarks');
+
+    expect(actual, containsAll(_nonVenueReferenceAssets));
   });
 
   test('root kingdom watermark SVGs are referenced by the table maps', () {
@@ -106,16 +113,20 @@ const Map<String, String> _kingdomFolderAliases = <String, String>{
   'Asia Rest': 'Asia',
   'Central Asia': 'Russia',
   'Persia': 'Arabia',
-  'Dominion of Canada': 'N. America',
-  'Massachusetts': 'N. America',
-  'New York': 'N. America',
-  'Virginia': 'N. America',
-  'Illinois': 'N. America',
-  'Florida': 'N. America',
-  'Texas': 'N. America',
-  'Kansas': 'N. America',
-  'Colorado': 'N. America',
-  'California': 'N. America',
+  'Dominion of Canada': 'US Circuit',
+  'Massachusetts': 'US Circuit',
+  'New York': 'US Circuit',
+  'Virginia': 'US Circuit',
+  'Illinois': 'US Circuit',
+  'Florida': 'US Circuit',
+  'Texas': 'US Circuit',
+  'Kansas': 'US Circuit',
+  'Colorado': 'US Circuit',
+  'California': 'US Circuit',
+};
+
+const Set<String> _nonVenueReferenceAssets = <String>{
+  'assets/images/watermarks/US Circuit/guitar_pedal_2.svg',
 };
 
 const Map<String, String> _assetSlugReplacements = <String, String>{

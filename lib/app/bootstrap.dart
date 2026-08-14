@@ -85,11 +85,10 @@ Future<void> bootstrapApp() async {
       await applyAppSystemUi();
       VenueTime.initialize();
       await _loadEnvironment();
-      // FlutterFire loads its web SDK modules on the first visit. A 20-second
-      // timeout was shorter than real cold starts on slower/CDN-cold
-      // connections and incorrectly replaced the game with the fatal startup
-      // screen even though Firebase finished loading moments later.
-      await _initializeFirebase().timeout(const Duration(minutes: 2));
+      // Account and cloud features are optional at launch. In particular, a
+      // blocked FlutterFire module request in a browser must not replace the
+      // entire offline-capable game with a fatal startup screen.
+      await _initializeOptionalFirebase();
       _initializeAds();
       await _loadBotPolicyWeights();
       runApp(const TenOfAKindApp());
@@ -244,6 +243,20 @@ Future<void> _initializeFirebase() async {
     return;
   }
   await Firebase.initializeApp();
+}
+
+Future<void> _initializeOptionalFirebase() async {
+  try {
+    await _initializeFirebase().timeout(const Duration(seconds: 20));
+  } catch (error, stack) {
+    await AppErrorReporter.report(
+      category: 'firebase',
+      message: 'Optional account services were not initialized.',
+      severity: AppErrorSeverity.warning,
+      debugError: error,
+      debugStack: stack,
+    );
+  }
 }
 
 Future<void> _loadBotPolicyWeights() async {

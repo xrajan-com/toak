@@ -718,7 +718,7 @@ class _VenueScreenState extends State<VenueScreen>
     const bannerScale = 0.75;
     final bannerMaxH = (compactHeader ? 48.0 : 72.0) * bannerScale;
     final bannerMaxW = (compactHeader ? 280.0 : 420.0) * bannerScale;
-    final appBarHeight = compactHeader ? 148.0 : 206.0;
+    final appBarHeight = compactHeader ? 152.0 : 206.0;
     final vPad = compactHeader ? 6.0 : 10.0;
     final gapL = compactHeader ? 6.0 : 12.0;
     final gapM = compactHeader ? 4.0 : 8.0;
@@ -1063,33 +1063,80 @@ class _TitleAndTabsState extends State<_TitleAndTabs> {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      alignment: WrapAlignment.center,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 10,
-      runSpacing: 8,
-      children: [
-        Text(
-          widget.title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.3,
-            fontSize: 16,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 900;
+        final chipOuterPadding = compact ? 8.0 : 20.0;
+        final children = <Widget>[
+          Text(
+            widget.title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.3,
+              fontSize: 16,
+            ),
           ),
-        ),
-        _chip(0, 'Euro', color: Colors.green, textOn: Colors.white),
-        _chip(1, 'India', color: _blue, textOn: Colors.black),
-        _chip(2, 'International', color: _red, textOn: Colors.white),
-        _chip(3, 'Micro', color: Colors.yellow, textOn: Colors.black),
-        _chip(
-          4,
-          'US Circuit',
-          color: _navyBlue,
-          textOn: Colors.white,
-          alwaysFilled: true,
-        ),
-      ],
+          _chip(
+            0,
+            'Euro',
+            color: Colors.green,
+            textOn: Colors.white,
+            outerHorizontalPadding: chipOuterPadding,
+          ),
+          _chip(
+            1,
+            'India',
+            color: _blue,
+            textOn: Colors.black,
+            outerHorizontalPadding: chipOuterPadding,
+          ),
+          _chip(
+            2,
+            'International',
+            color: _red,
+            textOn: Colors.white,
+            outerHorizontalPadding: chipOuterPadding,
+          ),
+          _chip(
+            3,
+            'Micro',
+            color: Colors.yellow,
+            textOn: Colors.black,
+            outerHorizontalPadding: chipOuterPadding,
+          ),
+          _chip(
+            4,
+            'US Circuit',
+            color: Colors.white,
+            textOn: Colors.black,
+            outerHorizontalPadding: chipOuterPadding,
+          ),
+        ];
+
+        if (constraints.maxWidth >= 600 && compact) {
+          return FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (var i = 0; i < children.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 6),
+                  children[i],
+                ],
+              ],
+            ),
+          );
+        }
+
+        return Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: compact ? 6 : 10,
+          runSpacing: 8,
+          children: children,
+        );
+      },
     );
   }
 
@@ -1098,14 +1145,14 @@ class _TitleAndTabsState extends State<_TitleAndTabs> {
     String label, {
     required Color color,
     required Color textOn,
-    bool alwaysFilled = false,
+    required double outerHorizontalPadding,
   }) {
     final hovered = _hoveredIndex == index;
     final focused = _focusedIndex == index;
     final selected = widget.controller.index == index;
     final highlighted = hovered || focused || selected;
-    final bg = (alwaysFilled || highlighted) ? color : Colors.transparent;
-    final fg = (alwaysFilled || highlighted) ? textOn : Colors.white70;
+    final bg = highlighted ? color : Colors.transparent;
+    final fg = highlighted ? textOn : Colors.white;
 
     void activate() {
       widget.controller.animateTo(index);
@@ -1147,7 +1194,10 @@ class _TitleAndTabsState extends State<_TitleAndTabs> {
             onTap: activate,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 140),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding: EdgeInsets.symmetric(
+                horizontal: outerHorizontalPadding,
+                vertical: 10,
+              ),
               decoration: ShapeDecoration(
                 color: Colors.transparent,
                 shape: StadiumBorder(
@@ -1157,18 +1207,10 @@ class _TitleAndTabsState extends State<_TitleAndTabs> {
                 ),
               ),
               child: Container(
+                key: ValueKey('circuit-chip-$index'),
                 decoration: ShapeDecoration(
                   color: bg,
                   shape: const StadiumBorder(),
-                  shadows: selected && alwaysFilled
-                      ? const <BoxShadow>[
-                          BoxShadow(
-                            color: Color(0x6600AEEF),
-                            blurRadius: 10,
-                            spreadRadius: 1,
-                          ),
-                        ]
-                      : const <BoxShadow>[],
                 ),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -1237,10 +1279,10 @@ const _circuitLeaderboards = <_CircuitLeaderboardSpec>[
   ),
   _CircuitLeaderboardSpec(
     label: 'US Circuit',
-    background: _navyBlue,
-    foreground: Colors.white,
+    background: Colors.white,
+    foreground: Colors.black,
     headingBackground: Colors.white,
-    headingForeground: _navyBlue,
+    headingForeground: Colors.black,
   ),
 ];
 

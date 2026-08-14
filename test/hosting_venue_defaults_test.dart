@@ -65,7 +65,15 @@ void main() {
       multiLine: true,
     );
     final usActive = RegExp(
-      r'\.venue-tab\[data-target="us"\]\.active\s*\{[^}]*background:\s*#001f3f;[^}]*color:\s*#ffffff;',
+      r'\.venue-tab\[data-target="us"\]\.active\s*\{[^}]*background:\s*#ffffff;[^}]*color:\s*#000000;',
+      multiLine: true,
+    );
+    final usInactive = RegExp(
+      r'\.venue-tab\[data-target="us"\]\s*\{[^}]*background:\s*rgba\(0,\s*0,\s*0,\s*0\.6\);[^}]*color:\s*#ffffff;',
+      multiLine: true,
+    );
+    final desktopSingleRow = RegExp(
+      r'@media \(min-width:\s*769px\)\s*\{[\s\S]*?\.venue-tabs\s*\{[^}]*flex-wrap:\s*nowrap;[\s\S]*?\.venue-tab-item\s*\{[^}]*flex:\s*1 1 0;',
       multiLine: true,
     );
 
@@ -73,7 +81,9 @@ void main() {
     expect(styles, matches(indiaActive));
     expect(styles, matches(euroActive));
     expect(styles, matches(oceaniaActive));
+    expect(styles, matches(usInactive));
     expect(styles, matches(usActive));
+    expect(styles, matches(desktopSingleRow));
   });
 
   test('hosting venue tabs expose circuit leaderboards on hover or touch', () {
@@ -199,7 +209,7 @@ void main() {
     expect(styles, contains('.venue-tab-item-oceania'));
     expect(styles, contains('background: #ffd400;'));
     expect(styles, contains('.venue-tab-item-us'));
-    expect(styles, contains('background: #001f3f;'));
+    expect(styles, contains('--venue-tab-menu-bg: #001f3f;'));
     expect(
       styles,
       matches(RegExp(

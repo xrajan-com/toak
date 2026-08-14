@@ -61,13 +61,18 @@ void main() {
     );
   });
 
-  test('web cold starts allow Firebase modules time to load', () {
+  test('web startup treats Firebase modules as optional', () {
     final bootstrap = File('lib/app/bootstrap.dart').readAsStringSync();
     final systemUi = File('lib/app/system_ui.dart').readAsStringSync();
 
+    expect(bootstrap, contains('await _initializeOptionalFirebase();'));
     expect(
       bootstrap,
-      contains('_initializeFirebase().timeout(const Duration(minutes: 2))'),
+      contains("category: 'firebase'"),
+    );
+    expect(
+      bootstrap,
+      contains('severity: AppErrorSeverity.warning'),
     );
     expect(systemUi, contains('if (kIsWeb) return;'));
   });

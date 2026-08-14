@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:ten_of_a_kind_poker/app/startup/disclaimer_splash.dart';
+import 'package:ten_of_a_kind_poker/app/startup/auth_gate.dart';
+import 'package:ten_of_a_kind_poker/services/auth_service.dart';
 import 'package:ten_of_a_kind_poker/services/profile_service.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/auth_screen.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/profile_setup_screen.dart';
@@ -56,6 +58,26 @@ void main() {
     );
 
     expect(find.text('Continue as Guest'), findsNothing);
+  });
+
+  testWidgets('guest entry works when Firebase Auth is unavailable',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => AuthService()),
+          ChangeNotifierProvider(create: (_) => ProfileService()),
+        ],
+        child: const MaterialApp(home: AuthGate()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Continue as Guest'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Game Mode'), findsOneWidget);
+    expect(find.text('Guest sign-in is unavailable right now.'), findsNothing);
   });
 
   testWidgets('misconfigured iOS Google sign-in is clearly disabled',
