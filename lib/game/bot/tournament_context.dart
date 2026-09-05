@@ -120,8 +120,18 @@ class TableStanding {
     for (int r = 1; r <= totalAlive; r++) {
       if (eng.payoutForRank(r) > 0) paidAlive++;
     }
+    // A winner-take-all structure has no bubble at all: busting 2nd and
+    // busting last both pay zero, so surviving one more elimination is
+    // worth nothing in $ terms and ICM reduces exactly to chip EV. Only a
+    // structure paying more than one live place can create real bubble
+    // pressure. Without the `paidAlive < 2` guard, 1/(totalAlive - 1)
+    // spikes to 1.0 three- and two-handed in every winner-take-all game —
+    // biasing bots to fold at the final table, which is precisely where
+    // they should be gambling to win. That's the live default for this
+    // app whenever no explicit payout table is configured, so this guard
+    // is load-bearing, not defensive.
     final int distanceToJump = (totalAlive - paidAlive).clamp(0, totalAlive);
-    final double bubbleFactor = distanceToJump <= 0
+    final double bubbleFactor = (paidAlive < 2 || distanceToJump <= 0)
         ? 0.0
         : (1.0 / distanceToJump).clamp(0.0, 1.0).toDouble();
 

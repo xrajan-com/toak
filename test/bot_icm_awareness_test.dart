@@ -112,6 +112,60 @@ void main() {
       expect(TableStanding.threatFor(e, 0), StackThreat.crippled);
     });
 
+    test('winner-take-all has no bubble pressure, even heads-up', () {
+      // Mirrors the live config in game_screen.dart: no explicit payout
+      // table, just a payoutForRank callback that pays 1st only. Busting
+      // 2nd and busting last both pay zero, so there is no position to
+      // protect and ICM reduces exactly to chip EV. If bubbleFactor were
+      // allowed to spike here, bots would fold *more* at the final table
+      // — exactly backwards.
+      for (final int alive in <int>[2, 3, 4]) {
+        final e = eng.GameEngine(
+          config: eng.GameConfig(
+            tableSeed: 11,
+            smallBlind: 100,
+            bigBlind: 200,
+            maxPlayers: 10,
+            payoutForRank: (rank) => rank == 1 ? 100000 : 0,
+          ),
+        );
+        for (int i = 0; i < alive; i++) {
+          e.addPlayer(eng.Player(
+              id: 'p$i', name: 'p$i', chips: 5000, aura: 60, isBot: true));
+        }
+        final standing = TableStanding.compute(e, 0);
+        expect(standing, isNotNull);
+        expect(standing!.paidAlive, 1);
+        expect(standing.bubbleFactor, 0.0,
+            reason: 'winner-take-all with $alive alive must carry no '
+                'bubble pressure');
+      }
+    });
+
+    test('a real multi-place structure still bubbles one bust from the money',
+        () {
+      // Contrast case: 60/25/15 (the sub-kingdom structure) with 4 alive
+      // is a genuine bubble and must still register as one.
+      final e = eng.GameEngine(
+        config: eng.GameConfig(
+          tableSeed: 12,
+          smallBlind: 100,
+          bigBlind: 200,
+          maxPlayers: 10,
+          payoutTable:
+              PayoutTable.fromPercentages(10000, const [0.60, 0.25, 0.15]),
+        ),
+      );
+      for (int i = 0; i < 4; i++) {
+        e.addPlayer(eng.Player(
+            id: 'p$i', name: 'p$i', chips: 5000, aura: 60, isBot: true));
+      }
+      final standing = TableStanding.compute(e, 0);
+      expect(standing, isNotNull);
+      expect(standing!.paidAlive, 3);
+      expect(standing.bubbleFactor, closeTo(1.0, 0.001));
+    });
+
     test('threatFor reports a short (but not crippled) stack correctly',
         () {
       final e = eng.GameEngine(
