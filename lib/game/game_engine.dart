@@ -2316,6 +2316,14 @@ class GameEngine {
     return 0;
   }
 
+  /// Public accessor for the configured payout at a given 1-based finish
+  /// rank (1 = first place). Used by the ICM/tournament-standings layer in
+  /// `lib/game/bot/tournament_context.dart` and `lib/game/bot/icm_guard.dart`
+  /// so bot decisions can reason about live prize equity instead of only
+  /// chip stacks. Returns 0 when no payout table/callback is configured or
+  /// `rank` is outside the paid places — safe to call at any time.
+  int payoutForRank(int rank) => _cfgPayoutForRank(rank);
+
   /// End-of-hand settlement: compute payouts (already in lastPayouts),
   /// mark eliminations (isOut), emit HandSettled with a timestamp, and
   /// reset phase to HandOver.

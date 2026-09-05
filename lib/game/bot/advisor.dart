@@ -2,6 +2,10 @@
 
 import 'dart:math' show max, min;
 
+import 'package:ten_of_a_kind_poker/game/bot/icm_guard.dart'
+    show BotIcmGuard;
+import 'package:ten_of_a_kind_poker/game/bot/tournament_context.dart'
+    show StackThreat, TableStanding;
 import 'package:ten_of_a_kind_poker/game/bot/memory.dart'
     show BotOpponentMemory, BotStyleState;
 import 'package:ten_of_a_kind_poker/game/bot/policy_model.dart'
@@ -336,6 +340,20 @@ class BotAdvisor {
         aggressorIdx != idx &&
         eng.players[aggressorIdx].id == styleState.revengeTargetId;
 
+    // Table/game awareness: read the aggressor's tournament situation, not
+    // just their hand-to-hand tendencies. Gated to tables that actually
+    // have a payout table configured (tournament mode) — a no-op for
+    // cash-style configs and every existing test, none of which set one.
+    // See docs/BOT_HUMAN_INTELLIGENCE_AURA_SPEC.md.
+    final bool tournamentAware =
+        eng.config.payoutTable != null || eng.config.payoutForRank != null;
+    final StackThreat? aggressorThreat = (tournamentAware &&
+            aggressorIdx != null &&
+            aggressorIdx >= 0 &&
+            aggressorIdx != idx)
+        ? TableStanding.threatFor(eng, aggressorIdx)
+        : null;
+
     double auraSkill = auraRaw.clamp(0, 100) / 100.0;
     // Rock-profile bots always stay disciplined enough to remain readable.
     if (isRock) {
@@ -352,6 +370,18 @@ class BotAdvisor {
     potOddsBias += styleConfidence * 0.03;
     potOddsBias -= styleCaution * 0.04;
     potOddsBias += (aggressorAggression - 0.5) * 0.02;
+    // A short/crippled aggressor is often shoving or betting out of
+    // necessity, not strength — their range is wider, so continuing wider
+    // is correct. A chip leader's aggression carries more real threat (and
+    // more follow-up pressure if it goes wrong), so it earns more respect.
+    potOddsBias += switch (aggressorThreat) {
+      StackThreat.crippled => 0.035,
+      StackThreat.shortStack => 0.018,
+      StackThreat.chipLeader => -0.02,
+      StackThreat.bigStack => -0.01,
+      StackThreat.mediumStack => 0.0,
+      null => 0.0,
+    };
     final double raiseSizeBase = switch (temperament) {
       BotTemperament.aggressive => 1.35,
       BotTemperament.stoic => 0.76,
@@ -2442,7 +2472,7 @@ class BotAdvisor {
       confidence = (confidence * 0.92).clamp(0.05, 0.95);
     }
 
-    return BotSafetyGuard.enforce(
+    final guarded = BotSafetyGuard.enforce(
       eng: eng,
       idx: idx,
       decision: (
@@ -2457,6 +2487,19 @@ class BotAdvisor {
       fieldFoldRate: fieldFoldRate,
       fieldAggression: fieldAggression,
       styleState: styleState,
+    );
+
+    // Tournament/ICM layer: only engages for genuine stack-off spots on a
+    // table configured with a payout table; a no-op for cash-style
+    // configs. See docs/BOT_HUMAN_INTELLIGENCE_AURA_SPEC.md.
+    return BotIcmGuard.adjust(
+      eng: eng,
+      idx: idx,
+      decision: guarded,
+      auraSkill: auraSkill,
+      temperament: temperament,
+      hasToCall: hasToCall,
+      toCall: toCall,
     );
   }
 
