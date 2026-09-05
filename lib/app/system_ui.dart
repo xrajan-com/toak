@@ -1,11 +1,14 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 bool _systemUiChangeCallbackInstalled = false;
 bool _gameSystemUiActive = false;
+
+const MethodChannel _deviceControlChannel =
+    MethodChannel('com.tenofakind.poker/device_control');
 
 const List<DeviceOrientation> _landscapeOrientations = <DeviceOrientation>[
   DeviceOrientation.landscapeLeft,
@@ -26,7 +29,7 @@ const List<DeviceOrientation> _allOrientations = <DeviceOrientation>[
 Future<void> applyAppSystemUi() async {
   _gameSystemUiActive = false;
   if (kIsWeb) return;
-  await SystemChrome.setPreferredOrientations(_defaultAppOrientations());
+  await _setPreferredOrientations(_defaultAppOrientations());
   await _showSystemBars();
 }
 
@@ -34,7 +37,7 @@ Future<void> applyGameSystemUi() async {
   _gameSystemUiActive = true;
   if (kIsWeb) return;
   _installSystemUiChangeCallback();
-  await SystemChrome.setPreferredOrientations(_landscapeOrientations);
+  await _setPreferredOrientations(_landscapeOrientations);
 
   await _hideSystemBars();
 }
@@ -42,8 +45,25 @@ Future<void> applyGameSystemUi() async {
 Future<void> restoreAppSystemUi() async {
   _gameSystemUiActive = false;
   if (kIsWeb) return;
-  await SystemChrome.setPreferredOrientations(_defaultAppOrientations());
+  await _setPreferredOrientations(_defaultAppOrientations());
   await _showSystemBars();
+}
+
+Future<void> _setPreferredOrientations(
+  List<DeviceOrientation> orientations,
+) async {
+  await SystemChrome.setPreferredOrientations(orientations);
+  if (defaultTargetPlatform != TargetPlatform.android ||
+      orientations.length != _landscapeOrientations.length ||
+      !orientations.contains(DeviceOrientation.landscapeLeft) ||
+      !orientations.contains(DeviceOrientation.landscapeRight)) {
+    return;
+  }
+
+  // Flutter maps the two landscape orientations to Android's userLandscape,
+  // which can remain fixed when rotation lock is enabled. The game should
+  // follow the physical sensor while remaining landscape-only.
+  await _deviceControlChannel.invokeMethod<void>('useSensorLandscape');
 }
 
 List<DeviceOrientation> _defaultAppOrientations() {

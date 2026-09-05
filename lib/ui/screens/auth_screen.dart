@@ -1,7 +1,6 @@
 // lib/ui/screens/auth_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'
-    show TargetPlatform, defaultTargetPlatform, kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart'; // Clipboard
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -62,7 +61,7 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  static const _bannerAsset = 'assets/images/banner.png';
+  static const _bannerAsset = 'assets/images/x_poker_logo.png';
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   FirebaseAuth? _auth;
@@ -83,9 +82,6 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _showPassword = false;
   String? _errorText;
   String? _statusText;
-
-  bool get _googleSignInAvailable =>
-      kIsWeb || defaultTargetPlatform != TargetPlatform.iOS;
 
   @override
   void dispose() {
@@ -262,13 +258,6 @@ class _AuthScreenState extends State<AuthScreen> {
 
   Future<void> _signInWithGoogle() async {
     if (_isLoading) return;
-    if (!_googleSignInAvailable) {
-      _showError(
-        'Google sign-in is not configured for this iOS build. '
-        'Use email sign-in instead.',
-      );
-      return;
-    }
     _setLoading(true);
     if (mounted) {
       setState(() {
@@ -791,16 +780,12 @@ class _AuthScreenState extends State<AuthScreen> {
                         const SizedBox(height: 10),
                       ],
                       _AuthPillButton(
-                        label: _googleSignInAvailable
-                            ? 'Sign in with Google'
-                            : 'Google sign-in unavailable on iOS',
+                        label: 'Sign in with Google',
                         icon: Icons.g_mobiledata,
                         iconSize: 28,
                         backgroundColor: AppColors.white,
                         textColor: AppColors.white,
-                        onPressed: _isLoading || !_googleSignInAvailable
-                            ? null
-                            : _signInWithGoogle,
+                        onPressed: _isLoading ? null : _signInWithGoogle,
                       ),
                       const SizedBox(height: 16),
                       Wrap(

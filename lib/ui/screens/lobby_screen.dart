@@ -27,7 +27,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
       backgroundColor: Colors.black,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        title: const Text("Ten of a Kind - Lobby"),
+        title: const Text('X Poker - Lobby'),
         backgroundColor: Colors.black,
         centerTitle: true,
         foregroundColor: Colors.white,

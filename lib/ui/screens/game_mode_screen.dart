@@ -1,26 +1,41 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:ten_of_a_kind_poker/services/auth_service.dart';
+import 'package:ten_of_a_kind_poker/services/x_music_service.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/auth_screen.dart';
 import 'package:ten_of_a_kind_poker/features/venue/game_mode.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/venue_screen.dart';
 import 'package:ten_of_a_kind_poker/ui/theme/colors.dart';
 import 'package:ten_of_a_kind_poker/ui/widgets/stadium_banner.dart';
 
-class GameModeScreen extends StatelessWidget {
+class GameModeScreen extends StatefulWidget {
   const GameModeScreen({super.key});
 
-  static const String _bannerAsset = 'assets/images/banner.png';
+  @override
+  State<GameModeScreen> createState() => _GameModeScreenState();
+}
 
-  void _openMode(BuildContext context, VenueEntryMode mode) {
+class _GameModeScreenState extends State<GameModeScreen> {
+  static const String _bannerAsset = 'assets/images/x_poker_logo.png';
+
+  @override
+  void initState() {
+    super.initState();
+    XMusicService.instance.playHomepage();
+  }
+
+  Future<void> _openMode(BuildContext context, VenueEntryMode mode) async {
+    XMusicService.instance.stop();
+    unawaited(XMusicService.instance.unlock());
     if (mode == VenueEntryMode.career) {
       final user = context.read<AuthService>().currentUser;
       final isRegisteredUser = user != null && !user.isAnonymous;
       if (!isRegisteredUser) {
-        Navigator.of(context).push(
+        await Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => const AuthScreen(
               requireRegisteredUser: true,
@@ -31,15 +46,17 @@ class GameModeScreen extends StatelessWidget {
             ),
           ),
         );
+        if (mounted) XMusicService.instance.playHomepage();
         return;
       }
     }
 
-    Navigator.of(context).push(
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => VenueScreen(mode: mode),
       ),
     );
+    if (mounted) XMusicService.instance.playHomepage();
   }
 
   @override
@@ -74,7 +91,7 @@ class GameModeScreen extends StatelessWidget {
                   accent: accent,
                   secondary: secondary,
                   compact: compact,
-                  onTap: () => _openMode(context, mode),
+                  onTap: () => unawaited(_openMode(context, mode)),
                 ),
               );
             }

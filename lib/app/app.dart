@@ -15,7 +15,7 @@ class TenOfAKindApp extends StatelessWidget {
     return MultiProvider(
       providers: buildAppProviders(),
       child: MaterialApp(
-        title: 'Ten of a Kind - Poker',
+        title: 'X Poker',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme,
         scrollBehavior: const AppScrollBehavior(),

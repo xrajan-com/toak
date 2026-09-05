@@ -26,8 +26,7 @@ class _SplashScreenState extends State<SplashScreen>
   late final AnimationController _flagWave;
 
   final List<String> _images = const [
-    'assets/images/banner.png',
-    'assets/images/app_icon.png',
+    'assets/images/x_poker_logo.png',
   ];
   int _current = 0;
 
@@ -285,7 +284,7 @@ class _BrandBlock extends StatelessWidget {
           children: [
             SizedBox(height: 14),
             Text(
-              "Ten Of A Kind",
+              'X Poker',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.white,
@@ -314,7 +313,7 @@ class _SplashImage extends StatelessWidget {
       fit: BoxFit.contain,
       errorBuilder: (_, __, ___) {
         return Image.asset(
-          'assets/images/app_icon.png',
+          'assets/images/x_poker_logo.png',
           width: 140,
           height: 140,
           fit: BoxFit.contain,

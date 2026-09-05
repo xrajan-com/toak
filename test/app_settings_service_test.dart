@@ -14,6 +14,7 @@ void main() {
     await first.load();
 
     await first.setSoundEffectsEnabled(false);
+    await first.setLoungeSoundsEnabled(true);
     await first.setDealerVoiceEnabled(false);
     await first.setReducedMotion(true);
 
@@ -21,9 +22,17 @@ void main() {
     await restored.load();
 
     expect(restored.soundEffectsEnabled, isFalse);
+    expect(restored.loungeSoundsEnabled, isTrue);
     expect(restored.dealerVoiceEnabled, isFalse);
     expect(restored.reducedMotion, isTrue);
     expect(restored.loaded, isTrue);
+  });
+
+  test('lounge sounds are muted by default', () async {
+    final AppSettingsService settings = AppSettingsService();
+    await settings.load();
+
+    expect(settings.loungeSoundsEnabled, isFalse);
   });
 
   testWidgets('device-level reduced motion is always respected',

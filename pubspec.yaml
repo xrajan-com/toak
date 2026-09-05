@@ -1,8 +1,8 @@
 name: ten_of_a_kind_poker
-description: A Flutter app for Ten Of A Kind poker tournament
+description: X Poker, an offline Texas Hold'em game
 publish_to: 'none'
 
-version: 1.2.8+78
+version: 1.2.8+82
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -59,8 +59,7 @@ flutter:
   assets:
     # Root images are explicit so unused legacy multi-megabyte artwork is not
     # shipped in every app/web release.
-    - assets/images/app_icon.png
-    - assets/images/banner.png
+    - assets/images/x_poker_logo.png
     - assets/images/card_back.png
     - assets/images/default_profile.png
     - assets/images/renoir_tux.png
@@ -116,6 +115,10 @@ flutter:
     - assets/sounds/
     - assets/sounds/announcer/
     - assets/sounds/announcer/female/
+    - assets/sounds/x_music/
+    # Dynamic X Lounge library. The four event-named tracks are reserved by
+    # the music service; any other supported audio file joins the shuffle.
+    - "assets/sounds/x lounge/"
 
     # Card backs (randomly selected each game)
     # Included via `- assets/images/cards/` above (see: tools/generate_card_backs.py)

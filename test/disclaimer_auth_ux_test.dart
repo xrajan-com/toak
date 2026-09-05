@@ -80,12 +80,19 @@ void main() {
     expect(find.text('Guest sign-in is unavailable right now.'), findsNothing);
   });
 
-  testWidgets('misconfigured iOS Google sign-in is clearly disabled',
+  testWidgets('configured iOS Google sign-in is enabled',
       (WidgetTester tester) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
     try {
       await tester.pumpWidget(const MaterialApp(home: AuthScreen()));
-      expect(find.text('Google sign-in unavailable on iOS'), findsOneWidget);
+      final Finder label = find.text('Sign in with Google');
+      expect(label, findsOneWidget);
+      final Finder button = find.ancestor(
+        of: label,
+        matching: find.byType(InkWell),
+      );
+      expect(button, findsOneWidget);
+      expect(tester.widget<InkWell>(button).onTap, isNotNull);
     } finally {
       debugDefaultTargetPlatformOverride = null;
     }

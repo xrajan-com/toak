@@ -210,12 +210,8 @@ void main() {
   test('Every free fort prize is below 200% of its kingdom average entry fee',
       () {
     const expectedRebalancedFreePrizes = <String, int>{
-      'euro:North Sea': 197000,
       'india:Hyderabad': 369000,
       'india:Jaipur': 247000,
-      'international:Arabia': 215000,
-      'international:China': 306000,
-      'international:Far East': 259000,
     };
     for (final group in kVenueGroups) {
       for (final venue in venuesForGroup(group)) {

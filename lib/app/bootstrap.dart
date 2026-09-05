@@ -331,7 +331,7 @@ class _StartupFailureAppState extends State<_StartupFailureApp> {
                     ),
                     const SizedBox(height: 16),
                     const Text(
-                      'Ten of a Kind could not start',
+                      'X Poker could not start',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white,

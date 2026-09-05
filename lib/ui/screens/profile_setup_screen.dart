@@ -29,7 +29,7 @@ class ProfileSetupScreen extends StatefulWidget {
 }
 
 class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
-  static const _bannerAsset = 'assets/images/banner.png';
+  static const _bannerAsset = 'assets/images/x_poker_logo.png';
 
   final _nameController = TextEditingController();
   final _aboutController = TextEditingController(

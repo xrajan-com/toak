@@ -245,8 +245,11 @@ void main() {
     );
     expect(paidEntry.status, EntryPaymentStatus.reserved);
     expect(paidEntry.reservation?.amount, _centralAsiaNextFortEntryFee());
-    expect(wallet.internationalAup, 1900);
-    expect(economyApi.progress.internationalAup, 1900);
+    final expectedBalance = _RecoveringEconomyApi.initialInternationalAup +
+        _centralAsiaFreeFortFirstPrize() -
+        _centralAsiaNextFortEntryFee();
+    expect(wallet.internationalAup, expectedBalance);
+    expect(economyApi.progress.internationalAup, expectedBalance);
   });
 
   test(
