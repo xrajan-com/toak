@@ -176,6 +176,12 @@ const Map<String, CurrencySpec> _intlCurrencyByKingdom = <String, CurrencySpec>{
     locale: 'en_IN',
     baseKingdomPrizePool: 2800,
   ),
+  'European Marches': CurrencySpec(
+    code: 'AUP',
+    prefix: 'AUP ',
+    locale: 'en_IN',
+    baseKingdomPrizePool: 2800,
+  ),
 };
 
 CurrencySpec currencyForVenue({
@@ -217,7 +223,7 @@ String canonicalKingdomName({
         lower == 'north america' ||
         lower == 'n america' ||
         lower == 'n. america') {
-      return 'N. America';
+      return 'Australia';
     }
     if (lower == 'far east' || lower == 'east asia') return 'Far East';
     if (lower == 'asia rest' ||
@@ -226,12 +232,15 @@ String canonicalKingdomName({
         lower == 'asia') {
       return 'Asia Rest';
     }
-    if (lower == 'europe' || lower == 'europe kingdom') return 'Europe';
+    if (lower == 'europe' ||
+        lower == 'europe kingdom' ||
+        lower == 'european marches') {
+      return 'European Marches';
+    }
     if (lower == 'persia' ||
-        lower == 'persia & mesopotamia' ||
         lower == 'persia and mesopotamia' ||
         lower == 'mesopotamia') {
-      return 'Persia';
+      return 'Persia & Mesopotamia';
     }
   }
   return t;
@@ -498,7 +507,7 @@ bool _subEventsUseLethalBots({
 }) {
   // Special high-reward kingdoms: sub-kingdoms should feel the toughest.
   if (group == VenueGroup.india && kingdomName == 'Sikh Empire') return true;
-  if (group == VenueGroup.international && kingdomName == 'N. America') {
+  if (group == VenueGroup.international && kingdomName == 'Australia') {
     return true;
   }
   return false;

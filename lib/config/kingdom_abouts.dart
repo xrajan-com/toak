@@ -15,52 +15,52 @@ const Map<VenueGroup, Map<String, String>> kKingdomAbouts = {
     'Travancore': 'Coastal Poise, Ruthless Pots',
   },
   VenueGroup.international: <String, String>{
-    'Africa': 'Savanna Kings, Pot Dominion',
-    'S. America': 'Jungle Fury, River Authority',
-    'N. America': 'Continental Edge, Bold Value',
+    'Australia': 'Outback Forts, Harbour Nerves',
+    'North Africa': 'Desert Citadels, Old Power',
+    'Sub-Saharan Africa': 'Coastal Forts, Iron Nerves',
     'Arabia': 'Desert Honor, Dagger Bluffs',
-    'China': 'Dragon Order, Impeccable Lines',
-    'Far East': 'Castle Calm, Samurai Value',
-    'Asia Rest': 'River Citadels, Sharp Lines',
+    'Persia & Mesopotamia': 'Shah Walls, Desert Reads',
     'Central Asia': 'Steppe Steel, Cold Pressure',
-    'Persia': 'Shah Walls, Desert Reads',
-    'Europe': 'Imperial Keeps, Noble Pots',
+    'Indian Ocean Isles': 'Monsoon Forts, Calm Value',
+    'Atlantic Isles': 'Ocean Keeps, Hard Lines',
+    'French & Dutch Isles': 'Merchant Forts, Island Edge',
+    'Arctic': 'Northern Posts, Cold Nerves',
   },
   VenueGroup.euro: <String, String>{
-    'Britain': 'Crown Walls, Iron Calls',
+    'Britain & Ireland': 'Crown Walls, Iron Calls',
     'France': 'Chateau Grace, River Bite',
     'Italy': 'Rocca Nerves, Clean Value',
-    'Spain': 'Alcazar Pride, Bold Lines',
-    'Portugal': 'Atlantic Forts, Steady Pots',
-    'North Sea': 'Lowland Walls, Deep Reads',
+    'Iberia': 'Alcazar Pride, Atlantic Steel',
+    'Low Countries': 'Lowland Walls, Deep Reads',
     'Scandinavia': 'Nordic Calm, Sharp Steel',
+    'Central Europe': 'Alpine Keeps, Measured Power',
+    'Balkans & Mediterranean': 'Sea Citadels, Old Power',
     'Baltic Marches': 'Border Keeps, Hard Pressure',
     'Russia & Siberia': 'Winter Forts, Iron Lines',
-    'Mediterranean': 'Sea Citadels, Old Power',
   },
   VenueGroup.oceania: <String, String>{
-    'Alaska': 'Northern Posts, Cold Nerves',
-    'Caribbean': 'Island Forts, Hot Rivers',
-    'Dragonland': 'Harbor Walls, Dragon Value',
+    'China': 'Dragon Order, Impeccable Lines',
+    'Japan': 'Castle Calm, Samurai Value',
+    'Korea': 'Mountain Walls, Disciplined Play',
+    'Taiwan': 'Harbor Walls, Island Value',
+    'Vietnam': 'River Citadels, Sharp Lines',
+    'Mekong': 'River Kingdoms, Patient Steel',
+    'Philippines': 'Island Forts, Bold Play',
     'Straits': 'Trade Lanes, Tight Reads',
-    'Indian Ocean': 'Monsoon Forts, Calm Value',
+    'Indonesia': 'Spice Forts, Merchant Edge',
     'Pacific': 'Ocean Posts, Brave Calls',
-    'British Isles': 'Colonial Keeps, Hard Lines',
-    'French Isles': 'Island Bastions, Clean Pots',
-    'Dutch Isles': 'Harbor Forts, Merchant Edge',
-    'American Isles': 'Pacific Batteries, Bold Play',
   },
   VenueGroup.northAmerica: <String, String>{
-    'Dominion of Canada': 'Northern Forts, Steady Nerves',
-    'Massachusetts': 'Patriot Walls, Cold Reads',
-    'New York': 'Atlantic Power, Sharp Value',
-    'Virginia': 'Old Dominion, Iron Calls',
-    'Illinois': 'Great Lakes, Deep Stacks',
-    'Florida': 'Southern Forts, Hot Rivers',
-    'Texas': 'Lone Star, Fearless Raises',
-    'Kansas': 'Prairie Steel, Hard Pressure',
-    'Colorado': 'Mountain Forts, High Stakes',
-    'California': 'Pacific Edge, Golden Pots',
+    'Canada': 'Northern Forts, Steady Nerves',
+    'Northeast USA': 'Patriot Walls, Cold Reads',
+    'Atlantic USA': 'Atlantic Power, Sharp Value',
+    'Southern USA': 'Southern Forts, Hot Rivers',
+    'Western USA': 'Pacific Edge, Golden Pots',
+    'Mexico & Central America': 'Volcano Walls, Bold Lines',
+    'Caribbean': 'Island Forts, Hot Rivers',
+    'Brazil': 'Coastal Steel, River Authority',
+    'Andes': 'Highland Keeps, Hard Pressure',
+    'Southern Cone': 'Frontier Forts, Cold Nerves',
   },
 };
 
@@ -80,7 +80,7 @@ String _canonicalKingdomName(VenueGroup group, String kingdomName) {
         lower == 'north america' ||
         lower == 'n america' ||
         lower == 'n. america') {
-      return 'N. America';
+      return 'Australia';
     }
     if (lower == 'far east' || lower == 'east asia') return 'Far East';
     if (lower == 'asia rest' ||
@@ -89,12 +89,15 @@ String _canonicalKingdomName(VenueGroup group, String kingdomName) {
         lower == 'asia') {
       return 'Asia Rest';
     }
-    if (lower == 'europe' || lower == 'europe kingdom') return 'Europe';
+    if (lower == 'europe' ||
+        lower == 'europe kingdom' ||
+        lower == 'european marches') {
+      return 'European Marches';
+    }
     if (lower == 'persia' ||
-        lower == 'persia & mesopotamia' ||
         lower == 'persia and mesopotamia' ||
         lower == 'mesopotamia') {
-      return 'Persia';
+      return 'Persia & Mesopotamia';
     }
   }
 

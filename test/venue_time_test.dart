@@ -56,11 +56,11 @@ void main() {
   test('regional venues use their intended representative city', () {
     final byName = <String, VenueTheme>{for (final v in venues) v.name: v};
 
-    expect(byName['S. America']!.timeZoneId, 'America/Sao_Paulo');
-    expect(byName['N. America']!.timeZoneId, 'America/New_York');
+    expect(byName['Brazil']!.timeZoneId, 'America/Sao_Paulo');
+    expect(byName['Australia']!.timeZoneId, 'Australia/Sydney');
     expect(byName['Arabia']!.timeZoneId, 'Asia/Dubai');
-    expect(byName['Britain']!.timeZoneId, 'Europe/London');
-    expect(byName['Alaska']!.timeZoneId, 'America/Anchorage');
+    expect(byName['Britain & Ireland']!.timeZoneId, 'Europe/London');
+    expect(byName['Arctic']!.timeZoneId, 'America/Anchorage');
     expect(byName['Pacific']!.timeZoneId, 'Pacific/Auckland');
   });
 }

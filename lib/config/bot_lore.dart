@@ -33,7 +33,10 @@ String _canonicalKingdomName(String kingdomName) {
       lower == 'north america' ||
       lower == 'n america' ||
       lower == 'n. america') {
-    return 'N. America';
+    return 'Australia';
+  }
+  if (lower == 'europe' || lower == 'european marches') {
+    return 'European Marches';
   }
   if (lower == 'southeast') return 'Asia';
 
@@ -209,7 +212,7 @@ const Map<String, List<String>> _hometownsByKingdom = <String, List<String>>{
     'Wuhan Optics Valley',
     'Xi’an City Wall',
   ],
-  'Europe': <String>[
+  'European Marches': <String>[
     'Berlin Mitte',
     'Paris Bastille',
     'Madrid Centro',
@@ -415,7 +418,7 @@ const Map<String, List<String>> _professionsByKingdom = <String, List<String>>{
     'Restaurant Owner',
     'Civil Engineer',
   ],
-  'Europe': <String>[
+  'European Marches': <String>[
     'Data Analyst',
     'Chef',
     'Architect',

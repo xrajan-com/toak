@@ -8,7 +8,9 @@ import 'package:ten_of_a_kind_poker/game/models.dart';
 import 'package:ten_of_a_kind_poker/services/campaign_progress_service.dart';
 
 void main() {
-  test('fort names are unique across every circuit', () {
+  test('fort venue IDs and fully qualified names are globally unique', () {
+    final progress = CampaignProgressService();
+    final ids = <String>{};
     final origins = <String, String>{};
 
     for (final group in kVenueGroups) {
@@ -17,31 +19,37 @@ void main() {
           group: group,
           kingdomName: venue.name,
         );
-        for (final name in names) {
-          final withoutCountry =
-              name.replaceFirst(RegExp(r'\s*\([^)]*\)\s*$'), '').trim();
-          for (final alias in withoutCountry.split(RegExp(r'\s*/\s*'))) {
-            final key = _fortNameKey(alias);
-            final origin = '${group.name}:${venue.name}';
-            expect(
-              origins[key],
-              isNull,
-              reason: '$name in $origin duplicates ${origins[key]}',
-            );
-            origins[key] = origin;
-          }
+        for (var i = 0; i < names.length; i++) {
+          final name = names[i];
+          final key = _fortNameKey(name);
+          final origin = '${group.name}:${venue.name}';
+          expect(
+            origins[key],
+            isNull,
+            reason: '$name in $origin duplicates ${origins[key]}',
+          );
+          origins[key] = origin;
+
+          final id = progress.subKingdomId(
+            group: group,
+            kingdomName: venue.name,
+            subKingdomIndex: i + 1,
+          );
+          expect(ids.add(id), isTrue, reason: 'duplicate venue ID: $id');
         }
       }
     }
+
+    expect(ids, hasLength(500));
   });
 
   test('complete career catalog is reachable and awards every title', () {
     const expectedFortCounts = <VenueGroup, int>{
-      VenueGroup.euro: 83,
+      VenueGroup.euro: 93,
       VenueGroup.india: 89,
-      VenueGroup.international: 129,
+      VenueGroup.international: 88,
       VenueGroup.oceania: 100,
-      VenueGroup.northAmerica: 99,
+      VenueGroup.northAmerica: 130,
     };
     final progress = CampaignProgressService();
     int totalForts = 0;

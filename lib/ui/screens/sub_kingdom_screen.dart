@@ -13,6 +13,7 @@ import 'package:ten_of_a_kind_poker/core/sound_fx.dart';
 import 'package:ten_of_a_kind_poker/features/venue/game_mode.dart';
 import 'package:ten_of_a_kind_poker/services/aura_points_service.dart';
 import 'package:ten_of_a_kind_poker/services/campaign_progress_service.dart';
+import 'package:ten_of_a_kind_poker/services/x_music_service.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen.dart';
 import 'package:ten_of_a_kind_poker/ui/theme/colors.dart';
 import 'package:ten_of_a_kind_poker/ui/utils/deck_cache.dart';
@@ -33,7 +34,7 @@ class SubKingdomScreen extends StatefulWidget {
 }
 
 class _SubKingdomScreenState extends State<SubKingdomScreen> {
-  static const String _bannerAsset = 'assets/images/banner.png';
+  static const String _bannerAsset = 'assets/images/x_poker_logo.png';
 
   bool _entryActionInProgress = false;
 
@@ -41,6 +42,12 @@ class _SubKingdomScreenState extends State<SubKingdomScreen> {
   VenueGroup get group => widget.group;
 
   String get _circuitLabel => venueGroupLabel(group);
+
+  @override
+  void initState() {
+    super.initState();
+    XMusicService.instance.playCareerCircuit(group);
+  }
 
   Future<void> _showInsufficientAupDialog(
     BuildContext context, {
@@ -198,6 +205,8 @@ class _SubKingdomScreenState extends State<SubKingdomScreen> {
     } catch (_) {
       await auraService.refundEntry(reservation);
       rethrow;
+    } finally {
+      if (mounted) XMusicService.instance.playCareerCircuit(group);
     }
   }
 

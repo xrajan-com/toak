@@ -22,6 +22,7 @@ import 'package:ten_of_a_kind_poker/services/aura_points_service.dart';
 import 'package:ten_of_a_kind_poker/services/campaign_progress_service.dart';
 import 'package:ten_of_a_kind_poker/services/leaderboard_firestore_service.dart';
 import 'package:ten_of_a_kind_poker/services/profile_service.dart';
+import 'package:ten_of_a_kind_poker/services/x_music_service.dart';
 import 'package:ten_of_a_kind_poker/core/aup.dart' as aup;
 import 'package:ten_of_a_kind_poker/ui/screens/profile_screen.dart';
 import 'package:ten_of_a_kind_poker/ui/widgets/app_settings_sheet.dart';
@@ -150,8 +151,10 @@ class VenueScreen extends StatefulWidget {
 class _VenueScreenState extends State<VenueScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tab;
-  static const _bannerAsset = 'assets/images/banner.png';
+  static const _bannerAsset = 'assets/images/x_poker_logo.png';
+  static const _leaderboardVisibleDuration = Duration(seconds: 4);
   int? _activeLeaderboardIndex;
+  Timer? _leaderboardDismissTimer;
   List<LeaderboardEntry> _leaderboardEntries = const <LeaderboardEntry>[];
   bool _leaderboardLoading = true;
   String? _leaderboardError;
@@ -160,6 +163,8 @@ class _VenueScreenState extends State<VenueScreen>
   void initState() {
     super.initState();
     _tab = TabController(length: kVenueGroups.length, vsync: this);
+    _tab.addListener(_syncMusicForSelectedCircuit);
+    _syncMusicForSelectedCircuit();
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       unawaited(_loadCircuitLeaderboardEntries());
@@ -179,16 +184,33 @@ class _VenueScreenState extends State<VenueScreen>
 
   @override
   void dispose() {
+    _leaderboardDismissTimer?.cancel();
+    _tab.removeListener(_syncMusicForSelectedCircuit);
     _tab.dispose();
     super.dispose();
   }
 
+  void _syncMusicForSelectedCircuit() {
+    if (widget.mode == VenueEntryMode.quickGame) {
+      XMusicService.instance.stop();
+      return;
+    }
+    XMusicService.instance.playCareerCircuit(kVenueGroups[_tab.index]);
+  }
+
   void _showCircuitLeaderboard(int index) {
-    if (_activeLeaderboardIndex == index) return;
-    setState(() => _activeLeaderboardIndex = index);
+    _leaderboardDismissTimer?.cancel();
+    if (_activeLeaderboardIndex != index) {
+      setState(() => _activeLeaderboardIndex = index);
+    }
+    _leaderboardDismissTimer = Timer(_leaderboardVisibleDuration, () {
+      if (mounted) _hideCircuitLeaderboard();
+    });
   }
 
   void _hideCircuitLeaderboard() {
+    _leaderboardDismissTimer?.cancel();
+    _leaderboardDismissTimer = null;
     if (_activeLeaderboardIndex == null) return;
     setState(() => _activeLeaderboardIndex = null);
   }
@@ -238,6 +260,7 @@ class _VenueScreenState extends State<VenueScreen>
         ),
       ),
     );
+    if (mounted) XMusicService.instance.stop();
   }
 
   Future<void> _enterQuickGame(VenueTheme venue, VenueGroup group) async {
@@ -246,6 +269,7 @@ class _VenueScreenState extends State<VenueScreen>
 
   Future<void> _openVenue(VenueTheme venue, VenueGroup group) async {
     unawaited(SoundFx.instance.unlock());
+    unawaited(XMusicService.instance.unlock());
     unawaited(DeckCache.ensureDeckReadySafely());
     if (!mounted) return;
     if (widget.mode == VenueEntryMode.quickGame) {
@@ -261,6 +285,7 @@ class _VenueScreenState extends State<VenueScreen>
       ),
     );
     if (!mounted) return;
+    _syncMusicForSelectedCircuit();
   }
 
   int _totalSubKingdomsForGroup(VenueGroup group) {
@@ -780,40 +805,42 @@ class _VenueScreenState extends State<VenueScreen>
       ),
       body: SafeArea(
         top: false,
-        child: Listener(
-          behavior: HitTestBehavior.translucent,
-          onPointerDown: (_) => _hideCircuitLeaderboard(),
-          child: Stack(
-            children: [
-              TabBarView(
-                controller: _tab,
-                children: [
-                  for (final group in kVenueGroups)
-                    _VenueGrid(
-                      group: group,
-                      venues: venuesForGroup(group),
-                      mode: widget.mode,
-                      onOpen: _openVenue,
+        child: Stack(
+          children: [
+            TabBarView(
+              controller: _tab,
+              children: [
+                for (final group in kVenueGroups)
+                  _VenueGrid(
+                    group: group,
+                    venues: venuesForGroup(group),
+                    mode: widget.mode,
+                    onOpen: _openVenue,
+                  ),
+              ],
+            ),
+            if (_activeLeaderboardIndex case final index?)
+              Positioned(
+                top: 10,
+                bottom: 10,
+                left: 12,
+                right: 12,
+                child: Center(
+                  child: TapRegion(
+                    onTapOutside: (_) => _hideCircuitLeaderboard(),
+                    child: _CircuitLeaderboardPopover(
+                      spec: _circuitLeaderboards[index],
+                      entries: _leaderboardEntries,
+                      loading: _leaderboardLoading,
+                      errorMessage: _leaderboardError,
+                      onRetry: () {
+                        unawaited(_loadCircuitLeaderboardEntries());
+                      },
                     ),
-                ],
-              ),
-              if (_activeLeaderboardIndex case final index?)
-                Positioned(
-                  top: 10,
-                  left: 12,
-                  right: 12,
-                  child: _CircuitLeaderboardPopover(
-                    spec: _circuitLeaderboards[index],
-                    entries: _leaderboardEntries,
-                    loading: _leaderboardLoading,
-                    errorMessage: _leaderboardError,
-                    onRetry: () {
-                      unawaited(_loadCircuitLeaderboardEntries());
-                    },
                   ),
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );
@@ -865,7 +892,7 @@ class _MetricRow extends StatelessWidget {
 class _KennyInterlude extends StatefulWidget {
   final VenueTheme venue;
   final VenueGroup group;
-  static const String bannerAsset = 'assets/images/banner.png';
+  static const String bannerAsset = 'assets/images/x_poker_logo.png';
   const _KennyInterlude({required this.venue, required this.group});
 
   @override
@@ -1079,42 +1106,42 @@ class _TitleAndTabsState extends State<_TitleAndTabs> {
           ),
           _chip(
             0,
-            'Euro',
+            'Europe',
             color: Colors.green,
             textOn: Colors.white,
             outerHorizontalPadding: chipOuterPadding,
           ),
           _chip(
             1,
-            'India',
-            color: _blue,
+            'Americas',
+            color: Colors.white,
             textOn: Colors.black,
             outerHorizontalPadding: chipOuterPadding,
           ),
           _chip(
             2,
-            'International',
-            color: _red,
-            textOn: Colors.white,
-            outerHorizontalPadding: chipOuterPadding,
-          ),
-          _chip(
-            3,
-            'Micro',
+            'Asia-Pacific',
             color: Colors.yellow,
             textOn: Colors.black,
             outerHorizontalPadding: chipOuterPadding,
           ),
           _chip(
+            3,
+            'World Frontiers',
+            color: _red,
+            textOn: Colors.white,
+            outerHorizontalPadding: chipOuterPadding,
+          ),
+          _chip(
             4,
-            'US Circuit',
-            color: Colors.white,
+            'Indian Ocean',
+            color: _blue,
             textOn: Colors.black,
             outerHorizontalPadding: chipOuterPadding,
           ),
         ];
 
-        if (constraints.maxWidth >= 600 && compact) {
+        if (constraints.maxWidth >= 600) {
           return FittedBox(
             fit: BoxFit.scaleDown,
             child: Row(
@@ -1250,39 +1277,39 @@ class _CircuitLeaderboardSpec {
 
 const _circuitLeaderboards = <_CircuitLeaderboardSpec>[
   _CircuitLeaderboardSpec(
-    label: 'Euro Circuit',
+    label: 'Europe',
     background: Colors.green,
     foreground: Colors.white,
-    headingBackground: Colors.white,
+    headingBackground: Colors.black,
     headingForeground: Colors.green,
   ),
   _CircuitLeaderboardSpec(
-    label: 'Indian Circuit',
-    background: _blue,
+    label: 'Americas',
+    background: Colors.white,
     foreground: Colors.black,
     headingBackground: Colors.black,
-    headingForeground: _blue,
+    headingForeground: Colors.white,
   ),
   _CircuitLeaderboardSpec(
-    label: 'International Circuit',
-    background: _red,
-    foreground: Colors.white,
-    headingBackground: Colors.white,
-    headingForeground: _red,
-  ),
-  _CircuitLeaderboardSpec(
-    label: 'Micro Circuit',
+    label: 'Asia-Pacific',
     background: Colors.yellow,
     foreground: Colors.black,
     headingBackground: Colors.black,
     headingForeground: Colors.yellow,
   ),
   _CircuitLeaderboardSpec(
-    label: 'US Circuit',
-    background: Colors.white,
+    label: 'World Frontiers',
+    background: _red,
+    foreground: Colors.white,
+    headingBackground: Colors.black,
+    headingForeground: _red,
+  ),
+  _CircuitLeaderboardSpec(
+    label: 'Indian Ocean',
+    background: _blue,
     foreground: Colors.black,
-    headingBackground: Colors.white,
-    headingForeground: Colors.black,
+    headingBackground: Colors.black,
+    headingForeground: _blue,
   ),
 ];
 
@@ -1308,9 +1335,12 @@ class _CircuitLeaderboardPopover extends StatelessWidget {
     return Semantics(
       label: '${spec.label} global Aura leaderboard',
       liveRegion: true,
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 300),
+      child: FittedBox(
+        key: const ValueKey<String>('circuit-leaderboard-fitted-box'),
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.topCenter,
+        child: SizedBox(
+          width: 300,
           child: Material(
             color: Colors.transparent,
             elevation: 18,
@@ -1319,6 +1349,7 @@ class _CircuitLeaderboardPopover extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
             ),
             child: DecoratedBox(
+              key: ValueKey<String>('${spec.label}-leaderboard-body'),
               decoration: BoxDecoration(
                 color: spec.background,
                 borderRadius: BorderRadius.circular(16),

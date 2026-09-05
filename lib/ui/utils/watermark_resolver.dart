@@ -4,8 +4,8 @@ class WatermarkResolver {
   static const Map<String, String> _kingdomFolderAliases = <String, String>{
     'Far East': 'Asia',
     'Asia Rest': 'Asia',
-    'Central Asia': 'Russia',
     'Persia': 'Arabia',
+    'European Marches': 'Europe',
     'Dominion of Canada': 'US Circuit',
     'Massachusetts': 'US Circuit',
     'New York': 'US Circuit',
@@ -86,6 +86,18 @@ class WatermarkResolver {
     );
     if (namedAsset != null && keys.contains(namedAsset)) return namedAsset;
 
+    // Forts moved out of the retired International North America and Europe
+    // kingdoms keep using their original SVG folders.
+    for (final legacyFolder in _legacyFortFolders(kingdom)) {
+      final legacyAsset = _subKingdomNamedAsset(
+        kingdomName: legacyFolder,
+        subKingdomName: subKingdomName,
+      );
+      if (legacyAsset != null && keys.contains(legacyAsset)) {
+        return legacyAsset;
+      }
+    }
+
     final suffix = subKingdomIndex.toString().padLeft(2, '0');
     final asset = 'assets/images/watermarks/$kingdom/fort_$suffix.svg';
     return keys.contains(asset) ? asset : null;
@@ -94,6 +106,18 @@ class WatermarkResolver {
   static String _folderForKingdom(String kingdomName) {
     final kingdom = kingdomName.trim();
     return _kingdomFolderAliases[kingdom] ?? kingdom;
+  }
+
+  static Iterable<String> _legacyFortFolders(String kingdom) sync* {
+    if (kingdom == 'US Circuit') yield 'N. America';
+    if (kingdom == 'Europe' ||
+        kingdom == 'Britain' ||
+        kingdom == 'France' ||
+        kingdom == 'Italy' ||
+        kingdom == 'Spain' ||
+        kingdom == 'Mediterranean') {
+      yield 'Europe';
+    }
   }
 
   static String? _subKingdomNamedAsset({
@@ -146,6 +170,8 @@ class WatermarkResolver {
     'ā': 'a',
     'ă': 'a',
     'ą': 'a',
+    'ạ': 'a',
+    'ả': 'a',
     'ç': 'c',
     'ć': 'c',
     'č': 'c',
@@ -156,11 +182,14 @@ class WatermarkResolver {
     'ē': 'e',
     'ė': 'e',
     'ę': 'e',
+    'ế': 'e',
+    'ệ': 'e',
     'í': 'i',
     'ì': 'i',
     'î': 'i',
     'ï': 'i',
     'ı': 'i',
+    'ị': 'i',
     'ñ': 'n',
     'ń': 'n',
     'ó': 'o',
@@ -169,14 +198,19 @@ class WatermarkResolver {
     'ö': 'o',
     'õ': 'o',
     'ø': 'o',
+    'ơ': 'o',
+    'ồ': 'o',
+    'ổ': 'o',
     'ú': 'u',
     'ù': 'u',
     'û': 'u',
     'ü': 'u',
+    'ū': 'u',
     'ý': 'y',
     'ÿ': 'y',
     'æ': 'ae',
     'œ': 'oe',
     'ß': 'ss',
+    'đ': 'd',
   };
 }

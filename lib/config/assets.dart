@@ -1,6 +1,6 @@
 class AppAssets {
   // 🔹 Logos and Branding
-  static const String logo = 'assets/images/app_icon.png';
+  static const String logo = 'assets/images/x_poker_logo.png';
   static const String renoirDealer = 'assets/images/renoir_tux.png';
 
   // 🔹 Cards
@@ -53,5 +53,5 @@ class AppAssets {
       'assets/sounds/announcer/female/renoir_female_fold.mp3';
 
   // 🔹 Backgrounds
-  static const String tableBackground = 'assets/images/banner.png';
+  static const String tableBackground = logo;
 }

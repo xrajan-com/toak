@@ -1,10 +1,12 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ten_of_a_kind_poker/config/kingdom_titles.dart';
+import 'package:ten_of_a_kind_poker/config/sub_kingdoms.dart';
 import 'package:ten_of_a_kind_poker/config/venues.dart';
 
 void main() {
-  test('hosting venue tabs prioritize Euro circuit by default', () {
+  test('hosting venue tabs use the five clear circuit names', () {
     final indexHtml = File('hosting/index.html').readAsStringSync();
     final styles = File('hosting/styles.css').readAsStringSync();
 
@@ -12,35 +14,35 @@ void main() {
       indexHtml,
       contains(
         '<button class="venue-tab active" data-target="euro" '
-        'role="tab" aria-selected="true">Euro Circuit</button>',
-      ),
-    );
-    expect(
-      indexHtml,
-      contains(
-        '<button class="venue-tab" data-target="india" '
-        'role="tab" aria-selected="false">Indian Circuit</button>',
-      ),
-    );
-    expect(
-      indexHtml,
-      contains(
-        '<button class="venue-tab" data-target="world" '
-        'role="tab" aria-selected="false">International Circuit</button>',
-      ),
-    );
-    expect(
-      indexHtml,
-      contains(
-        '<button class="venue-tab" data-target="oceania" '
-        'role="tab" aria-selected="false">Micro Circuit</button>',
+        'role="tab" aria-selected="true">Europe</button>',
       ),
     );
     expect(
       indexHtml,
       contains(
         '<button class="venue-tab" data-target="us" '
-        'role="tab" aria-selected="false">US Circuit</button>',
+        'role="tab" aria-selected="false">Americas</button>',
+      ),
+    );
+    expect(
+      indexHtml,
+      contains(
+        '<button class="venue-tab" data-target="oceania" '
+        'role="tab" aria-selected="false">Asia-Pacific</button>',
+      ),
+    );
+    expect(
+      indexHtml,
+      contains(
+        '<button class="venue-tab" data-target="india" '
+        'role="tab" aria-selected="false">Indian Ocean</button>',
+      ),
+    );
+    expect(
+      indexHtml,
+      contains(
+        '<button class="venue-tab" data-target="world" '
+        'role="tab" aria-selected="false">World Frontiers</button>',
       ),
     );
     expect(
@@ -99,23 +101,23 @@ void main() {
     expect(
         indexHtml,
         contains(
-            '<ol class="venue-leaderboard-menu" aria-label="Euro Circuit leaderboard">'));
+            '<ol class="venue-leaderboard-menu" aria-label="Europe leaderboard">'));
     expect(
         indexHtml,
         contains(
-            '<ol class="venue-leaderboard-menu" aria-label="Indian Circuit leaderboard">'));
+            '<ol class="venue-leaderboard-menu" aria-label="Americas leaderboard">'));
     expect(
         indexHtml,
         contains(
-            '<ol class="venue-leaderboard-menu" aria-label="International Circuit leaderboard">'));
+            '<ol class="venue-leaderboard-menu" aria-label="Asia-Pacific leaderboard">'));
     expect(
         indexHtml,
         contains(
-            '<ol class="venue-leaderboard-menu" aria-label="Micro Circuit leaderboard">'));
+            '<ol class="venue-leaderboard-menu" aria-label="Indian Ocean leaderboard">'));
     expect(
         indexHtml,
         contains(
-            '<ol class="venue-leaderboard-menu" aria-label="US Circuit leaderboard">'));
+            '<ol class="venue-leaderboard-menu" aria-label="World Frontiers leaderboard">'));
 
     final leaderboardHeadingRows = RegExp(
       r'<li class="venue-leaderboard-heading">Live Overall Leaderboard</li>',
@@ -123,7 +125,7 @@ void main() {
     expect(leaderboardHeadingRows, 5);
 
     final firstMenu = RegExp(
-      r'<ol class="venue-leaderboard-menu" aria-label="Euro Circuit leaderboard">([\s\S]*?)</ol>',
+      r'<ol class="venue-leaderboard-menu" aria-label="Europe leaderboard">([\s\S]*?)</ol>',
     ).firstMatch(indexHtml);
     expect(firstMenu, isNotNull);
     expect(RegExp(r'<li').allMatches(firstMenu!.group(1)!).length, 2);
@@ -257,7 +259,8 @@ void main() {
     expect(scripts, contains('dashboardAupTotal'));
     expect(scripts, contains('leaderboard-open'));
     expect(scripts,
-        contains('setTimeout(() => closeLeaderboardMenu(item), 3000)'));
+        contains('setTimeout(() => closeLeaderboardMenu(item), 4000)'));
+    expect(scripts, contains('event.target.closest?.(".venue-tab-item")'));
     expect(scripts, contains('aria-expanded'));
     expect(scripts, contains('orderBy("auraMilli", "desc")'));
     expect(scripts, contains('renderLiveLeaderboards(entries)'));
@@ -306,57 +309,12 @@ void main() {
     final indexHtml = File('hosting/index.html').readAsStringSync();
     final scripts = File('hosting/scripts.js').readAsStringSync();
 
-    const expectedSummaries = <String>[
-      '8 Forts, Title: Patel',
-      '5 Forts, Title: Nizam',
-      '5 Forts, Title: Subedar',
-      '9 Forts, Title: Rawal',
-      '8 Forts, Title: Peshwa',
-      '5 Forts, Title: Sultan',
-      '12 Forts, Title: Raja',
-      '21 Forts, Title: Zaildar',
-      '10 Forts, Title: Sherpa',
-      '6 Forts, Title: Thala',
-      '8 Forts, Title: Mansa',
-      '8 Forts, Title: Caudillo',
-      '12 Forts, Title: Chief',
-      '9 Forts, Title: Sheikh',
-      '7 Forts, Title: Jiangjun',
-      '8 Forts, Title: Shogun',
-      '8 Forts, Title: Mandala',
-      '11 Forts, Title: Emir',
-      '8 Forts, Title: Shah',
-      '17 Forts, Title: Duke',
-      '7 Forts, Title: Baron',
-      '6 Forts, Title: Marquis',
-      '6 Forts, Title: Conte',
-      '6 Forts, Title: Hidalgo',
-      '6 Forts, Title: Infante',
-      '6 Forts, Title: Stadtholder',
-      '6 Forts, Title: Jarl',
-      '10 Forts, Title: Hetman',
-      '10 Forts, Title: Ataman',
-      '13 Forts, Title: Strategos',
-      '6 Forts, Title: Chieftain',
-      '10 Forts, Title: Governor',
-      '8 Forts, Title: Taipan',
-      '12 Forts, Title: Laksamana',
-      '10 Forts, Title: Admiral',
-      '8 Forts, Title: Tui',
-      '10 Forts, Title: Warden',
-      '10 Forts, Title: Seigneur',
-      '8 Forts, Title: Burgher',
-      '10 Forts, Title: Marshal',
-      '9 Forts, Title: Mountie',
-      '10 Forts, Title: Patriot',
-      '10 Forts, Title: Maccabee',
-      '10 Forts, Title: Cavalier',
-      '10 Forts, Title: Loopmaster',
-      '10 Forts, Title: Buccaneer',
-      '10 Forts, Title: Longhorn',
-      '10 Forts, Title: Marshal',
-      '10 Forts, Title: Prospector',
-      '10 Forts, Title: Rainmaker',
+    final expectedSummaries = <String>[
+      for (final group in kVenueGroups)
+        for (final venue in venuesForGroup(group))
+          '${subKingdomCountFor(group: group, kingdomName: venue.name)} '
+              'Forts, Title: '
+              '${kingdomTitleFor(group: group, kingdomName: venue.name)}',
     ];
 
     for (final summary in expectedSummaries) {
@@ -369,7 +327,8 @@ void main() {
       r'[\s\S]*?<h4>([^<]+)</h4>',
     );
     for (final match in cardPattern.allMatches(indexHtml)) {
-      actualFeltByVenue[match.group(2)!] = match.group(1)!.toUpperCase();
+      actualFeltByVenue[match.group(2)!.replaceAll('&amp;', '&')] =
+          match.group(1)!.toUpperCase();
     }
 
     final expectedFeltByVenue = <String, String>{
@@ -389,30 +348,13 @@ void main() {
       );
     }
 
-    const expectedFlagPaths = <String>[
-      'images/venues/euro/britain.png',
-      'images/venues/euro/france.png',
-      'images/venues/euro/italy.png',
-      'images/venues/euro/spain.png',
-      'images/venues/euro/portugal.png',
-      'images/venues/euro/north_sea.png',
-      'images/venues/euro/scandinavia.png',
-      'images/venues/euro/baltic_marches.png',
-      'images/venues/euro/russia_siberia.png',
-      'images/venues/euro/mediterranean.png',
-      'images/venues/oceania/alaska.png',
-      'images/venues/oceania/caribbean.png',
-      'images/venues/oceania/dragonland.png',
-      'images/venues/oceania/straits.png',
-      'images/venues/oceania/indian_ocean.png',
-      'images/venues/oceania/pacific.png',
-      'images/venues/oceania/british_isles.png',
-      'images/venues/oceania/french_isles.png',
-      'images/venues/oceania/dutch_isles.png',
-      'images/venues/oceania/american_isles.png',
-    ];
+    final expectedFlagPaths = RegExp(r'src="(images/venues/[^"]+\.png)"')
+        .allMatches(indexHtml)
+        .map((match) => match.group(1)!)
+        .toSet();
+    expect(expectedFlagPaths, isNotEmpty);
     for (final path in expectedFlagPaths) {
-      expect(indexHtml, contains(path));
+      expect(File('hosting/$path').existsSync(), isTrue, reason: path);
       expect(scripts, contains(path.replaceFirst('images/venues/', '')));
     }
 

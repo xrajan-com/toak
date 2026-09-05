@@ -12,7 +12,11 @@ void main() {
         .toSet();
 
     final missing = expected.difference(actual).toList()..sort();
-    final extra = actual.difference(expected).toList()..sort();
+    final extra = actual
+        .difference(expected)
+        .where((path) => !_retainedLegacyFortAsset(path))
+        .toList()
+      ..sort();
     final numbered = actual
         .where((path) => RegExp(r'/fort_[0-9][0-9]\.svg$').hasMatch(path))
         .toList()
@@ -53,11 +57,38 @@ Set<String> _expectedFortWatermarkAssets() {
       final folder = _kingdomFolderAliases[fortEntry.key] ?? fortEntry.key;
       for (final fortName in fortEntry.value) {
         final slug = _slugForAsset(fortName);
-        expected.add('assets/images/watermarks/$folder/$slug.svg');
+        final primary = 'assets/images/watermarks/$folder/$slug.svg';
+        if (File(primary).existsSync()) {
+          expected.add(primary);
+          continue;
+        }
+        String? legacy;
+        for (final candidate in _legacyFortFolders(folder)) {
+          final path = 'assets/images/watermarks/$candidate/$slug.svg';
+          if (File(path).existsSync()) {
+            legacy = path;
+            break;
+          }
+        }
+        expected.add(legacy ?? primary);
       }
     }
   }
   return expected;
+}
+
+Iterable<String> _legacyFortFolders(String folder) sync* {
+  if (folder == 'US Circuit') yield 'N. America';
+  if (<String>{
+    'Europe',
+    'Britain',
+    'France',
+    'Italy',
+    'Spain',
+    'Mediterranean',
+  }.contains(folder)) {
+    yield 'Europe';
+  }
 }
 
 Set<String> _svgFilesUnder(String path) {
@@ -111,8 +142,8 @@ String _slugForAsset(String raw) {
 const Map<String, String> _kingdomFolderAliases = <String, String>{
   'Far East': 'Asia',
   'Asia Rest': 'Asia',
-  'Central Asia': 'Russia',
   'Persia': 'Arabia',
+  'European Marches': 'Europe',
   'Dominion of Canada': 'US Circuit',
   'Massachusetts': 'US Circuit',
   'New York': 'US Circuit',
@@ -129,6 +160,11 @@ const Set<String> _nonVenueReferenceAssets = <String>{
   'assets/images/watermarks/US Circuit/guitar_pedal_2.svg',
 };
 
+bool _retainedLegacyFortAsset(String path) {
+  return path.startsWith('assets/images/watermarks/N. America/') ||
+      path.startsWith('assets/images/watermarks/Europe/');
+}
+
 const Map<String, String> _assetSlugReplacements = <String, String>{
   'á': 'a',
   'à': 'a',
@@ -139,6 +175,8 @@ const Map<String, String> _assetSlugReplacements = <String, String>{
   'ā': 'a',
   'ă': 'a',
   'ą': 'a',
+  'ạ': 'a',
+  'ả': 'a',
   'ç': 'c',
   'ć': 'c',
   'č': 'c',
@@ -149,11 +187,14 @@ const Map<String, String> _assetSlugReplacements = <String, String>{
   'ē': 'e',
   'ė': 'e',
   'ę': 'e',
+  'ế': 'e',
+  'ệ': 'e',
   'í': 'i',
   'ì': 'i',
   'î': 'i',
   'ï': 'i',
   'ı': 'i',
+  'ị': 'i',
   'ñ': 'n',
   'ń': 'n',
   'ó': 'o',
@@ -162,13 +203,18 @@ const Map<String, String> _assetSlugReplacements = <String, String>{
   'ö': 'o',
   'õ': 'o',
   'ø': 'o',
+  'ơ': 'o',
+  'ồ': 'o',
+  'ổ': 'o',
   'ú': 'u',
   'ù': 'u',
   'û': 'u',
   'ü': 'u',
+  'ū': 'u',
   'ý': 'y',
   'ÿ': 'y',
   'æ': 'ae',
   'œ': 'oe',
   'ß': 'ss',
+  'đ': 'd',
 };
