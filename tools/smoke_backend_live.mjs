@@ -112,7 +112,11 @@ async function signUpEphemeralUser() {
   ) {
     throw new Error(`Ephemeral Firebase sign-up failed: ${JSON.stringify(data)}`);
   }
-  ephemeralIdentity = { token: data.idToken, uid: data.localId };
+  ephemeralIdentity = {
+    token: data.idToken,
+    uid: data.localId,
+    authDeleted: false,
+  };
   return data.idToken;
 }
 
@@ -125,13 +129,24 @@ async function idToken() {
 async function cleanUpEphemeralUser() {
   if (!ephemeralIdentity) return;
   const { token, uid } = ephemeralIdentity;
-  const deleted = await request('/v1/auth/account', {
-    method: 'DELETE',
-    token,
-    body: { confirmation: 'DELETE' },
-  });
-  if (deleted.deleted !== true) {
-    throw new Error('Ephemeral smoke account cleanup was not confirmed.');
+  if (!ephemeralIdentity.authDeleted) {
+    try {
+      const deleted = await request('/v1/auth/account', {
+        method: 'DELETE',
+        token,
+        body: { confirmation: 'DELETE' },
+      });
+      if (deleted.deleted !== true) {
+        throw new Error('Ephemeral smoke account cleanup was not confirmed.');
+      }
+    } catch (error) {
+      const message = error?.message || String(error);
+      const alreadyDeleted =
+        message.includes('DELETE /v1/auth/account failed with 401') &&
+        message.includes('Invalid Firebase ID token');
+      if (!alreadyDeleted) throw error;
+    }
+    ephemeralIdentity.authDeleted = true;
   }
 
   // Account deletion intentionally leaves a durable tombstone. This UID no

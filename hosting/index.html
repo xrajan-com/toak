@@ -45,17 +45,65 @@
       ]
     }
   </script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Is X Poker real-money gambling?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. X Poker is entertainment and skill-building only. There is no real-money wagering, no cash deposits or cash-outs, and no prizes with real-world value."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is Ten of a Kind?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Ten of a Kind is the studio behind X Poker, a simulated Texas Hold'em strategy game built as a passion project by a former poker player, for practicing decision-making, probability, and poker theory against AI opponents."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How many circuits and kingdoms does X Poker have?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "X Poker has five competitive circuits — Europe, the Americas, Asia-Pacific, World Frontiers, and the Indian Ocean — made up of 50 themed kingdoms in total, each with its own fort count and noble title."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Who is Renoir in X Poker?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Renoir is X Poker's dealer character, known for the tagline \"The wild doesn't fold.\""
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is X Poker free to play?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. X Poker is free to play in your browser or on Android, with no cash deposits required."
+          }
+        }
+      ]
+    }
+  </script>
 </head>
 <body>
   <div class="demo-loader" id="demoLoader">
     <div class="demo-loader-box">
-      <img src="Logo.png" alt="Ten of a Kind Poker Logo" class="demo-loader-logo" />
+      <img src="Logo.png" alt="X Poker logo" class="demo-loader-logo" />
       <p class="demo-loader-text">Loading demo&hellip;</p>
     </div>
   </div>
   <header role="banner">
-    <a href="/" class="site-logo-link" aria-label="Return to Ten of a Kind Poker homepage">
-      <img src="images/banner.png" alt="Ten of a Kind Poker" class="site-logo" />
+    <a href="/" class="site-logo-link" aria-label="Return to the X Poker homepage">
+      <img src="Logo.png" alt="X Poker" class="site-logo" />
     </a>
     <nav role="navigation">
       <a href="#" class="profile-icon-link profile-action-link" aria-label="Sign in to manage profile">
@@ -132,6 +180,48 @@
     </div>
   </section>
   <main>
+    <section class="hero" aria-label="About X Poker">
+      <div class="hero-grid">
+        <div class="hero-content">
+          <span class="eyebrow hero-eyebrow">Skill-Based Texas Hold'em</span>
+          <h1>X Poker &mdash; Ten of a Kind's Free Poker Strategy Game</h1>
+          <p class="hero-subtext">
+            X Poker is Ten of a Kind's simulated Texas Hold'em strategy game:
+            play against AI opponents across five competitive circuits
+            &mdash; Europe, the Americas, Asia-Pacific, World Frontiers, and
+            the Indian Ocean &mdash; each built from ten themed kingdoms with
+            their own forts and noble titles. Climb the live circuit
+            leaderboards, earn Aura points and forts, and meet Renoir, the
+            dealer who never folds. It's entertainment and skill-building
+            only &mdash; no real-money gambling, wagering, or prizes, ever.
+          </p>
+          <div class="hero-stats">
+            <div class="hero-stat">
+              <span class="stat-label">Circuits</span>
+              <span class="stat-value">5</span>
+            </div>
+            <div class="hero-stat">
+              <span class="stat-label">Kingdoms</span>
+              <span class="stat-value">50</span>
+            </div>
+            <div class="hero-stat">
+              <span class="stat-label">Real-Money Gambling</span>
+              <span class="stat-value">None</span>
+            </div>
+          </div>
+          <div class="hero-actions">
+            <a class="modal-trigger primary" href="/web/">Play in Browser</a>
+            <a
+              class="modal-trigger ghost"
+              href="https://play.google.com/store/apps/details?id=com.tenofakind.poker"
+              target="_blank"
+              rel="noopener noreferrer"
+            >Get It on Google Play</a>
+            <a class="modal-trigger ghost" href="how-to-play.html">How to Play</a>
+          </div>
+        </div>
+      </div>
+    </section>
     <div class="modal-overlay" id="leaderboardModal">
       <div class="modal-content leaderboard-modal">
   <button class="modal-close-button" id="closeLeaderboardModal">&times;</button>
@@ -157,42 +247,410 @@
     <section class="venue-showcase" id="venues">
       <div class="venue-tabs" role="tablist">
         <div class="venue-tab-item venue-tab-item-euro">
-          <button class="venue-tab active" data-target="euro" role="tab" aria-selected="true">Euro Circuit</button>
-          <ol class="venue-leaderboard-menu" aria-label="Euro Circuit leaderboard">
-            <li class="venue-leaderboard-heading">Live Overall Leaderboard</li>
-            <li class="venue-leaderboard-status"><span>Loading live rankings…</span><strong>—</strong></li>
-          </ol>
-        </div>
-        <div class="venue-tab-item venue-tab-item-india">
-          <button class="venue-tab" data-target="india" role="tab" aria-selected="false">Indian Circuit</button>
-          <ol class="venue-leaderboard-menu" aria-label="Indian Circuit leaderboard">
-            <li class="venue-leaderboard-heading">Live Overall Leaderboard</li>
-            <li class="venue-leaderboard-status"><span>Loading live rankings…</span><strong>—</strong></li>
-          </ol>
-        </div>
-        <div class="venue-tab-item venue-tab-item-world">
-          <button class="venue-tab" data-target="world" role="tab" aria-selected="false">International Circuit</button>
-          <ol class="venue-leaderboard-menu" aria-label="International Circuit leaderboard">
-            <li class="venue-leaderboard-heading">Live Overall Leaderboard</li>
-            <li class="venue-leaderboard-status"><span>Loading live rankings…</span><strong>—</strong></li>
-          </ol>
-        </div>
-        <div class="venue-tab-item venue-tab-item-oceania">
-          <button class="venue-tab" data-target="oceania" role="tab" aria-selected="false">Micro Circuit</button>
-          <ol class="venue-leaderboard-menu" aria-label="Micro Circuit leaderboard">
+          <button class="venue-tab active" data-target="euro" role="tab" aria-selected="true">Europe</button>
+          <ol class="venue-leaderboard-menu" aria-label="Europe leaderboard">
             <li class="venue-leaderboard-heading">Live Overall Leaderboard</li>
             <li class="venue-leaderboard-status"><span>Loading live rankings…</span><strong>—</strong></li>
           </ol>
         </div>
         <div class="venue-tab-item venue-tab-item-us">
-          <button class="venue-tab" data-target="us" role="tab" aria-selected="false">US Circuit</button>
-          <ol class="venue-leaderboard-menu" aria-label="US Circuit leaderboard">
+          <button class="venue-tab" data-target="us" role="tab" aria-selected="false">Americas</button>
+          <ol class="venue-leaderboard-menu" aria-label="Americas leaderboard">
+            <li class="venue-leaderboard-heading">Live Overall Leaderboard</li>
+            <li class="venue-leaderboard-status"><span>Loading live rankings…</span><strong>—</strong></li>
+          </ol>
+        </div>
+        <div class="venue-tab-item venue-tab-item-oceania">
+          <button class="venue-tab" data-target="oceania" role="tab" aria-selected="false">Asia-Pacific</button>
+          <ol class="venue-leaderboard-menu" aria-label="Asia-Pacific leaderboard">
+            <li class="venue-leaderboard-heading">Live Overall Leaderboard</li>
+            <li class="venue-leaderboard-status"><span>Loading live rankings…</span><strong>—</strong></li>
+          </ol>
+        </div>
+        <div class="venue-tab-item venue-tab-item-world">
+          <button class="venue-tab" data-target="world" role="tab" aria-selected="false">World Frontiers</button>
+          <ol class="venue-leaderboard-menu" aria-label="World Frontiers leaderboard">
+            <li class="venue-leaderboard-heading">Live Overall Leaderboard</li>
+            <li class="venue-leaderboard-status"><span>Loading live rankings…</span><strong>—</strong></li>
+          </ol>
+        </div>
+        <div class="venue-tab-item venue-tab-item-india">
+          <button class="venue-tab" data-target="india" role="tab" aria-selected="false">Indian Ocean</button>
+          <ol class="venue-leaderboard-menu" aria-label="Indian Ocean leaderboard">
             <li class="venue-leaderboard-heading">Live Overall Leaderboard</li>
             <li class="venue-leaderboard-status"><span>Loading live rankings…</span><strong>—</strong></li>
           </ol>
         </div>
       </div>
       <div class="venue-grids">
+        <div class="venue-grid active" data-group="euro" role="tabpanel">
+          <article class="venue-card" style="--felt:#24247A">
+            <div class="venue-card-flag">
+              <img src="images/venues/euro/britain.png" alt="Britain &amp; Ireland flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Britain &amp; Ireland</h4>
+              <p>10 Forts, Title: Baron</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#00A6E8">
+            <div class="venue-card-flag">
+              <img src="images/venues/euro/france.png" alt="France flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>France</h4>
+              <p>8 Forts, Title: Marquis</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#556B2F">
+            <div class="venue-card-flag">
+              <img src="images/venues/euro/italy.png" alt="Italy flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Italy</h4>
+              <p>8 Forts, Title: Conte</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#8B0000">
+            <div class="venue-card-flag">
+              <img src="images/venues/euro/spain.png" alt="Iberia flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Iberia</h4>
+              <p>10 Forts, Title: Hidalgo</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#761EB4">
+            <div class="venue-card-flag">
+              <img src="images/venues/euro/north_sea.png" alt="Low Countries flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Low Countries</h4>
+              <p>8 Forts, Title: Stadtholder</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#013220">
+            <div class="venue-card-flag">
+              <img src="images/venues/euro/scandinavia.png" alt="Scandinavia flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Scandinavia</h4>
+              <p>8 Forts, Title: Jarl</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#CBA014">
+            <div class="venue-card-flag">
+              <img src="images/venues/europe.png" alt="Central Europe flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Central Europe</h4>
+              <p>9 Forts, Title: Margrave</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#DC53DC">
+            <div class="venue-card-flag">
+              <img src="images/venues/euro/mediterranean.png" alt="Balkans &amp; Mediterranean flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Balkans &amp; Mediterranean</h4>
+              <p>10 Forts, Title: Strategos</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#FF6B01">
+            <div class="venue-card-flag">
+              <img src="images/venues/euro/baltic_marches.png" alt="Baltic Marches flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Baltic Marches</h4>
+              <p>10 Forts, Title: Hetman</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#5F413A">
+            <div class="venue-card-flag">
+              <img src="images/venues/euro/russia_siberia.png" alt="Russia &amp; Siberia flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Russia &amp; Siberia</h4>
+              <p>12 Forts, Title: Ataman</p>
+            </div>
+          </article>
+        </div>
+        <div class="venue-grid" data-group="us" role="tabpanel">
+          <article class="venue-card" style="--felt:#24247A">
+            <div class="venue-card-flag">
+              <img src="images/venues/us/canada.png" alt="Canada flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Canada</h4>
+              <p>10 Forts, Title: Mountie</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#00A6E8">
+            <div class="venue-card-flag">
+              <img src="images/venues/us/massachusetts.png" alt="Northeast USA flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Northeast USA</h4>
+              <p>15 Forts, Title: Patriot</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#556B2F">
+            <div class="venue-card-flag">
+              <img src="images/venues/us/new_york.png" alt="Atlantic USA flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Atlantic USA</h4>
+              <p>15 Forts, Title: Commodore</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#8B0000">
+            <div class="venue-card-flag">
+              <img src="images/venues/us/florida.png" alt="Southern USA flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Southern USA</h4>
+              <p>15 Forts, Title: Colonel</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#761EB4">
+            <div class="venue-card-flag">
+              <img src="images/venues/us/california.png" alt="Western USA flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Western USA</h4>
+              <p>15 Forts, Title: Prospector</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#013220">
+            <div class="venue-card-flag">
+              <img src="images/venues/us/texas.png" alt="Mexico &amp; Central America flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Mexico &amp; Central America</h4>
+              <p>12 Forts, Title: Caudillo</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#CBA014">
+            <div class="venue-card-flag">
+              <img src="images/venues/oceania/caribbean.png" alt="Caribbean flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Caribbean</h4>
+              <p>12 Forts, Title: Governor</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#DC53DC">
+            <div class="venue-card-flag">
+              <img src="images/venues/amazon.png" alt="Brazil flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Brazil</h4>
+              <p>13 Forts, Title: Bandeirante</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#FF6B01">
+            <div class="venue-card-flag">
+              <img src="images/venues/us/colorado.png" alt="Andes flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Andes</h4>
+              <p>11 Forts, Title: Inca</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#5F413A">
+            <div class="venue-card-flag">
+              <img src="images/venues/us/virginia.png" alt="Southern Cone flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Southern Cone</h4>
+              <p>12 Forts, Title: Gaucho</p>
+            </div>
+          </article>
+        </div>
+        <div class="venue-grid" data-group="oceania" role="tabpanel">
+          <article class="venue-card" style="--felt:#24247A">
+            <div class="venue-card-flag">
+              <img src="images/venues/china.png" alt="China flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>China</h4>
+              <p>11 Forts, Title: Jiangjun</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#00A6E8">
+            <div class="venue-card-flag">
+              <img src="images/venues/japan.png" alt="Japan flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Japan</h4>
+              <p>10 Forts, Title: Shogun</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#556B2F">
+            <div class="venue-card-flag">
+              <img src="images/venues/china.png" alt="Korea flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Korea</h4>
+              <p>8 Forts, Title: Daegam</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#8B0000">
+            <div class="venue-card-flag">
+              <img src="images/venues/oceania/dragonland.png" alt="Taiwan flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Taiwan</h4>
+              <p>8 Forts, Title: Taipan</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#761EB4">
+            <div class="venue-card-flag">
+              <img src="images/venues/southeast.png" alt="Vietnam flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Vietnam</h4>
+              <p>10 Forts, Title: Vương</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#013220">
+            <div class="venue-card-flag">
+              <img src="images/venues/southeast.png" alt="Mekong flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Mekong</h4>
+              <p>9 Forts, Title: Mandala</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#CBA014">
+            <div class="venue-card-flag">
+              <img src="images/venues/oceania/american_isles.png" alt="Philippines flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Philippines</h4>
+              <p>10 Forts, Title: Datu</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#DC53DC">
+            <div class="venue-card-flag">
+              <img src="images/venues/oceania/straits.png" alt="Straits flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Straits</h4>
+              <p>12 Forts, Title: Laksamana</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#FF6B01">
+            <div class="venue-card-flag">
+              <img src="images/venues/oceania/straits.png" alt="Indonesia flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Indonesia</h4>
+              <p>10 Forts, Title: Sultan</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#5F413A">
+            <div class="venue-card-flag">
+              <img src="images/venues/oceania/pacific.png" alt="Pacific flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Pacific</h4>
+              <p>12 Forts, Title: Tui</p>
+            </div>
+          </article>
+        </div>
+        <div class="venue-grid" data-group="world" role="tabpanel">
+          <article class="venue-card" style="--felt:#24247A">
+            <div class="venue-card-flag">
+              <img src="images/venues/australia.png" alt="Australia flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Australia</h4>
+              <p>12 Forts, Title: Premier</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#00A6E8">
+            <div class="venue-card-flag">
+              <img src="images/venues/africa.png" alt="North Africa flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>North Africa</h4>
+              <p>9 Forts, Title: Pasha</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#556B2F">
+            <div class="venue-card-flag">
+              <img src="images/venues/africa.png" alt="Sub-Saharan Africa flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Sub-Saharan Africa</h4>
+              <p>9 Forts, Title: Mansa</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#8B0000">
+            <div class="venue-card-flag">
+              <img src="images/venues/arabia.png" alt="Arabia flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Arabia</h4>
+              <p>9 Forts, Title: Sheikh</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#761EB4">
+            <div class="venue-card-flag">
+              <img src="images/venues/arabia.png" alt="Persia &amp; Mesopotamia flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Persia &amp; Mesopotamia</h4>
+              <p>9 Forts, Title: Shah</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#013220">
+            <div class="venue-card-flag">
+              <img src="images/venues/russia.png" alt="Central Asia flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Central Asia</h4>
+              <p>11 Forts, Title: Emir</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#CBA014">
+            <div class="venue-card-flag">
+              <img src="images/venues/oceania/indian_ocean.png" alt="Indian Ocean Isles flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Indian Ocean Isles</h4>
+              <p>10 Forts, Title: Admiral</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#DC53DC">
+            <div class="venue-card-flag">
+              <img src="images/venues/oceania/british_isles.png" alt="Atlantic Isles flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Atlantic Isles</h4>
+              <p>7 Forts, Title: Warden</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#FF6B01">
+            <div class="venue-card-flag">
+              <img src="images/venues/oceania/french_isles.png" alt="French &amp; Dutch Isles flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>French &amp; Dutch Isles</h4>
+              <p>7 Forts, Title: Burgher</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#5F413A">
+            <div class="venue-card-flag">
+              <img src="images/venues/oceania/alaska.png" alt="Arctic flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Arctic</h4>
+              <p>5 Forts, Title: Chieftain</p>
+            </div>
+          </article>
+        </div>
         <div class="venue-grid" data-group="india" role="tabpanel">
           <article class="venue-card" style="--felt:#CBA014">
             <div class="venue-card-flag">
@@ -285,324 +743,6 @@
             </div>
           </article>
         </div>
-        <div class="venue-grid" data-group="world" role="tabpanel">
-          <article class="venue-card" style="--felt:#556B2F">
-            <div class="venue-card-flag">
-              <img src="images/venues/africa.png" alt="Africa flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Africa</h4>
-              <p>8 Forts, Title: Mansa</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#013220">
-            <div class="venue-card-flag">
-              <img src="images/venues/amazon.png" alt="S. America flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>S. America</h4>
-              <p>8 Forts, Title: Caudillo</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#24247A">
-            <div class="venue-card-flag">
-              <img src="images/venues/america.png" alt="N. America flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>N. America</h4>
-              <p>12 Forts, Title: Chief</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#5F413A">
-            <div class="venue-card-flag">
-              <img src="images/venues/arabia.png" alt="Arabia flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Arabia</h4>
-              <p>9 Forts, Title: Sheikh</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#8B0000">
-            <div class="venue-card-flag">
-              <img src="images/venues/china.png" alt="China flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>China</h4>
-              <p>7 Forts, Title: Jiangjun</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#DC53DC">
-            <div class="venue-card-flag">
-              <img src="images/venues/china.png" alt="Far East flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Far East</h4>
-              <p>8 Forts, Title: Shogun</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#00A6E8">
-            <div class="venue-card-flag">
-              <img src="images/venues/southeast.png" alt="Asia Rest flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Asia Rest</h4>
-              <p>8 Forts, Title: Mandala</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#761EB4">
-            <div class="venue-card-flag">
-              <img src="images/venues/russia.png" alt="Central Asia flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Central Asia</h4>
-              <p>11 Forts, Title: Emir</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#FF6B01">
-            <div class="venue-card-flag">
-              <img src="images/venues/arabia.png" alt="Persia flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Persia</h4>
-              <p>8 Forts, Title: Shah</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#CBA014">
-            <div class="venue-card-flag">
-              <img src="images/venues/europe.png" alt="Europe flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Europe</h4>
-              <p>17 Forts, Title: Duke</p>
-            </div>
-          </article>
-        </div>
-        <div class="venue-grid active" data-group="euro" role="tabpanel">
-          <article class="venue-card" style="--felt:#24247A">
-            <div class="venue-card-flag">
-              <img src="images/venues/euro/britain.png" alt="Britain flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Britain</h4>
-              <p>7 Forts, Title: Baron</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#00A6E8">
-            <div class="venue-card-flag">
-              <img src="images/venues/euro/france.png" alt="France flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>France</h4>
-              <p>6 Forts, Title: Marquis</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#556B2F">
-            <div class="venue-card-flag">
-              <img src="images/venues/euro/italy.png" alt="Italy flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Italy</h4>
-              <p>6 Forts, Title: Conte</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#8B0000">
-            <div class="venue-card-flag">
-              <img src="images/venues/euro/spain.png" alt="Spain flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Spain</h4>
-              <p>6 Forts, Title: Hidalgo</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#CBA014">
-            <div class="venue-card-flag">
-              <img src="images/venues/euro/portugal.png" alt="Portugal flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Portugal</h4>
-              <p>6 Forts, Title: Infante</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#761EB4">
-            <div class="venue-card-flag">
-              <img src="images/venues/euro/north_sea.png" alt="North Sea flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>North Sea</h4>
-              <p>6 Forts, Title: Stadtholder</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#013220">
-            <div class="venue-card-flag">
-              <img src="images/venues/euro/scandinavia.png" alt="Scandinavia flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Scandinavia</h4>
-              <p>6 Forts, Title: Jarl</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#FF6B01">
-            <div class="venue-card-flag">
-              <img src="images/venues/euro/baltic_marches.png" alt="Baltic Marches flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Baltic Marches</h4>
-              <p>10 Forts, Title: Hetman</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#DC53DC">
-            <div class="venue-card-flag">
-              <img src="images/venues/euro/russia_siberia.png" alt="Russia and Siberia flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Russia & Siberia</h4>
-              <p>10 Forts, Title: Ataman</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#5F413A">
-            <div class="venue-card-flag">
-              <img src="images/venues/euro/mediterranean.png" alt="Mediterranean flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Mediterranean</h4>
-              <p>13 Forts, Title: Strategos</p>
-            </div>
-          </article>
-        </div>
-        <div class="venue-grid" data-group="oceania" role="tabpanel">
-          <article class="venue-card" style="--felt:#24247A">
-            <div class="venue-card-flag">
-              <img src="images/venues/oceania/alaska.png" alt="Alaska flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Alaska</h4>
-              <p>6 Forts, Title: Chieftain</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#CBA014">
-            <div class="venue-card-flag">
-              <img src="images/venues/oceania/caribbean.png" alt="Caribbean flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Caribbean</h4>
-              <p>10 Forts, Title: Governor</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#8B0000">
-            <div class="venue-card-flag">
-              <img src="images/venues/oceania/dragonland.png" alt="Dragonland flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Dragonland</h4>
-              <p>8 Forts, Title: Taipan</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#00A6E8">
-            <div class="venue-card-flag">
-              <img src="images/venues/oceania/straits.png" alt="Straits flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Straits</h4>
-              <p>12 Forts, Title: Laksamana</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#013220">
-            <div class="venue-card-flag">
-              <img src="images/venues/oceania/indian_ocean.png" alt="Indian Ocean flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Indian Ocean</h4>
-              <p>10 Forts, Title: Admiral</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#556B2F">
-            <div class="venue-card-flag">
-              <img src="images/venues/oceania/pacific.png" alt="Pacific flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Pacific</h4>
-              <p>8 Forts, Title: Tui</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#761EB4">
-            <div class="venue-card-flag">
-              <img src="images/venues/oceania/british_isles.png" alt="British Isles flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>British Isles</h4>
-              <p>10 Forts, Title: Warden</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#DC53DC">
-            <div class="venue-card-flag">
-              <img src="images/venues/oceania/french_isles.png" alt="French Isles flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>French Isles</h4>
-              <p>10 Forts, Title: Seigneur</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#FF6B01">
-            <div class="venue-card-flag">
-              <img src="images/venues/oceania/dutch_isles.png" alt="Dutch Isles flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Dutch Isles</h4>
-              <p>8 Forts, Title: Burgher</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#5F413A">
-            <div class="venue-card-flag">
-              <img src="images/venues/oceania/american_isles.png" alt="American Isles flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>American Isles</h4>
-              <p>10 Forts, Title: Marshal</p>
-            </div>
-          </article>
-        </div>
-        <div class="venue-grid" data-group="us" role="tabpanel">
-          <article class="venue-card" style="--felt:#8B0000">
-            <div class="venue-card-flag"><img src="images/venues/us/canada.png" alt="Dominion of Canada flag" loading="lazy"></div>
-            <div class="venue-card-body"><h4>Dominion of Canada</h4><p>9 Forts, Title: Mountie</p></div>
-          </article>
-          <article class="venue-card" style="--felt:#24247A">
-            <div class="venue-card-flag"><img src="images/venues/us/massachusetts.png" alt="Massachusetts flag" loading="lazy"></div>
-            <div class="venue-card-body"><h4>Massachusetts</h4><p>10 Forts, Title: Patriot</p></div>
-          </article>
-          <article class="venue-card" style="--felt:#00A6E8">
-            <div class="venue-card-flag"><img src="images/venues/us/new_york.png" alt="New York flag" loading="lazy"></div>
-            <div class="venue-card-body"><h4>New York</h4><p>10 Forts, Title: Maccabee</p></div>
-          </article>
-          <article class="venue-card" style="--felt:#761EB4">
-            <div class="venue-card-flag"><img src="images/venues/us/virginia.png" alt="Virginia flag" loading="lazy"></div>
-            <div class="venue-card-body"><h4>Virginia</h4><p>10 Forts, Title: Cavalier</p></div>
-          </article>
-          <article class="venue-card" style="--felt:#013220">
-            <div class="venue-card-flag"><img src="images/venues/us/illinois.png" alt="Illinois flag" loading="lazy"></div>
-            <div class="venue-card-body"><h4>Illinois</h4><p>10 Forts, Title: Loopmaster</p></div>
-          </article>
-          <article class="venue-card" style="--felt:#CBA014">
-            <div class="venue-card-flag"><img src="images/venues/us/florida.png" alt="Florida flag" loading="lazy"></div>
-            <div class="venue-card-body"><h4>Florida</h4><p>10 Forts, Title: Buccaneer</p></div>
-          </article>
-          <article class="venue-card" style="--felt:#5F413A">
-            <div class="venue-card-flag"><img src="images/venues/us/texas.png" alt="Texas flag" loading="lazy"></div>
-            <div class="venue-card-body"><h4>Texas</h4><p>10 Forts, Title: Longhorn</p></div>
-          </article>
-          <article class="venue-card" style="--felt:#556B2F">
-            <div class="venue-card-flag"><img src="images/venues/us/kansas.png" alt="Kansas flag" loading="lazy"></div>
-            <div class="venue-card-body"><h4>Kansas</h4><p>10 Forts, Title: Marshal</p></div>
-          </article>
-          <article class="venue-card" style="--felt:#FF6B01">
-            <div class="venue-card-flag"><img src="images/venues/us/colorado.png" alt="Colorado flag" loading="lazy"></div>
-            <div class="venue-card-body"><h4>Colorado</h4><p>10 Forts, Title: Prospector</p></div>
-          </article>
-          <article class="venue-card" style="--felt:#DC53DC">
-            <div class="venue-card-flag"><img src="images/venues/us/california.png" alt="California flag" loading="lazy"></div>
-            <div class="venue-card-body"><h4>California</h4><p>10 Forts, Title: Rainmaker</p></div>
-          </article>
-        </div>
       </div>
     </section>
 
@@ -633,6 +773,9 @@
                 <p>💌: <a href="mailto:pooniaone@gmail.com">pooniaone@gmail.com</a></p>
                 <button class="close-popup">&times;</button>
             </div>
+        </div>
+        <div class="footer-link-container">
+            <a href="how-to-play.html" target="_blank" rel="noopener noreferrer">How to Play</a>
         </div>
         <div class="footer-link-container">
             <a href="disclaimer.html" id="disclaimerLink" target="_blank" rel="noopener noreferrer">Disclaimer</a>

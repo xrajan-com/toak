@@ -87,16 +87,16 @@ test('catalog negotiation keeps legacy clients compatible during rollout', () =>
 
 test('494 reservations retain the exact event rules used before rollout', () => {
   const event494 = campaignEvent(
-    'me:northAmerica:california',
+    'me:euro:france',
     ECONOMY_CATALOG_494_VERSION,
   );
   const event550 = campaignEvent(
-    'me:northAmerica:california',
+    'me:euro:france',
     ECONOMY_CATALOG_VERSION,
   );
 
   assert.equal(event494.requiredFortIds.length, 6);
-  assert.equal(event550.requiredFortIds.length, 10);
+  assert.equal(event550.requiredFortIds.length, 8);
 });
 
 test('legacy snapshots preserve the full visible 100-Aura balance', () => {
@@ -565,11 +565,11 @@ test('catalog-backed entry and win ignore client fee, group, and prize claims', 
     },
   });
   assert.equal(win.accepted, true);
-  assert.equal(win.delta, 71400);
+  assert.equal(win.delta, 85800);
 
   const afterWin = db.dump(SERVER_PROGRESS_COLLECTION, uid);
   assert.equal(afterWin.indiaAup, 2000);
-  assert.equal(afterWin.internationalAup, 73400);
+  assert.equal(afterWin.internationalAup, 87800);
   assert.deepEqual(afterWin.cleared, [freeFort]);
   assert.equal(afterWin.entryReservations[0].status, 'settled');
 
@@ -584,10 +584,10 @@ test('catalog-backed entry and win ignore client fee, group, and prize claims', 
     },
   });
   assert.equal(paid.accepted, true);
-  assert.equal(paid.reservation.amount, 72000);
+  assert.equal(paid.reservation.amount, 86000);
   assert.equal(paid.reservation.group, 'international');
-  assert.equal(paid.delta, -72000);
-  assert.equal(paid.progress.internationalAup, 1400);
+  assert.equal(paid.delta, -86000);
+  assert.equal(paid.progress.internationalAup, 1800);
 });
 
 test('secure catalog reservations allow unlimited fort replays with unique attempts', async () => {
@@ -610,11 +610,11 @@ test('secure catalog reservations allow unlimited fort replays with unique attem
       },
     });
     assert.equal(win.accepted, true);
-    assert.equal(win.delta, 71400);
+    assert.equal(win.delta, 85800);
   }
 
   const saved = db.dump(SERVER_PROGRESS_COLLECTION, uid);
-  assert.equal(saved.internationalAup, 2000 + (5 * 71400));
+  assert.equal(saved.internationalAup, 2000 + (5 * 85800));
   assert.deepEqual(saved.cleared, [campaignId]);
   assert.equal(
     saved.entryReservations.filter((entry) => entry.status === 'settled').length,
@@ -646,7 +646,7 @@ test('committed entry recovery is delayed, idempotent, and penalized once', asyn
   });
   assert.equal(tooSoon.accepted, false);
   assert.equal(tooSoon.reason, 'recovery_not_ready');
-  assert.equal(tooSoon.progress.internationalAup, 28000);
+  assert.equal(tooSoon.progress.internationalAup, 14000);
 
   const stored = db.dump(SERVER_PROGRESS_COLLECTION, uid);
   stored.entryReservations[0].updatedAtMs = 1;
