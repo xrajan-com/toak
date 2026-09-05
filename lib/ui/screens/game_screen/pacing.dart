@@ -19,8 +19,10 @@ const kShuffleMs =
 const kRevealAfterShuffleMs = 180; // Delay before cards unhide during shuffle
 
 // ── Dealing & Animation ──────────────────────
-// Requested: 4× faster dealing animations (2× again).
-const kDealCardFlightMs = 130; // 520 / 4 = 130ms
+// Keep the fast 80 ms deal cadence, but let each flight overlap for long
+// enough to receive roughly 11 display frames at 60 Hz (and 22 at 120 Hz).
+// This preserves the quick deal while making each card path easier to track.
+const kDealCardFlightMs = 180;
 const kDealGapMs = 80; // 320 / 4 = 80ms
 const kDealControllerPadMs = 0; // keep reveal/landing in sync
 const kStreetRevealMs = 800; // Flip/reveal for flop, turn, river

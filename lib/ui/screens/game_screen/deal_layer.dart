@@ -472,13 +472,17 @@ class _FlightCard extends StatelessWidget {
     final t = Curves.easeOutCubic.transform(progress);
     final pos = posFn(t);
 
-    // Subtle settle (scale + rotation) in last 10%
-    final settleK = progress > 0.9 ? (progress - 0.9) / 0.1 : 0.0;
-    final rot = _lerp(0, angle, t) + (0.02 * settleK); // ~1.1°
-    final scale = _lerp(0.86, 1.0, t) + (0.015 * settleK); // +1.5%
+    // A small landing pulse that returns exactly to the resting transform.
+    // The previous one-way overshoot ended enlarged and over-rotated, causing
+    // a visible snap when the flying card was replaced by its table card.
+    final settlePhase =
+        progress <= 0.82 ? 0.0 : ((progress - 0.82) / 0.18).clamp(0.0, 1.0);
+    final settlePulse = math.sin(math.pi * settlePhase);
+    final rot = _lerp(0, angle, t) + (0.014 * settlePulse);
+    final scale = _lerp(0.86, 1.0, t) + (0.012 * settlePulse);
 
     // Shadow peaks mid-flight.
-    final peak = (1 - (progress - 0.5).abs() * 2).clamp(0.0, 1.0);
+    final peak = math.sin(math.pi * progress).clamp(0.0, 1.0);
     final blur = 6 + elevation * peak;
 
     final left = (pos.dx - cardW / 2)

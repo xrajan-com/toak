@@ -25,6 +25,7 @@ import 'package:ten_of_a_kind_poker/services/app_settings_service.dart';
 import 'package:ten_of_a_kind_poker/services/campaign_progress_service.dart';
 import 'package:ten_of_a_kind_poker/services/poker_bot_learning_service.dart';
 import 'package:ten_of_a_kind_poker/services/profile_service.dart';
+import 'package:ten_of_a_kind_poker/services/x_music_service.dart';
 import 'package:ten_of_a_kind_poker/ui/theme/colors.dart';
 import 'package:ten_of_a_kind_poker/ui/utils/dealer_avatar_assignment.dart';
 import 'package:ten_of_a_kind_poker/ui/utils/deck_cache.dart';
@@ -569,6 +570,8 @@ class _GameScreenState extends State<GameScreen>
   bool _allInMatched = false;
   bool _heroWasLeader = false;
   bool _heroInDanger = false;
+  bool _heroInBottomHalf = false;
+  bool _heroPrizeSecuredCuePlayed = false;
   int? _heroFinalRank;
   int _heroFinalWinnings = 0;
   bool _heroFinishOverlayShown = false;
@@ -624,6 +627,7 @@ class _GameScreenState extends State<GameScreen>
     'africa': 'assets/images/watermarks/africa.svg',
     'amazon': 'assets/images/watermarks/amazon.svg',
     'europe': 'assets/images/watermarks/europe.svg',
+    'european marches': 'assets/images/watermarks/europe.svg',
     'far east': 'assets/images/watermarks/far_east.svg',
     'n. america': 'assets/images/watermarks/n_america.svg',
     's. america': 'assets/images/watermarks/s_america.svg',
@@ -661,6 +665,34 @@ class _GameScreenState extends State<GameScreen>
     'kansas': 'assets/images/watermarks/n_america.svg',
     'colorado': 'assets/images/watermarks/n_america.svg',
     'california': 'assets/images/watermarks/n_america.svg',
+    'britain & ireland': 'assets/images/watermarks/britain.svg',
+    'iberia': 'assets/images/watermarks/spain.svg',
+    'low countries': 'assets/images/watermarks/north_sea.svg',
+    'central europe': 'assets/images/watermarks/europe.svg',
+    'balkans & mediterranean': 'assets/images/watermarks/mediterranean.svg',
+    'canada': 'assets/images/watermarks/n_america.svg',
+    'northeast usa': 'assets/images/watermarks/n_america.svg',
+    'atlantic usa': 'assets/images/watermarks/n_america.svg',
+    'southern usa': 'assets/images/watermarks/n_america.svg',
+    'western usa': 'assets/images/watermarks/n_america.svg',
+    'mexico & central america': 'assets/images/watermarks/n_america.svg',
+    'brazil': 'assets/images/watermarks/s_america.svg',
+    'andes': 'assets/images/watermarks/s_america.svg',
+    'southern cone': 'assets/images/watermarks/s_america.svg',
+    'japan': 'assets/images/watermarks/far_east.svg',
+    'korea': 'assets/images/watermarks/far_east.svg',
+    'taiwan': 'assets/images/watermarks/dragonland.svg',
+    'vietnam': 'assets/images/watermarks/asia_rest.svg',
+    'mekong': 'assets/images/watermarks/southeast.svg',
+    'philippines': 'assets/images/watermarks/american_isles.svg',
+    'indonesia': 'assets/images/watermarks/straits.svg',
+    'north africa': 'assets/images/watermarks/africa.svg',
+    'sub-saharan africa': 'assets/images/watermarks/africa.svg',
+    'persia & mesopotamia': 'assets/images/watermarks/persia.svg',
+    'indian ocean isles': 'assets/images/watermarks/indian_ocean.svg',
+    'atlantic isles': 'assets/images/watermarks/british_isles.svg',
+    'french & dutch isles': 'assets/images/watermarks/dutch_isles.svg',
+    'arctic': 'assets/images/watermarks/alaska.svg',
   };
 
   bool get _useSubKingdomWatermark {
@@ -979,7 +1011,7 @@ class _GameScreenState extends State<GameScreen>
     final List<eng.BotDecisionLogEntry> rows =
         decisionLog ?? _currentBotDecisionLog();
     final Map<String, Object?> export = <String, Object?>{
-      'game': 'Ten of a Kind Poker',
+      'game': 'X Poker',
       'generatedAtLocal': _formatBotLearningTimestamp(DateTime.now().toLocal()),
       'lastTrainingSummary': _lastBotTrainingSummary,
       'decisionLogCount': rows.length,
@@ -1825,6 +1857,13 @@ class _GameScreenState extends State<GameScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     unawaited(applyGameSystemUi());
+    unawaited(XMusicService.instance.unlock());
+    final VenueGroup? musicGroup = widget.campaignGroup;
+    if (widget.venueMode == VenueEntryMode.career && musicGroup != null) {
+      XMusicService.instance.playCareerGameplay(musicGroup);
+    } else {
+      XMusicService.instance.playQuickGameplay();
+    }
 
     _campaignSpec = () {
       final group = widget.campaignGroup;
@@ -2344,7 +2383,10 @@ class _GameScreenState extends State<GameScreen>
       finishRank: finishRank,
       payoutAup: heroWon ? ev.prize : _heroFinalWinnings,
     );
-    _playMatchEndCue(heroWon: heroWon);
+    _playMatchEndCue(
+      heroWon: heroWon,
+      winnings: heroWon ? ev.prize : _heroFinalWinnings,
+    );
     await _matchActivitySettlementFuture;
   }
 
@@ -2750,13 +2792,25 @@ class _GameScreenState extends State<GameScreen>
       _heroPlacementSettlementFuture ??= _matchActivitySettlementFuture;
       _heroWasLeader = false;
       _heroInDanger = false;
-      _playMatchEndCue(heroWon: ev.rank > 0 && ev.rank <= 3);
+      _heroInBottomHalf = false;
+      _playMatchEndCue(
+        heroWon: ev.rank > 0 && ev.rank <= 3,
+        winnings: ev.winnings,
+      );
     }
   }
 
-  void _playMatchEndCue({required bool heroWon}) {
+  void _playMatchEndCue({
+    required bool heroWon,
+    required int winnings,
+  }) {
     if (_matchEndSoundPlayed) return;
     _matchEndSoundPlayed = true;
+    XMusicService.instance.queueEvent(
+      winnings > 0
+          ? XMusicEvent.gameOverWithPrize
+          : XMusicEvent.gameOverNoPrize,
+    );
     unawaited(heroWon
         ? SoundFx.instance.playGameWin()
         : SoundFx.instance.playGameLost());
@@ -2828,6 +2882,7 @@ class _GameScreenState extends State<GameScreen>
     if (idx < 0 || idx >= seats.length) {
       _heroWasLeader = false;
       _heroInDanger = false;
+      _heroInBottomHalf = false;
       return;
     }
     final hero = seats[idx];
@@ -2835,6 +2890,7 @@ class _GameScreenState extends State<GameScreen>
     if (!alive) {
       _heroWasLeader = false;
       _heroInDanger = false;
+      _heroInBottomHalf = false;
       return;
     }
 
@@ -2866,6 +2922,29 @@ class _GameScreenState extends State<GameScreen>
       }
     } else {
       _heroInDanger = false;
+    }
+
+    final List<Seat> activeSeats = seats
+        .where((Seat seat) => !seat.busted && seat.chips > 0)
+        .toList(growable: false);
+    final int higherStacks =
+        activeSeats.where((Seat seat) => seat.chips > heroChips).length;
+    final bool inBottomHalf = activeSeats.length > 1 &&
+        higherStacks >= (activeSeats.length / 2).ceil();
+    if (inBottomHalf && !_heroInBottomHalf) {
+      XMusicService.instance.queueEvent(XMusicEvent.heroInBottomHalf);
+    }
+    _heroInBottomHalf = inBottomHalf;
+
+    if (!_heroPrizeSecuredCuePlayed) {
+      final game_models.PayoutTable? payoutTable =
+          _campaignAupPayoutTable() ?? _campaignSpec?.payoutTable;
+      final int paidPlaces =
+          payoutTable?.byRank.where((int amount) => amount > 0).length ?? 1;
+      if (paidPlaces > 0 && activeSeats.length <= paidPlaces) {
+        _heroPrizeSecuredCuePlayed = true;
+        XMusicService.instance.queueEvent(XMusicEvent.heroSecuresPrize);
+      }
     }
   }
 

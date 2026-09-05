@@ -101,6 +101,7 @@ const Map<String, Color> _kKingdomFeltColors = {
   'Baroda': Color.fromARGB(218, 203, 160, 20),
   'China': Color(0xFF8B0000),
   'Europe': Color.fromARGB(204, 220, 83, 220),
+  'European Marches': Color.fromARGB(204, 220, 83, 220),
   'Gwalior': Color(0xFF1565C0),
   'Hyderabad': Color.fromARGB(173, 118, 30, 180),
   'Indore': Color(0xFF8B0000),
@@ -2303,6 +2304,8 @@ class RenoirDealerState extends State<RenoirDealer> {
     return _slashTimeline[_frameIndex % _slashTimeline.length];
   }
 
+  double get _continuousCustomPose => _completedLoops + _customPose;
+
   void _startTimer() {
     _stopTimer();
     if (_frameCount == 0) return;
@@ -2337,24 +2340,59 @@ class RenoirDealerState extends State<RenoirDealer> {
   Widget build(BuildContext context) {
     Widget child;
     if (_usesCustomAvatar) {
-      final double pose = _act == DealerAct.shuffle ? _customPose : 0.0;
-      child = buildDealerSkinAvatar(
-        style: widget.avatarStyle,
-        height: widget.size,
-        pose: pose,
-        jacketTone: widget.jacketTone,
-        feltColor: widget.feltColor,
-        railLightColor: widget.railLightColor,
-        railMidColor: widget.railMidColor,
-        railDarkColor: widget.railDarkColor,
-      );
+      if (_act == DealerAct.shuffle) {
+        final int transitionMicros = math.max(
+          8333,
+          widget.frameDuration.inMicroseconds ~/ 3,
+        );
+        child = TweenAnimationBuilder<double>(
+          tween: Tween<double>(begin: 0, end: _continuousCustomPose),
+          duration: Duration(microseconds: transitionMicros),
+          curve: Curves.easeInOut,
+          builder: (context, animatedPose, _) => buildDealerSkinAvatar(
+            style: widget.avatarStyle,
+            height: widget.size,
+            pose: animatedPose - animatedPose.floorToDouble(),
+            jacketTone: widget.jacketTone,
+            feltColor: widget.feltColor,
+            railLightColor: widget.railLightColor,
+            railMidColor: widget.railMidColor,
+            railDarkColor: widget.railDarkColor,
+          ),
+        );
+      } else {
+        child = buildDealerSkinAvatar(
+          style: widget.avatarStyle,
+          height: widget.size,
+          pose: 0,
+          jacketTone: widget.jacketTone,
+          feltColor: widget.feltColor,
+          railLightColor: widget.railLightColor,
+          railMidColor: widget.railMidColor,
+          railDarkColor: widget.railDarkColor,
+        );
+      }
     } else {
       final frames = _frames;
       final idle = _idle;
       if (_act == DealerAct.shuffle) {
-        child = (frames != null && frames.isNotEmpty)
-            ? frames[_frameIndex % frames.length]
+        final Widget frame = (frames != null && frames.isNotEmpty)
+            ? KeyedSubtree(
+                key: ValueKey<int>(_frameIndex),
+                child: frames[_frameIndex % frames.length],
+              )
             : (idle ?? const SizedBox.shrink());
+        child = AnimatedSwitcher(
+          duration: Duration(
+            milliseconds: math.max(
+              16,
+              (widget.frameDuration.inMilliseconds * 0.72).round(),
+            ),
+          ),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
+          child: frame,
+        );
       } else {
         child = idle ?? const SizedBox.shrink();
       }
