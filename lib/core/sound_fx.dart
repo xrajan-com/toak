@@ -5,6 +5,7 @@ import 'package:just_audio/just_audio.dart';
 
 import '../config/.env.dart';
 import '../config/assets.dart';
+import '../services/x_music_service.dart';
 
 /// Lightweight helper that manages short poker table sound effects.
 class SoundFx {
@@ -45,6 +46,7 @@ class SoundFx {
     _soundEffectsMuted = value;
     _voiceMuted = value;
     if (value) unawaited(stopAll());
+    XMusicService.instance.setMuted(value);
   }
 
   void setSoundEffectsMuted(bool value) {

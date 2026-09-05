@@ -56,6 +56,15 @@ class _AppSettingsSheet extends StatelessWidget {
                   ),
                   SwitchListTile.adaptive(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                    title: const Text('Lounge sounds'),
+                    subtitle: const Text('Music and event tracks'),
+                    value: settings.loungeSoundsEnabled,
+                    onChanged: (bool value) {
+                      unawaited(settings.setLoungeSoundsEnabled(value));
+                    },
+                  ),
+                  SwitchListTile.adaptive(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                     title: const Text('Dealer voice'),
                     subtitle:
                         const Text('Spoken check, call, raise and fold cues'),
