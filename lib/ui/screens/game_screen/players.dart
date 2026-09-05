@@ -52,6 +52,11 @@ class Seat {
   String avatarKey;
   String? avatarAssetFolder;
 
+  /// Bot mood tell ("Steaming", "Rattled", ...), or null when there is
+  /// nothing notable to show. Set from the engine's fearGreed axis; always
+  /// null for the human seat.
+  String? moodLabel;
+
   Seat({
     required this.name,
     required this.chips,
@@ -793,7 +798,39 @@ class SeatTopBubbleOverlay extends StatelessWidget {
         seat.chips <= 0 &&
         (persistBustedBubble || seatVisibleOpacity > 0.0);
     final String displayLabel = showBustedBubble ? 'BUSTED' : actionLabel;
-    if (displayLabel.isEmpty) return const SizedBox.shrink();
+    if (displayLabel.isEmpty) {
+      // Nothing louder to show, so fall back to the bot's mood. Strictly
+      // the lowest priority here: an action or a bust bubble always wins
+      // the slot. The mood only appears once it is far enough from neutral
+      // to be worth acting on, because a badge on every seat every hand is
+      // wallpaper, while a badge that appears when someone starts steaming
+      // is a read the player can exploit.
+      final String? mood = seat.moodLabel;
+      if (mood == null || mood.isEmpty || seat.busted) {
+        return const SizedBox.shrink();
+      }
+      return Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            top: -seatHeight * 0.34,
+            left: 0,
+            right: 0,
+            child: IgnorePointer(
+              child: Center(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 420),
+                  child: _SeatInfoChip(
+                    key: ValueKey('seat-mood-${seat.avatarKey}-$mood'),
+                    text: mood,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
 
     return Stack(
       clipBehavior: Clip.none,
@@ -1245,7 +1282,7 @@ class _BlindRing extends StatelessWidget {
 }
 
 class _SeatInfoChip extends StatelessWidget {
-  const _SeatInfoChip({required this.text, this.highlight = false});
+  const _SeatInfoChip({super.key, required this.text, this.highlight = false});
 
   final String text;
   final bool highlight;

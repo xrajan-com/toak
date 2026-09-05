@@ -995,6 +995,8 @@ class _GameScreenState extends State<GameScreen>
           'showdownStrength': memory.showdownStrength,
         },
         'style': <String, Object?>{
+          'fearGreed': style.fearGreed,
+          'mood': style.mood.name,
           'aggressionHeat': style.aggressionHeat,
           'bluffAppetite': style.bluffAppetite,
           'caution': style.caution,
@@ -3309,6 +3311,12 @@ class _GameScreenState extends State<GameScreen>
       s.contributedThisHand = ep.contributedThisHand;
       s.folded = ep.folded;
       s.allIn = ep.allIn;
+      // Surface the bot's fear/greed state as a readable tell. Reading an
+      // opponent's mood and exploiting it is the skill players most want to
+      // feel themselves developing, and unlike aura it is legible.
+      s.moodLabel = (ep.isBot && !ep.isOut)
+          ? e.styleStateForSeat(i).notableMoodLabel
+          : null;
 
       if (s.busted && ep.chips > 0 && !ep.isOut) {
         s.busted = false;

@@ -321,7 +321,14 @@ class BotAdvisor {
     final double styleAggression = styleState.aggressionHeat - 0.5;
     final double styleBluff = styleState.bluffAppetite - 0.5;
     final double styleCaution = styleState.caution - 0.5;
-    final double styleConfidence = styleState.confidence - 0.5;
+    // The single directional risk axis, -1.0 (scared money) .. +1.0
+    // (gambling). Aura governs the *spread* of per-decision noise and how
+    // violently/durably this mood moves; fearGreed is which way the bot is
+    // leaning right now. It replaces the old confidence/caution pair as the
+    // directional term throughout this function, so the emotional arc is one
+    // thing that can be reasoned about, tuned, and shown to the player.
+    // See docs/BOT_HUMAN_INTELLIGENCE_AURA_SPEC.md.
+    final double fearGreed = styleState.fearGreedSigned;
     final double fieldFoldRate = _fieldFoldRate(eng: eng, idx: idx);
     final double fieldAggression = _fieldAggression(eng: eng, idx: idx);
     final int? aggressorIdx = eng.lastAggressorIndex;
@@ -367,8 +374,12 @@ class BotAdvisor {
           BotTemperament.stoic => 0.07,
           BotTemperament.worldChamp => -0.03,
         };
-    potOddsBias += styleConfidence * 0.03;
-    potOddsBias -= styleCaution * 0.04;
+    // Was styleConfidence * 0.03 - styleCaution * 0.04: at +-0.035 combined,
+    // a bot that had just been stacked shifted its calling threshold about
+    // as much as the static killer/fluke flag it was born with. One axis,
+    // roughly twice the weight, and it now persists across hands instead of
+    // washing out within an orbit.
+    potOddsBias += fearGreed * 0.08;
     potOddsBias += (aggressorAggression - 0.5) * 0.02;
     // A short/crippled aggressor is often shoving or betting out of
     // necessity, not strength — their range is wider, so continuing wider
@@ -388,7 +399,11 @@ class BotAdvisor {
       BotTemperament.worldChamp => 0.82,
     };
     final double raiseSizeFactor =
-        (raiseSizeBase * (1 + styleAggression * 0.20 + styleBluff * 0.08))
+        (raiseSizeBase *
+                (1 +
+                    styleAggression * 0.20 +
+                    styleBluff * 0.08 +
+                    fearGreed * 0.14))
             .clamp(0.70, 1.55)
             .toDouble();
     final bool longRun = isCallingStation || isRock;
@@ -529,9 +544,11 @@ class BotAdvisor {
     if (highAura) playableThreshold += 0.01;
     if (lowAura) playableThreshold -= 0.06;
     playableThreshold -= posScore * 0.03;
-    playableThreshold += styleCaution * 0.08;
-    playableThreshold -= styleAggression * 0.06;
-    playableThreshold -= styleConfidence * 0.04;
+    // Greed widens the opening range, fear tightens it. Replaces three
+    // overlapping dial terms with one axis at ~1.5x their combined weight,
+    // deliberately kept near the largest temperament swing (0.10) so a
+    // tilted bot plays loose rather than plays literally everything.
+    playableThreshold -= fearGreed * 0.14;
     if (revengeSpot) playableThreshold -= 0.03;
     playableThreshold = playableThreshold.clamp(0.26, 0.70);
 
@@ -554,10 +571,7 @@ class BotAdvisor {
       pot: pot,
       oddsOk: hasToCall ? pot >= toCall : true,
     );
-    confidence = (confidence +
-            (auraSkill - 0.5) * 0.12 +
-            styleConfidence * 0.08 -
-            styleCaution * 0.06)
+    confidence = (confidence + (auraSkill - 0.5) * 0.12 + fearGreed * 0.10)
         .clamp(0.05, 0.98);
     final double rawStrength = _estimateStrength(
       eng: eng,
@@ -789,7 +803,8 @@ class BotAdvisor {
         facingAllIn: facingAllIn,
         allInOpponents: allInOpponents,
       );
-      double memoryEquityShift = styleCaution * 0.05 - styleConfidence * 0.03;
+      // Fear demands more equity before continuing; greed accepts less.
+      double memoryEquityShift = -fearGreed * 0.06;
       memoryEquityShift += (aggressorSolidity - 0.5) * 0.08;
       memoryEquityShift -= (aggressorAggression - 0.5) * 0.06;
       if (facingRepeatPressure) {
@@ -1608,30 +1623,46 @@ class BotAdvisor {
     return false;
   }
 
+  /// Base rate for firing a busted draw on the river. This is the *mean*
+  /// only — the caller applies aura-scaled spread on top, so how reliably a
+  /// bot bluffs at this rate is itself a function of aura.
+  ///
+  /// Composition order is deliberate and fixed here: aura baseline ->
+  /// temperament scale -> skill -> mood -> table context. Each stage
+  /// modifies what came before instead of replacing it.
   static double _riverBustedDrawBluffChance({
     required double auraSkill,
     required BotTemperament temperament,
     required BotSkill skill,
     required bool multiway,
+    required double fearGreed,
   }) {
-    double chance = auraSkill >= 0.70
-        ? 0.16
-        : auraSkill >= 0.50
-            ? 0.10
-            : 0.04;
-    switch (temperament) {
-      case BotTemperament.worldChamp:
-        chance = min(chance, 0.08);
-        break;
-      case BotTemperament.stoic:
-        chance = min(chance, 0.02);
-        break;
-      case BotTemperament.aggressive:
-        chance = max(chance + 0.24, 0.38);
-        break;
-    }
+    // Continuous in aura rather than three steps: a 0.69-aura bot and a
+    // 0.71-aura bot should not bluff at 0.10 and 0.16 with nothing between.
+    double chance = 0.05 + 0.12 * auraSkill.clamp(0.0, 1.0);
+
+    // Temperament SCALES the rate rather than overwriting it. The previous
+    // form pinned every bot of a temperament to a single number and erased
+    // aura outright: `max(chance + 0.24, 0.38)` meant every aggressive bot
+    // below 0.70 aura bluffed at exactly 0.38, and `min(chance, 0.02)` did
+    // the same to every stoic. Two bots with a 40-point aura gap played
+    // this spot identically, which is precisely the tell that they are not
+    // people.
+    chance *= switch (temperament) {
+      BotTemperament.aggressive => 2.6,
+      BotTemperament.worldChamp => 0.75,
+      BotTemperament.stoic => 0.28,
+    };
+
     if (skill == BotSkill.killer) chance += 0.02;
     if (skill == BotSkill.fluke) chance -= 0.01;
+
+    // Mood is the frequency dial: a steaming bot fires far more busted
+    // draws, a rattled one gives up on them. The *spots* stay chosen by the
+    // board and opponent logic gating this call — a frequency dial on its
+    // own would read as random rather than human.
+    chance *= 1.0 + fearGreed.clamp(-1.0, 1.0) * 0.55;
+
     if (multiway) chance -= 0.12;
     return chance.clamp(0.0, 0.45);
   }
@@ -2301,9 +2332,25 @@ class BotAdvisor {
         temperament: temperament,
         skill: skill,
         multiway: multiway,
+        fearGreed: styleState.fearGreedSigned,
       );
+      // Aura as spread, applied to the bluff rate itself. A top bot's
+      // bluffing frequency is stable and therefore genuinely hard to read;
+      // a low-aura bot's swings hand to hand, firing far too often one
+      // orbit and never the next. Same mean, very different to play against
+      // — which is the whole thesis of this system.
+      final double bluffRateNoise = _decisionUnit(
+            eng: eng,
+            idx: idx,
+            salt: 'river_bluff_rate_noise',
+          ) *
+          2 -
+          1;
+      final double bluffRateSpread = 0.55 * (1.0 - auraSkill.clamp(0.0, 1.0));
       final double adjustedBluffChance =
-          (bluffChance + modelAdjustment.bluffBias).clamp(0.0, 0.55);
+          (bluffChance * (1.0 + bluffRateNoise * bluffRateSpread) +
+                  modelAdjustment.bluffBias)
+              .clamp(0.0, 0.55);
       final double bluffRoll = _decisionUnit(
         eng: eng,
         idx: idx,

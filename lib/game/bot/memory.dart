@@ -88,11 +88,48 @@ class BotOpponentMemory {
   }
 }
 
+/// A player-readable summary of where a bot's head is at right now.
+/// Ordered fear -> greed. Exposed so the table UI can show the mood as a
+/// tell the human player can actually read and exploit.
+enum BotMood { rattled, cagey, steady, runningHot, steaming }
+
+extension BotMoodLabel on BotMood {
+  /// Short label for the table. Deliberately poker-native language rather
+  /// than a number — "Steaming" is a read, "0.83" is a debug value.
+  String get label => switch (this) {
+        BotMood.rattled => 'Rattled',
+        BotMood.cagey => 'Cagey',
+        BotMood.steady => 'Steady',
+        BotMood.runningHot => 'Running hot',
+        BotMood.steaming => 'Steaming',
+      };
+
+  /// True when the mood is far enough from neutral to be worth showing.
+  /// A table where every bot wears a permanent badge is noise; a badge
+  /// that appears when someone actually tilts is information.
+  bool get isNotable => this != BotMood.steady;
+}
+
 class BotStyleState {
   double aggressionHeat;
   double bluffAppetite;
   double caution;
   double confidence;
+
+  /// The single directional risk axis: 0.0 = maximum fear (scared money,
+  /// folding everything, no bluffs), 0.5 = neutral, 1.0 = maximum greed
+  /// (gambling, bluffing, calling light).
+  ///
+  /// This is the "which way is this bot currently leaning" term. Aura is
+  /// the orthogonal axis: it governs the *spread* of per-decision noise,
+  /// and here it governs how violently and how durably this mood moves.
+  /// Together: `action = correct + fearGreed offset + aura-scaled noise`.
+  ///
+  /// The legacy four dials above are kept because bet sizing and several
+  /// heuristics still read them; this axis is what carries the directional
+  /// weight in decisions. See docs/BOT_HUMAN_INTELLIGENCE_AURA_SPEC.md.
+  double fearGreed;
+
   String? revengeTargetId;
 
   BotStyleState({
@@ -100,21 +137,74 @@ class BotStyleState {
     this.bluffAppetite = 0.5,
     this.caution = 0.5,
     this.confidence = 0.5,
+    this.fearGreed = 0.5,
     this.revengeTargetId,
   });
+
+  /// -1.0 (maximum fear) .. +1.0 (maximum greed). The form decision code
+  /// wants, so call sites don't each re-center around 0.5.
+  double get fearGreedSigned =>
+      ((fearGreed - 0.5) * 2.0).clamp(-1.0, 1.0).toDouble();
+
+  BotMood get mood {
+    if (fearGreed >= 0.78) return BotMood.steaming;
+    if (fearGreed >= 0.62) return BotMood.runningHot;
+    if (fearGreed > 0.38) return BotMood.steady;
+    if (fearGreed > 0.22) return BotMood.cagey;
+    return BotMood.rattled;
+  }
+
+  /// The mood label to show the player, or null when the bot is close
+  /// enough to neutral that showing anything would just be wallpaper.
+  /// Returned as a plain String so UI code needs no extension import.
+  String? get notableMoodLabel {
+    final BotMood m = mood;
+    return m.isNotable ? m.label : null;
+  }
+
+  /// How hard this bot's mood swings per event. A low-aura bot is
+  /// emotionally loud — one big pot genuinely changes how they play. A
+  /// high-aura bot barely registers it. This is what makes aura mean
+  /// "emotional control across a session" and not just "noisy per hand".
+  static double volatilityForAura(double auraSkill) =>
+      (1.60 - 1.20 * auraSkill.clamp(0.0, 1.0)).clamp(0.40, 1.60).toDouble();
+
+  /// How fast the mood returns to neutral, per hand. A pro shakes off a
+  /// bad beat in roughly ten hands; a low-aura player is still rattled
+  /// thirty-plus hands later, which for a typical session means they
+  /// never fully reset. Deliberately much slower than the legacy 0.06
+  /// dials, whose swings washed out before the next orbit.
+  static double decayForAura(double auraSkill) =>
+      (0.020 + 0.050 * auraSkill.clamp(0.0, 1.0))
+          .clamp(0.020, 0.070)
+          .toDouble();
+
+  /// Applies a mood swing, scaled by this bot's emotional volatility.
+  /// [delta] is expressed on the neutral-0.5 scale (so +0.20 is a large
+  /// lurch toward greed before volatility is applied).
+  void applyFearGreed(double delta, double auraSkill) {
+    fearGreed =
+        (fearGreed + delta * volatilityForAura(auraSkill))
+            .clamp(0.0, 1.0)
+            .toDouble();
+  }
 
   void normalize() {
     aggressionHeat = aggressionHeat.clamp(0.0, 1.0).toDouble();
     bluffAppetite = bluffAppetite.clamp(0.0, 1.0).toDouble();
     caution = caution.clamp(0.0, 1.0).toDouble();
     confidence = confidence.clamp(0.0, 1.0).toDouble();
+    fearGreed = fearGreed.clamp(0.0, 1.0).toDouble();
   }
 
-  void decayTowardNeutral([double rate = 0.06]) {
+  /// [auraSkill] governs only the fearGreed decay; the legacy dials keep
+  /// their original flat rate so existing behaviour is unchanged.
+  void decayTowardNeutral([double rate = 0.06, double auraSkill = 0.5]) {
     aggressionHeat = _toward(aggressionHeat, 0.5, rate);
     bluffAppetite = _toward(bluffAppetite, 0.5, rate);
     caution = _toward(caution, 0.5, rate);
     confidence = _toward(confidence, 0.5, rate);
+    fearGreed = _toward(fearGreed, 0.5, decayForAura(auraSkill));
     normalize();
   }
 

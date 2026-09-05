@@ -41,7 +41,12 @@ export 'models.dart'
 export 'events.dart' show ActionResult;
 export 'bot/advisor.dart' show BotAdvisor, GameEngineBotLogic;
 export 'bot/memory.dart'
-    show BotDecisionLogEntry, BotOpponentMemory, BotStyleState;
+    show
+        BotDecisionLogEntry,
+        BotMood,
+        BotMoodLabel,
+        BotOpponentMemory,
+        BotStyleState;
 
 const int _kRaiseIncrement = 10; // enforce bet/raise granularity
 
@@ -646,7 +651,11 @@ class GameEngine {
       _memoryForPlayerId(p.id).observeNewHand();
       _trackerForPlayerId(p.id);
       if (p.isBot) {
-        _styleForPlayerId(p.id).decayTowardNeutral();
+        // Aura governs how fast the mood resets: a disciplined bot shakes
+        // off a bad hand in ~10 hands, a low-aura one stays rattled for
+        // most of a session.
+        _styleForPlayerId(p.id)
+            .decayTowardNeutral(0.06, p.aura.clamp(0, 100) / 100.0);
       }
     }
   }
@@ -1292,21 +1301,34 @@ class GameEngine {
 
     if (!p.isBot) return;
 
+    final double styleAuraSkill = p.aura.clamp(0, 100) / 100.0;
+
     if (aggressiveAction) {
       style.aggressionHeat += phase == GamePhase.river ? 0.05 : 0.035;
       style.bluffAppetite +=
           (phase == GamePhase.turn || phase == GamePhase.river) ? 0.02 : 0.01;
       style.caution -= 0.01;
+      // Momentum: taking the aggressive line feeds on itself, more so on
+      // later streets where the commitment is real.
+      style.applyFearGreed(
+          phase == GamePhase.river ? 0.030 : 0.020, styleAuraSkill);
     }
 
     if (type == ActionType.call && facingPressure) {
       style.confidence += 0.01;
       style.caution -= 0.01;
+      style.applyFearGreed(0.012, styleAuraSkill);
     }
 
     if (type == ActionType.fold && facingPressure) {
       style.caution += 0.045;
       style.confidence -= 0.02;
+      // Getting moved off a hand stings in proportion to what was in the
+      // middle: laying down to a min-bet is a shrug, laying down a big
+      // pot is what actually makes a player play scared afterwards.
+      final double potPressure =
+          (pot / max(1, p.chips)).clamp(0.0, 1.0).toDouble();
+      style.applyFearGreed(-0.035 - 0.030 * potPressure, styleAuraSkill);
       final int? aggressor = _lastAggressor;
       if (aggressor != null &&
           aggressor >= 0 &&
@@ -1331,6 +1353,12 @@ class GameEngine {
     required List<int> bustedNow,
     required Set<int> winners,
   }) {
+    final Map<int, int> receivedBySeat = <int, int>{};
+    for (final payout in lastPayouts) {
+      receivedBySeat[payout.playerIndex] =
+          (receivedBySeat[payout.playerIndex] ?? 0) + payout.amount;
+    }
+
     for (int i = 0; i < players.length; i++) {
       final p = players[i];
       if (!p.isBot) continue;
@@ -1352,6 +1380,28 @@ class GameEngine {
         style.confidence -= 0.14;
         style.caution += 0.10;
         style.aggressionHeat = (style.aggressionHeat * 0.7) + 0.15;
+      }
+
+      // Mood moves with the size of the swing, not merely its sign.
+      // Chips are already credited here, so the pre-hand stack is
+      // recovered by backing the swing out. Direction is taken from the
+      // net swing rather than the `won` flag, because a split pot can
+      // "win" and still cost chips.
+      final double auraSkill = p.aura.clamp(0, 100) / 100.0;
+      final int netSwing = (receivedBySeat[i] ?? 0) - p.contributedThisHand;
+      final int preHandStack = max(1, p.chips - netSwing);
+      final double swingRatio =
+          (netSwing / preHandStack).clamp(-1.0, 2.0).toDouble();
+
+      if (netSwing > 0) {
+        // Scraping a blind barely registers; doubling up feels invincible.
+        style.applyFearGreed(0.05 + 0.15 * min(1.0, swingRatio), auraSkill);
+      } else if (netSwing < 0 && reachedShowdown) {
+        // Losing a showdown you paid off is the classic tilt trigger.
+        style.applyFearGreed(-0.05 + 0.17 * max(-1.0, swingRatio), auraSkill);
+      }
+      if (busted) {
+        style.applyFearGreed(-0.10, auraSkill);
       }
 
       style.normalize();

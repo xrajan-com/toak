@@ -299,6 +299,72 @@ The existing pipeline already supports this without new infrastructure:
 - No change to the gameplay trust model — Aura-driven bot behavior is
   entertainment tuning, not a fairness or payout mechanism.
 
+## The second axis: fear/greed (direction), with aura as its volatility
+
+Aura alone is a *spread*: zero-mean noise around the correct play. It has
+no direction, so it can make a bot erratic but never make it scared or
+greedy. Fear/greed supplies the missing mean offset:
+
+```
+action = correct + mu(fearGreed) + noise(sigma(aura))
+```
+
+The two are orthogonal, and the coupling between them is what makes this
+feel human rather than merely random: **aura governs how violently and how
+durably fear/greed moves.** A high-aura bot barely tilts and is over it in
+about ten hands; a low-aura bot lurches and is still carrying a beat thirty
+hands later, which for a typical session means it never fully resets.
+
+What shipped:
+
+- `BotStyleState.fearGreed` (0.0 fear .. 0.5 neutral .. 1.0 greed), with
+  `fearGreedSigned` for decision code, `volatilityForAura` (1.60 at aura 0
+  down to 0.40 at aura 100) and `decayForAura` (0.020/hand at aura 0 up to
+  0.070/hand at aura 100).
+- Driven by real outcomes in `game_engine.dart`, and **scaled by the size
+  of the chip swing**, not merely its sign: netSwing is measured against
+  the pre-hand stack, so scraping a blind barely registers while doubling
+  up or losing a stack-off genuinely moves a bot. Direction comes from the
+  net swing rather than the `won` flag, because a split pot can "win" and
+  still cost chips. Folding to pressure stings in proportion to what was
+  in the middle.
+- Consolidated in `advisor.dart`: the old `styleConfidence`/`styleCaution`
+  pair was the directional half of the four-dial state, and at ±0.035
+  combined it moved the calling threshold about as much as the static
+  killer/fluke flag — the emotional arc existed in the data and was
+  inaudible in the play. `fearGreed` now carries that weight at the call
+  threshold (±0.08), the opening range (±0.14), bet sizing (±14%),
+  confidence (±0.10) and required equity (±0.06). `styleConfidence` is
+  retired from `suggest()` entirely so nothing is double-counted.
+- Bluff frequency is now a fear/greed dial (±55% of base rate), while the
+  existing board/opponent logic still chooses the *spots* — a frequency
+  dial on its own reads as random, not human.
+- **Composition-order bug fixed.** `_riverBustedDrawBluffChance` applied
+  temperament as a hard floor/ceiling that erased aura outright:
+  `max(chance + 0.24, 0.38)` meant *every* aggressive bot below 0.70 aura
+  bluffed at exactly 0.380, and `min(chance, 0.02)` pinned every stoic at
+  0.020 regardless of aura. Two bots 40 aura points apart played the spot
+  identically — precisely the tell that they are not people. Temperament
+  now scales a continuous aura baseline (aggressive ×2.6, worldChamp
+  ×0.75, stoic ×0.28), so aggressive now spans 0.177 → 0.426 across the
+  aura range instead of a flat 0.380. Order is fixed and explicit: aura
+  baseline → temperament scale → skill → mood → table context, and the
+  caller then applies aura-scaled spread to the rate itself, so a pro's
+  bluffing frequency is stable (hard to exploit) while a low-aura bot's
+  swings hand to hand.
+- **Surfaced at the table.** `Seat.moodLabel` renders in the seat's
+  existing bubble slot at strictly the lowest priority (action and bust
+  bubbles always win it), and only when the mood is far enough from
+  neutral to be worth acting on. A badge on every seat every hand is
+  wallpaper; one that appears when an opponent starts steaming is a read
+  the player can exploit — and reading opponents is the skill players most
+  want to feel themselves developing.
+
+Not done here: `BotPolicyFeatures` still carries the legacy four dials, so
+the offline-trained policy weights are untouched. Adding fearGreed as a
+model feature means retraining, which is a deliberate follow-up rather
+than something to slip in silently.
+
 ## Status update: the two flat-zero axes now have a real v1
 
 Following the "these have to be made 10/10" conversation, the table/game-
