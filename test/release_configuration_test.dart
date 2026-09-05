@@ -2,6 +2,14 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+String _plistString(String source, String key) {
+  final RegExpMatch? match = RegExp(
+    '<key>${RegExp.escape(key)}</key>\\s*<string>([^<]+)</string>',
+  ).firstMatch(source);
+  expect(match, isNotNull, reason: 'Missing $key from plist');
+  return match!.group(1)!;
+}
+
 void main() {
   test('CI compiles release code without requiring private signing files', () {
     final workflow = File('.github/workflows/ci.yml').readAsStringSync();
@@ -60,11 +68,48 @@ void main() {
     expect(systemUi, contains('logicalSize.shortestSide < 600'));
     expect(android, contains('smallestScreenWidthDp < 600'));
     expect(android, contains('SCREEN_ORIENTATION_SENSOR_LANDSCAPE'));
+    expect(android, contains('FLAG_KEEP_SCREEN_ON'));
+    expect(android, contains('useSensorLandscape'));
     expect(
         iphoneOrientations, isNot(contains('UIInterfaceOrientationPortrait')));
     expect(iphoneOrientations, contains('UIInterfaceOrientationLandscapeLeft'));
     expect(
         iphoneOrientations, contains('UIInterfaceOrientationLandscapeRight'));
+    final appDelegate = File('ios/Runner/AppDelegate.swift').readAsStringSync();
+    expect(appDelegate, contains('isIdleTimerDisabled = true'));
+  });
+
+  test('iOS Google sign-in has a matching OAuth client and callback', () {
+    final String info = File('ios/Runner/Info.plist').readAsStringSync();
+    final String google =
+        File('ios/Runner/GoogleService-Info.plist').readAsStringSync();
+    final String project =
+        File('ios/Runner.xcodeproj/project.pbxproj').readAsStringSync();
+    final String authScreen =
+        File('lib/ui/screens/auth_screen.dart').readAsStringSync();
+
+    final String clientId = _plistString(google, 'CLIENT_ID');
+    final String reversedClientId = _plistString(google, 'REVERSED_CLIENT_ID');
+    final String bundleId = _plistString(google, 'BUNDLE_ID');
+
+    expect(_plistString(info, 'GIDClientID'), clientId);
+    expect(info, contains('<string>$reversedClientId</string>'));
+    expect(project, contains('PRODUCT_BUNDLE_IDENTIFIER = $bundleId;'));
+    expect(project, contains('GoogleService-Info.plist in Resources'));
+    expect(
+      project,
+      contains(
+        'CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES;',
+      ),
+    );
+    expect(
+      RegExp(
+        r'<key>IS_SIGNIN_ENABLED</key>\s*<true(?:\s*/>|></true>)',
+      ).hasMatch(google),
+      isTrue,
+    );
+    expect(authScreen, isNot(contains('Google sign-in unavailable on iOS')));
+    expect(authScreen, contains("label: 'Sign in with Google'"));
   });
 
   test('anonymous author copy does not publish a personal phone number', () {

@@ -76,7 +76,7 @@ If you changed the package name, you must also re-download `google-services.json
 ## 5) Upload to Play Console
 
 1. Create a Play Console account ($25 one-time).
-2. Create a new app → set name “Ten of a Kind Poker”.
+2. Create a new app → set name “X Poker”.
 3. Go to **Testing → Internal testing** → create a release → upload the `.aab`.
 4. Fix anything flagged in Pre-launch report.
 5. Complete required forms: App access, Content rating, Data safety, Target audience, Privacy policy, Store listing.
@@ -90,11 +90,11 @@ Bump `pubspec.yaml` `version: x.y.z+N` for every Play upload (the `+N` must incr
 
 ### Recommended public title
 
-`Ten of a Kind Poker`
+`X Poker`
 
 ### Testing track title
 
-`Ten of a Kind Poker Beta`
+`X Poker Beta`
 
 Use `Beta` only on closed/internal testing tracks. Do not keep it in the production title.
 
@@ -104,7 +104,11 @@ Use `Beta` only on closed/internal testing tracks. Do not keep it in the product
 
 ### Long description
 
-`Ten of a Kind Poker is a simulated Texas Hold'em experience built around the theme of the Battle of Ten Kings, blending poker strategy with a journey through history. Play as a guest or sign in to save progress as you move across themed kingdoms, sub-venues, and title battles.`
+`X Poker is a simulated Texas Hold'em experience built around the theme of the Battle of Ten Kings, blending poker strategy with a journey through history. Play as a guest or sign in to save progress as you move across themed kingdoms, sub-venues, and title battles.`
+
+## Developer name shown below the Play Store title
+
+The developer name is Play Console account metadata; it is not read from the Android app bundle. The account owner must open **Developer account → About you**, change **Developer name** to `tenofakind.com`, and save. Google reviews the change before it becomes visible on Google Play.
 
 `The game is designed as a mental exercise and strategy trainer, with readable tournament play, smart AI opponents, and progression that feels competitive without becoming overwhelming for new players.`
 

@@ -2,9 +2,14 @@ package com.tenofakind.poker
 
 import android.content.pm.ActivityInfo
 import android.os.Bundle
+import android.view.WindowManager
+import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.android.FlutterFragmentActivity
+import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterFragmentActivity() {
+    private val deviceControlChannel = "com.tenofakind.poker/device_control"
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // Lock phones before Flutter draws its first route. Tablets retain
         // their normal orientation choices outside the poker table.
@@ -12,5 +17,22 @@ class MainActivity : FlutterFragmentActivity() {
             requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         }
         super.onCreate(savedInstanceState)
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+
+    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        super.configureFlutterEngine(flutterEngine)
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            deviceControlChannel,
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "useSensorLandscape" -> {
+                    requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                    result.success(null)
+                }
+                else -> result.notImplemented()
+            }
+        }
     }
 }
