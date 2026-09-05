@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:ten_of_a_kind_poker/core/sound_fx.dart';
+import 'package:ten_of_a_kind_poker/services/x_music_service.dart';
 
 /// User-controlled accessibility and audio preferences.
 ///
@@ -12,16 +13,19 @@ import 'package:ten_of_a_kind_poker/core/sound_fx.dart';
 /// must remain available to guests.
 class AppSettingsService extends ChangeNotifier {
   static const String _soundEffectsKey = 'settings.sound_effects.v1';
+  static const String _loungeSoundsKey = 'settings.lounge_sounds.v1';
   static const String _dealerVoiceKey = 'settings.dealer_voice.v1';
   static const String _reducedMotionKey = 'settings.reduced_motion.v1';
 
   bool _soundEffectsEnabled = true;
+  bool _loungeSoundsEnabled = false;
   bool _dealerVoiceEnabled = true;
   bool _reducedMotion = false;
   bool _loaded = false;
   Future<void>? _loadFuture;
 
   bool get soundEffectsEnabled => _soundEffectsEnabled;
+  bool get loungeSoundsEnabled => _loungeSoundsEnabled;
   bool get dealerVoiceEnabled => _dealerVoiceEnabled;
   bool get reducedMotion => _reducedMotion;
   bool get loaded => _loaded;
@@ -38,6 +42,14 @@ class AppSettingsService extends ChangeNotifier {
     SoundFx.instance.setSoundEffectsMuted(!value);
     notifyListeners();
     await _persist(_soundEffectsKey, value);
+  }
+
+  Future<void> setLoungeSoundsEnabled(bool value) async {
+    if (_loungeSoundsEnabled == value) return;
+    _loungeSoundsEnabled = value;
+    XMusicService.instance.setMuted(!value);
+    notifyListeners();
+    await _persist(_loungeSoundsKey, value);
   }
 
   Future<void> setDealerVoiceEnabled(bool value) async {
@@ -59,12 +71,14 @@ class AppSettingsService extends ChangeNotifier {
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       _soundEffectsEnabled = prefs.getBool(_soundEffectsKey) ?? true;
+      _loungeSoundsEnabled = prefs.getBool(_loungeSoundsKey) ?? false;
       _dealerVoiceEnabled = prefs.getBool(_dealerVoiceKey) ?? true;
       _reducedMotion = prefs.getBool(_reducedMotionKey) ?? false;
     } catch (error, stack) {
       debugPrint('Settings load failed: $error\n$stack');
     } finally {
       SoundFx.instance.setSoundEffectsMuted(!_soundEffectsEnabled);
+      XMusicService.instance.setMuted(!_loungeSoundsEnabled);
       SoundFx.instance.setVoiceMuted(!_dealerVoiceEnabled);
       _loaded = true;
       notifyListeners();
