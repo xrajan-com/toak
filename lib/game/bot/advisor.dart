@@ -11,6 +11,8 @@ import 'package:ten_of_a_kind_poker/game/bot/memory.dart'
 import 'package:ten_of_a_kind_poker/game/bot/policy_model.dart'
     show BotPolicyAdjustment, BotPolicyFeatures, kExperimentalBotPolicyModel;
 import 'package:ten_of_a_kind_poker/game/bot/safety.dart' show BotSafetyGuard;
+import 'package:ten_of_a_kind_poker/game/bot/think_time.dart'
+    show BotThinkTime;
 import 'package:ten_of_a_kind_poker/game/core.dart'
     show ActionType, Card, GamePhase, Rank, Suit, rankValue;
 import 'package:ten_of_a_kind_poker/game/events.dart' show ActionResult;
@@ -305,6 +307,10 @@ class BotAdvisor {
   static ({ActionType action, int toAmount, double confidence, double strength})
       suggest(GameEngine eng, int idx) {
     final p = eng.players[idx];
+    // Reset first so a seat can never pace this decision off the leftover
+    // difficulty of an earlier street; the real value is recorded below,
+    // once this spot's required equity is known.
+    eng.recordBotDecisionDifficulty(idx, 0.30);
     final int auraRaw = p.aura;
     final fallbackTraits = _traitsForAura(
       aura: auraRaw,
@@ -817,6 +823,23 @@ class BotAdvisor {
               memoryEquityShift -
               potOddsBias * 0.35)
           .clamp(0.0, 1.0);
+      // The honest measure of how hard this decision is: how close the
+      // bot's equity sits to what the spot actually demands. This is what
+      // think time should key off. `_estimateConfidence` never could —
+      // it is a hand-strength proxy, so it cannot tell a trivial fold from
+      // an agonising one, and it made bots dwell on their cards rather
+      // than on their decision. See lib/game/bot/think_time.dart.
+      eng.recordBotDecisionDifficulty(
+        idx,
+        BotThinkTime.difficultyFor(
+          hasToCall: hasToCall,
+          winProb: winProb,
+          requiredEquity: requiredEquity,
+          stackFrac: stackFrac,
+          facingAllIn: facingAllIn,
+        ),
+      );
+
       final bool rewardOutweighsRisk = !hasToCall || winProb >= requiredEquity;
       final bool callOk = rewardOutweighsRisk ||
           ((toCall * oddsFactor <= pot) && winProb >= breakEvenEquity);

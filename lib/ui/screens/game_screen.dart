@@ -511,9 +511,6 @@ class _GameScreenState extends State<GameScreen>
   static const String _defaultProfile = 'assets/images/default_profile.png';
   static const double _kCheckSpeedFactor = 0.75;
   static const double _kCheckQuickChance = 0.35;
-  static const int _kCheckDelayFloorMs = pace.kBotActionMinDelayMs;
-  static const double _kConfidenceFastFactor = 0.7;
-  static const double _kConfidenceSlowFactor = 1.35;
 
   // ---- Engine
   eng.GameEngine? _engine;
@@ -3080,49 +3077,58 @@ class _GameScreenState extends State<GameScreen>
     }
     final int aura = actingSeat?.aura ?? 60;
     final suggestion = _botSuggestionFor(e, actor);
+    final double auraSkill = aura.clamp(0, 100) / 100.0;
+    final double difficulty = e.botDecisionDifficultyForSeat(actor);
+    final double strength = (suggestion?.strength ?? 0.5).clamp(0.0, 1.0);
+    final double mood = e.styleStateForSeat(actor).fearGreedSigned;
+
     int delayMs = _fixedBotDelayFor(actor, aura);
     final eng.BotTemperament? temperament = _botTemperamentFor(e, actor);
     delayMs = (delayMs * _temperamentDelayFactor(temperament)).round();
-    final double strength = (suggestion?.strength ?? 0.5).clamp(0.0, 1.0);
-    delayMs = (delayMs * _strengthDelayFactor(strength)).round();
-    final double confidence = (suggestion?.confidence ?? 0.5).clamp(0.0, 1.0);
-    delayMs = (delayMs * _confidenceDelayFactor(confidence)).round();
-    final bool highAura = aura >= pace.kBotHighAuraThreshold;
+
+    // Aura calibrates think time to how hard the decision actually is,
+    // rather than setting raw speed: a strong bot snaps the obvious and
+    // tanks the genuinely close ones, a weak bot's timing is flat. Hand
+    // strength still leaks into the clock, but only for low-aura bots.
+    //
+    // The old confidence factor is gone. `_estimateConfidence` is itself a
+    // hand-strength proxy, so multiplying by both it and `strength` meant
+    // the clock read the bot's cards twice and its decision never — which
+    // is why bots dwelt on trivial folds and snap-called for their stack.
+    delayMs = (delayMs *
+            eng.BotThinkTime.delayFactor(
+              difficulty: difficulty,
+              auraSkill: auraSkill,
+              strength: strength,
+              fearGreedSigned: mood,
+            ))
+        .round();
+
     final bool quickCheck = suggestion != null &&
         suggestion.action == eng.ActionType.check &&
         e.toCallFor(actor) == 0 &&
         _uiTimingRng.nextDouble() < _kCheckQuickChance;
     if (quickCheck) {
-      delayMs = math.max(
-        _kCheckDelayFloorMs,
-        (delayMs * _kCheckSpeedFactor).round(),
-      );
+      delayMs = (delayMs * _kCheckSpeedFactor).round();
     }
-    if (highAura) {
-      delayMs = math.max(delayMs, pace.kBotActionHighAuraMinDelayMs);
-      if (strength >= 0.6) {
-        // Stronger hands from composed players tank a bit longer.
-        delayMs = math.max(delayMs, pace.kBotActionHighAuraMinDelayMs + 300);
-        delayMs = (delayMs * 1.25).round();
-      }
-      delayMs = delayMs
-          .clamp(
-            pace.kBotActionHighAuraMinDelayMs,
-            pace.kBotActionHighAuraMaxDelayMs,
-          )
-          .toInt();
-    }
-    delayMs = math.max(delayMs, pace.kBotActionMinDelayMs);
-    // Add slight randomness to avoid robotic timing.
-    final double jitter = _temperamentJitter(temperament);
+
+    // A trivial decision may genuinely snap; a hard one keeps the full
+    // floor, so the table never feels rushed at the moments that matter.
+    final int floorMs = eng.BotThinkTime.floorMsFor(
+      difficulty: difficulty,
+      trivialFloorMs: pace.kBotTrivialFloorMs,
+      normalFloorMs: pace.kBotActionMinDelayMs,
+    );
+    delayMs = math.max(delayMs, floorMs);
+
+    // Composed bots hold a steady tempo; undisciplined ones are erratic
+    // hand to hand, which is a tell in its own right.
+    final double jitter = _temperamentJitter(temperament) *
+        eng.BotThinkTime.jitterScaleForAura(auraSkill);
     final double noise = (_uiTimingRng.nextDouble() * 2 - 1) * jitter;
     delayMs = (delayMs * (1 + noise)).round();
-    delayMs = delayMs
-        .clamp(
-          pace.kBotActionMinDelayMs,
-          pace.kBotActionAbsoluteMaxDelayMs,
-        )
-        .toInt();
+    delayMs =
+        delayMs.clamp(floorMs, pace.kBotActionAbsoluteMaxDelayMs).toInt();
     _armBotWatchdog(actor);
     _botActionTimer = Timer(Duration(milliseconds: delayMs), () {
       if (!mounted) {
@@ -3165,8 +3171,11 @@ class _GameScreenState extends State<GameScreen>
     const double auraCeil = 95;
     final double clamped = aura.toDouble().clamp(auraFloor, auraCeil);
     final double t = (clamped - auraFloor) / (auraCeil - auraFloor);
-    final int minMs = pace.kBotActionMinDelayMs;
-    final int maxMs = pace.kBotActionHighAuraMaxDelayMs;
+    // Baseline tempo only — some players are simply brisker than others.
+    // The old range (1400..4500) made aura mean "slow", which fought the
+    // calibration model: a pro must be able to snap an obvious fold.
+    final int minMs = pace.kBotTempoMinMs;
+    final int maxMs = pace.kBotTempoMaxMs;
     final int ms = minMs + ((maxMs - minMs) * t).round();
     _botFixedThinkDelays[seatIndex] = ms;
     return ms;
@@ -3215,11 +3224,6 @@ class _GameScreenState extends State<GameScreen>
     }
   }
 
-  double _confidenceDelayFactor(double confidence) {
-    final double c = confidence.clamp(0.0, 1.0);
-    final double span = _kConfidenceSlowFactor - _kConfidenceFastFactor;
-    return _kConfidenceSlowFactor - span * c;
-  }
 
   double _strengthDelayFactor(double strength) {
     final double s = strength.clamp(0.0, 1.0);

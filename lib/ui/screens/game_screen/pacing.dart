@@ -38,6 +38,12 @@ const kBotHighAuraThreshold = 90; // Aura gate for slower, composed tanks
 const kBotActionHighAuraMinDelayMs = 1750; // 3500 / 2
 const kBotActionHighAuraMaxDelayMs = 4500; // 9000 / 2
 const kBotActionAbsoluteMaxDelayMs = 5500; // 11000 / 2
+// Bot think-time model (see lib/game/bot/think_time.dart). Aura no longer
+// sets raw speed — it sets how well think time tracks how hard the decision
+// actually is. These are the per-seat baseline tempos that model modulates.
+const kBotTempoMinMs = 1500; // baseline tempo, low aura
+const kBotTempoMaxMs = 2600; // baseline tempo, high aura
+const kBotTrivialFloorMs = 800; // a genuinely trivial decision may snap
 const kAutoSkipDelayMs = 400; // Faster skip cadence for snappier winner reveal
 const kTurnClockSeconds = 18; // Per-turn countdown displayed to player
 

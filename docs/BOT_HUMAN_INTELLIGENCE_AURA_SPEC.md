@@ -365,6 +365,65 @@ the offline-trained policy weights are untouched. Adding fearGreed as a
 model feature means retraining, which is a deliberate follow-up rather
 than something to slip in silently.
 
+## Think time: aura as calibration, not speed
+
+The old model multiplied a base delay by `strength` and by
+`_estimateConfidence` — which is itself a hand-strength proxy. Think time
+was therefore a function of hole cards, applied twice, and the decision
+itself never entered into it. Bots dwelt on trivial folds and snap-acted
+genuinely agonising calls, and every bot leaked the same amount about its
+holding whether it was a 95-aura pro or a 20-aura fish.
+
+The intuition to correct first: *does a better player act faster?* On
+routine decisions, yes — they have seen the spot ten thousand times. But on
+genuinely close ones they are **slower than a weak player**, because they
+can see that it is close; the weak player acts fast out of not knowing it
+is close. Expertise does not shorten time uniformly, it widens the gap
+between easy and hard. Getting this backwards would make bots feel less
+human, not more.
+
+So `lib/game/bot/think_time.dart` implements two ideas:
+
+- **Calibration.** Aura sets how well time tracks difficulty, not raw
+  speed. `range = 0.35 + 0.95 * aura` and `centre = 1.05 - 0.15 * aura`
+  give a pro a ~4.4x spread between trivial and agonising, and a low-aura
+  bot ~1.7x. Real delays: aura 20 runs 1117ms -> 1943ms, aura 95 runs
+  882ms -> 3837ms. The pro is the fastest at the table on an obvious spot
+  and the slowest on a close one. (The centre slope is gentle on purpose:
+  a steeper one left the pro's *factor* fractionally below a weak bot's on
+  hard spots, so the correct ordering held only because high-aura seats
+  carry a slower baseline tempo — flatten that baseline later and the model
+  would have silently inverted. The ordering is encoded in the factor
+  itself instead.)
+- **Leakage.** How much think time reveals about hand strength scales
+  *inversely* with aura: a ~42% junk-vs-nuts tell at aura 15, ~1% at aura
+  98. A weak bot's tank genuinely means "I am weak" and is exploitable; a
+  pro's tank means only "this spot is close" and says nothing about which
+  way, because strong players balance their timing. Learning to tell those
+  apart is a real, earned read for the human player.
+
+Difficulty itself is finally a real signal rather than a proxy:
+`|winProb - requiredEquity|`, computed where those actually live in
+`advisor.dart`, scaled by how much of the stack is at risk. It is recorded
+per seat on the engine (`recordBotDecisionDifficulty` /
+`botDecisionDifficultyForSeat`) rather than threaded through the decision
+record, since it is a presentation signal and the record is the decision
+contract — that kept the change to three call sites instead of ~26 literal
+returns across four files. It is reset at the top of every `suggest()` so a
+seat can never pace a decision off a stale value from an earlier street.
+
+Mood rides on top: greed is impulsive and fear stalls, so a steaming bot
+acts ~38% quicker than a rattled one. Jitter also scales with aura, so an
+undisciplined bot's tempo is erratic hand to hand — a tell in its own
+right.
+
+Pacing note: baseline tempo moved from 1400..4500ms to 1500..2600ms
+(`kBotTempoMinMs`/`kBotTempoMaxMs`), because the old range made aura mean
+"slow" and fought the calibration model — a pro has to be able to snap an
+obvious fold. Trivial decisions may now floor at 800ms rather than 1400ms.
+Overall table pace changes noticeably and will want a tuning pass against
+real play.
+
 ## Status update: the two flat-zero axes now have a real v1
 
 Following the "these have to be made 10/10" conversation, the table/game-

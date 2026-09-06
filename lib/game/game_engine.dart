@@ -40,6 +40,7 @@ export 'models.dart'
         PlayerSnapshot;
 export 'events.dart' show ActionResult;
 export 'bot/advisor.dart' show BotAdvisor, GameEngineBotLogic;
+export 'bot/think_time.dart' show BotThinkTime;
 export 'bot/memory.dart'
     show
         BotDecisionLogEntry,
@@ -472,6 +473,24 @@ class GameEngine {
 
   BotStyleState styleStateForSeat(int seat) {
     return _styleForPlayerId(players[seat].id);
+  }
+
+  final Map<int, double> _botDecisionDifficulty = <int, double>{};
+
+  /// How genuinely close the most recent decision computed for [seat] was:
+  /// 0.0 trivial, 1.0 agonising. Written by [BotAdvisor] at the point where
+  /// it works out the equity a spot actually requires, and read by the UI
+  /// to pace think time.
+  ///
+  /// This is a presentation signal, so it lives beside the decision rather
+  /// than inside the decision record — which every layer between the
+  /// advisor and the screen would otherwise have to thread through.
+  /// See lib/game/bot/think_time.dart for what consumes it.
+  double botDecisionDifficultyForSeat(int seat) =>
+      (_botDecisionDifficulty[seat] ?? 0.30).clamp(0.0, 1.0).toDouble();
+
+  void recordBotDecisionDifficulty(int seat, double difficulty) {
+    _botDecisionDifficulty[seat] = difficulty.clamp(0.0, 1.0).toDouble();
   }
 
   List<BotDecisionLogEntry> get botDecisionLog =>
