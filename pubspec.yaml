@@ -72,44 +72,74 @@ flutter:
     - assets/images/cards/
     - assets/images/watermarks/
     - assets/images/watermarks/Africa/
-    - assets/images/watermarks/Arabia/
-    - assets/images/watermarks/Asia/
     - assets/images/watermarks/Alaska/
     - assets/images/watermarks/American Isles/
+    - assets/images/watermarks/Andes/
+    - assets/images/watermarks/Arabia/
+    - assets/images/watermarks/Arctic/
+    - assets/images/watermarks/Asia/
+    - assets/images/watermarks/Atlantic Isles/
+    - assets/images/watermarks/Atlantic USA/
+    - assets/images/watermarks/Australia/
+    - "assets/images/watermarks/Balkans & Mediterranean/"
     - assets/images/watermarks/Baltic Marches/
     - assets/images/watermarks/Baroda/
+    - assets/images/watermarks/Brazil/
     - assets/images/watermarks/Britain/
+    - "assets/images/watermarks/Britain & Ireland/"
     - assets/images/watermarks/British Isles/
+    - assets/images/watermarks/Canada/
     - assets/images/watermarks/Caribbean/
+    - assets/images/watermarks/Central Asia/
+    - assets/images/watermarks/Central Europe/
     - assets/images/watermarks/China/
     - assets/images/watermarks/Dragonland/
     - assets/images/watermarks/Dutch Isles/
     - assets/images/watermarks/Europe/
     - assets/images/watermarks/France/
+    - "assets/images/watermarks/French & Dutch Isles/"
     - assets/images/watermarks/French Isles/
     - assets/images/watermarks/Hyderabad/
+    - assets/images/watermarks/Iberia/
     - assets/images/watermarks/Indian Ocean/
+    - assets/images/watermarks/Indian Ocean Isles/
+    - assets/images/watermarks/Indonesia/
     - assets/images/watermarks/Indore/
     - assets/images/watermarks/Italy/
     - assets/images/watermarks/Jaipur/
+    - assets/images/watermarks/Japan/
+    - assets/images/watermarks/Korea/
+    - assets/images/watermarks/Low Countries/
     - assets/images/watermarks/Maratha Empire/
     - assets/images/watermarks/Mediterranean/
+    - assets/images/watermarks/Mekong/
+    - "assets/images/watermarks/Mexico & Central America/"
     - assets/images/watermarks/Mysore/
     - assets/images/watermarks/N. America/
-    - assets/images/watermarks/US Circuit/
     - assets/images/watermarks/New Delhi/
+    - assets/images/watermarks/North Africa/
     - assets/images/watermarks/North Sea/
+    - assets/images/watermarks/Northeast USA/
     - assets/images/watermarks/Pacific/
+    - "assets/images/watermarks/Persia & Mesopotamia/"
+    - assets/images/watermarks/Philippines/
     - assets/images/watermarks/Portugal/
     - assets/images/watermarks/Russia/
-    - assets/images/watermarks/Russia & Siberia/
+    - "assets/images/watermarks/Russia & Siberia/"
     - assets/images/watermarks/S. America/
     - assets/images/watermarks/Scandinavia/
     - assets/images/watermarks/Sikh Empire/
     - assets/images/watermarks/Sikkim/
+    - assets/images/watermarks/Southern Cone/
+    - assets/images/watermarks/Southern USA/
     - assets/images/watermarks/Spain/
     - assets/images/watermarks/Straits/
+    - assets/images/watermarks/Sub-Saharan Africa/
+    - assets/images/watermarks/Taiwan/
     - assets/images/watermarks/Travancore/
+    - assets/images/watermarks/US Circuit/
+    - assets/images/watermarks/Vietnam/
+    - assets/images/watermarks/Western USA/
     - assets/images/avatars/bots/
     - assets/ml/
     - assets/sounds/
