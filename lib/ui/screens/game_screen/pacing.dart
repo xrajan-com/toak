@@ -34,6 +34,11 @@ const kPostActionPauseMs = 850; // Pause after bet/call/fold before next actor
 const kBotThinkTimeMs = 800; // 1600 / 2
 const kBotActionMinDelayMs = 1400; // 2800 / 2
 const kBotActionMaxDelayMs = 3250; // 6500 / 2
+// Superseded by the think-time model in lib/game/bot/think_time.dart, which
+// replaced the "high aura = uniformly slower" band with calibration against
+// decision difficulty. Kept because kBotActionHighAuraMaxDelayMs is still a
+// sane upper reference and removing public constants is a breaking change
+// for anything outside lib/; no live code path reads them now.
 const kBotHighAuraThreshold = 90; // Aura gate for slower, composed tanks
 const kBotActionHighAuraMinDelayMs = 1750; // 3500 / 2
 const kBotActionHighAuraMaxDelayMs = 4500; // 9000 / 2

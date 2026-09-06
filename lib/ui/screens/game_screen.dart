@@ -3225,11 +3225,6 @@ class _GameScreenState extends State<GameScreen>
   }
 
 
-  double _strengthDelayFactor(double strength) {
-    final double s = strength.clamp(0.0, 1.0);
-    // Weak hands tank a bit longer; strong hands act a bit faster.
-    return 1.15 - 0.45 * s; // 1.15 → 0.70 across the range
-  }
 
   void _syncFromEngine() {
     final e = _engine;

@@ -1671,10 +1671,17 @@ class BotAdvisor {
     // the same to every stoic. Two bots with a 40-point aura gap played
     // this spot identically, which is precisely the tell that they are not
     // people.
+    // Multipliers are set so each archetype's *ceiling* at maximum aura
+    // lands on the rate the old hard floors/caps encoded (aggressive ~0.40,
+    // worldChamp ~0.08, stoic ~0.02). That keeps the established feel of
+    // each personality — rocks and calling stations still almost never fire
+    // a busted draw — while the aura gradient underneath is new. Raising a
+    // ceiling here is a behaviour change to make deliberately, not a side
+    // effect of picking a round number.
     chance *= switch (temperament) {
-      BotTemperament.aggressive => 2.6,
-      BotTemperament.worldChamp => 0.75,
-      BotTemperament.stoic => 0.28,
+      BotTemperament.aggressive => 2.75,
+      BotTemperament.worldChamp => 0.42,
+      BotTemperament.stoic => 0.11,
     };
 
     if (skill == BotSkill.killer) chance += 0.02;
