@@ -55,7 +55,7 @@ void main() {
       multiLine: true,
     );
     final indiaActive = RegExp(
-      r'\.venue-tab\[data-target="india"\]\.active\s*\{[^}]*background:\s*linear-gradient\(120deg, #24b6ff, #00a6e8\);',
+      r'\.venue-tab\[data-target="india"\]\.active\s*\{[^}]*background:\s*linear-gradient\(120deg, #20d9ff, #00a6e8\);',
       multiLine: true,
     );
     final euroActive = RegExp(
@@ -205,7 +205,7 @@ void main() {
     expect(styles, contains('.venue-tab-item-world'));
     expect(styles, contains('background: #ff2800;'));
     expect(styles, contains('.venue-tab-item-india'));
-    expect(styles, contains('linear-gradient(120deg, #24b6ff, #00a6e8)'));
+    expect(styles, contains('linear-gradient(120deg, #20d9ff, #00a6e8)'));
     expect(styles, contains('.venue-tab-item-euro'));
     expect(styles, contains('background: #0aa83f;'));
     expect(styles, contains('.venue-tab-item-oceania'));

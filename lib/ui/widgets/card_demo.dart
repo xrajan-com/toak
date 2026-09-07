@@ -41,7 +41,7 @@ class LightCardExample extends StatelessWidget {
             fit: BoxFit.fitHeight,
             child: Text('♦',
                 style: TextStyle(
-                    color: Color(0xFF24B6FF), fontWeight: FontWeight.w600)),
+                    color: Color(0xFF20D9FF), fontWeight: FontWeight.w600)),
           ),
         ),
         // Optional, in case a joker is ever created:

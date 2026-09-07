@@ -29,7 +29,7 @@ class AppTheme {
         );
 
     const primaryAccent = Color(0xFFFF2800); // matches website header/pill
-    const secondaryAccent = Color(0xFF24B6FF); // matches website hover/glow
+    const secondaryAccent = Color(0xFF20D9FF); // matches website hover/glow
 
     return ThemeData(
       brightness: Brightness.dark,

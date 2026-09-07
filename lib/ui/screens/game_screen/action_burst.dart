@@ -75,7 +75,7 @@ class ActionBurstOverlayState extends State<ActionBurstOverlay>
     // entries provide hot highlights in additive paint passes.
     final List<Color> confettiPalette = <Color>[
       const Color(0xFFFFD100),
-      const Color(0xFF24B6FF),
+      const Color(0xFF20D9FF),
       const Color(0xFFFF2800),
       const Color(0xFF3BB143),
       const Color(0xFFB000FF),
@@ -90,7 +90,7 @@ class ActionBurstOverlayState extends State<ActionBurstOverlay>
       const Color(0xFFFF2D95),
       const Color(0xFFC13CFF),
       const Color(0xFF7B61FF),
-      const Color(0xFF24B6FF),
+      const Color(0xFF20D9FF),
       const Color(0xFF00E5FF),
       const Color(0xFF00F5A0),
       const Color(0xFF7CFF4F),

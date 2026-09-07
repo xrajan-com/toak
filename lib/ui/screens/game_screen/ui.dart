@@ -101,7 +101,7 @@ const double _kSeatCardHeroFanDeg = 10.0;
 const double _kSeatCardOppFanDeg = 8.0;
 const double _kSeatCardHeroSideBySideGap = 1.05;
 const double _kSeatAvatarScale = 0.85;
-const Color _kHeroWinOutline = Color(0xFF24B6FF);
+const Color _kHeroWinOutline = Color(0xFF20D9FF);
 const Color _kBotWinOutline = Color(0xFFFF2800);
 const Color _kHandHighlightOutline = Color(0xFFFFD100);
 const TextStyle _kSidePillTextStyle = TextStyle(
@@ -845,7 +845,7 @@ class _GameScreenUIState extends State<GameScreenUI>
     final bool heroWonTop = heroName != null &&
         topWinners.any((w) => sameName(w.playerName, heroName!));
     final Color fillColor =
-        heroWonTop ? const Color(0xFF24B6FF) : const Color(0xFFFF2800);
+        heroWonTop ? const Color(0xFF20D9FF) : const Color(0xFFFF2800);
 
     final double labelW = ui.cardW * 2.5;
     final double labelH = ui.cardH * 1.5;

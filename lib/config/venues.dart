@@ -34,7 +34,7 @@ class VenueTheme {
 
 const _bg = Color(0xFF000000);
 const _red = Color(0xFFFF2800);
-const _blue = Color(0xFF24B6FF);
+const _blue = Color(0xFF20D9FF);
 
 /* ---------- FELT COLORS ---------- */
 

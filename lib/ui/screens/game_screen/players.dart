@@ -708,7 +708,7 @@ class _SeatWidgetState extends State<SeatWidget> with TickerProviderStateMixin {
     }
     // Blue ring for the current chip leader.
     else if (widget.isLeader) {
-      color = const Color(0xFF24B6FF);
+      color = const Color(0xFF20D9FF);
       width = 2.8;
     }
     // Green ring for players who are up vs their starting stack.
@@ -734,7 +734,7 @@ class _SeatWidgetState extends State<SeatWidget> with TickerProviderStateMixin {
 
   Color? _statusTint(Seat seat) {
     if (seat.busted) return null;
-    if (widget.isLeader) return const Color(0xFF24B6FF); // chip leader: blue
+    if (widget.isLeader) return const Color(0xFF20D9FF); // chip leader: blue
     if (seat.profitable) return const Color(0xFF3BB143); // up vs start: green
     if (seat.shortStack) return const Color(0xFFC41230); // low stack: red
     return null;
@@ -1192,7 +1192,7 @@ class _HeroGlow extends StatelessWidget {
         margin: const EdgeInsets.all(4),
         decoration: const ShapeDecoration(
           shape: CircleBorder(
-            side: BorderSide(color: Color(0x3324B6FF), width: 5),
+            side: BorderSide(color: Color(0x3320D9FF), width: 5),
           ),
         ),
       ),
@@ -1290,7 +1290,7 @@ class _SeatInfoChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color border = highlight
-        ? const Color(0xFF24B6FF)
+        ? const Color(0xFF20D9FF)
         : Colors.white.withValues(alpha: 0.18);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

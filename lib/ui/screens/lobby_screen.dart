@@ -64,7 +64,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                         ElevatedButton(
                           onPressed: () {},
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF24B6FF),
+                            backgroundColor: const Color(0xFF20D9FF),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 12),

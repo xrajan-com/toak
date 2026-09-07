@@ -104,7 +104,7 @@ class _PresentationTimer {
 const int kRenoirShuffleLoops = 5; // was 6; shorter overall duration
 
 // Best-hand outline colors used during the winners overlay.
-const Color _kHeroWinOutline = Color(0xFF24B6FF); // blue
+const Color _kHeroWinOutline = Color(0xFF20D9FF); // blue
 const Color _kBotWinOutline = Color(0xFFFF2800); // red
 const Color _kHandHighlightOutline = Color(0xFFFFD100); // yellow
 

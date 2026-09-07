@@ -773,7 +773,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       if (!widget.requireRegisteredUser) ...[
                         _AuthPillButton(
                           label: 'Continue as Guest',
-                          backgroundColor: const Color(0xFF24B6FF),
+                          backgroundColor: const Color(0xFF20D9FF),
                           textColor: Colors.white,
                           onPressed: _isLoading ? null : _continueAsGuest,
                         ),

@@ -49,7 +49,7 @@ Future<void> showScoreboardSheet(
 
   Color chipColor(Seat s) {
     if (s.busted || s.chips <= 0) return const Color(0xFFFF5C6C);
-    if (leaders.contains(s)) return const Color(0xFF24B6FF);
+    if (leaders.contains(s)) return const Color(0xFF20D9FF);
     if (s.chips > s.startChips) return const Color(0xFF4CFFBE);
     if (s.shortStack) return const Color(0xFFFF5C6C);
     if (s.chips < s.startChips) return const Color(0xFFFFD76E);

@@ -20,7 +20,7 @@ import 'package:ten_of_a_kind_poker/core/sound_fx.dart';
 import 'package:ten_of_a_kind_poker/ui/widgets/slash_avatar.dart'
     show DealerAvatarStyle, SlashJacketTone, buildDealerSkinAvatar;
 
-const Color _kBestHandOutline = Color(0xFF24B6FF);
+const Color _kBestHandOutline = Color(0xFF20D9FF);
 
 /* ---------- Global Winners bus (dialog lifecycle) ---------- */
 class WinnersBusEvent {
@@ -85,7 +85,7 @@ class LastHandStore {
 
 /* ---------- Brand palette & text styles ---------- */
 const _kRed = Color(0xFFFF2800);
-const _kBlue = Color(0xFF24B6FF);
+const _kBlue = Color(0xFF20D9FF);
 const _kWhite = Color(0xFFFFFFFF);
 const _kDialogBg = Color(0xFF141414);
 
@@ -106,7 +106,7 @@ const Map<String, Color> _kKingdomFeltColors = {
   'Hyderabad': Color.fromARGB(173, 118, 30, 180),
   'Indore': Color(0xFF8B0000),
   'India': Color.fromARGB(208, 0, 166, 232),
-  'International': Color(0xFF24B6FF),
+  'International': Color(0xFF20D9FF),
   'Jaipur': Color.fromARGB(204, 220, 83, 220),
   'Japan': Color(0xFFB71C1C),
   'Maratha Empire': Color.fromARGB(212, 255, 107, 1),
@@ -1233,7 +1233,7 @@ class _FireworksPainter extends CustomPainter {
 
   static const List<Color> _celebrationPalette = <Color>[
     Color(0xFFFFD100),
-    Color(0xFF24B6FF),
+    Color(0xFF20D9FF),
     Color(0xFFFF5A36),
     Color(0xFF8CFF66),
     Color(0xFFFFF4C2),
@@ -1242,7 +1242,7 @@ class _FireworksPainter extends CustomPainter {
   static const List<Color> _gameOverPalette = <Color>[
     Color(0xFFFF2800),
     Color(0xFFFF6A3D),
-    Color(0xFF24B6FF),
+    Color(0xFF20D9FF),
     Color(0xFFFFD100),
   ];
 
