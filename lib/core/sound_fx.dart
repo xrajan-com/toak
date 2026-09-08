@@ -27,7 +27,13 @@ class SoundFx {
   static const int _kMaxAnnouncerOverlap = 2;
   static const Duration _kDuplicateAnnouncerCooldown =
       Duration(milliseconds: 520);
-  bool _soundEffectsMuted = false;
+  // Effects start muted. AppSettingsService unmutes on load if the user has
+  // turned them on, so the default first-run experience is quiet and nothing
+  // can fire in the window before preferences have been read. XMusicService
+  // does the same thing for the same reason.
+  bool _soundEffectsMuted = true;
+  // The dealer voice is on by default, so it starts unmuted — settings load
+  // mutes it only if the user has turned it off.
   bool _voiceMuted = false;
   bool _unlocked = !kIsWeb;
   DateTime? _lastHandWinAt;

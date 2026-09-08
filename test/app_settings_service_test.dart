@@ -13,7 +13,9 @@ void main() {
     final AppSettingsService first = AppSettingsService();
     await first.load();
 
-    await first.setSoundEffectsEnabled(false);
+    // Set to the NON-default so this still exercises a real write: the
+    // setter early-returns when the value already matches.
+    await first.setSoundEffectsEnabled(true);
     await first.setLoungeSoundsEnabled(true);
     await first.setDealerVoiceEnabled(false);
     await first.setReducedMotion(true);
@@ -21,18 +23,23 @@ void main() {
     final AppSettingsService restored = AppSettingsService();
     await restored.load();
 
-    expect(restored.soundEffectsEnabled, isFalse);
+    expect(restored.soundEffectsEnabled, isTrue);
     expect(restored.loungeSoundsEnabled, isTrue);
     expect(restored.dealerVoiceEnabled, isFalse);
     expect(restored.reducedMotion, isTrue);
     expect(restored.loaded, isTrue);
   });
 
-  test('lounge sounds are muted by default', () async {
+  test('first run is quiet except the dealer voice', () async {
     final AppSettingsService settings = AppSettingsService();
     await settings.load();
 
-    expect(settings.loungeSoundsEnabled, isFalse);
+    expect(settings.loungeSoundsEnabled, isFalse,
+        reason: 'game-screen music must not play uninvited');
+    expect(settings.soundEffectsEnabled, isFalse,
+        reason: 'table audio must not play uninvited');
+    expect(settings.dealerVoiceEnabled, isTrue,
+        reason: 'the dealer voice carries information and stays on');
   });
 
   testWidgets('device-level reduced motion is always respected',
