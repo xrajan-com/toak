@@ -784,13 +784,11 @@ class _HeroButtonsRow extends StatelessWidget {
               child: _pillActionButton(
                 widgetKey: yellowButtonKey ?? foldButtonKey,
                 title: yellowLabel,
-                // Was kYellow: a saturated yellow reads as caution or
-                // primary in almost every interface, which is the wrong
-                // signal for the action a player takes most often. Neutral
-                // slate lets it recede. The kYellow brand constant is
-                // untouched for the surfaces that still use it.
-                color: const Color(0xFF454B54),
-                textColor: Colors.white,
+                // Restored to the original brand yellow with black text
+                // per direct request, after the rebalance pass swapped it
+                // for a receding slate.
+                color: kYellow,
+                textColor: Colors.black,
                 titleStyle: _yellowActionLabelStyle(),
                 onTap: onYellowTap,
                 enabled: yellowEnabled && (!yellowIsFold || foldEnabled),
@@ -1393,7 +1391,7 @@ TextStyle _buttonTitleStyle(Color color) => TextStyle(
     );
 
 TextStyle _yellowActionLabelStyle() => TextStyle(
-      color: Colors.white,
+      color: Colors.black,
       fontWeight: FontWeight.w900,
       fontSize: 20 * 1.6 * _kActionBarScale,
       letterSpacing: 0.20 * _kActionBarScale,
