@@ -17,11 +17,12 @@ class AppSettingsService extends ChangeNotifier {
   static const String _dealerVoiceKey = 'settings.dealer_voice.v1';
   static const String _reducedMotionKey = 'settings.reduced_motion.v1';
 
-  // Table audio defaults to off: the game screen is busy enough without it,
+  // Lounge/table music defaults to off: it's ambient, not informational,
   // and a first run that is quiet by default is easier to recover from than
-  // one that is loud. Users can turn it on in settings. The dealer voice is
-  // deliberately left on, since it carries information about the hand.
-  bool _soundEffectsEnabled = false;
+  // one that is loud. Users can turn it on in settings. Sound effects and the
+  // dealer voice are deliberately left on in every game, since they carry
+  // information about the hand as it happens.
+  bool _soundEffectsEnabled = true;
   bool _loungeSoundsEnabled = false;
   bool _dealerVoiceEnabled = true;
   bool _reducedMotion = false;
@@ -74,7 +75,7 @@ class AppSettingsService extends ChangeNotifier {
   Future<void> _load() async {
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      _soundEffectsEnabled = prefs.getBool(_soundEffectsKey) ?? false;
+      _soundEffectsEnabled = prefs.getBool(_soundEffectsKey) ?? true;
       _loungeSoundsEnabled = prefs.getBool(_loungeSoundsKey) ?? false;
       _dealerVoiceEnabled = prefs.getBool(_dealerVoiceKey) ?? true;
       _reducedMotion = prefs.getBool(_reducedMotionKey) ?? false;
