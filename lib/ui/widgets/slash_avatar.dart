@@ -16,11 +16,15 @@ const double _kBucketheadHandDropPx = 16;
 const double _kRedrixSeatCenterY = 0.72;
 const double _kRedrixLiftPx = 32; // nudge upward in pixels
 
-/// Shared Renoir-style hands: tapered palms with simple finger hints + card fan.
+/// Shared Renoir-style hands: tapered palms with simple finger hints.
+///
+/// [drawCards] paints a fan of cards between the palms. It defaults to off:
+/// the dealer already has the deck and the deal animation, so a permanent
+/// painted fan reads as two card backs stuck to his chest.
 void _paintRenoirHands(Canvas canvas, Size size, double phase,
     {double handYOffset = -0.04,
     double spreadFactor = 0.22,
-    bool drawCards = true,
+    bool drawCards = false,
     double handScale = 1.0,
     double fingerSpread = 1.0,
     Color handColor = const Color(0xFFE4C7A3),
@@ -871,7 +875,9 @@ class _KingdomDealerPainter extends CustomPainter {
       phase,
       handYOffset: -0.03,
       spreadFactor: 0.21,
-      drawCards: true,
+      // Was the only skin passing true — the other three already pass false,
+      // which is why the fan showed up only after the dealer avatar changed.
+      drawCards: false,
       handScale: persona.isFemale ? 0.94 : 1.05,
       fingerSpread: 1.0,
       handColor: persona.skin,

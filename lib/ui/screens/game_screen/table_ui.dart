@@ -307,6 +307,25 @@ class _GameTableLayerState extends State<GameTableLayer> {
               // 3) D / SB / BB chips on the felt, tucked near their seats
               ...blindChips,
 
+              // 3b) POT — upper-left of the felt, on the dealer's side.
+              // `pot` and `potPulse` were passed into this widget but never
+              // drawn, so the table had no pot figure at all and every bet
+              // was buried inside a nameplate as "· 200".
+              Positioned(
+                left: feltRect.left + feltRect.width * 0.055,
+                top: feltRect.top + feltRect.height * 0.085,
+                child: _PotPill(
+                  pot: widget.pot,
+                  streetBets: widget.seats.fold<int>(
+                    0,
+                    (int sum, Seat s) => sum + (s.bet > 0 ? s.bet : 0),
+                  ),
+                  height: (feltRect.height * 0.085)
+                      .clamp(22.0, 44.0)
+                      .toDouble(),
+                ),
+              ),
+
               // 4) SEATS — placed so they "kiss" the felt edge (no rail overlap)
               if (widget.paintSeats)
                 for (final e in seatPositions.asMap().entries)
@@ -454,6 +473,114 @@ List<Widget> buildBlindChips({
   }
 
   return chips;
+}
+
+/// Pot readout on the felt: what is already in the middle, plus whatever is
+/// still sitting in front of players on this street.
+///
+/// White at 75% so the felt reads through it, black for the settled pot and
+/// red for money still live on the current street — the two numbers a player
+/// actually needs to size a bet.
+class _PotPill extends StatelessWidget {
+  const _PotPill({
+    required this.pot,
+    required this.streetBets,
+    required this.height,
+  });
+
+  final double pot;
+  final int streetBets;
+  final double height;
+
+  static String _fmt(num v) {
+    final int n = v.round();
+    if (n >= 1000000) {
+      final double m = n / 1000000;
+      return '${m.toStringAsFixed(m >= 10 ? 0 : 1)}M';
+    }
+    if (n >= 1000) {
+      final double k = n / 1000;
+      return '${k.toStringAsFixed(k >= 10 ? 0 : 1)}K';
+    }
+    return '$n';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final int settled = pot.round();
+    // Nothing on the table yet: a pill reading "POT 0" is noise.
+    if (settled <= 0 && streetBets <= 0) return const SizedBox.shrink();
+
+    final double h = height;
+    final double fontSize = (h * 0.42).clamp(10.0, 18.0).toDouble();
+    final double labelSize = (h * 0.30).clamp(8.0, 12.0).toDouble();
+
+    return IgnorePointer(
+      child: Semantics(
+        label: streetBets > 0
+            ? 'Pot ${_fmt(settled)}, ${_fmt(streetBets)} still in play'
+            : 'Pot ${_fmt(settled)}',
+        child: ExcludeSemantics(
+          child: Container(
+            height: h,
+            padding: EdgeInsets.symmetric(horizontal: h * 0.42),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.75),
+              borderRadius: BorderRadius.circular(999),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.28),
+                  blurRadius: h * 0.28,
+                  offset: Offset(0, h * 0.08),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: <Widget>[
+                Text(
+                  'POT',
+                  style: TextStyle(
+                    color: const Color(0xFF11110F),
+                    fontFamily: 'OpenSans',
+                    fontWeight: FontWeight.w700,
+                    fontSize: labelSize,
+                    letterSpacing: 0.8,
+                    height: 1.0,
+                  ),
+                ),
+                SizedBox(width: h * 0.22),
+                Text(
+                  _fmt(settled),
+                  style: TextStyle(
+                    color: const Color(0xFF11110F),
+                    fontFamily: 'OpenSans',
+                    fontWeight: FontWeight.w800,
+                    fontSize: fontSize,
+                    height: 1.0,
+                  ),
+                ),
+                if (streetBets > 0) ...<Widget>[
+                  SizedBox(width: h * 0.24),
+                  Text(
+                    '+${_fmt(streetBets)}',
+                    style: TextStyle(
+                      color: const Color(0xFFC41230),
+                      fontFamily: 'OpenSans',
+                      fontWeight: FontWeight.w800,
+                      fontSize: fontSize,
+                      height: 1.0,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 Offset _clampChipCenter(
