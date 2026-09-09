@@ -586,7 +586,7 @@ class _SeatWidgetState extends State<SeatWidget> with TickerProviderStateMixin {
                                 seatHeight: pillH,
                                 persistBustedBubble: widget.persistBustedBubble,
                                 seatVisibleOpacity: _opacity,
-                                isTurn: widget.isTurn,
+                                isTurn: canShowTurn,
                               ),
                             ),
                           // The plate is now a turn indicator, not permanent
@@ -596,7 +596,7 @@ class _SeatWidgetState extends State<SeatWidget> with TickerProviderStateMixin {
                           // of their own hole cards.
                           if (!isBusted &&
                               !showExpandedSeat &&
-                              widget.isTurn &&
+                              canShowTurn &&
                               !seat.isHero)
                             Positioned(
                               left: -(pillH * 0.14),

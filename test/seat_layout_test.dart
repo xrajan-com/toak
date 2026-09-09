@@ -243,9 +243,19 @@ void main() {
     expect(minDist, greaterThan(seatSide * 0.45));
 
     final heroTarget = geom!.seatTargets[heroIndex];
+    // Hero now sits half a seat clockwise of bottom-centre (right half of
+    // the table, closest seat to centre), not dead-centre — see
+    // balancedSeatArcFractions in seat_layout.dart.
     expect(
-      (heroTarget.dx - geom!.feltRect.center.dx).abs(),
-      lessThan(seatSide * 0.08),
+      heroTarget.dx,
+      greaterThan(geom!.feltRect.center.dx),
+      reason: 'hero sits half a seat clockwise of bottom-centre, so it '
+          'belongs in the right half of the table',
+    );
+    expect(
+      heroTarget.dy,
+      greaterThan(geom!.feltRect.center.dy),
+      reason: 'hero must be on the bottom side of the table',
     );
   });
 
