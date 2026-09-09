@@ -726,7 +726,9 @@ class _HeroButtonsRow extends StatelessWidget {
               child: _pillActionButton(
                 title: 'ALL-IN',
                 widgetKey: allInButtonKey,
-                color: const Color(0xFFC41230),
+                // Deepened from #C41230. The most destructive action should
+                // read as danger, not as the brightest button on the bar.
+                color: const Color(0xFF8E2A38),
                 onTap: onAllIn,
                 enabled: enabled && allInEnabled,
                 active: !actionsOn || (enabled && allInEnabled),
@@ -741,7 +743,10 @@ class _HeroButtonsRow extends StatelessWidget {
                 title: raiseTitle,
                 value: raiseValue,
                 widgetKey: raiseButtonKey,
-                color: const Color(0xFF007FFF),
+                // Deepened from #007FFF so it sits under CALL/CHECK rather
+                // than competing with it. Kept clear of the brand cyan,
+                // which now means "your turn" and nothing else.
+                color: const Color(0xFF1C6FD0),
                 textColor: Colors.white,
                 valueColor: Colors.white,
                 onTap: onBetOrRaise,
@@ -763,7 +768,9 @@ class _HeroButtonsRow extends StatelessWidget {
                 widgetKey: callButtonKey,
                 title: callTitle,
                 value: callValue,
-                color: const Color(0xFF3BB143),
+                // The action most players want, so it is now the only fully
+                // saturated button on the bar.
+                color: const Color(0xFF34A853),
                 onTap: onCall,
                 enabled: enabled && callEnabled,
                 active: !actionsOn || (enabled && callEnabled),
@@ -777,7 +784,12 @@ class _HeroButtonsRow extends StatelessWidget {
               child: _pillActionButton(
                 widgetKey: yellowButtonKey ?? foldButtonKey,
                 title: yellowLabel,
-                color: kYellow,
+                // Was kYellow: a saturated yellow reads as caution or
+                // primary in almost every interface, which is the wrong
+                // signal for the action a player takes most often. Neutral
+                // slate lets it recede. The kYellow brand constant is
+                // untouched for the surfaces that still use it.
+                color: const Color(0xFF454B54),
                 textColor: Colors.white,
                 titleStyle: _yellowActionLabelStyle(),
                 onTap: onYellowTap,
@@ -861,17 +873,17 @@ class _ActionGuidanceLabel extends StatelessWidget {
       HeroRecommendedAction.raise => (
           label: 'RAISE',
           slot: 1,
-          color: const Color(0xFF007FFF),
+          color: const Color(0xFF1C6FD0),
         ),
       HeroRecommendedAction.check => (
           label: 'CHECK',
           slot: 2,
-          color: const Color(0xFF3BB143),
+          color: const Color(0xFF34A853),
         ),
       HeroRecommendedAction.call => (
           label: 'CALL',
           slot: 2,
-          color: const Color(0xFF3BB143),
+          color: const Color(0xFF34A853),
         ),
       HeroRecommendedAction.fold => (
           label: 'FOLD',
@@ -1037,14 +1049,14 @@ _TrailingActionHighlight? _trailingActionHighlight(String message) {
   const List<(String, Color)> actions = <(String, Color)>[
     ('MATCH BID', kYellow),
     ('TOO THIN', Color(0xFFC41230)),
-    ('ALL-IN', Color(0xFF007FFF)),
-    ('ALL IN', Color(0xFF007FFF)),
+    ('ALL-IN', Color(0xFF1C6FD0)),
+    ('ALL IN', Color(0xFF1C6FD0)),
     ('CAUTION', Color(0xFFC41230)),
     ('DANGER', Color(0xFFC41230)),
-    ('RAISE', Color(0xFF007FFF)),
-    ('BET', Color(0xFF007FFF)),
-    ('CALL', Color(0xFF3BB143)),
-    ('CHECK', Color(0xFF3BB143)),
+    ('RAISE', Color(0xFF1C6FD0)),
+    ('BET', Color(0xFF1C6FD0)),
+    ('CALL', Color(0xFF34A853)),
+    ('CHECK', Color(0xFF34A853)),
     ('FOLD', Color(0xFFC41230)),
     ('SHOW', kYellow),
     ('SKIP', kYellow),
