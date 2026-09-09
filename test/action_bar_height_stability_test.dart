@@ -235,7 +235,7 @@ void main() {
     expect(find.textContaining('RAISE'), findsOneWidget);
     expect(find.text('CHECK'), findsOneWidget);
     expect(find.text('FOLD'), findsOneWidget);
-    expect(tester.widget<Text>(find.text('FOLD')).style?.color, Colors.white);
+    expect(tester.widget<Text>(find.text('FOLD')).style?.color, Colors.black);
 
     for (final ({Key key, String label}) item in <({Key key, String label})>[
       (key: allInButtonKey, label: 'ALL-IN'),

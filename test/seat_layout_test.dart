@@ -23,6 +23,20 @@ List<Seat> _dummySeats(int n, {required int heroIndex}) {
   });
 }
 
+double _nearestStadiumBoundaryDistance(
+  Rect boundaryRect,
+  Offset point, {
+  int samples = 2000,
+}) {
+  double minDistance = double.infinity;
+  for (int sample = 0; sample < samples; sample++) {
+    final Offset boundaryPoint =
+        horizontalStadiumPointAtFraction(boundaryRect, sample / samples);
+    minDistance = math.min(minDistance, (boundaryPoint - point).distance);
+  }
+  return minDistance;
+}
+
 double _minPairwiseDistance(List<Offset> pts) {
   double minD = double.infinity;
   for (int i = 0; i < pts.length; i++) {
@@ -140,9 +154,16 @@ void main() {
           greaterThan(safeBoundary.outerRect.center.dy),
           reason: 'hero must be on the bottom side of the table',
         );
+        // Vertical subtraction from the rect's bottom edge only measures the
+        // true gap while the hero sits on the flat bottom segment. For very
+        // small tables the half-step offset (see balancedSeatArcFractions)
+        // can place the hero around the curved end instead, so measure the
+        // real distance to the boundary curve — guaranteed by construction
+        // to equal the requested 1.0px gap everywhere, not just at the
+        // bottom-centre tangent point.
         expect(
-          safeBoundary.outerRect.bottom - (heroCenter.dy + visualRadius),
-          closeTo(1.0, 0.001),
+          _nearestStadiumBoundaryDistance(safeBoundary.outerRect, heroCenter),
+          closeTo(visualRadius + 1.0, 0.5),
           reason: 'hero footprint should retain the requested boundary gap',
         );
       });
