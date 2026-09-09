@@ -2,41 +2,39 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+/// Fractions along the seating arc, one per seat, hero first.
+///
+/// Every seat gets an identical slice, and the hero sits half a slice
+/// *clockwise* of bottom-centre rather than on it. That half-step is what
+/// makes an even table read as symmetric: the vertical axis falls between
+/// two seats, so six players sit three-a-side with two genuinely across the
+/// felt from the hero.
+///
+/// The previous version pinned the hero to exactly 0.5 and then scaled each
+/// side by its own seat count, so six seats came out as
+/// `[0.5, 0.667, 0.833, 1.0, 0.0, 0.25]` — three seats sharing one side's
+/// arc and two sharing the other, at visibly different spacings. Seats were
+/// never actually equidistant.
 List<double> balancedSeatArcFractions({
   required int seatCount,
   required int heroIndex,
 }) {
   if (seatCount <= 0) return const <double>[];
+  // A lone seat has no ring to be symmetric about; put it at the bottom.
+  if (seatCount == 1) return const <double>[0.5];
 
   final int normalizedHero =
       (heroIndex >= 0 && heroIndex < seatCount) ? heroIndex : 0;
-  final List<int> signedOffsets =
-      List<int>.generate(seatCount, (int seatIndex) {
-    if (seatIndex == normalizedHero) return 0;
 
-    final int forward = (seatIndex - normalizedHero + seatCount) % seatCount;
-    final int backward = (normalizedHero - seatIndex + seatCount) % seatCount;
-
-    // When a seat is exactly opposite the hero on even-sized tables, keep the
-    // extra seat on the positive side so the hero remains visually centered.
-    if (forward <= backward) return forward;
-    return -backward;
-  }, growable: false);
-
-  int positiveCount = 0;
-  int negativeCount = 0;
-  for (final int offset in signedOffsets) {
-    if (offset > positiveCount) positiveCount = offset;
-    if (-offset > negativeCount) negativeCount = -offset;
-  }
+  final double step = 1.0 / seatCount;
+  final double heroFraction = 0.5 - step / 2;
 
   return List<double>.generate(seatCount, (int seatIndex) {
-    final int offset = signedOffsets[seatIndex];
-    if (offset == 0) return 0.5;
-    if (offset > 0) {
-      return 0.5 + (0.5 * offset / positiveCount);
-    }
-    return 0.5 - (0.5 * (-offset) / negativeCount);
+    // Seat order runs clockwise from the hero, which on screen places the
+    // next seat to the hero's left — the same direction as turn order.
+    final int offset = (seatIndex - normalizedHero + seatCount) % seatCount;
+    final double raw = heroFraction + offset * step;
+    return raw - raw.floorToDouble();
   }, growable: false);
 }
 

@@ -2662,6 +2662,7 @@ class _GameScreenUIState extends State<GameScreenUI>
               seatWidth: seatWidth,
               seatHeight: seatHeight,
               persistBustedBubble: widget.activeBloodStains.contains(i),
+              isTurn: RenoirSignals.canAct.value && i == widget.currentTurn,
             ),
           ),
         ),

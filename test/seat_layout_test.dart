@@ -131,8 +131,9 @@ void main() {
             Offset(testCase.seatSize / 2, testCase.seatSize / 2);
         expect(
           heroCenter.dx,
-          closeTo(safeBoundary.outerRect.center.dx, 0.001),
-          reason: 'hero must remain horizontally centred',
+          greaterThan(safeBoundary.outerRect.center.dx),
+          reason: 'hero sits half a seat clockwise of bottom-centre, so it '
+              'belongs in the right half of the table',
         );
         expect(
           heroCenter.dy,
@@ -146,6 +147,34 @@ void main() {
         );
       });
     }
+
+    test('seats are equidistant and even tables are mirror-symmetric', () {
+      for (final int seatCount in <int>[2, 4, 6, 8, 10]) {
+        final List<double> fractions =
+            balancedSeatArcFractions(seatCount: seatCount, heroIndex: 0);
+        expect(fractions, hasLength(seatCount));
+
+        final List<double> sorted = List<double>.from(fractions)..sort();
+        final double step = 1.0 / seatCount;
+        for (int i = 0; i < sorted.length - 1; i++) {
+          expect(sorted[i + 1] - sorted[i], closeTo(step, 1e-9),
+              reason: 'gap $i of $seatCount seats must equal one slice');
+        }
+
+        // Mirroring a fraction about bottom-centre must land on another seat.
+        for (final double f in fractions) {
+          expect(
+            fractions.any((double other) => (1.0 - f - other).abs() < 1e-9),
+            isTrue,
+            reason: '$seatCount seats must be symmetric about bottom-centre',
+          );
+        }
+
+        expect(fractions.first, lessThan(0.5),
+            reason: 'hero sits clockwise of bottom-centre (right half)');
+        expect(fractions.first, closeTo(0.5 - step / 2, 1e-9));
+      }
+    });
 
     test('player-safe boundary sits wholly inside the painted felt band', () {
       const Size tableSize = Size(1080, 580);

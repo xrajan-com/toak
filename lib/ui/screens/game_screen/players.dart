@@ -586,9 +586,18 @@ class _SeatWidgetState extends State<SeatWidget> with TickerProviderStateMixin {
                                 seatHeight: pillH,
                                 persistBustedBubble: widget.persistBustedBubble,
                                 seatVisibleOpacity: _opacity,
+                                isTurn: widget.isTurn,
                               ),
                             ),
-                          if (!isBusted && !showExpandedSeat)
+                          // The plate is now a turn indicator, not permanent
+                          // furniture: one seat wears it at a time, and never
+                          // the hero — their name and stack already live in
+                          // the HUD and action bar, and the plate sat on top
+                          // of their own hole cards.
+                          if (!isBusted &&
+                              !showExpandedSeat &&
+                              widget.isTurn &&
+                              !seat.isHero)
                             Positioned(
                               left: -(pillH * 0.14),
                               right: -(pillH * 0.14),
@@ -783,6 +792,7 @@ class SeatTopBubbleOverlay extends StatelessWidget {
     required this.seatHeight,
     required this.persistBustedBubble,
     this.seatVisibleOpacity = 1.0,
+    this.isTurn = false,
   });
 
   final Seat seat;
@@ -790,6 +800,11 @@ class SeatTopBubbleOverlay extends StatelessWidget {
   final double seatHeight;
   final bool persistBustedBubble;
   final double seatVisibleOpacity;
+
+  /// Whether this seat is the one to act. Drives the turn caret, which is
+  /// the primary "it's on you" signal now that the faint ring behind the
+  /// seat proved unreadable against the felt.
+  final bool isTurn;
 
   @override
   Widget build(BuildContext context) {
@@ -805,6 +820,28 @@ class SeatTopBubbleOverlay extends StatelessWidget {
       // to be worth acting on, because a badge on every seat every hand is
       // wallpaper, while a badge that appears when someone starts steaming
       // is a read the player can exploit.
+      // Exactly one thing occupies the slot above a seat, in this order:
+      // BUSTED, the action just taken, the turn caret, then mood. Without a
+      // strict order these overlap, which is how the old layout ended up
+      // with a floating CHECK label sharing space with everything else.
+      if (isTurn && !seat.busted) {
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned(
+              top: -seatHeight * 0.40,
+              left: 0,
+              right: 0,
+              child: IgnorePointer(
+                child: Center(
+                  child: _SeatTurnCaret(size: seatHeight * 0.30),
+                ),
+              ),
+            ),
+          ],
+        );
+      }
+
       final String? mood = seat.moodLabel;
       if (mood == null || mood.isEmpty || seat.busted) {
         return const SizedBox.shrink();
@@ -890,6 +927,41 @@ class SeatTopBubbleOverlay extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Downward caret above the seat that is to act. Brand cyan, used for this
+/// and nothing else, so a player learns it in one session.
+class _SeatTurnCaret extends StatelessWidget {
+  const _SeatTurnCaret({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final double s = size.clamp(14.0, 46.0).toDouble();
+    return SizedBox(
+      width: s,
+      height: s,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: const Color(0xFF20D9FF).withValues(alpha: 0.18),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: const Color(0xFF20D9FF).withValues(alpha: 0.55),
+              blurRadius: s * 0.45,
+              spreadRadius: s * 0.02,
+            ),
+          ],
+        ),
+        child: Icon(
+          Icons.arrow_drop_down_rounded,
+          size: s,
+          color: const Color(0xFF20D9FF),
+        ),
+      ),
     );
   }
 }
