@@ -1,4 +1,6 @@
 // lib/ui/screens/auth_screen.dart
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart'; // Clipboard
@@ -567,26 +569,22 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
+  // Borderless: the field sits inside a _GlassPanel, which supplies the
+  // frosted surface and the divider between rows. Only the label recolors on
+  // focus, mirroring how a Control Center row highlights without gaining an
+  // outline of its own.
   InputDecoration _field(String label, {Widget? suffixIcon}) => InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: AppColors.white),
+        labelStyle: const TextStyle(color: Colors.white70),
+        floatingLabelStyle: const TextStyle(color: AppColors.blue),
         suffixIcon: suffixIcon,
-        filled: true,
-        fillColor: Colors.white10,
+        filled: false,
+        border: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        focusedBorder: InputBorder.none,
+        disabledBorder: InputBorder.none,
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(999),
-          borderSide: const BorderSide(color: Colors.white24),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(999),
-          borderSide: const BorderSide(color: AppColors.blue),
-        ),
-        disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(999),
-          borderSide: const BorderSide(color: Colors.white12),
-        ),
+            const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       );
 
   Widget _clickable(Widget child) {
@@ -605,22 +603,29 @@ class _AuthScreenState extends State<AuthScreen> {
     return Scaffold(
       backgroundColor: AppColors.black,
       resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        child: ListView(
-          padding: EdgeInsets.only(
-            bottom: media.viewInsets.bottom + 16,
-            left: 16,
-            right: 16,
-            top: 16,
-          ),
-          children: [
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 520),
-                child: AutofillGroup(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
+      // Two soft, out-of-focus colour blobs are what the frosted panels
+      // below actually blur — the same reason Control Center only reads as
+      // glass because there's a wallpaper moving behind it. Without
+      // something to distort, a blur over flat black is a no-op.
+      body: Stack(
+        children: [
+          const Positioned.fill(child: _AmbientBackground()),
+          SafeArea(
+            child: ListView(
+              padding: EdgeInsets.only(
+                bottom: media.viewInsets.bottom + 16,
+                left: 16,
+                right: 16,
+                top: 16,
+              ),
+              children: [
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 520),
+                    child: AutofillGroup(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
                       const SizedBox(height: 8),
                       StadiumBanner(
                         asset: _bannerAsset,
@@ -654,57 +659,76 @@ class _AuthScreenState extends State<AuthScreen> {
                         ],
                         const SizedBox(height: 18),
                       ],
-                      TextField(
-                        key: const ValueKey('auth_email'),
-                        controller: _emailController,
-                        enabled: !_isLoading,
-                        autofillHints: const [
-                          AutofillHints.username,
-                          AutofillHints.email,
-                        ],
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
-                        autocorrect: false,
-                        style: const TextStyle(color: AppColors.white),
-                        decoration: _field('Email'),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        key: const ValueKey('auth_password'),
-                        controller: _passwordController,
-                        enabled: !_isLoading,
-                        autofillHints: [
-                          _isLogin
-                              ? AutofillHints.password
-                              : AutofillHints.newPassword,
-                        ],
-                        obscureText: !_showPassword,
-                        textInputAction: TextInputAction.done,
-                        autocorrect: false,
-                        enableSuggestions: false,
-                        onSubmitted:
-                            _isLoading ? null : (_) => _submitAuthForm(),
-                        style: const TextStyle(color: AppColors.white),
-                        decoration: _field(
-                          'Password',
-                          suffixIcon: IconButton(
-                            tooltip: _showPassword
-                                ? 'Hide password'
-                                : 'Show password',
-                            onPressed: _isLoading
-                                ? null
-                                : () => setState(
-                                      () => _showPassword = !_showPassword,
-                                    ),
-                            icon: Icon(
-                              _showPassword
-                                  ? Icons.visibility_off_outlined
-                                  : Icons.visibility_outlined,
-                              color: Colors.white70,
+                      // Email + password grouped into one frosted card,
+                      // the same way Control Center groups a label and its
+                      // control into a single translucent panel rather than
+                      // giving every row its own outline.
+                      _GlassPanel(
+                        padding: EdgeInsets.zero,
+                        child: Column(
+                          children: [
+                            TextField(
+                              key: const ValueKey('auth_email'),
+                              controller: _emailController,
+                              enabled: !_isLoading,
+                              autofillHints: const [
+                                AutofillHints.username,
+                                AutofillHints.email,
+                              ],
+                              keyboardType: TextInputType.emailAddress,
+                              textInputAction: TextInputAction.next,
+                              autocorrect: false,
+                              style: const TextStyle(color: AppColors.white),
+                              decoration: _field('Email'),
                             ),
-                          ),
+                            const Divider(
+                              height: 1,
+                              thickness: 1,
+                              indent: 18,
+                              endIndent: 18,
+                              color: Colors.white12,
+                            ),
+                            TextField(
+                              key: const ValueKey('auth_password'),
+                              controller: _passwordController,
+                              enabled: !_isLoading,
+                              autofillHints: [
+                                _isLogin
+                                    ? AutofillHints.password
+                                    : AutofillHints.newPassword,
+                              ],
+                              obscureText: !_showPassword,
+                              textInputAction: TextInputAction.done,
+                              autocorrect: false,
+                              enableSuggestions: false,
+                              onSubmitted:
+                                  _isLoading ? null : (_) => _submitAuthForm(),
+                              style: const TextStyle(color: AppColors.white),
+                              decoration: _field(
+                                'Password',
+                                suffixIcon: IconButton(
+                                  tooltip: _showPassword
+                                      ? 'Hide password'
+                                      : 'Show password',
+                                  onPressed: _isLoading
+                                      ? null
+                                      : () => setState(
+                                            () => _showPassword =
+                                                !_showPassword,
+                                          ),
+                                  icon: Icon(
+                                    _showPassword
+                                        ? Icons.visibility_off_outlined
+                                        : Icons.visibility_outlined,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                      const SizedBox(height: 12),
                       if (_isLogin)
                         Align(
                           alignment: Alignment.centerRight,
@@ -748,19 +772,25 @@ class _AuthScreenState extends State<AuthScreen> {
                             ),
                           ),
                         ),
+                      // Only the one action a first-time visitor actually
+                      // needs is solid and bright — everything else here is a
+                      // frosted, neutral row, the same restraint Control
+                      // Center uses: one lit-up "on" pill, every other row
+                      // dark glass until you touch it.
                       _AuthPillButton(
                         label: _isLoading
                             ? (_isLogin ? 'Logging in…' : 'Registering…')
                             : (_isLogin ? 'Login' : 'Register'),
+                        primary: true,
                         backgroundColor: AppColors.red,
                         textColor: AppColors.white,
                         onPressed: _isLoading ? null : _submitAuthForm,
                       ),
+                      const SizedBox(height: 10),
                       _AuthPillButton(
                         label: _isLogin
                             ? 'Create new account'
                             : 'Already have an account? Login',
-                        backgroundColor: const Color(0xFF2E3238),
                         textColor: AppColors.white,
                         onPressed: _isLoading
                             ? null
@@ -771,19 +801,19 @@ class _AuthScreenState extends State<AuthScreen> {
                                 }),
                       ),
                       if (!widget.requireRegisteredUser) ...[
+                        const SizedBox(height: 10),
                         _AuthPillButton(
                           label: 'Continue as Guest',
-                          backgroundColor: const Color(0xFF20D9FF),
-                          textColor: Colors.white,
+                          icon: Icons.person_outline,
+                          textColor: AppColors.white,
                           onPressed: _isLoading ? null : _continueAsGuest,
                         ),
-                        const SizedBox(height: 10),
                       ],
+                      const SizedBox(height: 10),
                       _AuthPillButton(
                         label: 'Sign in with Google',
                         icon: Icons.g_mobiledata,
                         iconSize: 28,
-                        backgroundColor: AppColors.white,
                         textColor: AppColors.white,
                         onPressed: _isLoading ? null : _signInWithGoogle,
                       ),
@@ -807,14 +837,16 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                    ],
+                        const SizedBox(height: 12),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
+        ],
       ),
     );
   }
@@ -866,6 +898,10 @@ class _AuthPillButton extends StatefulWidget {
   final String label;
   final IconData? icon;
   final double iconSize;
+  // True for the one action that should read as solid/"on" — everything
+  // else is the neutral frosted-glass treatment regardless of what colour
+  // is passed in.
+  final bool primary;
   final Color backgroundColor;
   final Color textColor;
   final VoidCallback? onPressed;
@@ -874,7 +910,8 @@ class _AuthPillButton extends StatefulWidget {
     required this.label,
     this.icon,
     this.iconSize = 20,
-    required this.backgroundColor,
+    this.primary = false,
+    this.backgroundColor = AppColors.blue,
     required this.textColor,
     this.onPressed,
   });
@@ -885,6 +922,7 @@ class _AuthPillButton extends StatefulWidget {
 
 class _AuthPillButtonState extends State<_AuthPillButton> {
   static const StadiumBorder _shape = StadiumBorder();
+  static const BorderRadius _radius = BorderRadius.all(Radius.circular(999));
   bool _hover = false;
   bool _pressed = false;
 
@@ -892,29 +930,91 @@ class _AuthPillButtonState extends State<_AuthPillButton> {
   Widget build(BuildContext context) {
     final bool enabled = widget.onPressed != null;
     final bool emphasized = _hover || _pressed;
-    final Color borderColor = !enabled
-        ? widget.backgroundColor.withValues(alpha: 0.35)
-        : (emphasized
-            ? widget.backgroundColor
-            : widget.backgroundColor.withValues(alpha: 0.95));
-    final Color bg = !enabled
-        ? widget.backgroundColor.withValues(alpha: 0.12)
-        : (_pressed
-            ? widget.backgroundColor.withValues(alpha: 0.45)
-            : (_hover
-                ? widget.backgroundColor.withValues(alpha: 0.36)
-                : widget.backgroundColor.withValues(alpha: 0.28)));
-    final double borderWidth =
-        !enabled ? 2.6 : (_pressed ? 4.0 : (_hover ? 3.6 : 3.2));
-    final List<BoxShadow> glow = !enabled
-        ? const []
-        : [
-            BoxShadow(
-              color: borderColor.withValues(alpha: emphasized ? 0.62 : 0.55),
-              blurRadius: emphasized ? 18 : 14,
-              spreadRadius: emphasized ? 2.2 : 1.4,
+
+    final Color fill;
+    final Color border;
+    final List<BoxShadow> shadow;
+    if (widget.primary) {
+      // The one bright, solid pill on the screen — a Control Center "on"
+      // toggle, not a glowing outline.
+      fill = widget.backgroundColor.withValues(
+        alpha: !enabled ? 0.35 : (_pressed ? 0.80 : (_hover ? 0.88 : 0.92)),
+      );
+      border = Colors.white.withValues(alpha: enabled ? 0.16 : 0.06);
+      shadow = enabled
+          ? [
+              BoxShadow(
+                color: widget.backgroundColor.withValues(alpha: 0.35),
+                blurRadius: emphasized ? 20 : 14,
+                offset: const Offset(0, 4),
+              ),
+            ]
+          : const [];
+    } else {
+      // Dark frosted glass — the same treatment for every secondary action,
+      // so hierarchy comes from the one primary pill standing out rather
+      // than from a palette of competing colours.
+      fill = Colors.white.withValues(
+        alpha: !enabled ? 0.04 : (_pressed ? 0.17 : (_hover ? 0.13 : 0.09)),
+      );
+      border = Colors.white.withValues(alpha: enabled ? 0.14 : 0.07);
+      shadow = const [];
+    }
+
+    final Widget content = AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      decoration: ShapeDecoration(
+        color: fill,
+        shape: StadiumBorder(side: BorderSide(color: border, width: 1.2)),
+        shadows: shadow,
+      ),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.icon != null) ...[
+                Icon(
+                  widget.icon,
+                  size: widget.iconSize,
+                  color: widget.textColor,
+                ),
+                const SizedBox(width: 8),
+              ],
+              Flexible(
+                child: Text(
+                  widget.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: widget.textColor,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    height: 1.0,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // Only the frosted rows need to blur anything — the primary pill is
+    // solid enough that a backdrop blur under it would be invisible.
+    final Widget surface = widget.primary
+        ? content
+        : ClipRRect(
+            borderRadius: _radius,
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+              child: content,
             ),
-          ];
+          );
 
     return SizedBox(
       height: 48,
@@ -946,58 +1046,7 @@ class _AuthPillButtonState extends State<_AuthPillButton> {
               customBorder: _shape,
               splashColor: Colors.white10,
               highlightColor: Colors.white.withValues(alpha: 0.05),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOut,
-                decoration: ShapeDecoration(
-                  color: bg,
-                  shape: StadiumBorder(
-                    side: BorderSide(color: borderColor, width: borderWidth),
-                  ),
-                  shadows: glow,
-                ),
-                child: Center(
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (widget.icon != null) ...[
-                          Icon(
-                            widget.icon,
-                            size: widget.iconSize,
-                            color: widget.textColor,
-                          ),
-                          const SizedBox(width: 8),
-                        ],
-                        Flexible(
-                          child: Text(
-                            widget.label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: widget.textColor,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 16,
-                              height: 1.0,
-                              letterSpacing: 0.2,
-                              shadows: const [
-                                Shadow(
-                                  blurRadius: 8,
-                                  offset: Offset(0, 1),
-                                  color: Colors.black38,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+              child: surface,
             ),
           ),
         ),
@@ -1006,6 +1055,9 @@ class _AuthPillButtonState extends State<_AuthPillButton> {
   }
 }
 
+// A small frosted chip, matching Control Center's tiny circular utility
+// buttons (screen mirroring, the camera shortcut) rather than an outlined,
+// colour-bordered link.
 class _AuthFooterPillLink extends StatelessWidget {
   final String label;
   final VoidCallback onPressed;
@@ -1017,25 +1069,125 @@ class _AuthFooterPillLink extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return OutlinedButton(
-      onPressed: onPressed,
-      style: OutlinedButton.styleFrom(
-        foregroundColor: AppColors.blue,
-        backgroundColor: Colors.transparent,
-        minimumSize: const Size(0, 40),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-        side: BorderSide(
-          color: AppColors.blue.withValues(alpha: 0.85),
-          width: 1.2,
-        ),
-        shape: const StadiumBorder(),
-        textStyle: const TextStyle(
-          fontWeight: FontWeight.w700,
-          fontSize: 15,
-          letterSpacing: 0.15,
+    return ClipRRect(
+      borderRadius: const BorderRadius.all(Radius.circular(999)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Material(
+          color: Colors.white.withValues(alpha: 0.07),
+          shape: RoundedRectangleBorder(
+            borderRadius: const BorderRadius.all(Radius.circular(999)),
+            side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+          ),
+          child: InkWell(
+            onTap: onPressed,
+            customBorder: const StadiumBorder(),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  letterSpacing: 0.1,
+                ),
+              ),
+            ),
+          ),
         ),
       ),
-      child: Text(label),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Frosted-glass building blocks, styled after iOS Control Center: dark
+// translucent panels blurring a soft, out-of-focus glow rather than sitting
+// on flat colour.
+// ─────────────────────────────────────────────────────────────────────────
+
+/// Groups related fields into one blurred, translucent card, the way
+/// Control Center groups a label and its control into a single panel
+/// instead of giving every row its own outline.
+class _GlassPanel extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final double radius;
+
+  const _GlassPanel({
+    required this.child,
+    this.padding = const EdgeInsets.all(4),
+    this.radius = 22,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+        child: Container(
+          padding: padding,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.07),
+            borderRadius: BorderRadius.circular(radius),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+/// Two soft, blurred colour blobs behind the form — the "wallpaper" that
+/// the frosted panels above are actually blurring. Purely decorative and
+/// intentionally subtle: this is a login form, not the game table.
+class _AmbientBackground extends StatelessWidget {
+  const _AmbientBackground();
+
+  @override
+  Widget build(BuildContext context) {
+    return const IgnorePointer(
+      child: Stack(
+        children: [
+          Positioned(
+            top: -140,
+            right: -100,
+            child: _GlowBlob(color: AppColors.blue, diameter: 340),
+          ),
+          Positioned(
+            bottom: -160,
+            left: -120,
+            child: _GlowBlob(color: AppColors.red, diameter: 380),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GlowBlob extends StatelessWidget {
+  final Color color;
+  final double diameter;
+
+  const _GlowBlob({required this.color, required this.diameter});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: diameter,
+      height: diameter,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [
+            color.withValues(alpha: 0.20),
+            color.withValues(alpha: 0.0),
+          ],
+        ),
+      ),
     );
   }
 }
