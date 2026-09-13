@@ -943,6 +943,36 @@ int subKingdomCountFor({
   return names.isNotEmpty ? names.length : kDefaultSubKingdomCount;
 }
 
+/// Every fort inside one circuit, summed across its kingdoms.
+int subKingdomCountForGroup(VenueGroup group) {
+  int total = 0;
+  for (final venue in venuesForGroup(group)) {
+    total += subKingdomCountFor(group: group, kingdomName: venue.name);
+  }
+  return total;
+}
+
+/// Every fort in the game — the full conquest target the home screen sets.
+///
+/// Derived from the fort tables rather than written down as a number, so
+/// adding a fort moves the target everywhere it is advertised.
+int totalSubKingdomCount() {
+  int total = 0;
+  for (final group in kVenueGroups) {
+    total += subKingdomCountForGroup(group);
+  }
+  return total;
+}
+
+/// Every kingdom in the game, across all circuits. One title per kingdom.
+int totalKingdomCount() {
+  int total = 0;
+  for (final group in kVenueGroups) {
+    total += venuesForGroup(group).length;
+  }
+  return total;
+}
+
 List<String> subKingdomNamesFor({
   required VenueGroup group,
   required String kingdomName,

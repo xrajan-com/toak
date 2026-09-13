@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 
 import 'package:ten_of_a_kind_poker/config/kingdom_titles.dart';
 import 'package:ten_of_a_kind_poker/config/sub_kingdoms.dart'
-    show subKingdomCountFor;
+    show subKingdomCountFor, subKingdomCountForGroup;
 import 'package:ten_of_a_kind_poker/config/venues.dart';
 import 'package:ten_of_a_kind_poker/features/venue/game_mode.dart';
 import 'package:ten_of_a_kind_poker/ui/theme/colors.dart';
@@ -288,14 +288,8 @@ class _VenueScreenState extends State<VenueScreen>
     _syncMusicForSelectedCircuit();
   }
 
-  int _totalSubKingdomsForGroup(VenueGroup group) {
-    final venues = venuesForGroup(group);
-    int total = 0;
-    for (final v in venues) {
-      total += subKingdomCountFor(group: group, kingdomName: v.name);
-    }
-    return total;
-  }
+  int _totalSubKingdomsForGroup(VenueGroup group) =>
+      subKingdomCountForGroup(group);
 
   int _clearedSubKingdomsForGroup(
     CampaignProgressService progress,

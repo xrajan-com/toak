@@ -629,6 +629,29 @@ class CampaignProgressService extends ChangeNotifier {
     return count;
   }
 
+  /// Forts cleared across every kingdom of every circuit.
+  ///
+  /// Backs the home-screen conquest challenge, which measures a player
+  /// against the whole map rather than the kingdom they happen to be in.
+  int totalClearedCount() {
+    int total = 0;
+    for (final group in kVenueGroups) {
+      for (final v in venuesForGroup(group)) {
+        total += clearedCount(group: group, kingdomName: v.name);
+      }
+    }
+    return total;
+  }
+
+  /// Titles held across every circuit — one per fully conquered kingdom.
+  int totalTitlesEarned() {
+    int total = 0;
+    for (final group in kVenueGroups) {
+      total += titlesEarned(group);
+    }
+    return total;
+  }
+
   static String _slug(String raw) {
     final lower = raw.trim().toLowerCase();
     final replaced = lower.replaceAll(RegExp(r'[^a-z0-9]+'), '_');

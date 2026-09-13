@@ -4,7 +4,13 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:ten_of_a_kind_poker/config/sub_kingdoms.dart'
+    show totalKingdomCount, totalSubKingdomCount;
+import 'package:ten_of_a_kind_poker/config/venues.dart' show kVenueGroups;
+import 'package:ten_of_a_kind_poker/core/aup.dart' as aup;
 import 'package:ten_of_a_kind_poker/services/auth_service.dart';
+import 'package:ten_of_a_kind_poker/services/aura_points_service.dart';
+import 'package:ten_of_a_kind_poker/services/campaign_progress_service.dart';
 import 'package:ten_of_a_kind_poker/services/x_music_service.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/auth_screen.dart';
 import 'package:ten_of_a_kind_poker/features/venue/game_mode.dart';
@@ -122,15 +128,10 @@ class _GameModeScreenState extends State<GameModeScreen> {
                       SizedBox(height: compact ? 6 : 10),
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 860),
-                        child: Text(
-                          'Quick Game throws you straight into a single table. '
-                          'Career keeps the kingdom ladder, fort clears, and title match progression.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.72),
-                            fontSize: compact ? 11.8 : 13.8,
-                            fontWeight: FontWeight.w700,
-                            height: 1.25,
+                        child: _ConquestChallenge(
+                          compact: compact,
+                          onTap: () => unawaited(
+                            _openMode(context, VenueEntryMode.career),
                           ),
                         ),
                       ),
@@ -176,6 +177,294 @@ class _GameModeScreenState extends State<GameModeScreen> {
           },
         ),
       ),
+    );
+  }
+}
+
+/// The standing challenge on the home screen: take the whole map.
+///
+/// Every number here is read from the campaign tables rather than written
+/// into the copy, so adding a fort or a kingdom raises the bar on the home
+/// screen by itself and can never drift out of sync with the ladder.
+///
+/// Progress is optional on purpose. This screen is also rendered in
+/// isolation — deep links, widget tests, the local-guest path — where the
+/// campaign providers are not above it, and a missing provider should cost
+/// the progress bar, not the screen.
+class _ConquestChallenge extends StatelessWidget {
+  final bool compact;
+  final VoidCallback onTap;
+
+  const _ConquestChallenge({required this.compact, required this.onTap});
+
+  static CampaignProgressService? _progressOrNull(BuildContext context) {
+    try {
+      return context.watch<CampaignProgressService>();
+    } on ProviderNotFoundException {
+      return null;
+    }
+  }
+
+  static AuraPointsService? _auraOrNull(BuildContext context) {
+    try {
+      return context.watch<AuraPointsService>();
+    } on ProviderNotFoundException {
+      return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final int totalForts = totalSubKingdomCount();
+    final int totalKingdoms = totalKingdomCount();
+    final int totalCircuits = kVenueGroups.length;
+
+    final CampaignProgressService? progress = _progressOrNull(context);
+    final AuraPointsService? aura = _auraOrNull(context);
+
+    final int clearedForts = progress?.totalClearedCount() ?? 0;
+    final int titlesHeld = progress?.totalTitlesEarned() ?? 0;
+    final double fraction =
+        totalForts <= 0 ? 0.0 : (clearedForts / totalForts).clamp(0.0, 1.0);
+    final String? auraText = (aura != null && aura.isLoaded)
+        ? math
+            .max(
+              0.0,
+              math.min(aura.totalAura, aup.kAupMaxAuraTotal.toDouble()),
+            )
+            .toStringAsFixed(1)
+        : null;
+
+    // The banner is an invitation, not an order, and it should feel
+    // different once someone is actually on the road: an open map at the
+    // start, a tally of ground covered in the middle, a proper send-off at
+    // the end.
+    final int remaining = totalForts - clearedForts;
+    final String headline;
+    final String subline;
+    if (clearedForts <= 0) {
+      headline = 'THE ROAD TO ALL $totalForts FORTS';
+      subline = compact
+          ? '$totalKingdoms kingdoms · $totalCircuits circuits · '
+              '$totalKingdoms titles · ${aup.kAupMaxAuraTotal} Aura'
+          : '$totalKingdoms kingdoms across $totalCircuits circuits, all of '
+              'them open to you. Take a fort, win its main event, lift the '
+              "kingdom's title — and keep climbing toward "
+              '${aup.kAupMaxAuraTotal} Aura.';
+    } else if (remaining > 0) {
+      headline = '$clearedForts OF $totalForts FORTS BEHIND YOU';
+      subline = compact
+          ? '$remaining to go · $totalKingdoms titles · '
+              '${aup.kAupMaxAuraTotal} Aura'
+          : '$remaining still out there across $totalCircuits circuits. '
+              'Finish a kingdom and its title is yours, and every title '
+              'carries your Aura higher.';
+    } else {
+      headline = 'EVERY FORT ON THE MAP IS YOURS';
+      subline = compact
+          ? 'All $totalForts cleared · $totalKingdoms kingdoms'
+          : 'All $totalForts of them, in all $totalKingdoms kingdoms across '
+              'every circuit. There is nothing left standing.';
+    }
+
+    final double shell = compact ? 38 : 46;
+    final BorderRadius radius = BorderRadius.circular(compact ? 16 : 20);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: radius,
+        onTap: onTap,
+        child: Ink(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [
+                AppColors.blue.withValues(alpha: 0.18),
+                AppColors.red.withValues(alpha: 0.12),
+              ],
+            ),
+            borderRadius: radius,
+            border: Border.all(
+              color: AppColors.blue.withValues(alpha: 0.45),
+              width: 1.4,
+            ),
+          ),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 14 : 18,
+              vertical: compact ? 10 : 14,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: shell,
+                  height: shell,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.black.withValues(alpha: 0.30),
+                    border: Border.all(
+                      color: AppColors.blue.withValues(alpha: 0.55),
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.public_rounded,
+                    color: AppColors.blue,
+                    size: compact ? 20 : 24,
+                  ),
+                ),
+                SizedBox(width: compact ? 12 : 16),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        headline,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: compact ? 15 : 18.5,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.4,
+                        ),
+                      ),
+                      SizedBox(height: compact ? 3 : 5),
+                      Text(
+                        subline,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.74),
+                          fontSize: compact ? 11 : 12.8,
+                          fontWeight: FontWeight.w700,
+                          height: 1.25,
+                        ),
+                      ),
+                      if (progress != null) ...[
+                        SizedBox(height: compact ? 7 : 10),
+                        _ConquestProgressBar(fraction: fraction),
+                        SizedBox(height: compact ? 6 : 8),
+                        Wrap(
+                          spacing: compact ? 12 : 16,
+                          runSpacing: 4,
+                          children: [
+                            _ChallengeStat(
+                              label: 'Forts',
+                              value: '$clearedForts / $totalForts',
+                              compact: compact,
+                            ),
+                            _ChallengeStat(
+                              label: 'Titles',
+                              value: '$titlesHeld / $totalKingdoms',
+                              compact: compact,
+                            ),
+                            if (auraText != null)
+                              _ChallengeStat(
+                                label: 'Aura',
+                                value:
+                                    '$auraText / ${aup.kAupMaxAuraTotal}',
+                                compact: compact,
+                              ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                SizedBox(width: compact ? 6 : 10),
+                Icon(
+                  Icons.arrow_forward_rounded,
+                  color: Colors.white.withValues(alpha: 0.55),
+                  size: compact ? 18 : 20,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Thin conquest meter: how much of the whole map is already taken.
+class _ConquestProgressBar extends StatelessWidget {
+  final double fraction;
+
+  const _ConquestProgressBar({required this.fraction});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999),
+      child: SizedBox(
+        height: 6,
+        width: double.infinity,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: ColoredBox(color: Colors.white.withValues(alpha: 0.12)),
+            ),
+            FractionallySizedBox(
+              widthFactor: fraction.clamp(0.0, 1.0),
+              heightFactor: 1,
+              child: const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.blue, AppColors.green],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ChallengeStat extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool compact;
+
+  const _ChallengeStat({
+    required this.label,
+    required this.value,
+    required this.compact,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final double size = compact ? 10.4 : 11.8;
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: '$label ',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.55),
+              fontSize: size,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
+            ),
+          ),
+          TextSpan(
+            text: value,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: size,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 }
