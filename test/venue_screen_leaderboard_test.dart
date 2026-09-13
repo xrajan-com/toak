@@ -58,7 +58,7 @@ void main() {
 
     expect(find.text('GLOBAL AURA'), findsNothing);
 
-    await tester.tap(find.text('Asia-Pacific'));
+    await tester.tap(find.text('Australasia'));
     await tester.pump();
 
     expect(find.text('GLOBAL AURA'), findsOneWidget);
@@ -85,7 +85,7 @@ void main() {
     );
     await tester.pump();
 
-    await tester.tap(find.text('Asia-Pacific'));
+    await tester.tap(find.text('Australasia'));
     await tester.pump();
     expect(find.text('GLOBAL AURA'), findsOneWidget);
 
@@ -96,7 +96,7 @@ void main() {
     expect(find.text('GLOBAL AURA'), findsNothing);
   });
 
-  testWidgets('Europe and World Frontiers Aura headings use black strips',
+  testWidgets('Eurasia and Rest of the World Aura headings use black strips',
       (tester) async {
     await binding.setSurfaceSize(const Size(1200, 900));
     addTearDown(() => binding.setSurfaceSize(null));
@@ -108,7 +108,7 @@ void main() {
     );
     await tester.pump();
 
-    for (final circuit in <String>['Europe', 'World Frontiers']) {
+    for (final circuit in <String>['Eurasia', 'Rest of the World']) {
       await tester.tap(find.text(circuit));
       await tester.pump();
 

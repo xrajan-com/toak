@@ -17,7 +17,7 @@ void main() {
       await wallet.init();
 
       final reserved = await wallet.reserveCampaignEntry(
-        group: VenueGroup.international,
+        group: VenueGroup.euro,
         kingdomName: 'Central Asia',
         isMainEvent: false,
         subKingdomIndex: 10,
@@ -30,7 +30,7 @@ void main() {
       expect(wallet.activeCommittedEntries, hasLength(1));
 
       final settlement = wallet.finalizeCampaignAbandon(
-        group: VenueGroup.international,
+        group: VenueGroup.euro,
         kingdomName: 'Central Asia',
         isMainEvent: false,
         subKingdomIndex: 10,

@@ -15,12 +15,11 @@ const Map<VenueGroup, Map<String, String>> kKingdomAbouts = {
     'Travancore': 'Coastal Poise, Ruthless Pots',
   },
   VenueGroup.international: <String, String>{
-    'Australia': 'Outback Forts, Harbour Nerves',
     'North Africa': 'Desert Citadels, Old Power',
+    'Pacific': 'Ocean Posts, Brave Calls',
     'Sub-Saharan Africa': 'Coastal Forts, Iron Nerves',
     'Arabia': 'Desert Honor, Dagger Bluffs',
     'Persia & Mesopotamia': 'Shah Walls, Desert Reads',
-    'Central Asia': 'Steppe Steel, Cold Pressure',
     'Indian Ocean Isles': 'Monsoon Forts, Calm Value',
     'Atlantic Isles': 'Ocean Keeps, Hard Lines',
     'French & Dutch Isles': 'Merchant Forts, Island Edge',
@@ -28,6 +27,7 @@ const Map<VenueGroup, Map<String, String>> kKingdomAbouts = {
   },
   VenueGroup.euro: <String, String>{
     'Britain & Ireland': 'Crown Walls, Iron Calls',
+    'Central Asia': 'Steppe Steel, Cold Pressure',
     'France': 'Chateau Grace, River Bite',
     'Italy': 'Rocca Nerves, Clean Value',
     'Iberia': 'Alcazar Pride, Atlantic Steel',
@@ -39,6 +39,7 @@ const Map<VenueGroup, Map<String, String>> kKingdomAbouts = {
     'Russia & Siberia': 'Winter Forts, Iron Lines',
   },
   VenueGroup.oceania: <String, String>{
+    'Australia': 'Outback Forts, Harbour Nerves',
     'China': 'Dragon Order, Impeccable Lines',
     'Japan': 'Castle Calm, Samurai Value',
     'Korea': 'Mountain Walls, Disciplined Play',
@@ -48,7 +49,6 @@ const Map<VenueGroup, Map<String, String>> kKingdomAbouts = {
     'Philippines': 'Island Forts, Bold Play',
     'Straits': 'Trade Lanes, Tight Reads',
     'Indonesia': 'Spice Forts, Merchant Edge',
-    'Pacific': 'Ocean Posts, Brave Calls',
   },
   VenueGroup.northAmerica: <String, String>{
     'Canada': 'Northern Forts, Steady Nerves',
@@ -69,18 +69,22 @@ String _canonicalKingdomName(VenueGroup group, String kingdomName) {
   if (t.isEmpty) return t;
 
   final lower = t.toLowerCase();
+  if (group == VenueGroup.oceania) {
+    // Australia sits in Australasia now; legacy spellings from the old
+    // World Frontiers circuit still have to resolve to it.
+    if (lower == 'america' ||
+        lower == 'north america' ||
+        lower == 'n america' ||
+        lower == 'n. america') {
+      return 'Australia';
+    }
+  }
   if (group == VenueGroup.international) {
     if (lower == 'amazon' ||
         lower == 'south america' ||
         lower == 's america' ||
         lower == 's. america') {
       return 'S. America';
-    }
-    if (lower == 'america' ||
-        lower == 'north america' ||
-        lower == 'n america' ||
-        lower == 'n. america') {
-      return 'Australia';
     }
     if (lower == 'far east' || lower == 'east asia') return 'Far East';
     if (lower == 'asia rest' ||

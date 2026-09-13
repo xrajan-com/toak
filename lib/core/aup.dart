@@ -48,13 +48,17 @@ const Map<VenueGroup, Map<String, int>> _kQuickGameEntryFees =
     'North Africa': 3000,
     'Sub-Saharan Africa': 3000,
     'Arabia': 3000,
-    'Australia': 3000,
     'Persia & Mesopotamia': 3000,
-    'Central Asia': 4000,
     'Indian Ocean Isles': 3000,
     'Atlantic Isles': 3000,
     'French & Dutch Isles': 3000,
     'Arctic': 3000,
+  },
+  VenueGroup.euro: <String, int>{
+    'Central Asia': 4000,
+  },
+  VenueGroup.oceania: <String, int>{
+    'Australia': 3000,
   },
 };
 
@@ -73,12 +77,11 @@ const Map<VenueGroup, Map<String, int>> _kKingdomPopularityWeights =
     'Sikkim': 96,
   },
   VenueGroup.international: <String, int>{
-    'Australia': 150,
     'North Africa': 142,
+    'Pacific': 100,
     'Sub-Saharan Africa': 136,
     'Arabia': 130,
     'Persia & Mesopotamia': 124,
-    'Central Asia': 118,
     'Indian Ocean Isles': 112,
     'Atlantic Isles': 108,
     'French & Dutch Isles': 104,
@@ -86,6 +89,7 @@ const Map<VenueGroup, Map<String, int>> _kKingdomPopularityWeights =
   },
   VenueGroup.euro: <String, int>{
     'Britain & Ireland': 150,
+    'Central Asia': 118,
     'France': 142,
     'Italy': 136,
     'Iberia': 132,
@@ -97,6 +101,7 @@ const Map<VenueGroup, Map<String, int>> _kKingdomPopularityWeights =
     'Baltic Marches': 104,
   },
   VenueGroup.oceania: <String, int>{
+    'Australia': 150,
     'China': 150,
     'Japan': 142,
     'Korea': 136,
@@ -106,7 +111,6 @@ const Map<VenueGroup, Map<String, int>> _kKingdomPopularityWeights =
     'Philippines': 118,
     'Straits': 112,
     'Indonesia': 106,
-    'Pacific': 100,
   },
   VenueGroup.northAmerica: <String, int>{
     'Canada': 150,

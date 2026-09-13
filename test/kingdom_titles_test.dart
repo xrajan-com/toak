@@ -5,20 +5,20 @@ import 'package:ten_of_a_kind_poker/config/venues.dart';
 void main() {
   test('venue circuits are ordered by visible label', () {
     expect(kVenueGroups, const <VenueGroup>[
-      VenueGroup.euro,
-      VenueGroup.northAmerica,
-      VenueGroup.oceania,
-      VenueGroup.international,
       VenueGroup.india,
+      VenueGroup.euro,
+      VenueGroup.oceania,
+      VenueGroup.northAmerica,
+      VenueGroup.international,
     ]);
     expect(
       kVenueGroups.map(venueGroupLabel),
       <String>[
-        'Europe',
-        'Americas',
-        'Asia-Pacific',
-        'World Frontiers',
         'Indian Ocean',
+        'Eurasia',
+        'Australasia',
+        'Americas',
+        'Rest of the World',
       ],
     );
   });
@@ -37,15 +37,14 @@ void main() {
       'Travancore': 'Thala',
     };
     const expectedInternationalTitles = <String, String>{
-      'Australia': 'Premier',
       'North Africa': 'Pasha',
       'Sub-Saharan Africa': 'Mansa',
       'Arabia': 'Sheikh',
       'Persia & Mesopotamia': 'Shah',
-      'Central Asia': 'Emir',
       'Indian Ocean Isles': 'Admiral',
       'Atlantic Isles': 'Warden',
       'French & Dutch Isles': 'Burgher',
+      'Pacific': 'Tui',
       'Arctic': 'Chieftain',
     };
     const expectedEuroTitles = <String, String>{
@@ -59,6 +58,7 @@ void main() {
       'Balkans & Mediterranean': 'Strategos',
       'Baltic Marches': 'Hetman',
       'Russia & Siberia': 'Ataman',
+      'Central Asia': 'Emir',
     };
     const expectedOceaniaTitles = <String, String>{
       'China': 'Jiangjun',
@@ -70,7 +70,7 @@ void main() {
       'Philippines': 'Datu',
       'Straits': 'Laksamana',
       'Indonesia': 'Sultan',
-      'Pacific': 'Tui',
+      'Australia': 'Premier',
     };
     const expectedNorthAmericaTitles = <String, String>{
       'Canada': 'Mountie',
@@ -96,7 +96,7 @@ void main() {
     );
   });
 
-  test('euro, oceania, and US circuit venues use their own flag assets', () {
+  test('Eurasia, Australasia and US circuit venues keep their own flags', () {
     const expectedEuroFlags = <String, String>{
       'Britain & Ireland': 'assets/images/flags/euro/britain.png',
       'France': 'assets/images/flags/euro/france.png',
@@ -108,6 +108,7 @@ void main() {
       'Balkans & Mediterranean': 'assets/images/flags/euro/mediterranean.png',
       'Baltic Marches': 'assets/images/flags/euro/baltic_marches.png',
       'Russia & Siberia': 'assets/images/flags/euro/russia_siberia.png',
+      'Central Asia': 'assets/images/flags/russia.png',
     };
     const expectedOceaniaFlags = <String, String>{
       'China': 'assets/images/flags/china.png',
@@ -119,7 +120,7 @@ void main() {
       'Philippines': 'assets/images/flags/oceania/american_isles.png',
       'Straits': 'assets/images/flags/oceania/straits.png',
       'Indonesia': 'assets/images/flags/oceania/straits.png',
-      'Pacific': 'assets/images/flags/oceania/pacific.png',
+      'Australia': 'assets/images/flags/australia.png',
     };
     const expectedNorthAmericaFlags = <String, String>{
       'Canada': 'assets/images/flags/us/canada.png',

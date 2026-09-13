@@ -98,14 +98,14 @@ void main() {
   test('rapid duplicate entry requests permit only one reservation', () async {
     final wallet = AuraPointsService();
     final first = wallet.reserveCampaignEntry(
-      group: VenueGroup.international,
+      group: VenueGroup.euro,
       kingdomName: 'Central Asia',
       isMainEvent: false,
       subKingdomIndex: 10,
       expectedEntryFee: 0,
     );
     final duplicate = await wallet.reserveCampaignEntry(
-      group: VenueGroup.international,
+      group: VenueGroup.euro,
       kingdomName: 'Central Asia',
       isMainEvent: false,
       subKingdomIndex: 10,
@@ -120,7 +120,7 @@ void main() {
     final wallet = AuraPointsService();
     const reward = 12000;
     await wallet.awardForCampaignWin(
-      group: VenueGroup.international,
+      group: VenueGroup.euro,
       kingdomName: 'Central Asia',
       isMainEvent: false,
       subKingdomIndex: 10,
@@ -133,7 +133,7 @@ void main() {
     );
 
     expect(paid, isFalse);
-    expect(wallet.internationalAup, reward);
+    expect(wallet.euroAup, reward);
     expect(wallet.indiaAup, 0);
   });
 
@@ -141,7 +141,7 @@ void main() {
     final wallet = AuraPointsService();
     const balance = 12000;
     await wallet.awardForCampaignWin(
-      group: VenueGroup.international,
+      group: VenueGroup.euro,
       kingdomName: 'Central Asia',
       isMainEvent: false,
       subKingdomIndex: 10,
@@ -150,12 +150,12 @@ void main() {
 
     expect(
       await wallet.payEntryFee(
-        group: VenueGroup.international,
+        group: VenueGroup.euro,
         amount: balance,
       ),
       isTrue,
     );
-    expect(wallet.internationalAup, 0);
+    expect(wallet.euroAup, 0);
   });
 
   test('a registered win waits for wallet hydration before applying', () async {
@@ -166,7 +166,7 @@ void main() {
 
     final creditFuture = () async {
       final reserved = await wallet.reserveCampaignEntry(
-        group: VenueGroup.international,
+        group: VenueGroup.euro,
         kingdomName: 'Central Asia',
         isMainEvent: false,
         subKingdomIndex: 10,
@@ -176,19 +176,19 @@ void main() {
       final committed = await wallet.commitEntry(reserved.reservation!);
       expect(committed.canEnter, isTrue);
       return wallet.awardForCampaignWin(
-        group: VenueGroup.international,
+        group: VenueGroup.euro,
         kingdomName: 'Central Asia',
         isMainEvent: false,
         subKingdomIndex: 10,
-        rewardAup: _centralAsiaFreeFortFirstPrize(),
+        rewardAup: _eurasiaFreeFortFirstPrize(),
       );
     }();
     await Future<void>.delayed(Duration.zero);
     economyApi.completeWalletHydration();
 
-    expect(await creditFuture, _centralAsiaFreeFortFirstPrize());
+    expect(await creditFuture, _eurasiaFreeFortFirstPrize());
     await Future<void>.delayed(Duration.zero);
-    expect(wallet.internationalAup, _centralAsiaFreeFortFirstPrize());
+    expect(wallet.euroAup, _eurasiaFreeFortFirstPrize());
   });
 
   test('a timed-out server win reconciles before a paid fort is reserved',
@@ -199,7 +199,7 @@ void main() {
     await _waitUntil(() => wallet.isReady);
 
     final freeEntry = await wallet.reserveCampaignEntry(
-      group: VenueGroup.international,
+      group: VenueGroup.euro,
       kingdomName: 'Central Asia',
       isMainEvent: false,
       subKingdomIndex: 10,
@@ -213,43 +213,43 @@ void main() {
 
     economyApi.online = false;
     final credited = await wallet.awardForCampaignWin(
-      group: VenueGroup.international,
+      group: VenueGroup.euro,
       kingdomName: 'Central Asia',
       isMainEvent: false,
       subKingdomIndex: 10,
-      rewardAup: _centralAsiaFreeFortFirstPrize(),
+      rewardAup: _eurasiaFreeFortFirstPrize(),
     );
 
-    expect(credited, _centralAsiaFreeFortFirstPrize());
+    expect(credited, _eurasiaFreeFortFirstPrize());
     expect(
-      wallet.internationalAup,
-      _RecoveringEconomyApi.initialInternationalAup +
-          _centralAsiaFreeFortFirstPrize(),
+      wallet.euroAup,
+      _RecoveringEconomyApi.initialCircuitAup +
+          _eurasiaFreeFortFirstPrize(),
     );
     final offlinePaid = await wallet.reserveCampaignEntry(
-      group: VenueGroup.international,
+      group: VenueGroup.euro,
       kingdomName: 'Central Asia',
       isMainEvent: false,
       subKingdomIndex: 3,
-      expectedEntryFee: _centralAsiaNextFortEntryFee(),
+      expectedEntryFee: _eurasiaNextFortEntryFee(),
     );
     expect(offlinePaid.status, EntryPaymentStatus.serviceUnavailable);
 
     economyApi.online = true;
     final paidEntry = await wallet.reserveCampaignEntry(
-      group: VenueGroup.international,
+      group: VenueGroup.euro,
       kingdomName: 'Central Asia',
       isMainEvent: false,
       subKingdomIndex: 3,
-      expectedEntryFee: _centralAsiaNextFortEntryFee(),
+      expectedEntryFee: _eurasiaNextFortEntryFee(),
     );
     expect(paidEntry.status, EntryPaymentStatus.reserved);
-    expect(paidEntry.reservation?.amount, _centralAsiaNextFortEntryFee());
-    final expectedBalance = _RecoveringEconomyApi.initialInternationalAup +
-        _centralAsiaFreeFortFirstPrize() -
-        _centralAsiaNextFortEntryFee();
-    expect(wallet.internationalAup, expectedBalance);
-    expect(economyApi.progress.internationalAup, expectedBalance);
+    expect(paidEntry.reservation?.amount, _eurasiaNextFortEntryFee());
+    final expectedBalance = _RecoveringEconomyApi.initialCircuitAup +
+        _eurasiaFreeFortFirstPrize() -
+        _eurasiaNextFortEntryFee();
+    expect(wallet.euroAup, expectedBalance);
+    expect(economyApi.progress.euroAup, expectedBalance);
   });
 
   test(
@@ -265,23 +265,23 @@ void main() {
     final reservation = await _reserveAndCommitCentralAsiaFreeFort(wallet);
     economyApi.online = false;
     final settlement = await wallet.finalizeCampaignResult(
-      group: VenueGroup.international,
+      group: VenueGroup.euro,
       kingdomName: 'Central Asia',
       isMainEvent: false,
       subKingdomIndex: 10,
       entryAttemptId: reservation.attemptId,
       finishRank: 1,
       totalPlayers: 10,
-      payoutAup: _centralAsiaFreeFortFirstPrize(),
+      payoutAup: _eurasiaFreeFortFirstPrize(),
     );
 
     expect(settlement.status, CampaignSettlementStatus.queued);
     expect(settlement.creditedAup, 0);
     expect(
-        wallet.internationalAup, _RecoveringEconomyApi.initialInternationalAup);
+        wallet.euroAup, _RecoveringEconomyApi.initialCircuitAup);
     expect(
       progress.isCleared(
-        group: VenueGroup.international,
+        group: VenueGroup.euro,
         kingdomName: 'Central Asia',
         subKingdomIndex: 10,
       ),
@@ -293,24 +293,24 @@ void main() {
     expect(await progress.refreshFromAuthority(), isTrue);
     expect(
       progress.isCleared(
-        group: VenueGroup.international,
+        group: VenueGroup.euro,
         kingdomName: 'Central Asia',
         subKingdomIndex: 10,
       ),
       isTrue,
     );
     expect(
-      wallet.internationalAup,
-      _RecoveringEconomyApi.initialInternationalAup +
-          _centralAsiaFreeFortFirstPrize(),
+      wallet.euroAup,
+      _RecoveringEconomyApi.initialCircuitAup +
+          _eurasiaFreeFortFirstPrize(),
     );
 
     final next = await wallet.reserveCampaignEntry(
-      group: VenueGroup.international,
+      group: VenueGroup.euro,
       kingdomName: 'Central Asia',
       isMainEvent: false,
       subKingdomIndex: 3,
-      expectedEntryFee: _centralAsiaNextFortEntryFee(),
+      expectedEntryFee: _eurasiaNextFortEntryFee(),
     );
     expect(next.status, EntryPaymentStatus.reserved);
   });
@@ -327,21 +327,21 @@ void main() {
     final reservation = await _reserveAndCommitCentralAsiaFreeFort(wallet);
     economyApi.rejectCampaignResults = true;
     final settlement = await wallet.finalizeCampaignResult(
-      group: VenueGroup.international,
+      group: VenueGroup.euro,
       kingdomName: 'Central Asia',
       isMainEvent: false,
       subKingdomIndex: 10,
       entryAttemptId: reservation.attemptId,
       finishRank: 1,
       totalPlayers: 10,
-      payoutAup: _centralAsiaFreeFortFirstPrize(),
+      payoutAup: _eurasiaFreeFortFirstPrize(),
     );
 
     expect(settlement.status, CampaignSettlementStatus.rejected);
     expect(settlement.clearConfirmed, isFalse);
     expect(
       progress.isCleared(
-        group: VenueGroup.international,
+        group: VenueGroup.euro,
         kingdomName: 'Central Asia',
         subKingdomIndex: 10,
       ),
@@ -352,7 +352,7 @@ void main() {
   test('accepted result at wallet cap still confirms the campaign clear',
       () async {
     final economyApi = _RecoveringEconomyApi(
-      internationalAup: aup.kAupPerCircuit,
+      euroAup: aup.kAupPerCircuit,
     );
     final wallet = AuraPointsService(economyApi: economyApi);
     final progress = CampaignProgressService(economyApi: economyApi);
@@ -362,14 +362,14 @@ void main() {
 
     final reservation = await _reserveAndCommitCentralAsiaFreeFort(wallet);
     final settlement = await wallet.finalizeCampaignResult(
-      group: VenueGroup.international,
+      group: VenueGroup.euro,
       kingdomName: 'Central Asia',
       isMainEvent: false,
       subKingdomIndex: 10,
       entryAttemptId: reservation.attemptId,
       finishRank: 1,
       totalPlayers: 10,
-      payoutAup: _centralAsiaFreeFortFirstPrize(),
+      payoutAup: _eurasiaFreeFortFirstPrize(),
     );
     expect(settlement.status, CampaignSettlementStatus.accepted);
     expect(settlement.creditedAup, 0);
@@ -377,7 +377,7 @@ void main() {
     await progress.applyAuthoritativeSnapshot(settlement.progress!);
     expect(
       progress.isCleared(
-        group: VenueGroup.international,
+        group: VenueGroup.euro,
         kingdomName: 'Central Asia',
         subKingdomIndex: 10,
       ),
@@ -390,7 +390,7 @@ Future<EntryReservation> _reserveAndCommitCentralAsiaFreeFort(
   AuraPointsService wallet,
 ) async {
   final reserved = await wallet.reserveCampaignEntry(
-    group: VenueGroup.international,
+    group: VenueGroup.euro,
     kingdomName: 'Central Asia',
     isMainEvent: false,
     subKingdomIndex: 10,
@@ -402,9 +402,9 @@ Future<EntryReservation> _reserveAndCommitCentralAsiaFreeFort(
   return committed.reservation!;
 }
 
-int _centralAsiaFreeFortFirstPrize() {
+int _eurasiaFreeFortFirstPrize() {
   final pool = aup.aupForSubKingdomEvent(
-    group: VenueGroup.international,
+    group: VenueGroup.euro,
     kingdomName: 'Central Asia',
     subKingdomIndex: 10,
   );
@@ -412,8 +412,8 @@ int _centralAsiaFreeFortFirstPrize() {
       .pays(1);
 }
 
-int _centralAsiaNextFortEntryFee() => aup.entryFeeForSubKingdomEvent(
-      group: VenueGroup.international,
+int _eurasiaNextFortEntryFee() => aup.entryFeeForSubKingdomEvent(
+      group: VenueGroup.euro,
       kingdomName: 'Central Asia',
       subKingdomIndex: 3,
     );
@@ -562,8 +562,8 @@ class _DelayedWalletEconomyApi extends EconomyApiService {
     final reservation = EntryReservationSnapshot(
       attemptId: attemptId,
       campaignId: campaignId,
-      group: VenueGroup.international,
-      amount: campaignId.endsWith(':10') ? 0 : _centralAsiaNextFortEntryFee(),
+      group: VenueGroup.euro,
+      amount: campaignId.endsWith(':10') ? 0 : _eurasiaNextFortEntryFee(),
       status: 'reserved',
     );
     _entries[attemptId] = reservation;
@@ -644,7 +644,7 @@ class _DelayedWalletEconomyApi extends EconomyApiService {
 }
 
 class _RecoveringEconomyApi extends EconomyApiService {
-  static const int initialInternationalAup = 2500;
+  static const int initialCircuitAup = 2500;
 
   bool online = true;
   bool rejectCampaignResults = false;
@@ -654,12 +654,12 @@ class _RecoveringEconomyApi extends EconomyApiService {
   late EconomyProgressSnapshot progress;
 
   _RecoveringEconomyApi({
-    int internationalAup = initialInternationalAup,
+    int euroAup = initialCircuitAup,
   }) {
     progress = EconomyProgressSnapshot(
       indiaAup: 2500,
-      internationalAup: internationalAup,
-      euroAup: 2500,
+      internationalAup: 2500,
+      euroAup: euroAup,
       oceaniaAup: 2500,
       awardedEventIds: const <String>[],
       lastActiveAtMs: 0,
@@ -704,8 +704,8 @@ class _RecoveringEconomyApi extends EconomyApiService {
       );
     }
     final amount =
-        campaignId.endsWith(':10') ? 0 : _centralAsiaNextFortEntryFee();
-    final balance = progress.internationalAup;
+        campaignId.endsWith(':10') ? 0 : _eurasiaNextFortEntryFee();
+    final balance = progress.euroAup;
     if (balance < amount) {
       return EconomyOperationResult(
         status: EconomyOperationStatus.insufficientFunds,
@@ -716,13 +716,13 @@ class _RecoveringEconomyApi extends EconomyApiService {
     if (amount > 0) {
       progress = _copyProgress(
         progress,
-        internationalAup: balance - amount,
+        euroAup: balance - amount,
       );
     }
     final reservation = EntryReservationSnapshot(
       attemptId: attemptId,
       campaignId: campaignId,
-      group: VenueGroup.international,
+      group: VenueGroup.euro,
       amount: amount,
       status: 'reserved',
     );

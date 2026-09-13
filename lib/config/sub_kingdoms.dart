@@ -125,20 +125,6 @@ const Map<VenueGroup, Map<String, List<String>>> kSubKingdomNames = {
     ],
   },
   VenueGroup.international: <String, List<String>>{
-    'Australia': [
-      'Bare Island Fort',
-      'Fort Denison',
-      'Fort Glanville',
-      'Fort Largs',
-      'Fort Lytton',
-      'Fort Nepean',
-      'Fort Pearce',
-      'Fort Queenscliff',
-      'Fort Scratchley',
-      'Fort Wellington',
-      'North Head Fort',
-      'Rottnest Island Battery',
-    ],
     'North Africa': [
       'Cairo Citadel (Egypt)',
       'Apollonia Fortress (Libya)',
@@ -149,6 +135,20 @@ const Map<VenueGroup, Map<String, List<String>>> kSubKingdomNames = {
       'Borj Nord (Morocco)',
       'Kasbah of Algiers (Algeria)',
       'Fort Santa Cruz (Algeria)',
+    ],
+    'Pacific': [
+      'Fort Apugan (Guam)',
+      'Fort Santa Agueda (Guam)',
+      'Fort Nuestra Señora de la Soledad (Guam)',
+      'Peleliu Fortifications (Palau)',
+      'Espiritu Santo WWII Base (Vanuatu)',
+      'Tavuni Hill Fort (Fiji)',
+      'Arai-Te-Tonga (Cook Islands)',
+      'Fort Ballance (New Zealand)',
+      'Fort Jervois (New Zealand)',
+      'Fort Takapuna (New Zealand)',
+      'North Head Historic Reserve (New Zealand)',
+      'Fort Teremba (New Caledonia)',
     ],
     'Sub-Saharan Africa': [
       'Castle of Good Hope (South Africa)',
@@ -182,19 +182,6 @@ const Map<VenueGroup, Map<String, List<String>>> kSubKingdomNames = {
       'Rayen Castle (Iran)',
       'Shush Castle (Iran)',
       'Citadel of Damascus (Syria)',
-    ],
-    'Central Asia': [
-      'Ark of Bukhara (Uzbekistan)',
-      'Ayaz Kala (Uzbekistan)',
-      'Gissar Fortress (Tajikistan)',
-      'Hulbuk Fortress (Tajikistan)',
-      'Itchan Kala (Uzbekistan)',
-      'Kunya-Ark Citadel (Uzbekistan)',
-      'Merv Fortifications (Turkmenistan)',
-      'Nisa Fortress (Turkmenistan)',
-      'Otrar Fortress (Kazakhstan)',
-      'Sauran Fortress (Kazakhstan)',
-      'Toprak Kala (Uzbekistan)',
     ],
     'Indian Ocean Isles': [
       'Addu Atoll British Loyalty Remains (Maldives)',
@@ -246,6 +233,19 @@ const Map<VenueGroup, Map<String, List<String>>> kSubKingdomNames = {
       'Stirling Castle (Scotland)',
       'Tower of London (England)',
       'Windsor Castle (England)',
+    ],
+    'Central Asia': [
+      'Ark of Bukhara (Uzbekistan)',
+      'Ayaz Kala (Uzbekistan)',
+      'Gissar Fortress (Tajikistan)',
+      'Hulbuk Fortress (Tajikistan)',
+      'Itchan Kala (Uzbekistan)',
+      'Kunya-Ark Citadel (Uzbekistan)',
+      'Merv Fortifications (Turkmenistan)',
+      'Nisa Fortress (Turkmenistan)',
+      'Otrar Fortress (Kazakhstan)',
+      'Sauran Fortress (Kazakhstan)',
+      'Toprak Kala (Uzbekistan)',
     ],
     'France': [
       'Carcassonne Citadel',
@@ -350,6 +350,20 @@ const Map<VenueGroup, Map<String, List<String>>> kSubKingdomNames = {
     ],
   },
   VenueGroup.oceania: <String, List<String>>{
+    'Australia': [
+      'Bare Island Fort',
+      'Fort Denison',
+      'Fort Glanville',
+      'Fort Largs',
+      'Fort Lytton',
+      'Fort Nepean',
+      'Fort Pearce',
+      'Fort Queenscliff',
+      'Fort Scratchley',
+      'Fort Wellington',
+      'North Head Fort',
+      'Rottnest Island Battery',
+    ],
     'China': [
       'Dapeng Fortress',
       'Jiayu Pass Fortress',
@@ -455,20 +469,6 @@ const Map<VenueGroup, Map<String, List<String>>> kSubKingdomNames = {
       'Fort Duurstede',
       'Fort Vredeburg',
       'Fort Speelwijk',
-    ],
-    'Pacific': [
-      'Fort Apugan (Guam)',
-      'Fort Santa Agueda (Guam)',
-      'Fort Nuestra Señora de la Soledad (Guam)',
-      'Peleliu Fortifications (Palau)',
-      'Espiritu Santo WWII Base (Vanuatu)',
-      'Tavuni Hill Fort (Fiji)',
-      'Arai-Te-Tonga (Cook Islands)',
-      'Fort Ballance (New Zealand)',
-      'Fort Jervois (New Zealand)',
-      'Fort Takapuna (New Zealand)',
-      'North Head Historic Reserve (New Zealand)',
-      'Fort Teremba (New Caledonia)',
     ],
   },
   VenueGroup.northAmerica: <String, List<String>>{
@@ -835,18 +835,6 @@ const Map<VenueGroup, Map<String, List<String>>> kSubKingdomAboutThemes = {
       'Crescent moon, cruel jams',
       'Sunrise bluffs, sunset value',
     ],
-    'Australia': [
-      'Outback laughs, overbets',
-      'Ocean chill, savage river',
-      'Sunburnt bluffs, big pots',
-      'No worries, no punts',
-      'Wildlife stare, snap shove',
-      'Larrikin grin, mean value',
-      'Coral coast, cold squeezes',
-      'Desert heat, clean KOs',
-      'Boomerang bluffs return',
-      'No worries, brutal value',
-    ],
     'China': [
       'Dragon discipline, river doom',
       'Silk smooth, sudden shove',
@@ -930,6 +918,20 @@ const Map<VenueGroup, Map<String, List<String>>> kSubKingdomAboutThemes = {
       'Zen calm, savage edge',
     ],
   },
+  VenueGroup.oceania: <String, List<String>>{
+    'Australia': [
+      'Outback laughs, overbets',
+      'Ocean chill, savage river',
+      'Sunburnt bluffs, big pots',
+      'No worries, no punts',
+      'Wildlife stare, snap shove',
+      'Larrikin grin, mean value',
+      'Coral coast, cold squeezes',
+      'Desert heat, clean KOs',
+      'Boomerang bluffs return',
+      'No worries, brutal value',
+    ],
+  },
 };
 
 final Map<VenueGroup, Map<String, List<int>>> _subKingdomPrizeOrderCache =
@@ -1008,18 +1010,22 @@ String _canonicalKingdomName(VenueGroup group, String kingdomName) {
   if (t.isEmpty) return t;
 
   final lower = t.toLowerCase();
+  if (group == VenueGroup.oceania) {
+    // Australia sits in Australasia now; legacy spellings from the old
+    // World Frontiers circuit still have to resolve to it.
+    if (lower == 'america' ||
+        lower == 'north america' ||
+        lower == 'n america' ||
+        lower == 'n. america') {
+      return 'Australia';
+    }
+  }
   if (group == VenueGroup.international) {
     if (lower == 'amazon' ||
         lower == 'south america' ||
         lower == 's america' ||
         lower == 's. america') {
       return 'S. America';
-    }
-    if (lower == 'america' ||
-        lower == 'north america' ||
-        lower == 'n america' ||
-        lower == 'n. america') {
-      return 'Australia';
     }
     if (lower == 'far east' || lower == 'east asia') return 'Far East';
     if (lower == 'asia rest' ||

@@ -13,8 +13,8 @@ void main() {
     expect(
       indexHtml,
       contains(
-        '<button class="venue-tab active" data-target="euro" '
-        'role="tab" aria-selected="true">Europe</button>',
+        '<button class="venue-tab" data-target="euro" '
+        'role="tab" aria-selected="false">Eurasia</button>',
       ),
     );
     expect(
@@ -28,26 +28,26 @@ void main() {
       indexHtml,
       contains(
         '<button class="venue-tab" data-target="oceania" '
-        'role="tab" aria-selected="false">Asia-Pacific</button>',
+        'role="tab" aria-selected="false">Australasia</button>',
       ),
     );
     expect(
       indexHtml,
       contains(
-        '<button class="venue-tab" data-target="india" '
-        'role="tab" aria-selected="false">Indian Ocean</button>',
+        '<button class="venue-tab active" data-target="india" '
+        'role="tab" aria-selected="true">Indian Ocean</button>',
       ),
     );
     expect(
       indexHtml,
       contains(
         '<button class="venue-tab" data-target="world" '
-        'role="tab" aria-selected="false">World Frontiers</button>',
+        'role="tab" aria-selected="false">Rest of the World</button>',
       ),
     );
     expect(
       indexHtml,
-      contains('<div class="venue-grid active" data-group="euro"'),
+      contains('<div class="venue-grid active" data-group="india"'),
     );
 
     final worldActive = RegExp(
@@ -101,7 +101,7 @@ void main() {
     expect(
         indexHtml,
         contains(
-            '<ol class="venue-leaderboard-menu" aria-label="Europe leaderboard">'));
+            '<ol class="venue-leaderboard-menu" aria-label="Eurasia leaderboard">'));
     expect(
         indexHtml,
         contains(
@@ -109,7 +109,7 @@ void main() {
     expect(
         indexHtml,
         contains(
-            '<ol class="venue-leaderboard-menu" aria-label="Asia-Pacific leaderboard">'));
+            '<ol class="venue-leaderboard-menu" aria-label="Australasia leaderboard">'));
     expect(
         indexHtml,
         contains(
@@ -117,7 +117,7 @@ void main() {
     expect(
         indexHtml,
         contains(
-            '<ol class="venue-leaderboard-menu" aria-label="World Frontiers leaderboard">'));
+            '<ol class="venue-leaderboard-menu" aria-label="Rest of the World leaderboard">'));
 
     final leaderboardHeadingRows = RegExp(
       r'<li class="venue-leaderboard-heading">Live Overall Leaderboard</li>',
@@ -125,7 +125,7 @@ void main() {
     expect(leaderboardHeadingRows, 5);
 
     final firstMenu = RegExp(
-      r'<ol class="venue-leaderboard-menu" aria-label="Europe leaderboard">([\s\S]*?)</ol>',
+      r'<ol class="venue-leaderboard-menu" aria-label="Eurasia leaderboard">([\s\S]*?)</ol>',
     ).firstMatch(indexHtml);
     expect(firstMenu, isNotNull);
     expect(RegExp(r'<li').allMatches(firstMenu!.group(1)!).length, 2);

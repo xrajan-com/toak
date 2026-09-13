@@ -206,14 +206,10 @@ String canonicalKingdomName({
 }) {
   final t = kingdomName.trim();
   if (t.isEmpty) return t;
-  if (group == VenueGroup.international) {
+  if (group == VenueGroup.oceania) {
+    // Australia sits in Australasia now; legacy spellings from the old
+    // World Frontiers circuit still have to resolve to it.
     final lower = t.toLowerCase();
-    if (lower == 'amazon' ||
-        lower == 'south america' ||
-        lower == 's america' ||
-        lower == 's. america') {
-      return 'S. America';
-    }
     if (lower == 'america' ||
         lower == 'usa' ||
         lower == 'u.s.a' ||
@@ -224,6 +220,15 @@ String canonicalKingdomName({
         lower == 'n america' ||
         lower == 'n. america') {
       return 'Australia';
+    }
+  }
+  if (group == VenueGroup.international) {
+    final lower = t.toLowerCase();
+    if (lower == 'amazon' ||
+        lower == 'south america' ||
+        lower == 's america' ||
+        lower == 's. america') {
+      return 'S. America';
     }
     if (lower == 'far east' || lower == 'east asia') return 'Far East';
     if (lower == 'asia rest' ||
@@ -507,7 +512,7 @@ bool _subEventsUseLethalBots({
 }) {
   // Special high-reward kingdoms: sub-kingdoms should feel the toughest.
   if (group == VenueGroup.india && kingdomName == 'Sikh Empire') return true;
-  if (group == VenueGroup.international && kingdomName == 'Australia') {
+  if (group == VenueGroup.oceania && kingdomName == 'Australia') {
     return true;
   }
   return false;

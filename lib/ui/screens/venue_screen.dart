@@ -665,23 +665,23 @@ class _VenueScreenState extends State<VenueScreen>
                     value: aup.formatAup(aupLeft),
                   ),
                   _MetricRow(
-                    label: 'Euro AUP',
+                    label: 'Eurasia AUP',
                     value: aup.formatAup(aura.euroAup),
                   ),
                   _MetricRow(
-                    label: 'India AUP',
+                    label: 'Indian Ocean AUP',
                     value: aup.formatAup(aura.indiaAup),
                   ),
                   _MetricRow(
-                    label: 'International AUP',
+                    label: 'Rest of the World AUP',
                     value: aup.formatAup(aura.internationalAup),
                   ),
                   _MetricRow(
-                    label: 'Micro AUP',
+                    label: 'Australasia AUP',
                     value: aup.formatAup(aura.oceaniaAup),
                   ),
                   _MetricRow(
-                    label: 'US Circuit AUP',
+                    label: 'Americas AUP',
                     value: aup.formatAup(aura.northAmericaAup),
                   ),
                   const SizedBox(height: 12),

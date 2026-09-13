@@ -11,16 +11,60 @@ void main() {
     SharedPreferences.setMockInitialValues(const <String, Object>{});
   });
 
-  test('the campaign is five circuits of ten kingdoms', () {
+  test('the campaign is five circuits of fifty kingdoms', () {
     expect(kVenueGroups.length, 5);
     expect(totalKingdomCount(), 50);
+
+    // The circuits are drawn by geography, not by a fixed quota, so the
+    // counts differ. They are pinned here because each circuit pays the
+    // same 20 Aura: a circuit that quietly gains or loses kingdoms changes
+    // what every fort in it is worth.
+    const expected = <VenueGroup, int>{
+      VenueGroup.india: 10,
+      VenueGroup.euro: 11,
+      VenueGroup.oceania: 10,
+      VenueGroup.northAmerica: 10,
+      VenueGroup.international: 9,
+    };
     for (final group in kVenueGroups) {
       expect(
         venuesForGroup(group).length,
-        10,
-        reason: 'every circuit should carry ten kingdoms ($group)',
+        expected[group],
+        reason: 'kingdom count changed for $group',
       );
     }
+  });
+
+  test('circuits are ordered and named as the world map reads', () {
+    expect(kVenueGroups, const <VenueGroup>[
+      VenueGroup.india,
+      VenueGroup.euro,
+      VenueGroup.oceania,
+      VenueGroup.northAmerica,
+      VenueGroup.international,
+    ]);
+    expect(kVenueGroups.map(venueGroupLabel), <String>[
+      'Indian Ocean',
+      'Eurasia',
+      'Australasia',
+      'Americas',
+      'Rest of the World',
+    ]);
+  });
+
+  test('every kingdom sits in exactly one circuit', () {
+    final seen = <String, VenueGroup>{};
+    for (final group in kVenueGroups) {
+      for (final venue in venuesForGroup(group)) {
+        expect(
+          seen.containsKey(venue.name),
+          isFalse,
+          reason: '${venue.name} is in both ${seen[venue.name]} and $group',
+        );
+        seen[venue.name] = group;
+      }
+    }
+    expect(seen.length, 50);
   });
 
   test('the campaign holds 500 forts', () {

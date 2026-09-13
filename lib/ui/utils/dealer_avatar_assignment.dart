@@ -40,12 +40,11 @@ const Map<VenueGroup, Map<String, DealerAvatarStyle>>
     'Travancore': DealerAvatarStyle.travancore,
   },
   VenueGroup.international: <String, DealerAvatarStyle>{
-    'Australia': DealerAvatarStyle.australia,
     'North Africa': DealerAvatarStyle.africa,
+    'Pacific': DealerAvatarStyle.australia,
     'Sub-Saharan Africa': DealerAvatarStyle.southAmerica,
     'Arabia': DealerAvatarStyle.arabia,
     'Persia & Mesopotamia': DealerAvatarStyle.india,
-    'Central Asia': DealerAvatarStyle.russia,
     'Indian Ocean Isles': DealerAvatarStyle.asia,
     'Atlantic Isles': DealerAvatarStyle.newDelhi,
     'French & Dutch Isles': DealerAvatarStyle.marathaEmpire,
@@ -53,6 +52,7 @@ const Map<VenueGroup, Map<String, DealerAvatarStyle>>
   },
   VenueGroup.euro: <String, DealerAvatarStyle>{
     'Britain & Ireland': DealerAvatarStyle.baroda,
+    'Central Asia': DealerAvatarStyle.russia,
     'France': DealerAvatarStyle.hyderabad,
     'Italy': DealerAvatarStyle.indore,
     'Iberia': DealerAvatarStyle.jaipur,
@@ -64,6 +64,7 @@ const Map<VenueGroup, Map<String, DealerAvatarStyle>>
     'Russia & Siberia': DealerAvatarStyle.sikkim,
   },
   VenueGroup.oceania: <String, DealerAvatarStyle>{
+    'Australia': DealerAvatarStyle.australia,
     'China': DealerAvatarStyle.china,
     'Japan': DealerAvatarStyle.northAmerica,
     'Korea': DealerAvatarStyle.africa,
@@ -73,7 +74,6 @@ const Map<VenueGroup, Map<String, DealerAvatarStyle>>
     'Philippines': DealerAvatarStyle.europe,
     'Straits': DealerAvatarStyle.arabia,
     'Indonesia': DealerAvatarStyle.india,
-    'Pacific': DealerAvatarStyle.australia,
   },
   VenueGroup.northAmerica: <String, DealerAvatarStyle>{
     'Canada': DealerAvatarStyle.northAmerica,

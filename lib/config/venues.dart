@@ -48,6 +48,7 @@ const kFeltDeepPurple = Color.fromARGB(173, 118, 30, 180);
 const kFeltDarkGreen = Color(0xFF013220);
 const kFeltOliveGreen = Color(0xFF556B2F);
 const kFeltDarkBrown = Color.fromARGB(227, 95, 65, 58);
+const kFeltTurquoise = Color(0xFF11807C);
 
 /* ---------- VENUE DATA ---------- */
 
@@ -136,14 +137,6 @@ const List<VenueTheme> indianVenues = [
 
 const List<VenueTheme> internationalVenues = [
   VenueTheme(
-      name: 'Australia',
-      background: _bg,
-      felt: kFeltNavyBlue,
-      accent: _red,
-      accentAlt: _blue,
-      flagAsset: 'assets/images/flags/australia.png',
-      timeZoneId: 'Australia/Sydney'),
-  VenueTheme(
       name: 'North Africa',
       background: _bg,
       felt: kFeltSkyBlue,
@@ -176,14 +169,6 @@ const List<VenueTheme> internationalVenues = [
       flagAsset: 'assets/images/flags/arabia.png',
       timeZoneId: 'Asia/Tehran'),
   VenueTheme(
-      name: 'Central Asia',
-      background: _bg,
-      felt: kFeltDarkGreen,
-      accent: _red,
-      accentAlt: _blue,
-      flagAsset: 'assets/images/flags/russia.png',
-      timeZoneId: 'Asia/Tashkent'),
-  VenueTheme(
       name: 'Indian Ocean Isles',
       background: _bg,
       felt: kFeltTurmeric,
@@ -207,6 +192,14 @@ const List<VenueTheme> internationalVenues = [
       accentAlt: _blue,
       flagAsset: 'assets/images/flags/oceania/french_isles.png',
       timeZoneId: 'America/Guadeloupe'),
+  VenueTheme(
+      name: 'Pacific',
+      background: _bg,
+      felt: kFeltNavyBlue,
+      accent: _red,
+      accentAlt: _blue,
+      flagAsset: 'assets/images/flags/oceania/pacific.png',
+      timeZoneId: 'Pacific/Auckland'),
   VenueTheme(
       name: 'Arctic',
       background: _bg,
@@ -298,6 +291,14 @@ const List<VenueTheme> euroVenues = [
       accentAlt: _blue,
       flagAsset: 'assets/images/flags/euro/russia_siberia.png',
       timeZoneId: 'Europe/Moscow'),
+  VenueTheme(
+      name: 'Central Asia',
+      background: _bg,
+      felt: kFeltTurquoise,
+      accent: _red,
+      accentAlt: _blue,
+      flagAsset: 'assets/images/flags/russia.png',
+      timeZoneId: 'Asia/Tashkent'),
 ];
 
 const List<VenueTheme> oceaniaVenues = [
@@ -374,13 +375,13 @@ const List<VenueTheme> oceaniaVenues = [
       flagAsset: 'assets/images/flags/oceania/straits.png',
       timeZoneId: 'Asia/Jakarta'),
   VenueTheme(
-      name: 'Pacific',
+      name: 'Australia',
       background: _bg,
       felt: kFeltDarkBrown,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/oceania/pacific.png',
-      timeZoneId: 'Pacific/Auckland'),
+      flagAsset: 'assets/images/flags/australia.png',
+      timeZoneId: 'Australia/Sydney'),
 ];
 
 const List<VenueTheme> northAmericanVenues = [
@@ -475,17 +476,17 @@ List<VenueTheme> venuesForGroup(VenueGroup group) => switch (group) {
     };
 
 const List<VenueGroup> kVenueGroups = <VenueGroup>[
-  VenueGroup.euro,
-  VenueGroup.northAmerica,
-  VenueGroup.oceania,
-  VenueGroup.international,
   VenueGroup.india,
+  VenueGroup.euro,
+  VenueGroup.oceania,
+  VenueGroup.northAmerica,
+  VenueGroup.international,
 ];
 
 String venueGroupLabel(VenueGroup group) => switch (group) {
-      VenueGroup.international => 'World Frontiers',
+      VenueGroup.international => 'Rest of the World',
       VenueGroup.india => 'Indian Ocean',
-      VenueGroup.euro => 'Europe',
-      VenueGroup.oceania => 'Asia-Pacific',
+      VenueGroup.euro => 'Eurasia',
+      VenueGroup.oceania => 'Australasia',
       VenueGroup.northAmerica => 'Americas',
     };

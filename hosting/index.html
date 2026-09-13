@@ -71,7 +71,7 @@
           "name": "How many circuits and kingdoms does X Poker have?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "X Poker has five competitive circuits — Europe, the Americas, Asia-Pacific, World Frontiers, and the Indian Ocean — made up of 50 themed kingdoms in total, each with its own fort count and noble title."
+            "text": "X Poker has five competitive circuits — the Indian Ocean, Eurasia, Australasia, the Americas, and the Rest of the World — made up of 50 themed kingdoms in total, each with its own fort count and noble title."
           }
         },
         {
@@ -188,9 +188,9 @@
           <p class="hero-subtext">
             X Poker is Ten of a Kind's simulated Texas Hold'em strategy game:
             play against AI opponents across five competitive circuits
-            &mdash; Europe, the Americas, Asia-Pacific, World Frontiers, and
-            the Indian Ocean &mdash; each built from ten themed kingdoms with
-            their own forts and noble titles. Climb the live circuit
+            &mdash; the Indian Ocean, Eurasia, Australasia, the Americas,
+            and the Rest of the World &mdash; drawn from 50 themed kingdoms
+            with their own forts and noble titles. Climb the live circuit
             leaderboards, earn Aura points and forts, and meet Renoir, the
             dealer who never folds. It's entertainment and skill-building
             only &mdash; no real-money gambling, wagering, or prizes, ever.
@@ -246,9 +246,23 @@
     </div>
     <section class="venue-showcase" id="venues">
       <div class="venue-tabs" role="tablist">
+        <div class="venue-tab-item venue-tab-item-india">
+          <button class="venue-tab active" data-target="india" role="tab" aria-selected="true">Indian Ocean</button>
+          <ol class="venue-leaderboard-menu" aria-label="Indian Ocean leaderboard">
+            <li class="venue-leaderboard-heading">Live Overall Leaderboard</li>
+            <li class="venue-leaderboard-status"><span>Loading live rankings…</span><strong>—</strong></li>
+          </ol>
+        </div>
         <div class="venue-tab-item venue-tab-item-euro">
-          <button class="venue-tab active" data-target="euro" role="tab" aria-selected="true">Europe</button>
-          <ol class="venue-leaderboard-menu" aria-label="Europe leaderboard">
+          <button class="venue-tab" data-target="euro" role="tab" aria-selected="false">Eurasia</button>
+          <ol class="venue-leaderboard-menu" aria-label="Eurasia leaderboard">
+            <li class="venue-leaderboard-heading">Live Overall Leaderboard</li>
+            <li class="venue-leaderboard-status"><span>Loading live rankings…</span><strong>—</strong></li>
+          </ol>
+        </div>
+        <div class="venue-tab-item venue-tab-item-oceania">
+          <button class="venue-tab" data-target="oceania" role="tab" aria-selected="false">Australasia</button>
+          <ol class="venue-leaderboard-menu" aria-label="Australasia leaderboard">
             <li class="venue-leaderboard-heading">Live Overall Leaderboard</li>
             <li class="venue-leaderboard-status"><span>Loading live rankings…</span><strong>—</strong></li>
           </ol>
@@ -260,30 +274,108 @@
             <li class="venue-leaderboard-status"><span>Loading live rankings…</span><strong>—</strong></li>
           </ol>
         </div>
-        <div class="venue-tab-item venue-tab-item-oceania">
-          <button class="venue-tab" data-target="oceania" role="tab" aria-selected="false">Asia-Pacific</button>
-          <ol class="venue-leaderboard-menu" aria-label="Asia-Pacific leaderboard">
-            <li class="venue-leaderboard-heading">Live Overall Leaderboard</li>
-            <li class="venue-leaderboard-status"><span>Loading live rankings…</span><strong>—</strong></li>
-          </ol>
-        </div>
         <div class="venue-tab-item venue-tab-item-world">
-          <button class="venue-tab" data-target="world" role="tab" aria-selected="false">World Frontiers</button>
-          <ol class="venue-leaderboard-menu" aria-label="World Frontiers leaderboard">
-            <li class="venue-leaderboard-heading">Live Overall Leaderboard</li>
-            <li class="venue-leaderboard-status"><span>Loading live rankings…</span><strong>—</strong></li>
-          </ol>
-        </div>
-        <div class="venue-tab-item venue-tab-item-india">
-          <button class="venue-tab" data-target="india" role="tab" aria-selected="false">Indian Ocean</button>
-          <ol class="venue-leaderboard-menu" aria-label="Indian Ocean leaderboard">
+          <button class="venue-tab" data-target="world" role="tab" aria-selected="false">Rest of the World</button>
+          <ol class="venue-leaderboard-menu" aria-label="Rest of the World leaderboard">
             <li class="venue-leaderboard-heading">Live Overall Leaderboard</li>
             <li class="venue-leaderboard-status"><span>Loading live rankings…</span><strong>—</strong></li>
           </ol>
         </div>
       </div>
       <div class="venue-grids">
-        <div class="venue-grid active" data-group="euro" role="tabpanel">
+        <div class="venue-grid active" data-group="india" role="tabpanel">
+          <article class="venue-card" style="--felt:#CBA014">
+            <div class="venue-card-flag">
+              <img src="images/venues/baroda.png" alt="Baroda flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Baroda</h4>
+              <p>8 Forts, Title: Patel</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#761EB4">
+            <div class="venue-card-flag">
+              <img src="images/venues/hyderabad.png" alt="Hyderabad flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Hyderabad</h4>
+              <p>5 Forts, Title: Nizam</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#8B0000">
+            <div class="venue-card-flag">
+              <img src="images/venues/indore.png" alt="Indore flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Indore</h4>
+              <p>5 Forts, Title: Subedar</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#DC53DC">
+            <div class="venue-card-flag">
+              <img src="images/venues/jaipur.png" alt="Jaipur flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Jaipur</h4>
+              <p>9 Forts, Title: Rawal</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#FF6B01">
+            <div class="venue-card-flag">
+              <img src="images/venues/maratha-empire.png" alt="Maratha Empire flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Maratha Empire</h4>
+              <p>8 Forts, Title: Peshwa</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#5F413A">
+            <div class="venue-card-flag">
+              <img src="images/venues/mysore.png" alt="Mysore flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Mysore</h4>
+              <p>5 Forts, Title: Sultan</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#00A6E8">
+            <div class="venue-card-flag">
+              <img src="images/venues/new-delhi.png" alt="New Delhi flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>New Delhi</h4>
+              <p>12 Forts, Title: Raja</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#24247A">
+            <div class="venue-card-flag">
+              <img src="images/venues/sikh-empire.png" alt="Sikh Empire flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Sikh Empire</h4>
+              <p>21 Forts, Title: Zaildar</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#013220">
+            <div class="venue-card-flag">
+              <img src="images/venues/sikkim.png" alt="Sikkim flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Sikkim</h4>
+              <p>10 Forts, Title: Sherpa</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#556B2F">
+            <div class="venue-card-flag">
+              <img src="images/venues/travancore.png" alt="Travancore flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Travancore</h4>
+              <p>6 Forts, Title: Thala</p>
+            </div>
+          </article>
+        </div>
+        <div class="venue-grid" data-group="euro" role="tabpanel">
           <article class="venue-card" style="--felt:#24247A">
             <div class="venue-card-flag">
               <img src="images/venues/euro/britain.png" alt="Britain &amp; Ireland flag" loading="lazy">
@@ -372,6 +464,107 @@
             <div class="venue-card-body">
               <h4>Russia &amp; Siberia</h4>
               <p>12 Forts, Title: Ataman</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#11807C">
+            <div class="venue-card-flag">
+              <img src="images/venues/russia.png" alt="Central Asia flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Central Asia</h4>
+              <p>11 Forts, Title: Emir</p>
+            </div>
+          </article>
+        </div>
+        <div class="venue-grid" data-group="oceania" role="tabpanel">
+          <article class="venue-card" style="--felt:#24247A">
+            <div class="venue-card-flag">
+              <img src="images/venues/china.png" alt="China flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>China</h4>
+              <p>11 Forts, Title: Jiangjun</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#00A6E8">
+            <div class="venue-card-flag">
+              <img src="images/venues/japan.png" alt="Japan flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Japan</h4>
+              <p>10 Forts, Title: Shogun</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#556B2F">
+            <div class="venue-card-flag">
+              <img src="images/venues/china.png" alt="Korea flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Korea</h4>
+              <p>8 Forts, Title: Daegam</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#8B0000">
+            <div class="venue-card-flag">
+              <img src="images/venues/oceania/dragonland.png" alt="Taiwan flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Taiwan</h4>
+              <p>8 Forts, Title: Taipan</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#761EB4">
+            <div class="venue-card-flag">
+              <img src="images/venues/southeast.png" alt="Vietnam flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Vietnam</h4>
+              <p>10 Forts, Title: Vương</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#013220">
+            <div class="venue-card-flag">
+              <img src="images/venues/southeast.png" alt="Mekong flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Mekong</h4>
+              <p>9 Forts, Title: Mandala</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#CBA014">
+            <div class="venue-card-flag">
+              <img src="images/venues/oceania/american_isles.png" alt="Philippines flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Philippines</h4>
+              <p>10 Forts, Title: Datu</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#DC53DC">
+            <div class="venue-card-flag">
+              <img src="images/venues/oceania/straits.png" alt="Straits flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Straits</h4>
+              <p>12 Forts, Title: Laksamana</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#FF6B01">
+            <div class="venue-card-flag">
+              <img src="images/venues/oceania/straits.png" alt="Indonesia flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Indonesia</h4>
+              <p>10 Forts, Title: Sultan</p>
+            </div>
+          </article>
+          <article class="venue-card" style="--felt:#5F413A">
+            <div class="venue-card-flag">
+              <img src="images/venues/australia.png" alt="Australia flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Australia</h4>
+              <p>12 Forts, Title: Premier</p>
             </div>
           </article>
         </div>
@@ -467,108 +660,7 @@
             </div>
           </article>
         </div>
-        <div class="venue-grid" data-group="oceania" role="tabpanel">
-          <article class="venue-card" style="--felt:#24247A">
-            <div class="venue-card-flag">
-              <img src="images/venues/china.png" alt="China flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>China</h4>
-              <p>11 Forts, Title: Jiangjun</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#00A6E8">
-            <div class="venue-card-flag">
-              <img src="images/venues/japan.png" alt="Japan flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Japan</h4>
-              <p>10 Forts, Title: Shogun</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#556B2F">
-            <div class="venue-card-flag">
-              <img src="images/venues/china.png" alt="Korea flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Korea</h4>
-              <p>8 Forts, Title: Daegam</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#8B0000">
-            <div class="venue-card-flag">
-              <img src="images/venues/oceania/dragonland.png" alt="Taiwan flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Taiwan</h4>
-              <p>8 Forts, Title: Taipan</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#761EB4">
-            <div class="venue-card-flag">
-              <img src="images/venues/southeast.png" alt="Vietnam flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Vietnam</h4>
-              <p>10 Forts, Title: Vương</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#013220">
-            <div class="venue-card-flag">
-              <img src="images/venues/southeast.png" alt="Mekong flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Mekong</h4>
-              <p>9 Forts, Title: Mandala</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#CBA014">
-            <div class="venue-card-flag">
-              <img src="images/venues/oceania/american_isles.png" alt="Philippines flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Philippines</h4>
-              <p>10 Forts, Title: Datu</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#DC53DC">
-            <div class="venue-card-flag">
-              <img src="images/venues/oceania/straits.png" alt="Straits flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Straits</h4>
-              <p>12 Forts, Title: Laksamana</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#FF6B01">
-            <div class="venue-card-flag">
-              <img src="images/venues/oceania/straits.png" alt="Indonesia flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Indonesia</h4>
-              <p>10 Forts, Title: Sultan</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#5F413A">
-            <div class="venue-card-flag">
-              <img src="images/venues/oceania/pacific.png" alt="Pacific flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Pacific</h4>
-              <p>12 Forts, Title: Tui</p>
-            </div>
-          </article>
-        </div>
         <div class="venue-grid" data-group="world" role="tabpanel">
-          <article class="venue-card" style="--felt:#24247A">
-            <div class="venue-card-flag">
-              <img src="images/venues/australia.png" alt="Australia flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Australia</h4>
-              <p>12 Forts, Title: Premier</p>
-            </div>
-          </article>
           <article class="venue-card" style="--felt:#00A6E8">
             <div class="venue-card-flag">
               <img src="images/venues/africa.png" alt="North Africa flag" loading="lazy">
@@ -605,15 +697,6 @@
               <p>9 Forts, Title: Shah</p>
             </div>
           </article>
-          <article class="venue-card" style="--felt:#013220">
-            <div class="venue-card-flag">
-              <img src="images/venues/russia.png" alt="Central Asia flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Central Asia</h4>
-              <p>11 Forts, Title: Emir</p>
-            </div>
-          </article>
           <article class="venue-card" style="--felt:#CBA014">
             <div class="venue-card-flag">
               <img src="images/venues/oceania/indian_ocean.png" alt="Indian Ocean Isles flag" loading="lazy">
@@ -641,6 +724,15 @@
               <p>7 Forts, Title: Burgher</p>
             </div>
           </article>
+          <article class="venue-card" style="--felt:#24247A">
+            <div class="venue-card-flag">
+              <img src="images/venues/oceania/pacific.png" alt="Pacific flag" loading="lazy">
+            </div>
+            <div class="venue-card-body">
+              <h4>Pacific</h4>
+              <p>12 Forts, Title: Tui</p>
+            </div>
+          </article>
           <article class="venue-card" style="--felt:#5F413A">
             <div class="venue-card-flag">
               <img src="images/venues/oceania/alaska.png" alt="Arctic flag" loading="lazy">
@@ -648,98 +740,6 @@
             <div class="venue-card-body">
               <h4>Arctic</h4>
               <p>5 Forts, Title: Chieftain</p>
-            </div>
-          </article>
-        </div>
-        <div class="venue-grid" data-group="india" role="tabpanel">
-          <article class="venue-card" style="--felt:#CBA014">
-            <div class="venue-card-flag">
-              <img src="images/venues/baroda.png" alt="Baroda flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Baroda</h4>
-              <p>8 Forts, Title: Patel</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#761EB4">
-            <div class="venue-card-flag">
-              <img src="images/venues/hyderabad.png" alt="Hyderabad flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Hyderabad</h4>
-              <p>5 Forts, Title: Nizam</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#8B0000">
-            <div class="venue-card-flag">
-              <img src="images/venues/indore.png" alt="Indore flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Indore</h4>
-              <p>5 Forts, Title: Subedar</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#DC53DC">
-            <div class="venue-card-flag">
-              <img src="images/venues/jaipur.png" alt="Jaipur flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Jaipur</h4>
-              <p>9 Forts, Title: Rawal</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#FF6B01">
-            <div class="venue-card-flag">
-              <img src="images/venues/maratha-empire.png" alt="Maratha Empire flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Maratha Empire</h4>
-              <p>8 Forts, Title: Peshwa</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#5F413A">
-            <div class="venue-card-flag">
-              <img src="images/venues/mysore.png" alt="Mysore flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Mysore</h4>
-              <p>5 Forts, Title: Sultan</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#00A6E8">
-            <div class="venue-card-flag">
-              <img src="images/venues/new-delhi.png" alt="New Delhi flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>New Delhi</h4>
-              <p>12 Forts, Title: Raja</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#24247A">
-            <div class="venue-card-flag">
-              <img src="images/venues/sikh-empire.png" alt="Sikh Empire flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Sikh Empire</h4>
-              <p>21 Forts, Title: Zaildar</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#013220">
-            <div class="venue-card-flag">
-              <img src="images/venues/sikkim.png" alt="Sikkim flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Sikkim</h4>
-              <p>10 Forts, Title: Sherpa</p>
-            </div>
-          </article>
-          <article class="venue-card" style="--felt:#556B2F">
-            <div class="venue-card-flag">
-              <img src="images/venues/travancore.png" alt="Travancore flag" loading="lazy">
-            </div>
-            <div class="venue-card-body">
-              <h4>Travancore</h4>
-              <p>6 Forts, Title: Thala</p>
             </div>
           </article>
         </div>
@@ -910,11 +910,11 @@
             <p><strong>Info:</strong> <span id="dashboardAbout">Ready to win!</span></p>
           </div>
           <div class="dashboard-meta" data-dashboard-section>
-            <p><strong>Euro AUP:</strong> <span id="dashboardAupEuro">—</span></p>
-            <p><strong>India AUP:</strong> <span id="dashboardAupIndia">—</span></p>
-            <p><strong>International AUP:</strong> <span id="dashboardAupInternational">—</span></p>
-            <p><strong>Micro AUP:</strong> <span id="dashboardAupOceania">—</span></p>
-            <p><strong>US Circuit AUP:</strong> <span id="dashboardAupNorthAmerica">—</span></p>
+            <p><strong>Eurasia AUP:</strong> <span id="dashboardAupEuro">—</span></p>
+            <p><strong>Indian Ocean AUP:</strong> <span id="dashboardAupIndia">—</span></p>
+            <p><strong>Rest of the World AUP:</strong> <span id="dashboardAupInternational">—</span></p>
+            <p><strong>Australasia AUP:</strong> <span id="dashboardAupOceania">—</span></p>
+            <p><strong>Americas AUP:</strong> <span id="dashboardAupNorthAmerica">—</span></p>
           </div>
         </div>
         <div class="profile-actions" data-profile-section>

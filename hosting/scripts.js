@@ -483,7 +483,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ]
     },
     "Australia": {
-      group: "International Circuit",
+      group: "Australasia",
       history: "Australia's fortifications were shaped by coastal defense, colonial ports, and fears of naval attack, especially around harbors and strategic headlands.",
       forts: [
         {
@@ -501,7 +501,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ]
     },
     "China": {
-      group: "International Circuit",
+      group: "Australasia",
       history: "China's circuit draws from imperial walls, frontier passes, river forts, and port defenses built across centuries of dynastic statecraft and foreign pressure.",
       forts: [
         {
@@ -1249,16 +1249,16 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const venueGroups = {
-    "Britain & Ireland": "Europe",
-    "France": "Europe",
-    "Italy": "Europe",
-    "Iberia": "Europe",
-    "Low Countries": "Europe",
-    "Scandinavia": "Europe",
-    "Central Europe": "Europe",
-    "Balkans & Mediterranean": "Europe",
-    "Baltic Marches": "Europe",
-    "Russia & Siberia": "Europe",
+    "Britain & Ireland": "Eurasia",
+    "France": "Eurasia",
+    "Italy": "Eurasia",
+    "Iberia": "Eurasia",
+    "Low Countries": "Eurasia",
+    "Scandinavia": "Eurasia",
+    "Central Europe": "Eurasia",
+    "Balkans & Mediterranean": "Eurasia",
+    "Baltic Marches": "Eurasia",
+    "Russia & Siberia": "Eurasia",
     "Canada": "Americas",
     "Northeast USA": "Americas",
     "Atlantic USA": "Americas",
@@ -1269,26 +1269,26 @@ document.addEventListener("DOMContentLoaded", () => {
     "Brazil": "Americas",
     "Andes": "Americas",
     "Southern Cone": "Americas",
-    "China": "Asia-Pacific",
-    "Japan": "Asia-Pacific",
-    "Korea": "Asia-Pacific",
-    "Taiwan": "Asia-Pacific",
-    "Vietnam": "Asia-Pacific",
-    "Mekong": "Asia-Pacific",
-    "Philippines": "Asia-Pacific",
-    "Straits": "Asia-Pacific",
-    "Indonesia": "Asia-Pacific",
-    "Pacific": "Asia-Pacific",
-    "Australia": "World Frontiers",
-    "North Africa": "World Frontiers",
-    "Sub-Saharan Africa": "World Frontiers",
-    "Arabia": "World Frontiers",
-    "Persia & Mesopotamia": "World Frontiers",
-    "Central Asia": "World Frontiers",
-    "Indian Ocean Isles": "World Frontiers",
-    "Atlantic Isles": "World Frontiers",
-    "French & Dutch Isles": "World Frontiers",
-    "Arctic": "World Frontiers",
+    "China": "Australasia",
+    "Japan": "Australasia",
+    "Korea": "Australasia",
+    "Taiwan": "Australasia",
+    "Vietnam": "Australasia",
+    "Mekong": "Australasia",
+    "Philippines": "Australasia",
+    "Straits": "Australasia",
+    "Indonesia": "Australasia",
+    "Pacific": "Rest of the World",
+    "Australia": "Australasia",
+    "North Africa": "Rest of the World",
+    "Sub-Saharan Africa": "Rest of the World",
+    "Arabia": "Rest of the World",
+    "Persia & Mesopotamia": "Rest of the World",
+    "Central Asia": "Eurasia",
+    "Indian Ocean Isles": "Rest of the World",
+    "Atlantic Isles": "Rest of the World",
+    "French & Dutch Isles": "Rest of the World",
+    "Arctic": "Rest of the World",
     "Baroda": "Indian Ocean",
     "Hyderabad": "Indian Ocean",
     "Indore": "Indian Ocean",
@@ -1689,11 +1689,11 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const circuitDisplayName = (group) => ({
-    "Euro Circuit": "Europe",
+    "Euro Circuit": "Eurasia",
     "US Circuit": "Americas",
-    "Micro Circuit": "Asia-Pacific",
+    "Micro Circuit": "Australasia",
     "Indian Circuit": "Indian Ocean",
-    "International Circuit": "World Frontiers"
+    "International Circuit": "Rest of the World"
   }[group] || group);
 
   const venueSlug = (name) =>

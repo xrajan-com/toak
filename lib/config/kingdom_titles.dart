@@ -14,12 +14,11 @@ const Map<VenueGroup, Map<String, String>> kKingdomTitles = {
     'Travancore': 'Thala',
   },
   VenueGroup.international: <String, String>{
-    'Australia': 'Premier',
     'North Africa': 'Pasha',
+    'Pacific': 'Tui',
     'Sub-Saharan Africa': 'Mansa',
     'Arabia': 'Sheikh',
     'Persia & Mesopotamia': 'Shah',
-    'Central Asia': 'Emir',
     'Indian Ocean Isles': 'Admiral',
     'Atlantic Isles': 'Warden',
     'French & Dutch Isles': 'Burgher',
@@ -27,6 +26,7 @@ const Map<VenueGroup, Map<String, String>> kKingdomTitles = {
   },
   VenueGroup.euro: <String, String>{
     'Britain & Ireland': 'Baron',
+    'Central Asia': 'Emir',
     'France': 'Marquis',
     'Italy': 'Conte',
     'Iberia': 'Hidalgo',
@@ -38,6 +38,7 @@ const Map<VenueGroup, Map<String, String>> kKingdomTitles = {
     'Russia & Siberia': 'Ataman',
   },
   VenueGroup.oceania: <String, String>{
+    'Australia': 'Premier',
     'China': 'Jiangjun',
     'Japan': 'Shogun',
     'Korea': 'Daegam',
@@ -47,7 +48,6 @@ const Map<VenueGroup, Map<String, String>> kKingdomTitles = {
     'Philippines': 'Datu',
     'Straits': 'Laksamana',
     'Indonesia': 'Sultan',
-    'Pacific': 'Tui',
   },
   VenueGroup.northAmerica: <String, String>{
     'Canada': 'Mountie',
