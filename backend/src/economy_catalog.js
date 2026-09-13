@@ -1,6 +1,11 @@
 const crypto = require('node:crypto');
 const catalog = require('./economy_catalog.json');
 const compatibilityCatalog494 = require('./economy_catalog_compat_494.json');
+// The 550 catalog is the last one built before the circuits were redrawn
+// (Australia -> Australasia, Central Asia -> Eurasia, Pacific -> Rest of
+// the World). Clients already in the field compute their campaign ids and
+// prizes from it, so it stays servable until those builds age out.
+const compatibilityCatalog550 = require('./economy_catalog_compat_550.json');
 
 const LEGACY_ECONOMY_CATALOG_VERSION =
   'v1:441:642c58b38694044f869bad6873e5c76df042c87e4abc8be3db29ebaea2e802fb';
@@ -40,14 +45,21 @@ function _validateCatalog(candidate) {
 
 const ECONOMY_CATALOG_VERSION = _validateCatalog(catalog);
 const ECONOMY_CATALOG_494_VERSION = _validateCatalog(compatibilityCatalog494);
+const ECONOMY_CATALOG_550_VERSION = _validateCatalog(compatibilityCatalog550);
 const ECONOMY_CATALOG_CONTENT_HASH = catalog.contentHash;
+// Deduplicated: until the catalog is rebuilt after a content change, the
+// live version and the compatibility copy are the same string.
 const SUPPORTED_ECONOMY_CATALOG_VERSIONS = Object.freeze([
-  ECONOMY_CATALOG_VERSION,
-  ECONOMY_CATALOG_494_VERSION,
-  LEGACY_ECONOMY_CATALOG_VERSION,
+  ...new Set([
+    ECONOMY_CATALOG_VERSION,
+    ECONOMY_CATALOG_550_VERSION,
+    ECONOMY_CATALOG_494_VERSION,
+    LEGACY_ECONOMY_CATALOG_VERSION,
+  ]),
 ]);
 const catalogsByVersion = new Map([
   [ECONOMY_CATALOG_VERSION, catalog],
+  [ECONOMY_CATALOG_550_VERSION, compatibilityCatalog550],
   [ECONOMY_CATALOG_494_VERSION, compatibilityCatalog494],
   // The 441 release did not contain North America. Its common events are
   // compatible with the current non-North-America catalog entries.
