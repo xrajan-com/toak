@@ -11,7 +11,7 @@ void main() {
           dealerAvatarStyleForVenue(group: group, venueName: venue.name),
       ];
 
-      expect(styles, hasLength(10),
+      expect(styles, hasLength(venuesForGroup(group).length),
           reason: 'Unexpected venue count for $group');
       expect(
         styles.toSet(),

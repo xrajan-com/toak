@@ -45,11 +45,18 @@ void main() {
 
   test('complete career catalog is reachable and awards every title', () {
     const expectedFortCounts = <VenueGroup, int>{
-      VenueGroup.euro: 93,
+      VenueGroup.euro: 104,
       VenueGroup.india: 89,
-      VenueGroup.international: 88,
+      VenueGroup.international: 77,
       VenueGroup.oceania: 100,
       VenueGroup.northAmerica: 130,
+    };
+    const expectedKingdomCounts = <VenueGroup, int>{
+      VenueGroup.india: 10,
+      VenueGroup.euro: 11,
+      VenueGroup.oceania: 10,
+      VenueGroup.northAmerica: 10,
+      VenueGroup.international: 9,
     };
     final progress = CampaignProgressService();
     int totalForts = 0;
@@ -59,8 +66,9 @@ void main() {
 
     for (final group in kVenueGroups) {
       final venues = venuesForGroup(group);
-      expect(venues, hasLength(10), reason: '${group.name} kingdom count');
-      expect(kKingdomTitles[group], hasLength(10),
+      expect(venues, hasLength(expectedKingdomCounts[group]),
+          reason: '${group.name} kingdom count');
+      expect(kKingdomTitles[group], hasLength(expectedKingdomCounts[group]),
           reason: '${group.name} title count');
 
       int circuitBalance = aup.kRegisteredStarterAup ~/ kVenueGroups.length;
@@ -215,7 +223,7 @@ void main() {
         totalTitles += 1;
       }
 
-      expect(progress.titlesEarned(group), 10,
+      expect(progress.titlesEarned(group), expectedKingdomCounts[group],
           reason: '${group.name} completed titles');
       expect(circuitForts, lessThanOrEqualTo(500),
           reason: '${group.name} exceeds Firestore cleared-list limit');
