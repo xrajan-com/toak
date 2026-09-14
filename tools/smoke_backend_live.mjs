@@ -217,7 +217,7 @@ async function main() {
   }
 
   const stamp = Date.now();
-  const campaignId = 'sk:international:central_asia:10';
+  const campaignId = 'sk:international:arabia:3';
   const totalPlayers = localCatalog.events[campaignId]?.maxPlayers;
   if (!Number.isInteger(totalPlayers)) {
     throw new Error(`local catalog is missing maxPlayers for ${campaignId}`);
@@ -302,7 +302,7 @@ async function main() {
 
   // Exercise the production paid-entry path after the free-fort payout. Forts
   // are sequence-independent; this one costs less than the resulting wallet.
-  const paidCampaignId = 'sk:international:central_asia:3';
+  const paidCampaignId = 'sk:international:arabia:1';
   const paidEvent = localCatalog.events[paidCampaignId];
   if (
     !paidEvent ||

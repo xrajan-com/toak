@@ -218,7 +218,7 @@ async function reserveAndCommit({
 test('an affordable paid fort can be reserved without clearing predecessors',
   async () => {
     const uid = 'sequence-independent-fort-player';
-    const campaignId = 'sk:international:central_asia:3';
+    const campaignId = 'sk:international:pacific:1';
     const event = economyCatalog.events[campaignId];
     assert.equal(event.kind, 'fort');
     assert.equal(event.entryFee > 0, true);
@@ -521,7 +521,7 @@ test('fort replay rewards have no play-count limit', async () => {
 test('catalog-backed entry and win ignore client fee, group, and prize claims', async () => {
   const db = new FakeFirestore();
   const uid = 'catalog-player';
-  const freeFort = 'sk:international:central_asia:10';
+  const freeFort = 'sk:international:arabia:3';
   const attemptId = 'entry:central-asia-free:1';
 
   const directWin = await _applyEconomyEvent({
@@ -565,11 +565,11 @@ test('catalog-backed entry and win ignore client fee, group, and prize claims', 
     },
   });
   assert.equal(win.accepted, true);
-  assert.equal(win.delta, 85800);
+  assert.equal(win.delta, 159600);
 
   const afterWin = db.dump(SERVER_PROGRESS_COLLECTION, uid);
   assert.equal(afterWin.indiaAup, 2000);
-  assert.equal(afterWin.internationalAup, 87800);
+  assert.equal(afterWin.internationalAup, 161600);
   assert.deepEqual(afterWin.cleared, [freeFort]);
   assert.equal(afterWin.entryReservations[0].status, 'settled');
 
@@ -577,23 +577,23 @@ test('catalog-backed entry and win ignore client fee, group, and prize claims', 
     db,
     uid,
     body: {
-      campaignId: 'sk:international:central_asia:3',
+      campaignId: 'sk:international:pacific:1',
       attemptId: 'entry:central-asia-paid:1',
       amount: 1,
       group: 'india',
     },
   });
   assert.equal(paid.accepted, true);
-  assert.equal(paid.reservation.amount, 86000);
+  assert.equal(paid.reservation.amount, 76000);
   assert.equal(paid.reservation.group, 'international');
-  assert.equal(paid.delta, -86000);
-  assert.equal(paid.progress.internationalAup, 1800);
+  assert.equal(paid.delta, -76000);
+  assert.equal(paid.progress.internationalAup, 85600);
 });
 
 test('secure catalog reservations allow unlimited fort replays with unique attempts', async () => {
   const db = new FakeFirestore();
   const uid = 'secure-replay-player';
-  const campaignId = 'sk:international:central_asia:10';
+  const campaignId = 'sk:international:arabia:3';
 
   for (let replay = 1; replay <= 5; replay += 1) {
     const attemptId = `entry:secure-replay:${replay}`;
@@ -610,11 +610,11 @@ test('secure catalog reservations allow unlimited fort replays with unique attem
       },
     });
     assert.equal(win.accepted, true);
-    assert.equal(win.delta, 85800);
+    assert.equal(win.delta, 159600);
   }
 
   const saved = db.dump(SERVER_PROGRESS_COLLECTION, uid);
-  assert.equal(saved.internationalAup, 2000 + (5 * 85800));
+  assert.equal(saved.internationalAup, 2000 + (5 * 159600));
   assert.deepEqual(saved.cleared, [campaignId]);
   assert.equal(
     saved.entryReservations.filter((entry) => entry.status === 'settled').length,
@@ -630,11 +630,11 @@ test('committed entry recovery is delayed, idempotent, and penalized once', asyn
         schemaVersion: 1,
         internationalAup: 100000,
         registeredStarterGranted: true,
-        cleared: ['sk:international:central_asia:10'],
+        cleared: ['sk:international:arabia:3'],
       },
     },
   });
-  const campaignId = 'sk:international:central_asia:3';
+  const campaignId = 'sk:international:pacific:1';
   const attemptId = 'entry:recovery:1';
   await reserveAndCommit({ db, uid, campaignId, attemptId });
 
@@ -646,7 +646,7 @@ test('committed entry recovery is delayed, idempotent, and penalized once', asyn
   });
   assert.equal(tooSoon.accepted, false);
   assert.equal(tooSoon.reason, 'recovery_not_ready');
-  assert.equal(tooSoon.progress.internationalAup, 14000);
+  assert.equal(tooSoon.progress.internationalAup, 24000);
 
   const stored = db.dump(SERVER_PROGRESS_COLLECTION, uid);
   stored.entryReservations[0].updatedAtMs = 1;
@@ -682,7 +682,7 @@ test('committed entry recovery is delayed, idempotent, and penalized once', asyn
 test('only one active entry is allowed and terminal history cannot replace it', async () => {
   const db = new FakeFirestore();
   const uid = 'single-active-player';
-  const campaignId = 'sk:international:central_asia:10';
+  const campaignId = 'sk:international:arabia:3';
   const firstAttempt = 'entry:single-active:1';
 
   const first = await _reserveEntry({
@@ -738,7 +738,7 @@ test('only one active entry is allowed and terminal history cannot replace it', 
 test('campaign result settles unpaid ranks, records stats once, and never refunds a loss', async () => {
   const db = new FakeFirestore();
   const uid = 'loss-player';
-  const campaignId = 'sk:international:central_asia:10';
+  const campaignId = 'sk:international:arabia:3';
   const attemptId = 'entry:loss:1';
   const totalPlayers = economyCatalog.events[campaignId].maxPlayers;
   await reserveAndCommit({ db, uid, campaignId, attemptId });
@@ -776,7 +776,7 @@ test('campaign result settles unpaid ranks, records stats once, and never refund
 test('campaign results reject forged table sizes and use catalog size for stats', async () => {
   const db = new FakeFirestore();
   const uid = 'table-size-forgery-player';
-  const campaignId = 'sk:international:central_asia:10';
+  const campaignId = 'sk:international:arabia:3';
   const attemptId = 'entry:table-size-forgery:1';
   const authoritativePlayers = economyCatalog.events[campaignId].maxPlayers;
   assert.equal(authoritativePlayers, 6);
@@ -821,7 +821,7 @@ test('campaign results reject forged table sizes and use catalog size for stats'
 test('campaign abandonment is always recorded at the catalog last place', async () => {
   const db = new FakeFirestore();
   const uid = 'abandon-placement-forgery-player';
-  const campaignId = 'sk:international:central_asia:10';
+  const campaignId = 'sk:international:arabia:3';
   const attemptId = 'entry:abandon-placement-forgery:1';
   const totalPlayers = economyCatalog.events[campaignId].maxPlayers;
   await reserveAndCommit({ db, uid, campaignId, attemptId });

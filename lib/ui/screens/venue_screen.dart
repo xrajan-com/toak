@@ -1100,35 +1100,35 @@ class _TitleAndTabsState extends State<_TitleAndTabs> {
           ),
           _chip(
             0,
-            'Europe',
+            venueGroupLabel(kVenueGroups[0]),
             color: Colors.green,
             textOn: Colors.white,
             outerHorizontalPadding: chipOuterPadding,
           ),
           _chip(
             1,
-            'Americas',
+            venueGroupLabel(kVenueGroups[1]),
             color: Colors.white,
             textOn: Colors.black,
             outerHorizontalPadding: chipOuterPadding,
           ),
           _chip(
             2,
-            'Asia-Pacific',
+            venueGroupLabel(kVenueGroups[2]),
             color: Colors.yellow,
             textOn: Colors.black,
             outerHorizontalPadding: chipOuterPadding,
           ),
           _chip(
             3,
-            'World Frontiers',
+            venueGroupLabel(kVenueGroups[3]),
             color: _red,
             textOn: Colors.white,
             outerHorizontalPadding: chipOuterPadding,
           ),
           _chip(
             4,
-            'Indian Ocean',
+            venueGroupLabel(kVenueGroups[4]),
             color: _blue,
             textOn: Colors.black,
             outerHorizontalPadding: chipOuterPadding,
@@ -1269,37 +1269,37 @@ class _CircuitLeaderboardSpec {
   });
 }
 
-const _circuitLeaderboards = <_CircuitLeaderboardSpec>[
+final _circuitLeaderboards = <_CircuitLeaderboardSpec>[
   _CircuitLeaderboardSpec(
-    label: 'Europe',
+    label: venueGroupLabel(kVenueGroups[0]),
     background: Colors.green,
     foreground: Colors.white,
     headingBackground: Colors.black,
     headingForeground: Colors.green,
   ),
   _CircuitLeaderboardSpec(
-    label: 'Americas',
+    label: venueGroupLabel(kVenueGroups[1]),
     background: Colors.white,
     foreground: Colors.black,
     headingBackground: Colors.black,
     headingForeground: Colors.white,
   ),
   _CircuitLeaderboardSpec(
-    label: 'Asia-Pacific',
+    label: venueGroupLabel(kVenueGroups[2]),
     background: Colors.yellow,
     foreground: Colors.black,
     headingBackground: Colors.black,
     headingForeground: Colors.yellow,
   ),
   _CircuitLeaderboardSpec(
-    label: 'World Frontiers',
+    label: venueGroupLabel(kVenueGroups[3]),
     background: _red,
     foreground: Colors.white,
     headingBackground: Colors.black,
     headingForeground: _red,
   ),
   _CircuitLeaderboardSpec(
-    label: 'Indian Ocean',
+    label: venueGroupLabel(kVenueGroups[4]),
     background: _blue,
     foreground: Colors.black,
     headingBackground: Colors.black,
