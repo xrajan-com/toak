@@ -3,7 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen/players.dart';
 
 void main() {
-  testWidgets('seat always exposes name and stack while tap reveals details',
+  // Since the nameplate became a turn signal, the visible plate belongs to
+  // the seat that is to act. The accessible name and stack are still
+  // unconditional, and are asserted below via semantics.
+  testWidgets('the seat to act shows name and stack, and tap reveals details',
       (tester) async {
     final Seat seat = Seat(
       name: 'Riya Sharma',
@@ -26,7 +29,7 @@ void main() {
                 seat: seat,
                 isLeader: false,
                 growWhenOthersGone: false,
-                isTurn: false,
+                isTurn: true,
                 isSB: false,
                 isBB: false,
                 fallbackAvatarAsset: '',

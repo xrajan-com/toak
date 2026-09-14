@@ -149,19 +149,20 @@ void main() {
       expect(tester.getCenter(chipFinder).dy, closeTo(firstCenterY, 0.5));
     }
 
-    final usChip = tester.widget<Container>(chipFinders[1]);
-    final usDecoration = usChip.decoration! as ShapeDecoration;
-    final usLabel = tester.widget<Text>(find.text('Americas'));
+    final euroChip = tester.widget<Container>(chipFinders[1]);
+    final euroDecoration = euroChip.decoration! as ShapeDecoration;
+    final euroLabel = tester.widget<Text>(find.text('Eurasia'));
 
-    expect(usDecoration.color, Colors.transparent);
-    expect(usLabel.style?.color, Colors.white);
+    expect(euroDecoration.color, Colors.transparent);
+    expect(euroLabel.style?.color, Colors.white);
 
-    await tester.tap(find.text('Americas'));
+    await tester.tap(find.text('Eurasia'));
     await tester.pump();
 
-    final selectedUsChip = tester.widget<Container>(chipFinders[1]);
-    final selectedUsDecoration = selectedUsChip.decoration! as ShapeDecoration;
-    final selectedUsLabel = tester.widget<Text>(find.text('Americas'));
+    final selectedEuroChip = tester.widget<Container>(chipFinders[1]);
+    final selectedEuroDecoration =
+        selectedEuroChip.decoration! as ShapeDecoration;
+    final selectedEuroLabel = tester.widget<Text>(find.text('Eurasia'));
     final leaderboardHeading = tester.widget<Text>(find.text('GLOBAL AURA'));
     final leaderboardHeadingBox = tester.widget<Container>(
       find.byWidgetPredicate(
@@ -172,7 +173,7 @@ void main() {
       ),
     );
     final leaderboardBody = tester.widget<DecoratedBox>(
-      find.byKey(const ValueKey<String>('Americas-leaderboard-body')),
+      find.byKey(const ValueKey<String>('Eurasia-leaderboard-body')),
     );
     final leaderboardBodyDecoration =
         leaderboardBody.decoration as BoxDecoration;
@@ -180,8 +181,8 @@ void main() {
       find.text('Leaderboard service is unavailable.'),
     );
 
-    expect(selectedUsDecoration.color, Colors.white);
-    expect(selectedUsLabel.style?.color, Colors.black);
+    expect(selectedEuroDecoration.color, Colors.white);
+    expect(selectedEuroLabel.style?.color, Colors.black);
     expect(leaderboardHeadingBox.color, Colors.black);
     expect(leaderboardHeading.style?.color, Colors.white);
     expect(leaderboardBodyDecoration.color, Colors.white);
