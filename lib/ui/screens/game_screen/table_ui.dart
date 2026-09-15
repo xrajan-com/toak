@@ -307,22 +307,26 @@ class _GameTableLayerState extends State<GameTableLayer> {
               // 3) D / SB / BB chips on the felt, tucked near their seats
               ...blindChips,
 
-              // 3b) POT — upper-left of the felt, on the dealer's side.
-              // `pot` and `potPulse` were passed into this widget but never
-              // drawn, so the table had no pot figure at all and every bet
-              // was buried inside a nameplate as "· 200".
+              // 3b) POT — set into the wooden rail, centred on the edge
+              // directly opposite the dealer. The dealer works off the top
+              // rail (see `origin` above), so the pot belongs on the bottom
+              // one. The band runs from feltRect.bottom to h and is exactly
+              // railW thick, so giving the capsule that same height makes it
+              // fill the rail rather than float over the felt.
               Positioned(
-                left: feltRect.left + feltRect.width * 0.055,
-                top: feltRect.top + feltRect.height * 0.085,
-                child: _PotPill(
-                  pot: widget.pot,
-                  streetBets: widget.seats.fold<int>(
-                    0,
-                    (int sum, Seat s) => sum + (s.bet > 0 ? s.bet : 0),
+                left: 0,
+                right: 0,
+                top: feltRect.bottom,
+                height: railW,
+                child: Center(
+                  child: _PotPill(
+                    pot: widget.pot,
+                    streetBets: widget.seats.fold<int>(
+                      0,
+                      (int sum, Seat s) => sum + (s.bet > 0 ? s.bet : 0),
+                    ),
+                    height: railW,
                   ),
-                  height: (feltRect.height * 0.085)
-                      .clamp(22.0, 44.0)
-                      .toDouble(),
                 ),
               ),
 
@@ -512,8 +516,12 @@ class _PotPill extends StatelessWidget {
     if (settled <= 0 && streetBets <= 0) return const SizedBox.shrink();
 
     final double h = height;
-    final double fontSize = (h * 0.42).clamp(10.0, 18.0).toDouble();
-    final double labelSize = (h * 0.30).clamp(8.0, 12.0).toDouble();
+    // Ratios are tuned for the rail band (~24 logical px). The previous
+    // 0.42/0.30 were sized against a 22-44px pill floating on the felt and
+    // bottom out at their clamp floors at this height, which leaves the
+    // capsule looking half empty.
+    final double fontSize = (h * 0.50).clamp(9.0, 18.0).toDouble();
+    final double labelSize = (h * 0.36).clamp(7.5, 12.0).toDouble();
 
     return IgnorePointer(
       child: Semantics(
