@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ten_of_a_kind_poker/ui/screens/game_screen/cards.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen/players.dart';
 
 void main() {
@@ -8,6 +9,11 @@ void main() {
   // unconditional, and are asserted below via semantics.
   testWidgets('the seat to act shows name and stack, and tap reveals details',
       (tester) async {
+    // The plate is gated on ActionGate as well as isTurn, and the gate is a
+    // process-wide notifier that starts closed.
+    ActionGate.enable();
+    addTearDown(ActionGate.disable);
+
     final Seat seat = Seat(
       name: 'Riya Sharma',
       chips: 2400,
