@@ -27,6 +27,12 @@ class SoundFx {
   static const int _kMaxAnnouncerOverlap = 2;
   static const Duration _kDuplicateAnnouncerCooldown =
       Duration(milliseconds: 520);
+  // Hole cards emit one CardDealt event each, 80 ms apart (kDealGapMs), so a
+  // full round is ~1.6 s of events. shuffle.wav — which deals reuse — is
+  // 1.56 s long, so one play already spans the whole round. Anything shorter
+  // than this window either layers the sample on itself or restarts it every
+  // 80 ms, which reads as a stutter.
+  static const Duration _kDealRoundWindow = Duration(milliseconds: 1800);
   // Sound effects are on by default, so they start unmuted and preload
   // ready to play immediately — settings load mutes them only if the user
   // has turned them off. Lounge/table music (XMusicService) is the one
@@ -39,9 +45,11 @@ class SoundFx {
   bool _unlocked = !kIsWeb;
   DateTime? _lastHandWinAt;
   DateTime? _lastShuffleAt;
+  DateTime? _lastDealAt;
   DateTime? _lastAnnouncerAt;
   String? _lastAnnouncerAsset;
   bool _shufflePlaying = false;
+  bool _dealPlaying = false;
 
   bool get _baseEnabled => Env.soundEnabled && _unlocked;
   bool get _soundEffectsEnabled => _baseEnabled && !_soundEffectsMuted;
@@ -99,7 +107,31 @@ class SoundFx {
     await Future.wait(assets.map(_ensurePlayer));
   }
 
-  Future<void> playDeal() => _play(AppAssets.dealCardSound, volume: 0.85);
+  Future<void> playDeal() async {
+    // dealCardSound and shuffleSound are the same asset, so under
+    // allowOverlap: false they share one player — and _play stops that player
+    // before it restarts. A deal landing mid-shuffle would cut the shuffle off
+    // and replay it from zero. Since it is the same 1.56 s sample either way,
+    // a fresh shuffle already covers the deal: let it finish instead.
+    if (_shufflePlaying || _dealPlaying) return;
+    final now = DateTime.now();
+    if (_lastDealAt != null &&
+        now.difference(_lastDealAt!) < _kDealRoundWindow) {
+      return;
+    }
+    if (_lastShuffleAt != null &&
+        now.difference(_lastShuffleAt!) < _kDealRoundWindow) {
+      return;
+    }
+    _lastDealAt = now;
+    _dealPlaying = true;
+    try {
+      await _play(AppAssets.dealCardSound, volume: 0.5, allowOverlap: false);
+    } finally {
+      _dealPlaying = false;
+    }
+  }
+
   Future<void> playFold() =>
       _playAnnouncer(AppAssets.renoirFemaleFoldAnnouncer, volume: 0.46);
   Future<void> playCheck() =>
@@ -183,6 +215,9 @@ class SoundFx {
     _lastAnnouncerAsset = null;
     _lastAnnouncerAt = null;
     _shufflePlaying = false;
+    _dealPlaying = false;
+    _lastShuffleAt = null;
+    _lastDealAt = null;
   }
 
   Future<void> dispose() async {
