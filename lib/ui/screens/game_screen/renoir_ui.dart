@@ -2441,7 +2441,24 @@ Offset _quad(Offset a, Offset b, double t, {double rise = 56.0}) {
   return Offset(x, y);
 }
 
-double _ease(double x) => 0.5 - 0.5 * math.cos(x * math.pi);
+/// Easing for the deal flight (used only by [_FlightCard]).
+///
+/// A pitched card leaves the dealer's hand at speed and decelerates into the
+/// seat, so this is ease-OUT rather than ease-in-out. The previous curve,
+/// `0.5 - 0.5 * cos(x * pi)`, was symmetric: at a quarter of the way through
+/// the flight the card had covered only 15% of the distance, and with
+/// kDealCardFlightMs at 180ms (~11 frames at 60Hz) that left roughly three
+/// near-stationary frames at each end. Most of the travel happened in about
+/// five frames in the middle, which reads as the card jumping rather than
+/// flying.
+///
+/// Quadratic out is the middle setting. To tune by eye, swap the body for:
+///   gentler  -> math.sin(x * math.pi / 2)
+///   punchier -> 1 - math.pow(1 - x, 3).toDouble()
+double _ease(double x) {
+  final double inv = 1 - x;
+  return 1 - inv * inv;
+}
 
 List<Rect> _seatPanelRects({
   required List<Offset> positions,
