@@ -14,6 +14,7 @@ fi
 cd "$repo_root"
 
 api_base_url="${API_BASE_URL:-}"
+app_build="$(bash "$repo_root/tools/app_build_number.sh")"
 
 echo "==> Getting Flutter packages"
 flutter pub get
@@ -29,6 +30,7 @@ build_args=(
   --no-wasm-dry-run
   --dart-define="API_BASE_URL=$api_base_url"
   --dart-define="ALLOW_LOCAL_ECONOMY_DEV=false"
+  --dart-define="APP_BUILD=$app_build"
 )
 flutter build "${build_args[@]}"
 

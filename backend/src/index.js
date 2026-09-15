@@ -8,6 +8,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
+const { appReleaseRouter } = require('./routes/app_release');
 const { authRouter } = require('./routes/auth');
 const { economyRouter } = require('./routes/economy');
 const {
@@ -105,6 +106,7 @@ function createApp() {
   });
   app.use(limiter);
 
+  app.use('/v1/app-release', appReleaseRouter());
   app.use('/v1/auth', authRouter());
   app.use('/v1/economy', economyRouter({
     refreshLeaderboard: _syncLeaderboard,

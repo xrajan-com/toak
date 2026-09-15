@@ -17,6 +17,7 @@ import 'package:ten_of_a_kind_poker/features/venue/game_mode.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/venue_screen.dart';
 import 'package:ten_of_a_kind_poker/ui/theme/colors.dart';
 import 'package:ten_of_a_kind_poker/ui/widgets/stadium_banner.dart';
+import 'package:ten_of_a_kind_poker/ui/widgets/update_banner.dart';
 
 class GameModeScreen extends StatefulWidget {
   const GameModeScreen({super.key});
@@ -69,113 +70,127 @@ class _GameModeScreenState extends State<GameModeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.black,
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final bool compact =
-                constraints.maxHeight < 430 || constraints.maxWidth < 820;
-            final bool stacked = constraints.maxWidth < 720;
-            final double contentMaxWidth =
-                math.min(constraints.maxWidth - 32, stacked ? 520 : 1080);
-            final double cardGap = compact ? 12 : 18;
-            final double cardWidth =
-                stacked ? contentMaxWidth : (contentMaxWidth - cardGap) / 2;
-            final double cardHeight = stacked
-                ? (constraints.maxHeight * 0.30).clamp(160.0, 220.0)
-                : (constraints.maxHeight * 0.43).clamp(200.0, 290.0);
+      body: Stack(
+        children: <Widget>[
+          SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final bool compact =
+                    constraints.maxHeight < 430 || constraints.maxWidth < 820;
+                final bool stacked = constraints.maxWidth < 720;
+                final double contentMaxWidth =
+                    math.min(constraints.maxWidth - 32, stacked ? 520 : 1080);
+                final double cardGap = compact ? 12 : 18;
+                final double cardWidth =
+                    stacked ? contentMaxWidth : (contentMaxWidth - cardGap) / 2;
+                final double cardHeight = stacked
+                    ? (constraints.maxHeight * 0.30).clamp(160.0, 220.0)
+                    : (constraints.maxHeight * 0.43).clamp(200.0, 290.0);
 
-            Widget card(VenueEntryMode mode,
-                {required IconData icon,
-                required Color accent,
-                required Color secondary}) {
-              return SizedBox(
-                width: cardWidth,
-                height: cardHeight,
-                child: _GameModeCard(
-                  mode: mode,
-                  icon: icon,
-                  accent: accent,
-                  secondary: secondary,
-                  compact: compact,
-                  onTap: () => unawaited(_openMode(context, mode)),
-                ),
-              );
-            }
+                Widget card(VenueEntryMode mode,
+                    {required IconData icon,
+                    required Color accent,
+                    required Color secondary}) {
+                  return SizedBox(
+                    width: cardWidth,
+                    height: cardHeight,
+                    child: _GameModeCard(
+                      mode: mode,
+                      icon: icon,
+                      accent: accent,
+                      secondary: secondary,
+                      compact: compact,
+                      onTap: () => unawaited(_openMode(context, mode)),
+                    ),
+                  );
+                }
 
-            return Center(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(16, compact ? 12 : 18, 16, 16),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(maxWidth: contentMaxWidth),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      StadiumBanner(
-                        asset: _bannerAsset,
-                        maxHeight: compact ? 52 : 68,
-                        maxWidth: compact ? 300 : 400,
-                      ),
-                      SizedBox(height: compact ? 10 : 16),
-                      Text(
-                        'Game Mode',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: compact ? 24 : 34,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                      SizedBox(height: compact ? 6 : 10),
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 860),
-                        child: _ConquestChallenge(
-                          compact: compact,
-                          onTap: () => unawaited(
-                            _openMode(context, VenueEntryMode.career),
+                return Center(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(16, compact ? 12 : 18, 16, 16),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: contentMaxWidth),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          StadiumBanner(
+                            asset: _bannerAsset,
+                            maxHeight: compact ? 52 : 68,
+                            maxWidth: compact ? 300 : 400,
                           ),
-                        ),
-                      ),
-                      SizedBox(height: compact ? 12 : 20),
-                      if (stacked) ...[
-                        card(
-                          VenueEntryMode.quickGame,
-                          icon: Icons.bolt_rounded,
-                          accent: AppColors.red,
-                          secondary: AppColors.red,
-                        ),
-                        SizedBox(height: cardGap),
-                        card(
-                          VenueEntryMode.career,
-                          icon: Icons.workspace_premium_rounded,
-                          accent: AppColors.blue,
-                          secondary: AppColors.green,
-                        ),
-                      ] else
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
+                          SizedBox(height: compact ? 10 : 16),
+                          Text(
+                            'Game Mode',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: compact ? 24 : 34,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                          SizedBox(height: compact ? 6 : 10),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 860),
+                            child: _ConquestChallenge(
+                              compact: compact,
+                              onTap: () => unawaited(
+                                _openMode(context, VenueEntryMode.career),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: compact ? 12 : 20),
+                          if (stacked) ...[
                             card(
                               VenueEntryMode.quickGame,
                               icon: Icons.bolt_rounded,
                               accent: AppColors.red,
                               secondary: AppColors.red,
                             ),
-                            SizedBox(width: cardGap),
+                            SizedBox(height: cardGap),
                             card(
                               VenueEntryMode.career,
                               icon: Icons.workspace_premium_rounded,
                               accent: AppColors.blue,
                               secondary: AppColors.green,
                             ),
-                          ],
-                        ),
-                    ],
+                          ] else
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                card(
+                                  VenueEntryMode.quickGame,
+                                  icon: Icons.bolt_rounded,
+                                  accent: AppColors.red,
+                                  secondary: AppColors.red,
+                                ),
+                                SizedBox(width: cardGap),
+                                card(
+                                  VenueEntryMode.career,
+                                  icon: Icons.workspace_premium_rounded,
+                                  accent: AppColors.blue,
+                                  secondary: AppColors.green,
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            );
-          },
-        ),
+                );
+              },
+            ),
+          ),
+          // The update notice floats over the home screen rather than
+          // pushing it down: it is absent on almost every launch, and a
+          // layout that shifts when it appears is worse than one that does
+          // not. It renders nothing until there is something to say.
+          const Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: UpdateBanner(),
+          ),
+        ],
       ),
     );
   }

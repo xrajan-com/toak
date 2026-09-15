@@ -9,6 +9,7 @@ OUTPUT_AAB="$OUTPUT_DIR/toak-public-release.aab"
 cd "$ROOT_DIR"
 
 API_BASE_URL="${API_BASE_URL:-}"
+APP_BUILD="$(bash "$ROOT_DIR/tools/app_build_number.sh")"
 bash "$ROOT_DIR/tools/verify_android_signing.sh"
 bash "$ROOT_DIR/tools/verify_release_prereqs.sh"
 echo "Building backend-authoritative public bundle."
@@ -17,6 +18,7 @@ flutter build appbundle \
   -t lib/main_public.dart \
   --dart-define="API_BASE_URL=$API_BASE_URL" \
   --dart-define="ALLOW_LOCAL_ECONOMY_DEV=false" \
+  --dart-define="APP_BUILD=$APP_BUILD" \
   "$@"
 mkdir -p "$OUTPUT_DIR"
 cp "$SOURCE_AAB" "$OUTPUT_AAB"
