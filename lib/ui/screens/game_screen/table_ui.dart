@@ -532,14 +532,39 @@ class _PotPill extends StatelessWidget {
           child: Container(
             height: h,
             padding: EdgeInsets.symmetric(horizontal: h * 0.42),
+            // Glass rather than a painted chip. Three things do that work: a
+            // body translucent enough to let the rail's grain through, a
+            // vertical falloff so the top edge reads as catching light, and a
+            // bright rim around it.
+            //
+            // No BackdropFilter here on purpose. A backdrop blur is what sells
+            // glass over busy content, but this pill sits on a flat wood
+            // gradient with nothing to smear, so it would cost a saveLayer on
+            // every frame of a table that is already animating and buy almost
+            // nothing. Add one only if the rail ever gains detail.
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.75),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: <Color>[
+                  Colors.white.withValues(alpha: 0.62),
+                  Colors.white.withValues(alpha: 0.46),
+                  Colors.white.withValues(alpha: 0.38),
+                ],
+                stops: const <double>[0.0, 0.45, 1.0],
+              ),
               borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.66),
+                width: math.max(0.8, h * 0.032),
+              ),
               boxShadow: <BoxShadow>[
+                // Softer and tighter than the old drop shadow: a translucent
+                // body sitting on a heavy shadow reads as a sticker, not glass.
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.28),
-                  blurRadius: h * 0.28,
-                  offset: Offset(0, h * 0.08),
+                  color: Colors.black.withValues(alpha: 0.22),
+                  blurRadius: h * 0.22,
+                  offset: Offset(0, h * 0.06),
                 ),
               ],
             ),

@@ -6,6 +6,14 @@ const Duration _kBurstDuration = Duration(milliseconds: 1800);
 const double _kBurstConfettiAlphaScale = 0.88;
 const double _kBurstFireworkAlphaScale = 1.0;
 
+/// Air-resistance coefficient for the explosion particles, in 1/s.
+///
+/// Real shell sparks shed most of their speed almost at once, which is what
+/// makes a firework bloom outward and settle. Integrating v0*e^(-k*t) gives
+/// that curve in closed form, so position stays a pure function of time and
+/// the painter still keeps no per-frame state. Total reach is v0/k.
+const double _kSparkDrag = 2.2;
+
 double winnerBurstIntensityForRemainingPlayers(int remainingPlayers) =>
     remainingPlayers > 0 && remainingPlayers <= 3 ? 2.0 : 1.0;
 
@@ -102,6 +110,7 @@ class ActionBurstOverlayState extends State<ActionBurstOverlay>
     final int cometCount = scaledCount(12, 7, 12);
     final int sparkCount = scaledCount(42, 22, 42);
     final int starCount = scaledCount(8, 5, 8);
+    final int burstSmokeCount = scaledCount(5, 3, 5);
     final int burstWaveCount = particleMultiplier;
 
     for (int originIndex = 0; originIndex < origins.length; originIndex++) {
@@ -121,7 +130,7 @@ class ActionBurstOverlayState extends State<ActionBurstOverlay>
               ),
           velocity: Offset(vx, vy),
           color: const Color(0xFFECECEC).withValues(
-            alpha: 0.18 - rng.nextDouble() * 0.06,
+            alpha: 0.27 - rng.nextDouble() * 0.07,
           ),
           size: baseR,
           thickness: grow,
@@ -195,7 +204,9 @@ class ActionBurstOverlayState extends State<ActionBurstOverlay>
         for (int i = 0; i < sparksInWave; i++) {
           final double angle = (math.pi * 2 * i / sparksInWave) +
               (rng.nextDouble() - 0.5) * 0.16;
-          final double speed = 170 + rng.nextDouble() * 280;
+          // Faster off the mark than before: drag eats most of it, and the
+          // reach that survives (v0/_kSparkDrag) lands near the old radius.
+          final double speed = (170 + rng.nextDouble() * 280) * 1.7;
           final Color color = rng.nextDouble() < 0.58
               ? burstColor
               : fireworkPalette[rng.nextInt(fireworkPalette.length)];
@@ -215,7 +226,7 @@ class ActionBurstOverlayState extends State<ActionBurstOverlay>
 
         for (int i = 0; i < starsInWave; i++) {
           final double angle = (math.pi * 2 * i / starsInWave) + 0.22;
-          final double speed = 80 + rng.nextDouble() * 150;
+          final double speed = (80 + rng.nextDouble() * 150) * 1.7;
           parts.add(_BurstParticle(
             origin: burstCenter,
             velocity: Offset(math.cos(angle) * speed, math.sin(angle) * speed),
@@ -228,6 +239,44 @@ class ActionBurstOverlayState extends State<ActionBurstOverlay>
             delay: burstDelay + 0.02 + rng.nextDouble() * 0.035,
             life: 0.58 + rng.nextDouble() * 0.16,
             gravity: 125,
+          ));
+        }
+
+        // Spent powder hanging where the shell opened. Deliberately the
+        // shortest-lived thing in the burst: it should read as a trace the
+        // firework left behind, not as haze settling over the table. It also
+        // drifts barely at all, so the eye reads it as smoke rather than as
+        // another, slower kind of particle.
+        // Split across waves exactly as the sparks and stars are. Used per
+        // wave instead, the puff count would pick up the wave multiplier on
+        // top of the particle multiplier and scale 4x at double intensity,
+        // breaking the guarantee that doubling intensity doubles the budget.
+        final int smokeInWave = burstSmokeCount ~/ burstWaveCount +
+            (wave < burstSmokeCount % burstWaveCount ? 1 : 0);
+        for (int i = 0; i < smokeInWave; i++) {
+          final double angle = rng.nextDouble() * math.pi * 2;
+          final double drift = 14 + rng.nextDouble() * 26;
+          parts.add(_BurstParticle(
+            origin: burstCenter +
+                Offset(
+                  (rng.nextDouble() - 0.5) * 26,
+                  (rng.nextDouble() - 0.5) * 22,
+                ),
+            velocity: Offset(
+              math.cos(angle) * drift,
+              math.sin(angle) * drift - 26,
+            ),
+            // Mostly neutral, but carrying a little of its own shell's colour
+            // so each puff looks lit by the burst that made it.
+            color: Color.lerp(burstColor, const Color(0xFFE9E9F0), 0.80)!
+                .withValues(alpha: 0.34 - rng.nextDouble() * 0.09),
+            size: 9.0 + rng.nextDouble() * 7.0,
+            thickness: 26.0 + rng.nextDouble() * 22.0,
+            spin: 0.0,
+            kind: _ParticleKind.smoke,
+            delay: burstDelay + 0.045 + rng.nextDouble() * 0.03,
+            life: 0.30 + rng.nextDouble() * 0.10,
+            gravity: 0,
           ));
         }
       }
@@ -331,7 +380,7 @@ class _ActionBurstPainter extends CustomPainter {
       final double r = p.size + p.thickness * smokeT;
       final double a =
           (p.color.a * _particleFade(localProgress) * (1.0 - smokeT * 0.35))
-              .clamp(0.0, 0.35);
+              .clamp(0.0, 0.46);
       if (a <= 0.001) continue;
 
       final Color c = p.color.withValues(alpha: a);
@@ -353,8 +402,16 @@ class _ActionBurstPainter extends CustomPainter {
       if (localProgress == null) continue;
 
       final double time = localProgress * lifeSec * p.life;
-      final dx = p.velocity.dx * time;
-      final dy = p.velocity.dy * time + 0.5 * p.gravity * time * time;
+      // The explosion drags; the rising comets and the confetti do not. A
+      // comet is a lit charge still under thrust and confetti is paper, so
+      // both keep travelling — only the shell sparks bloom and ease.
+      final bool drags =
+          p.kind == _ParticleKind.spark || p.kind == _ParticleKind.star;
+      final double travel = drags
+          ? (1 - math.exp(-_kSparkDrag * time)) / _kSparkDrag
+          : time;
+      final dx = p.velocity.dx * travel;
+      final dy = p.velocity.dy * travel + 0.5 * p.gravity * time * time;
       final Offset pos = p.origin + Offset(dx, dy);
 
       final double kindAlphaScale = switch (p.kind) {
@@ -415,6 +472,7 @@ class _ActionBurstPainter extends CustomPainter {
             thickness: p.thickness,
             color: color,
             fade: fade,
+            heat: _coolWhite(localProgress),
             glowStroke: glowStroke,
             colorStroke: colorStroke,
             hotStroke: hotStroke,
@@ -434,6 +492,7 @@ class _ActionBurstPainter extends CustomPainter {
             thickness: p.thickness,
             color: color,
             fade: fade,
+            heat: _coolWhite(localProgress),
             glowStroke: glowStroke,
             colorStroke: colorStroke,
             hotStroke: hotStroke,
@@ -464,6 +523,18 @@ class _ActionBurstPainter extends CustomPainter {
     return value.clamp(0.0, 1.0);
   }
 
+  /// How white-hot a spark still is, 1 at ignition falling to 0.
+  ///
+  /// The additive white core used to run at ~0.95 for a particle's whole life.
+  /// With forty sparks overlapping near the middle of a burst that summed to a
+  /// flat white smear and the colour was lost exactly where the firework is
+  /// brightest. Letting it cool hands the centre back to the palette, which
+  /// reads as more colourful, not less bright.
+  double _coolWhite(double progress) {
+    final double t = (1.0 - progress).clamp(0.0, 1.0);
+    return t * t;
+  }
+
   double _particleFade(double progress) {
     final double fadeIn = (progress / 0.055).clamp(0.0, 1.0);
     final double fadeOut =
@@ -479,6 +550,7 @@ class _ActionBurstPainter extends CustomPainter {
     required double thickness,
     required Color color,
     required double fade,
+    required double heat,
     required Paint glowStroke,
     required Paint colorStroke,
     required Paint hotStroke,
@@ -495,7 +567,7 @@ class _ActionBurstPainter extends CustomPainter {
       tail,
       head,
       glowStroke
-        ..color = color.withValues(alpha: color.a * 0.24)
+        ..color = color.withValues(alpha: color.a * 0.32)
         ..strokeWidth = thickness * glowScale,
     );
     canvas.drawLine(
@@ -510,7 +582,7 @@ class _ActionBurstPainter extends CustomPainter {
       head,
       hotStroke
         ..color = const Color(0xFFFFFFFF)
-            .withValues(alpha: (fade * 0.92).clamp(0.0, 0.92))
+            .withValues(alpha: (fade * 0.92 * heat).clamp(0.0, 0.92))
         ..strokeWidth = thickness * 0.62,
     );
     canvas.drawCircle(
@@ -518,7 +590,7 @@ class _ActionBurstPainter extends CustomPainter {
       thickness * 2.4,
       glowStroke
         ..style = PaintingStyle.fill
-        ..color = color.withValues(alpha: color.a * 0.22),
+        ..color = color.withValues(alpha: color.a * 0.30),
     );
     glowStroke.style = PaintingStyle.stroke;
     canvas.drawCircle(
@@ -526,7 +598,7 @@ class _ActionBurstPainter extends CustomPainter {
       thickness * 0.95,
       hotStroke
         ..color = const Color(0xFFFFFFFF)
-            .withValues(alpha: (fade * 0.96).clamp(0.0, 0.96))
+            .withValues(alpha: (fade * 0.96 * heat).clamp(0.0, 0.96))
         ..style = PaintingStyle.fill
         ..blendMode = BlendMode.plus,
     );

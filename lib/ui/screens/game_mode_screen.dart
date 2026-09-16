@@ -283,15 +283,13 @@ class _ConquestChallenge extends StatelessWidget {
     }
 
     final double shell = compact ? 38 : 46;
-    final BorderRadius radius = BorderRadius.circular(compact ? 16 : 20);
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: radius,
+        customBorder: const StadiumBorder(),
         onTap: onTap,
         child: Ink(
-          decoration: BoxDecoration(
+          decoration: ShapeDecoration(
             gradient: LinearGradient(
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
@@ -300,15 +298,22 @@ class _ConquestChallenge extends StatelessWidget {
                 AppColors.red.withValues(alpha: 0.12),
               ],
             ),
-            borderRadius: radius,
-            border: Border.all(
-              color: AppColors.blue.withValues(alpha: 0.45),
-              width: 1.4,
+            // Same racetrack as the two mode cards below. StadiumBorder ties
+            // the radius to half the height, so this banner's ends stay in
+            // proportion whether the blurb runs to one line or two.
+            shape: StadiumBorder(
+              side: BorderSide(
+                color: AppColors.blue.withValues(alpha: 0.45),
+                width: 1.4,
+              ),
             ),
           ),
           child: Padding(
+            // A stadium sweeps inward above and below the vertical centre, so
+            // the ends need more horizontal room than a 20px corner did —
+            // otherwise the globe and the arrow sit right against the curve.
             padding: EdgeInsets.symmetric(
-              horizontal: compact ? 14 : 18,
+              horizontal: compact ? 22 : 30,
               vertical: compact ? 10 : 14,
             ),
             child: Row(

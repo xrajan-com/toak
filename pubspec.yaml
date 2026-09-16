@@ -2,7 +2,7 @@ name: ten_of_a_kind_poker
 description: X Poker, an offline Texas Hold'em game
 publish_to: 'none'
 
-version: 1.2.8+83
+version: 1.2.9+84
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
