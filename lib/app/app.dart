@@ -6,6 +6,7 @@ import 'package:ten_of_a_kind_poker/app/scroll_behavior.dart';
 import 'package:ten_of_a_kind_poker/app/startup/disclaimer_splash.dart';
 import 'package:ten_of_a_kind_poker/services/app_settings_service.dart';
 import 'package:ten_of_a_kind_poker/themes/app_theme.dart';
+import 'package:ten_of_a_kind_poker/ui/layout/app_viewport.dart';
 
 class TenOfAKindApp extends StatelessWidget {
   const TenOfAKindApp({super.key});
@@ -29,7 +30,7 @@ class TenOfAKindApp extends StatelessWidget {
               disableAnimations:
                   media.disableAnimations || settings.reducedMotion,
             ),
-            child: child ?? const SizedBox.shrink(),
+            child: AppViewport(child: child ?? const SizedBox.shrink()),
           );
         },
       ),
