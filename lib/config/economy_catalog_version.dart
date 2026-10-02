@@ -2,6 +2,6 @@
 const int economyCatalogSchemaVersion = 1;
 const int economyCatalogEventCount = 550;
 const String economyCatalogContentHash =
-    '0b13374a139597430e4f1c4b86e97865208bb8a369346d8d87779cb82ec8ea19';
+    '04cce2f19f7bb4512455a8a137c6ad13ea5008d8784d92ff4255999c38a35ed5';
 const String economyCatalogVersion =
     'v$economyCatalogSchemaVersion:$economyCatalogEventCount:$economyCatalogContentHash';

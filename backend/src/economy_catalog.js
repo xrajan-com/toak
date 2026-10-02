@@ -6,6 +6,14 @@ const compatibilityCatalog494 = require('./economy_catalog_compat_494.json');
 // the World). Clients already in the field compute their campaign ids and
 // prizes from it, so it stays servable until those builds age out.
 const compatibilityCatalog550 = require('./economy_catalog_compat_550.json');
+// The catalog built right after that redraw, while Eurasia held eleven
+// kingdoms and Central Asia's forts were sk:euro:central_asia:*. Central Asia
+// has since moved to the Rest of the World so every circuit holds ten; builds
+// already in the field pin this catalog, so it stays servable until they age
+// out.
+const compatibilityCatalog550Eurasia11 = require(
+  './economy_catalog_compat_550_eurasia11.json',
+);
 
 const LEGACY_ECONOMY_CATALOG_VERSION =
   'v1:441:642c58b38694044f869bad6873e5c76df042c87e4abc8be3db29ebaea2e802fb';
@@ -46,18 +54,23 @@ function _validateCatalog(candidate) {
 const ECONOMY_CATALOG_VERSION = _validateCatalog(catalog);
 const ECONOMY_CATALOG_494_VERSION = _validateCatalog(compatibilityCatalog494);
 const ECONOMY_CATALOG_550_VERSION = _validateCatalog(compatibilityCatalog550);
+const ECONOMY_CATALOG_550_EURASIA11_VERSION = _validateCatalog(
+  compatibilityCatalog550Eurasia11,
+);
 const ECONOMY_CATALOG_CONTENT_HASH = catalog.contentHash;
 // Deduplicated: until the catalog is rebuilt after a content change, the
 // live version and the compatibility copy are the same string.
 const SUPPORTED_ECONOMY_CATALOG_VERSIONS = Object.freeze([
   ...new Set([
     ECONOMY_CATALOG_VERSION,
+    ECONOMY_CATALOG_550_EURASIA11_VERSION,
     ECONOMY_CATALOG_550_VERSION,
     ECONOMY_CATALOG_494_VERSION,
     LEGACY_ECONOMY_CATALOG_VERSION,
   ]),
 ]);
 const catalogsByVersion = new Map([
+  [ECONOMY_CATALOG_550_EURASIA11_VERSION, compatibilityCatalog550Eurasia11],
   [ECONOMY_CATALOG_VERSION, catalog],
   [ECONOMY_CATALOG_550_VERSION, compatibilityCatalog550],
   [ECONOMY_CATALOG_494_VERSION, compatibilityCatalog494],
@@ -95,6 +108,7 @@ function campaignEventCount(catalogVersion = ECONOMY_CATALOG_VERSION) {
 
 module.exports = {
   ECONOMY_CATALOG_494_VERSION,
+  ECONOMY_CATALOG_550_EURASIA11_VERSION,
   ECONOMY_CATALOG_CONTENT_HASH,
   ECONOMY_CATALOG_VERSION,
   LEGACY_ECONOMY_CATALOG_VERSION,

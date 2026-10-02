@@ -15,16 +15,16 @@ void main() {
     expect(kVenueGroups.length, 5);
     expect(totalKingdomCount(), 50);
 
-    // The circuits are drawn by geography, not by a fixed quota, so the
-    // counts differ. They are pinned here because each circuit pays the
-    // same 20 Aura: a circuit that quietly gains or loses kingdoms changes
-    // what every fort in it is worth.
+    // Ten kingdoms per circuit. Central Asia sits in the Rest of the World
+    // beside Persia so Eurasia and the Rest of the World both hold ten.
+    // Pinned because each circuit pays the same 20 Aura: a circuit that
+    // quietly gains or loses kingdoms changes what every fort in it is worth.
     const expected = <VenueGroup, int>{
       VenueGroup.india: 10,
-      VenueGroup.euro: 11,
+      VenueGroup.euro: 10,
       VenueGroup.oceania: 10,
       VenueGroup.northAmerica: 10,
-      VenueGroup.international: 9,
+      VenueGroup.international: 10,
     };
     for (final group in kVenueGroups) {
       expect(
@@ -50,6 +50,30 @@ void main() {
       'Americas',
       'Rest of the World',
     ]);
+  });
+
+  test('every circuit deals the same ten felts, one to each kingdom', () {
+    // One table colour per kingdom, and the same ten colours in every
+    // circuit: a repeat inside a circuit makes two kingdoms' tables and
+    // pills look alike.
+    final expected = venuesForGroup(kVenueGroups.first)
+        .map((venue) => venue.felt.toARGB32())
+        .toSet();
+    expect(expected, hasLength(10));
+
+    for (final group in kVenueGroups) {
+      final felts = venuesForGroup(group).map((venue) => venue.felt.toARGB32());
+      expect(
+        felts.toSet(),
+        expected,
+        reason: '${group.name} does not deal the standard ten felts',
+      );
+      expect(
+        felts.toSet(),
+        hasLength(felts.length),
+        reason: '${group.name} repeats a felt colour',
+      );
+    }
   });
 
   test('every kingdom sits in exactly one circuit', () {

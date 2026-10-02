@@ -45,6 +45,7 @@ const Map<VenueGroup, Map<String, DealerAvatarStyle>>
     'Sub-Saharan Africa': DealerAvatarStyle.southAmerica,
     'Arabia': DealerAvatarStyle.arabia,
     'Persia & Mesopotamia': DealerAvatarStyle.india,
+    'Central Asia': DealerAvatarStyle.russia,
     'Indian Ocean Isles': DealerAvatarStyle.asia,
     'Atlantic Isles': DealerAvatarStyle.newDelhi,
     'French & Dutch Isles': DealerAvatarStyle.marathaEmpire,
@@ -52,7 +53,6 @@ const Map<VenueGroup, Map<String, DealerAvatarStyle>>
   },
   VenueGroup.euro: <String, DealerAvatarStyle>{
     'Britain & Ireland': DealerAvatarStyle.baroda,
-    'Central Asia': DealerAvatarStyle.russia,
     'France': DealerAvatarStyle.hyderabad,
     'Italy': DealerAvatarStyle.indore,
     'Iberia': DealerAvatarStyle.jaipur,

@@ -34,6 +34,7 @@ const _navyBlue = Color(0xFF001F3F);
 
 /* ----------------------- HEADER ----------------------- */
 
+/// Circular, lightly frosted icon button used in the slim venue header.
 class _HeaderIcon extends StatelessWidget {
   final IconData icon;
   final String tooltip;
@@ -43,14 +44,48 @@ class _HeaderIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      icon: Icon(icon, color: Colors.white, size: 22),
-      tooltip: tooltip,
-      onPressed: onTap,
-      constraints: const BoxConstraints.tightFor(width: 48, height: 48),
-      padding: EdgeInsets.zero,
-      splashRadius: 22,
-      mouseCursor: SystemMouseCursors.click,
+    return Tooltip(
+      message: tooltip,
+      child: Semantics(
+        button: true,
+        child: _HeaderIconFace(icon: icon, onTap: onTap),
+      ),
+    );
+  }
+}
+
+class _HeaderIconFace extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
+  const _HeaderIconFace({required this.icon, this.onTap});
+
+  static const double size = 40;
+
+  @override
+  Widget build(BuildContext context) {
+    final shape = CircleBorder(
+      side: BorderSide(color: Colors.white.withValues(alpha: 0.10)),
+    );
+    final face = SizedBox(
+      width: size,
+      height: size,
+      child: Icon(icon, color: Colors.white, size: 20),
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: Material(
+        color: Colors.white.withValues(alpha: 0.05),
+        shape: shape,
+        clipBehavior: Clip.antiAlias,
+        child: onTap == null
+            ? face
+            : InkWell(
+                onTap: onTap,
+                customBorder: shape,
+                mouseCursor: SystemMouseCursors.click,
+                child: face,
+              ),
+      ),
     );
   }
 }
@@ -58,12 +93,10 @@ class _HeaderIcon extends StatelessWidget {
 enum _HeaderMenuAction { dashboard, settings }
 
 class _HeaderActions extends StatelessWidget {
-  final bool mirrored;
   final VoidCallback? onProfile;
   final VoidCallback? onDashboard;
   final VoidCallback? onSettings;
   const _HeaderActions({
-    required this.mirrored,
     this.onProfile,
     this.onDashboard,
     this.onSettings,
@@ -71,64 +104,193 @@ class _HeaderActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 600;
-    final width = compact ? 96.0 : 144.0;
-    if (mirrored) return SizedBox(width: width, height: 48);
-    return SizedBox(
-      width: width,
-      height: 48,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _HeaderIcon(
+          icon: Icons.person_outline,
+          tooltip: 'My Profile',
+          onTap: onProfile ?? () {},
+        ),
+        if (compact)
+          PopupMenuButton<_HeaderMenuAction>(
+            tooltip: 'More options',
+            onSelected: (action) {
+              switch (action) {
+                case _HeaderMenuAction.dashboard:
+                  onDashboard?.call();
+                case _HeaderMenuAction.settings:
+                  onSettings?.call();
+              }
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: _HeaderMenuAction.dashboard,
+                child: ListTile(
+                  leading: Icon(Icons.dashboard_customize_outlined),
+                  title: Text('Dashboard'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: _HeaderMenuAction.settings,
+                child: ListTile(
+                  leading: Icon(Icons.settings_outlined),
+                  title: Text('Settings'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
+            child: const _HeaderIconFace(icon: Icons.more_horiz),
+          )
+        else ...[
           _HeaderIcon(
-            icon: Icons.person_outline,
-            tooltip: 'My Profile',
-            onTap: onProfile ?? () {},
+            icon: Icons.dashboard_customize_outlined,
+            tooltip: 'Dashboard',
+            onTap: onDashboard ?? () {},
           ),
-          if (compact)
-            PopupMenuButton<_HeaderMenuAction>(
-              tooltip: 'More options',
-              icon: const Icon(Icons.more_horiz, color: Colors.white),
-              constraints: const BoxConstraints.tightFor(width: 48, height: 48),
-              onSelected: (action) {
-                switch (action) {
-                  case _HeaderMenuAction.dashboard:
-                    onDashboard?.call();
-                  case _HeaderMenuAction.settings:
-                    onSettings?.call();
-                }
-              },
-              itemBuilder: (_) => const [
-                PopupMenuItem(
-                  value: _HeaderMenuAction.dashboard,
-                  child: ListTile(
-                    leading: Icon(Icons.dashboard_customize_outlined),
-                    title: Text('Dashboard'),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-                PopupMenuItem(
-                  value: _HeaderMenuAction.settings,
-                  child: ListTile(
-                    leading: Icon(Icons.settings_outlined),
-                    title: Text('Settings'),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
+          _HeaderIcon(
+            icon: Icons.settings_outlined,
+            tooltip: 'Settings',
+            onTap: onSettings ?? () {},
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Slim, transparent header: logo and heading on the left, circuit tabs in
+/// the middle, account actions on the right. It paints no background of its
+/// own so the ambient backdrop shows through and every row of kingdoms keeps
+/// the vertical space.
+class _VenueHeader extends StatelessWidget {
+  final String logoAsset;
+  final String title;
+  final bool compact;
+  final Widget tabs;
+  final Widget actions;
+  const _VenueHeader({
+    required this.logoAsset,
+    required this.title,
+    required this.compact,
+    required this.tabs,
+    required this.actions,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final logoSize = compact ? 36.0 : 42.0;
+    final brand = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ClipOval(
+          child: Image.asset(
+            logoAsset,
+            width: logoSize,
+            height: logoSize,
+            fit: BoxFit.cover,
+            filterQuality: FilterQuality.high,
+            gaplessPlayback: true,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          title,
+          maxLines: 1,
+          softWrap: false,
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+            fontSize: compact ? 15 : 17,
+            letterSpacing: 0.2,
+          ),
+        ),
+      ],
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth >= 760) {
+          return SizedBox(
+            height: compact ? 48 : 56,
+            child: Row(
+              children: [
+                brand,
+                const SizedBox(width: 16),
+                Expanded(child: Center(child: tabs)),
+                const SizedBox(width: 16),
+                actions,
               ],
-            )
-          else ...[
-            _HeaderIcon(
-              icon: Icons.dashboard_customize_outlined,
-              tooltip: 'Dashboard',
-              onTap: onDashboard ?? () {},
             ),
-            _HeaderIcon(
-              icon: Icons.settings_outlined,
-              tooltip: 'Settings',
-              onTap: onSettings ?? () {},
+          );
+        }
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: FittedBox(fit: BoxFit.scaleDown, child: brand),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                actions,
+              ],
+            ),
+            const SizedBox(height: 8),
+            tabs,
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Soft stage lighting behind the venue list, so the transparent header and
+/// the pills sit on depth instead of a flat black void.
+class _AmbientBackdrop extends StatelessWidget {
+  const _AmbientBackdrop();
+
+  @override
+  Widget build(BuildContext context) {
+    return const IgnorePointer(
+      child: DecoratedBox(
+        decoration: BoxDecoration(color: Color(0xFF050505)),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment(0, -1.4),
+                  radius: 1.3,
+                  colors: [Color(0x1FFFFFFF), Color(0x00FFFFFF)],
+                ),
+              ),
+            ),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment(-1.1, 1.2),
+                  radius: 0.95,
+                  colors: [Color(0x1720D9FF), Color(0x0020D9FF)],
+                ),
+              ),
+            ),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment(1.1, 1.2),
+                  radius: 0.95,
+                  colors: [Color(0x17FF2800), Color(0x00FF2800)],
+                ),
+              ),
             ),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -732,110 +894,88 @@ class _VenueScreenState extends State<VenueScreen>
 
   @override
   Widget build(BuildContext context) {
-    final screenH = MediaQuery.of(context).size.height;
-    final compactHeader = screenH < 520;
-    const bannerScale = 0.75;
-    final bannerMaxH = (compactHeader ? 48.0 : 72.0) * bannerScale;
-    final bannerMaxW = (compactHeader ? 280.0 : 420.0) * bannerScale;
-    final appBarHeight = compactHeader ? 152.0 : 206.0;
-    final vPad = compactHeader ? 6.0 : 10.0;
-    final gapL = compactHeader ? 6.0 : 12.0;
-    final gapM = compactHeader ? 4.0 : 8.0;
-    final String modeSummary = widget.mode.venueSummary;
+    final compact = MediaQuery.sizeOf(context).height < 480;
+    final hPad = compact ? 12.0 : 16.0;
 
     return Scaffold(
       backgroundColor: AppColors.black,
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(appBarHeight),
-        child: SafeArea(
-          bottom: false,
-          child: Container(
-            color: AppColors.black,
-            padding: EdgeInsets.symmetric(vertical: vPad, horizontal: 12),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const _HeaderActions(mirrored: true), // keeps center true
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: StadiumBanner(
-                        asset: _bannerAsset,
-                        maxHeight: bannerMaxH,
-                        maxWidth: bannerMaxW,
-                      ),
+      body: Stack(
+        children: [
+          const Positioned.fill(child: _AmbientBackdrop()),
+          SafeArea(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                hPad,
+                compact ? 6 : 10,
+                hPad,
+                compact ? 8 : 12,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _VenueHeader(
+                    logoAsset: _bannerAsset,
+                    title: widget.mode.venueHeading,
+                    compact: compact,
+                    tabs: _TitleAndTabs(
+                      controller: _tab,
+                      onLeaderboardShown: _showCircuitLeaderboard,
+                      onLeaderboardHidden: _hideCircuitLeaderboard,
                     ),
-                    const SizedBox(width: 8),
-                    _HeaderActions(
-                      mirrored: false,
+                    actions: _HeaderActions(
                       onProfile: _showMyProfileDialog,
                       onDashboard: _showProgressDialog,
                       onSettings: () {
                         unawaited(showAppSettingsSheet(context));
                       },
                     ),
-                  ],
-                ),
-                SizedBox(height: gapL),
-                _TitleAndTabs(
-                  controller: _tab,
-                  title: widget.mode.venueHeading,
-                  onLeaderboardShown: _showCircuitLeaderboard,
-                  onLeaderboardHidden: _hideCircuitLeaderboard,
-                ),
-                SizedBox(height: gapM),
-                _ModeSummary(
-                  text: modeSummary,
-                  accent: widget.mode == VenueEntryMode.quickGame
-                      ? AppColors.red
-                      : AppColors.blue,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-      body: SafeArea(
-        top: false,
-        child: Stack(
-          children: [
-            TabBarView(
-              controller: _tab,
-              children: [
-                for (final group in kVenueGroups)
-                  _VenueGrid(
-                    group: group,
-                    venues: venuesForGroup(group),
-                    mode: widget.mode,
-                    onOpen: _openVenue,
                   ),
-              ],
-            ),
-            if (_activeLeaderboardIndex case final index?)
-              Positioned(
-                top: 10,
-                bottom: 10,
-                left: 12,
-                right: 12,
-                child: Center(
-                  child: TapRegion(
-                    onTapOutside: (_) => _hideCircuitLeaderboard(),
-                    child: _CircuitLeaderboardPopover(
-                      spec: _circuitLeaderboards[index],
-                      entries: _leaderboardEntries,
-                      loading: _leaderboardLoading,
-                      errorMessage: _leaderboardError,
-                      onRetry: () {
-                        unawaited(_loadCircuitLeaderboardEntries());
-                      },
+                  SizedBox(height: compact ? 4 : 6),
+                  _ModeSummary(
+                    text: widget.mode.venueSummary,
+                    compact: compact,
+                  ),
+                  SizedBox(height: compact ? 6 : 10),
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        TabBarView(
+                          controller: _tab,
+                          children: [
+                            for (final group in kVenueGroups)
+                              _VenueGrid(
+                                group: group,
+                                venues: venuesForGroup(group),
+                                mode: widget.mode,
+                                onOpen: _openVenue,
+                              ),
+                          ],
+                        ),
+                        if (_activeLeaderboardIndex case final index?)
+                          Positioned.fill(
+                            child: Center(
+                              child: TapRegion(
+                                onTapOutside: (_) => _hideCircuitLeaderboard(),
+                                child: _CircuitLeaderboardPopover(
+                                  spec: _circuitLeaderboards[index],
+                                  entries: _leaderboardEntries,
+                                  loading: _leaderboardLoading,
+                                  errorMessage: _leaderboardError,
+                                  onRetry: () {
+                                    unawaited(_loadCircuitLeaderboardEntries());
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                ),
+                ],
               ),
-          ],
-        ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1047,16 +1187,14 @@ class _TranslateGradient extends GradientTransform {
   }
 }
 
-/* ----------------------- TITLE + TABS ----------------------- */
+/* ----------------------- CIRCUIT TABS ----------------------- */
 
 class _TitleAndTabs extends StatefulWidget {
   final TabController controller;
-  final String title;
   final ValueChanged<int> onLeaderboardShown;
   final VoidCallback onLeaderboardHidden;
   const _TitleAndTabs({
     required this.controller,
-    required this.title,
     required this.onLeaderboardShown,
     required this.onLeaderboardHidden,
   });
@@ -1067,6 +1205,14 @@ class _TitleAndTabs extends StatefulWidget {
 class _TitleAndTabsState extends State<_TitleAndTabs> {
   int _hoveredIndex = -1;
   int _focusedIndex = -1;
+
+  static const List<(Color, Color)> _circuitColors = <(Color, Color)>[
+    (Colors.green, Colors.white),
+    (Colors.white, Colors.black),
+    (Colors.yellow, Colors.black),
+    (_red, Colors.white),
+    (_blue, Colors.black),
+  ];
 
   @override
   void initState() {
@@ -1084,80 +1230,61 @@ class _TitleAndTabsState extends State<_TitleAndTabs> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final compact = constraints.maxWidth < 900;
-        final chipOuterPadding = compact ? 8.0 : 20.0;
-        final children = <Widget>[
-          Text(
-            widget.title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.3,
-              fontSize: 16,
-            ),
-          ),
-          _chip(
-            0,
-            venueGroupLabel(kVenueGroups[0]),
-            color: Colors.green,
-            textOn: Colors.white,
-            outerHorizontalPadding: chipOuterPadding,
-          ),
-          _chip(
-            1,
-            venueGroupLabel(kVenueGroups[1]),
-            color: Colors.white,
-            textOn: Colors.black,
-            outerHorizontalPadding: chipOuterPadding,
-          ),
-          _chip(
-            2,
-            venueGroupLabel(kVenueGroups[2]),
-            color: Colors.yellow,
-            textOn: Colors.black,
-            outerHorizontalPadding: chipOuterPadding,
-          ),
-          _chip(
-            3,
-            venueGroupLabel(kVenueGroups[3]),
-            color: _red,
-            textOn: Colors.white,
-            outerHorizontalPadding: chipOuterPadding,
-          ),
-          _chip(
-            4,
-            venueGroupLabel(kVenueGroups[4]),
-            color: _blue,
-            textOn: Colors.black,
-            outerHorizontalPadding: chipOuterPadding,
-          ),
-        ];
+    final compact = MediaQuery.sizeOf(context).height < 480;
+    final chips = <Widget>[
+      for (var i = 0; i < kVenueGroups.length; i++)
+        _chip(
+          i,
+          venueGroupLabel(kVenueGroups[i]),
+          color: _circuitColors[i % _circuitColors.length].$1,
+          textOn: _circuitColors[i % _circuitColors.length].$2,
+          compact: compact,
+        ),
+    ];
 
-        if (constraints.maxWidth >= 600) {
-          return FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (var i = 0; i < children.length; i++) ...[
-                  if (i > 0) const SizedBox(width: 6),
-                  children[i],
-                ],
+    // Decide by the screen, not by the slot the header hands us: in the
+    // one-row header the tabs share the row with the logo and actions, and
+    // that slot can be narrower than 600 even on a landscape phone, where
+    // the tabs must still stay on one line.
+    if (MediaQuery.sizeOf(context).width >= 600) {
+      return FittedBox(
+        fit: BoxFit.scaleDown,
+        child: _segment(
+          radius: 999,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < chips.length; i++) ...[
+                if (i > 0) const SizedBox(width: 2),
+                chips[i],
               ],
-            ),
-          );
-        }
+            ],
+          ),
+        ),
+      );
+    }
 
-        return Wrap(
-          alignment: WrapAlignment.center,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: compact ? 6 : 10,
-          runSpacing: 8,
-          children: children,
-        );
-      },
+    return _segment(
+      radius: 22,
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 2,
+        runSpacing: 4,
+        children: chips,
+      ),
+    );
+  }
+
+  Widget _segment({required double radius, required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+      ),
+      child: child,
     );
   }
 
@@ -1166,7 +1293,7 @@ class _TitleAndTabsState extends State<_TitleAndTabs> {
     String label, {
     required Color color,
     required Color textOn,
-    required double outerHorizontalPadding,
+    required bool compact,
   }) {
     final hovered = _hoveredIndex == index;
     final focused = _focusedIndex == index;
@@ -1213,36 +1340,36 @@ class _TitleAndTabsState extends State<_TitleAndTabs> {
           cursor: SystemMouseCursors.click,
           child: GestureDetector(
             onTap: activate,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 140),
-              padding: EdgeInsets.symmetric(
-                horizontal: outerHorizontalPadding,
-                vertical: 10,
-              ),
+            child: Container(
+              key: ValueKey('circuit-chip-$index'),
               decoration: ShapeDecoration(
-                color: Colors.transparent,
+                color: bg,
                 shape: StadiumBorder(
                   side: focused
                       ? const BorderSide(color: Colors.white, width: 2)
                       : BorderSide.none,
                 ),
+                shadows: selected
+                    ? const [
+                        BoxShadow(
+                          color: Color(0x66000000),
+                          blurRadius: 10,
+                          offset: Offset(0, 2),
+                        ),
+                      ]
+                    : null,
               ),
-              child: Container(
-                key: ValueKey('circuit-chip-$index'),
-                decoration: ShapeDecoration(
-                  color: bg,
-                  shape: const StadiumBorder(),
-                ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    color: fg,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14,
-                    letterSpacing: .2,
-                  ),
+              padding: EdgeInsets.symmetric(
+                horizontal: compact ? 12 : 15,
+                vertical: compact ? 6 : 7,
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: fg,
+                  fontWeight: FontWeight.w700,
+                  fontSize: compact ? 12.5 : 13.5,
+                  letterSpacing: .2,
                 ),
               ),
             ),
@@ -1562,37 +1689,32 @@ class _LeaderboardNameRow extends StatelessWidget {
 
 class _ModeSummary extends StatelessWidget {
   final String text;
-  final Color accent;
+  final bool compact;
 
   const _ModeSummary({
     required this.text,
-    required this.accent,
+    required this.compact,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: accent.withValues(alpha: 0.45)),
-      ),
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.82),
-          fontWeight: FontWeight.w700,
-          fontSize: 12.5,
-          height: 1.15,
-        ),
+    return Text(
+      text,
+      textAlign: TextAlign.center,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        color: Colors.white.withValues(alpha: 0.58),
+        fontWeight: FontWeight.w600,
+        fontSize: compact ? 11.5 : 12.5,
+        letterSpacing: 0.2,
+        height: 1.2,
       ),
     );
   }
 }
 
-/* ----------------------- VENUE GRID (2 × 5) ----------------------- */
+/* ----------------------- VENUE GRID (2 columns, every kingdom) ----------------------- */
 
 class _VenueGrid extends StatelessWidget {
   final VenueGroup group;
@@ -1612,37 +1734,36 @@ class _VenueGrid extends StatelessWidget {
       ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
     return LayoutBuilder(builder: (context, c) {
-      const rows = 5, cols = 2;
-      const hPad = 6.0, vPad = 6.0, hGap = 6.0, vGap = 6.0;
-      const bottomCushion = 8.0;
-      const bottomGuard = 16.0;
-      final double bottomInset = MediaQuery.of(context).padding.bottom;
-      final double bottomBuffer = bottomCushion + bottomGuard + bottomInset;
+      const cols = 2;
+      final rows = (items.length / cols).ceil();
+      final compact = MediaQuery.sizeOf(context).height < 480;
+      final hGap = compact ? 8.0 : 12.0;
+      final vGap = compact ? 6.0 : 8.0;
+      // Room for the pills' outer glow so the first and last rows are not
+      // shaved off at the edges of the grid.
+      const glowRoom = 4.0;
+      final minTileH = compact ? 40.0 : 48.0;
+      const maxTileH = 84.0;
 
-      final availW = c.maxWidth - hPad * 2 - hGap * (cols - 1);
-      final tileW = availW / cols;
+      final availH = c.maxHeight - glowRoom * 2 - vGap * math.max(0, rows - 1);
+      final fitTileH = rows > 0 ? availH / rows : maxTileH;
+      // Every kingdom fits on one screen; scrolling is only a last resort for
+      // very short windows.
+      final scroll = fitTileH < minTileH;
+      final tileH = scroll ? minTileH : math.min(fitTileH, maxTileH);
 
-      final h = MediaQuery.of(context).size.height;
-      final scale = h < 600 ? 0.94 : (h < 720 ? 0.975 : 1.0);
-
-      final availH =
-          (c.maxHeight - vPad * 2 - vGap * (rows - 1) - bottomBuffer) * scale;
-      const minTileH = 84.0;
-      final idealTileH = availH / rows;
-      final tileH = math.max(idealTileH, minTileH);
-      final scroll = tileH > idealTileH;
-
-      final grid = GridView.builder(
+      return GridView.builder(
         physics: scroll
             ? const BouncingScrollPhysics()
             : const NeverScrollableScrollPhysics(),
-        padding: EdgeInsets.only(bottom: bottomGuard + bottomInset),
-        itemCount: math.min(items.length, rows * cols),
+        clipBehavior: scroll ? Clip.hardEdge : Clip.none,
+        padding: const EdgeInsets.all(glowRoom),
+        itemCount: items.length,
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: cols,
           crossAxisSpacing: hGap,
           mainAxisSpacing: vGap,
-          childAspectRatio: tileW / (tileH > 0 ? tileH : 1),
+          mainAxisExtent: tileH,
         ),
         itemBuilder: (_, i) => _VenueTile(
           group: group,
@@ -1650,30 +1771,6 @@ class _VenueGrid extends StatelessWidget {
           venue: items[i],
           onTap: () => onOpen(items[i], group),
         ),
-      );
-
-      final content = Padding(
-        padding: const EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
-        child: grid,
-      );
-      final Widget gridLayer =
-          scroll ? content : SizedBox(height: c.maxHeight, child: content);
-
-      return Stack(
-        children: [
-          Positioned.fill(child: gridLayer),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: IgnorePointer(
-              child: Container(
-                height: bottomGuard + bottomInset,
-                color: AppColors.black,
-              ),
-            ),
-          ),
-        ],
       );
     });
   }
@@ -1691,8 +1788,7 @@ class _VenueTile extends StatefulWidget {
     required this.mode,
     required this.venue,
     required this.onTap,
-    Key? key,
-  }) : super(key: key);
+  });
 
   @override
   State<_VenueTile> createState() => _VenueTileState();
@@ -1715,27 +1811,14 @@ class _VenueTileState extends State<_VenueTile> {
       group: widget.group,
       kingdomName: v.name,
     );
-    final String infoLine = '$fortCount $fortLabel, Title: $titleName';
+    final String infoLine = '$fortCount $fortLabel · $titleName';
 
-    // Stronger border color
-    final borderColor =
-        (_hover || _pressed) ? v.felt : v.felt.withValues(alpha: 0.95);
-
-    final bg = _pressed
-        ? Colors.black.withValues(alpha: 0.45)
-        : (_hover
-            ? Colors.black.withValues(alpha: 0.36)
-            : Colors.black.withValues(alpha: 0.28));
-
-    // Stronger border width
-    final borderWidth = _pressed ? 4.0 : (_hover ? 3.6 : 3.2);
-
-    // Stronger text scaling
-    final textScale = MediaQuery.textScaleFactorOf(context).clamp(1.0, 1.25);
-
-    final double flagW = 36 * 0.6;
-    final double flagH = 24 * 0.6;
-    final int flagCacheW = (flagW * 2).round();
+    final vivid = feltHighlight(v.felt);
+    final active = _hover || _pressed;
+    final borderColor = vivid.withValues(alpha: active ? 1.0 : 0.85);
+    final fill =
+        vivid.withValues(alpha: _pressed ? 0.28 : (_hover ? 0.22 : 0.15));
+    final borderWidth = active ? 2.4 : 2.0;
 
     return Semantics(
       button: true,
@@ -1746,111 +1829,126 @@ class _VenueTileState extends State<_VenueTile> {
         onEnter: (_) => setState(() => _hover = true),
         onExit: (_) => setState(() => _hover = false),
         cursor: SystemMouseCursors.click,
-        child: Material(
-          type: MaterialType.transparency,
-          shape: _shape,
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTapDown: (_) => setState(() => _pressed = true),
-            onTapCancel: () => setState(() => _pressed = false),
-            onTap: () {
-              setState(() => _pressed = false);
-              widget.onTap();
-            },
-            customBorder: _shape,
-            splashColor: Colors.white10,
-            highlightColor: Colors.white.withValues(alpha: 0.05),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              decoration: ShapeDecoration(
-                color: bg,
-                shape: StadiumBorder(
-                  side: BorderSide(color: borderColor, width: borderWidth),
-                ),
-                shadows: [
-                  // More prominent glow
-                  BoxShadow(
-                    color: borderColor.withValues(alpha: 0.55),
-                    blurRadius: _hover ? 18 : 14,
-                    spreadRadius: _hover ? 2.2 : 1.4,
-                  ),
-                ],
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOut,
+          decoration: ShapeDecoration(
+            color: Color.alphaBlend(fill, const Color(0xFF070707)),
+            shape: StadiumBorder(
+              side: BorderSide(color: borderColor, width: borderWidth),
+            ),
+            shadows: [
+              BoxShadow(
+                color: vivid.withValues(alpha: active ? 0.45 : 0.28),
+                blurRadius: active ? 16 : 12,
               ),
-              child: Center(
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 190),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Image.asset(
-                          v.flagAsset,
-                          width: flagW,
-                          height: flagH,
-                          fit: BoxFit.cover,
-                          cacheWidth: flagCacheW,
-                          gaplessPlayback: true,
-                          filterQuality: FilterQuality.high,
-                          errorBuilder: (_, __, ___) => Container(
-                            width: flagW,
-                            height: flagH,
-                            color: Colors.white12,
-                            alignment: Alignment.center,
-                            child: const Icon(Icons.flag_outlined,
-                                color: Colors.white70, size: 12),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Column(
+            ],
+          ),
+          child: Material(
+            type: MaterialType.transparency,
+            shape: _shape,
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTapDown: (_) => setState(() => _pressed = true),
+              onTapCancel: () => setState(() => _pressed = false),
+              onTap: () {
+                setState(() => _pressed = false);
+                widget.onTap();
+              },
+              customBorder: _shape,
+              splashColor: vivid.withValues(alpha: 0.18),
+              highlightColor: Colors.white.withValues(alpha: 0.04),
+              child: LayoutBuilder(
+                builder: (context, box) {
+                  final h = box.maxHeight.isFinite ? box.maxHeight : 64.0;
+                  final nameSize = (h * 0.22).clamp(12.5, 15.0);
+                  final metaSize = (h * 0.16).clamp(10.0, 11.5);
+                  final flagH = (h * 0.30).clamp(14.0, 20.0);
+                  final flagW = flagH * 1.5;
+                  final hPad = math.max(14.0, h * 0.4);
+                  final maxContentW = math.max(0.0, box.maxWidth - hPad * 2);
+
+                  return Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: hPad),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(maxWidth: maxContentW),
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                v.name,
-                                softWrap: false,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.start,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 14 * textScale,
-                                  letterSpacing: .35,
-                                  height: 1.0,
-                                  shadows: const [
-                                    Shadow(
-                                      blurRadius: 8,
-                                      offset: Offset(0, 1),
-                                      color: Colors.black54,
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(3),
+                                child: Image.asset(
+                                  v.flagAsset,
+                                  width: flagW,
+                                  height: flagH,
+                                  fit: BoxFit.cover,
+                                  cacheWidth: (flagW * 3).round(),
+                                  gaplessPlayback: true,
+                                  filterQuality: FilterQuality.high,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    width: flagW,
+                                    height: flagH,
+                                    color: Colors.white12,
+                                    alignment: Alignment.center,
+                                    child: const Icon(Icons.flag_outlined,
+                                        color: Colors.white70, size: 12),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Flexible(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      v.name,
+                                      maxLines: 1,
+                                      softWrap: false,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: nameSize,
+                                        letterSpacing: .2,
+                                        height: 1.1,
+                                        shadows: const [
+                                          Shadow(
+                                            blurRadius: 8,
+                                            offset: Offset(0, 1),
+                                            color: Colors.black54,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      infoLine,
+                                      maxLines: 1,
+                                      softWrap: false,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: Colors.white
+                                            .withValues(alpha: 0.66),
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: metaSize,
+                                        letterSpacing: 0.2,
+                                        height: 1.1,
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
-                              if (infoLine.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  infoLine,
-                                  softWrap: false,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.72),
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 10.5 * textScale,
-                                    letterSpacing: 0.25,
-                                    height: 1.0,
-                                  ),
-                                ),
-                              ],
                             ],
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
             ),
           ),

@@ -19,6 +19,7 @@ const Map<VenueGroup, Map<String, String>> kKingdomTitles = {
     'Sub-Saharan Africa': 'Mansa',
     'Arabia': 'Sheikh',
     'Persia & Mesopotamia': 'Shah',
+    'Central Asia': 'Emir',
     'Indian Ocean Isles': 'Admiral',
     'Atlantic Isles': 'Warden',
     'French & Dutch Isles': 'Burgher',
@@ -26,7 +27,6 @@ const Map<VenueGroup, Map<String, String>> kKingdomTitles = {
   },
   VenueGroup.euro: <String, String>{
     'Britain & Ireland': 'Baron',
-    'Central Asia': 'Emir',
     'France': 'Marquis',
     'Italy': 'Conte',
     'Iberia': 'Hidalgo',

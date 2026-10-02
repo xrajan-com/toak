@@ -45,18 +45,18 @@ void main() {
 
   test('complete career catalog is reachable and awards every title', () {
     const expectedFortCounts = <VenueGroup, int>{
-      VenueGroup.euro: 104,
+      VenueGroup.euro: 93,
       VenueGroup.india: 89,
-      VenueGroup.international: 77,
+      VenueGroup.international: 88,
       VenueGroup.oceania: 100,
       VenueGroup.northAmerica: 130,
     };
     const expectedKingdomCounts = <VenueGroup, int>{
       VenueGroup.india: 10,
-      VenueGroup.euro: 11,
+      VenueGroup.euro: 10,
       VenueGroup.oceania: 10,
       VenueGroup.northAmerica: 10,
-      VenueGroup.international: 9,
+      VenueGroup.international: 10,
     };
     final progress = CampaignProgressService();
     int totalForts = 0;

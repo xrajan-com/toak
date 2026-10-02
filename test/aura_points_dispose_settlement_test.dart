@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ten_of_a_kind_poker/config/campaign_events.dart' as ce;
 import 'package:ten_of_a_kind_poker/config/venues.dart';
 import 'package:ten_of_a_kind_poker/services/aura_points_service.dart';
 
@@ -15,12 +16,16 @@ void main() {
     () async {
       final wallet = AuraPointsService();
       await wallet.init();
+      final freeFort = ce.freeSubKingdomIndexFor(
+        group: VenueGroup.international,
+        kingdomName: 'Central Asia',
+      );
 
       final reserved = await wallet.reserveCampaignEntry(
-        group: VenueGroup.euro,
+        group: VenueGroup.international,
         kingdomName: 'Central Asia',
         isMainEvent: false,
-        subKingdomIndex: 10,
+        subKingdomIndex: freeFort,
         expectedEntryFee: 0,
       );
       expect(reserved.canEnter, isTrue);
@@ -30,10 +35,10 @@ void main() {
       expect(wallet.activeCommittedEntries, hasLength(1));
 
       final settlement = wallet.finalizeCampaignAbandon(
-        group: VenueGroup.euro,
+        group: VenueGroup.international,
         kingdomName: 'Central Asia',
         isMainEvent: false,
-        subKingdomIndex: 10,
+        subKingdomIndex: freeFort,
         entryAttemptId: committed.reservation!.attemptId,
         totalPlayers: 6,
       );

@@ -38,17 +38,45 @@ const _blue = Color(0xFF20D9FF);
 
 /* ---------- FELT COLORS ---------- */
 
-const kFeltRed = Color(0xFF8B0000);
-const kFeltOrange = Color.fromARGB(212, 255, 107, 1);
-const kFeltMagenta = Color.fromARGB(204, 220, 83, 220);
-const kFeltTurmeric = Color.fromARGB(218, 203, 160, 20);
-const kFeltNavyBlue = Color.fromARGB(255, 36, 36, 122);
-const kFeltSkyBlue = Color.fromARGB(208, 0, 166, 232);
-const kFeltDeepPurple = Color.fromARGB(173, 118, 30, 180);
-const kFeltDarkGreen = Color(0xFF013220);
-const kFeltOliveGreen = Color(0xFF556B2F);
-const kFeltDarkBrown = Color.fromARGB(227, 95, 65, 58);
-const kFeltTurquoise = Color(0xFF11807C);
+// One hue per kingdom, the same ten hues in every circuit, in two tiers.
+//
+// The felt is the table surface: dark, so the cards and chips stay the
+// brightest things on it. The highlight is that hue lifted for the venue
+// pills, where ten kingdoms sit side by side on black and have to be told
+// apart at a glance. Chosen so the closest pair in the set reads as two
+// colours (OKLab dE 17.5 against 8.6 before), no hue is washed out enough to
+// read as grey, and every highlight clears 3:1 contrast on black.
+
+const kFeltRed = Color(0xFF68021A);
+const kFeltOrange = Color(0xFF633701);
+const kFeltTurmeric = Color(0xFF846C07);
+const kFeltLime = Color(0xFF265F03);
+const kFeltDarkGreen = Color(0xFF014124);
+const kFeltTeal = Color(0xFF087871);
+const kFeltSkyBlue = Color(0xFF014463);
+const kFeltNavyBlue = Color(0xFF1B2680);
+const kFeltDeepPurple = Color(0xFF5940A1);
+const kFeltMagenta = Color(0xFF741863);
+
+const Map<int, Color> _kFeltHighlights = <int, Color>{
+  0xFF68021A: Color(0xFFBA0135),
+  0xFF633701: Color(0xFFB96C04),
+  0xFF846C07: Color(0xFFD2AE0C),
+  0xFF265F03: Color(0xFF47A900),
+  0xFF014124: Color(0xFF057746),
+  0xFF087871: Color(0xFF05C4B8),
+  0xFF014463: Color(0xFF0386BC),
+  0xFF1B2680: Color(0xFF3646E8),
+  0xFF5940A1: Color(0xFF997BFE),
+  0xFF741863: Color(0xFFD630B8),
+};
+
+/// The bright tier of a felt colour, for pills, borders and glows.
+///
+/// A felt is mixed for a table lit from above, so the darkest of them would
+/// vanish as a thin outline on the black venue screen. An unknown colour
+/// comes back unchanged rather than guessed at.
+Color feltHighlight(Color felt) => _kFeltHighlights[felt.toARGB32()] ?? felt;
 
 /* ---------- VENUE DATA ---------- */
 
@@ -96,7 +124,7 @@ const List<VenueTheme> indianVenues = [
   VenueTheme(
       name: 'Mysore',
       background: _bg,
-      felt: kFeltDarkBrown,
+      felt: kFeltTeal,
       accent: _red,
       accentAlt: _blue,
       flagAsset: 'assets/images/flags/mysore.png',
@@ -128,7 +156,7 @@ const List<VenueTheme> indianVenues = [
   VenueTheme(
       name: 'Travancore',
       background: _bg,
-      felt: kFeltOliveGreen,
+      felt: kFeltLime,
       accent: _red,
       accentAlt: _blue,
       flagAsset: 'assets/images/flags/travancore.png',
@@ -147,7 +175,7 @@ const List<VenueTheme> internationalVenues = [
   VenueTheme(
       name: 'Sub-Saharan Africa',
       background: _bg,
-      felt: kFeltOliveGreen,
+      felt: kFeltLime,
       accent: _red,
       accentAlt: _blue,
       flagAsset: 'assets/images/flags/africa.png',
@@ -168,6 +196,14 @@ const List<VenueTheme> internationalVenues = [
       accentAlt: _blue,
       flagAsset: 'assets/images/flags/arabia.png',
       timeZoneId: 'Asia/Tehran'),
+  VenueTheme(
+      name: 'Central Asia',
+      background: _bg,
+      felt: kFeltDarkGreen,
+      accent: _red,
+      accentAlt: _blue,
+      flagAsset: 'assets/images/flags/russia.png',
+      timeZoneId: 'Asia/Tashkent'),
   VenueTheme(
       name: 'Indian Ocean Isles',
       background: _bg,
@@ -203,7 +239,7 @@ const List<VenueTheme> internationalVenues = [
   VenueTheme(
       name: 'Arctic',
       background: _bg,
-      felt: kFeltDarkBrown,
+      felt: kFeltTeal,
       accent: _red,
       accentAlt: _blue,
       flagAsset: 'assets/images/flags/oceania/alaska.png',
@@ -230,7 +266,7 @@ const List<VenueTheme> euroVenues = [
   VenueTheme(
       name: 'Italy',
       background: _bg,
-      felt: kFeltOliveGreen,
+      felt: kFeltLime,
       accent: _red,
       accentAlt: _blue,
       flagAsset: 'assets/images/flags/euro/italy.png',
@@ -286,19 +322,11 @@ const List<VenueTheme> euroVenues = [
   VenueTheme(
       name: 'Russia & Siberia',
       background: _bg,
-      felt: kFeltDarkBrown,
+      felt: kFeltTeal,
       accent: _red,
       accentAlt: _blue,
       flagAsset: 'assets/images/flags/euro/russia_siberia.png',
       timeZoneId: 'Europe/Moscow'),
-  VenueTheme(
-      name: 'Central Asia',
-      background: _bg,
-      felt: kFeltTurquoise,
-      accent: _red,
-      accentAlt: _blue,
-      flagAsset: 'assets/images/flags/russia.png',
-      timeZoneId: 'Asia/Tashkent'),
 ];
 
 const List<VenueTheme> oceaniaVenues = [
@@ -321,7 +349,7 @@ const List<VenueTheme> oceaniaVenues = [
   VenueTheme(
       name: 'Korea',
       background: _bg,
-      felt: kFeltOliveGreen,
+      felt: kFeltLime,
       accent: _red,
       accentAlt: _blue,
       flagAsset: 'assets/images/flags/china.png',
@@ -377,7 +405,7 @@ const List<VenueTheme> oceaniaVenues = [
   VenueTheme(
       name: 'Australia',
       background: _bg,
-      felt: kFeltDarkBrown,
+      felt: kFeltTeal,
       accent: _red,
       accentAlt: _blue,
       flagAsset: 'assets/images/flags/australia.png',
@@ -404,7 +432,7 @@ const List<VenueTheme> northAmericanVenues = [
   VenueTheme(
       name: 'Atlantic USA',
       background: _bg,
-      felt: kFeltOliveGreen,
+      felt: kFeltLime,
       accent: _red,
       accentAlt: _blue,
       flagAsset: 'assets/images/flags/us/new_york.png',
@@ -460,7 +488,7 @@ const List<VenueTheme> northAmericanVenues = [
   VenueTheme(
       name: 'Southern Cone',
       background: _bg,
-      felt: kFeltDarkBrown,
+      felt: kFeltTeal,
       accent: _red,
       accentAlt: _blue,
       flagAsset: 'assets/images/flags/us/virginia.png',

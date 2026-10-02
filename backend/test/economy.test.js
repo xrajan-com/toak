@@ -23,7 +23,9 @@ const { FakeFirestore } = require('./firestore_fake');
 const economyCatalog = require('../src/economy_catalog.json');
 const {
   ECONOMY_CATALOG_494_VERSION,
+  ECONOMY_CATALOG_550_EURASIA11_VERSION,
   ECONOMY_CATALOG_VERSION,
+  SUPPORTED_ECONOMY_CATALOG_VERSIONS,
   campaignEvent,
 } = require('../src/economy_catalog');
 const {
@@ -83,6 +85,27 @@ test('catalog negotiation keeps legacy clients compatible during rollout', () =>
   assert.equal(current, ECONOMY_CATALOG_VERSION);
   assert.equal(production494, ECONOMY_CATALOG_494_VERSION);
   assert.equal(unknown, ECONOMY_CATALOG_VERSION);
+});
+
+test('builds pinned to the eleven-kingdom Eurasia keep their Central Asia events', () => {
+  assert.equal(
+    SUPPORTED_ECONOMY_CATALOG_VERSIONS.includes(
+      ECONOMY_CATALOG_550_EURASIA11_VERSION,
+    ),
+    true,
+  );
+  assert.equal(
+    _catalogVersionForRequest({
+      get: () => ECONOMY_CATALOG_550_EURASIA11_VERSION,
+    }),
+    ECONOMY_CATALOG_550_EURASIA11_VERSION,
+  );
+  const pinned = campaignEvent(
+    'me:euro:central_asia',
+    ECONOMY_CATALOG_550_EURASIA11_VERSION,
+  );
+  assert.equal(pinned.kingdom, 'Central Asia');
+  assert.equal(pinned.requiredFortIds.length, 11);
 });
 
 test('494 reservations retain the exact event rules used before rollout', () => {
@@ -565,11 +588,11 @@ test('catalog-backed entry and win ignore client fee, group, and prize claims', 
     },
   });
   assert.equal(win.accepted, true);
-  assert.equal(win.delta, 159600);
+  assert.equal(win.delta, 143400);
 
   const afterWin = db.dump(SERVER_PROGRESS_COLLECTION, uid);
   assert.equal(afterWin.indiaAup, 2000);
-  assert.equal(afterWin.internationalAup, 161600);
+  assert.equal(afterWin.internationalAup, 145400);
   assert.deepEqual(afterWin.cleared, [freeFort]);
   assert.equal(afterWin.entryReservations[0].status, 'settled');
 
@@ -584,10 +607,10 @@ test('catalog-backed entry and win ignore client fee, group, and prize claims', 
     },
   });
   assert.equal(paid.accepted, true);
-  assert.equal(paid.reservation.amount, 76000);
+  assert.equal(paid.reservation.amount, 68000);
   assert.equal(paid.reservation.group, 'international');
-  assert.equal(paid.delta, -76000);
-  assert.equal(paid.progress.internationalAup, 85600);
+  assert.equal(paid.delta, -68000);
+  assert.equal(paid.progress.internationalAup, 77400);
 });
 
 test('secure catalog reservations allow unlimited fort replays with unique attempts', async () => {
@@ -610,11 +633,11 @@ test('secure catalog reservations allow unlimited fort replays with unique attem
       },
     });
     assert.equal(win.accepted, true);
-    assert.equal(win.delta, 159600);
+    assert.equal(win.delta, 143400);
   }
 
   const saved = db.dump(SERVER_PROGRESS_COLLECTION, uid);
-  assert.equal(saved.internationalAup, 2000 + (5 * 159600));
+  assert.equal(saved.internationalAup, 2000 + (5 * 143400));
   assert.deepEqual(saved.cleared, [campaignId]);
   assert.equal(
     saved.entryReservations.filter((entry) => entry.status === 'settled').length,
@@ -646,7 +669,7 @@ test('committed entry recovery is delayed, idempotent, and penalized once', asyn
   });
   assert.equal(tooSoon.accepted, false);
   assert.equal(tooSoon.reason, 'recovery_not_ready');
-  assert.equal(tooSoon.progress.internationalAup, 24000);
+  assert.equal(tooSoon.progress.internationalAup, 32000);
 
   const stored = db.dump(SERVER_PROGRESS_COLLECTION, uid);
   stored.entryReservations[0].updatedAtMs = 1;

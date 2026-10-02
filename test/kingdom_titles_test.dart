@@ -41,6 +41,7 @@ void main() {
       'Sub-Saharan Africa': 'Mansa',
       'Arabia': 'Sheikh',
       'Persia & Mesopotamia': 'Shah',
+      'Central Asia': 'Emir',
       'Indian Ocean Isles': 'Admiral',
       'Atlantic Isles': 'Warden',
       'French & Dutch Isles': 'Burgher',
@@ -58,7 +59,6 @@ void main() {
       'Balkans & Mediterranean': 'Strategos',
       'Baltic Marches': 'Hetman',
       'Russia & Siberia': 'Ataman',
-      'Central Asia': 'Emir',
     };
     const expectedOceaniaTitles = <String, String>{
       'China': 'Jiangjun',
@@ -108,7 +108,6 @@ void main() {
       'Balkans & Mediterranean': 'assets/images/flags/euro/mediterranean.png',
       'Baltic Marches': 'assets/images/flags/euro/baltic_marches.png',
       'Russia & Siberia': 'assets/images/flags/euro/russia_siberia.png',
-      'Central Asia': 'assets/images/flags/russia.png',
     };
     const expectedOceaniaFlags = <String, String>{
       'China': 'assets/images/flags/china.png',

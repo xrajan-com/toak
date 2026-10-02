@@ -1284,7 +1284,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "Sub-Saharan Africa": "Rest of the World",
     "Arabia": "Rest of the World",
     "Persia & Mesopotamia": "Rest of the World",
-    "Central Asia": "Eurasia",
+    "Central Asia": "Rest of the World",
     "Indian Ocean Isles": "Rest of the World",
     "Atlantic Isles": "Rest of the World",
     "French & Dutch Isles": "Rest of the World",
