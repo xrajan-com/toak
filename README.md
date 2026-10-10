@@ -33,6 +33,7 @@ app, Firebase targets) disagrees with it.
 | `web/` | Flutter web shell (index.html, manifest) used to build `hosting/web/` |
 | `tools/` | Release, deploy and verification scripts, plus generators and ML tooling |
 | `docs/` | Specs and guides; `docs/archive/` holds superseded reviews |
+| `fastlane/metadata/android/` | Google Play listing text, checked by `tools/verify_store_listing.sh` (fastlane layout, so it can be uploaded automatically later) |
 | `design_sources/` | Source artwork that is not bundled directly (brand, store, flags) |
 | `android/`, `ios/` | Native shells (Android shipped, iOS in preparation) |
 | `macos/`, `linux/`, `windows/` | Flutter desktop shells; not shipped |

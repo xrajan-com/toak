@@ -18,6 +18,7 @@ fi
 cd "$repo_root"
 bash tools/verify_assets.sh
 bash tools/verify_identity.sh
+bash tools/verify_store_listing.sh
 bash tools/verify_game_layout.sh
 bash tools/verify_economy_catalog.sh
 npm --prefix backend test

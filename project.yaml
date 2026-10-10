@@ -18,6 +18,7 @@ app:
   ios_bundle_id: com.tenofakind.poker            # permanent; cannot change after publishing
   dart_package: ten_of_a_kind_poker              # internal code name, never shown to players
   version_file: pubspec.yaml                     # version: <name>+<build>
+  store_listing_dir: fastlane/metadata/android/en-US   # Play listing text (title, short and full description)
 
 backend:
   platform: cloud-run
