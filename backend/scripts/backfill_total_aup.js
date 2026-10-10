@@ -11,25 +11,14 @@
  * Safe to re-run: it only touches wallets whose stored total is missing or
  * wrong, and it writes nothing but that one field.
  */
-const { execFileSync } = require('node:child_process');
-const path = require('node:path');
-const { initializeApp, applicationDefault } = require('firebase-admin/app');
-const { getFirestore } = require('firebase-admin/firestore');
 const { baseProgress, totalAup } = require('../src/economy/progress');
 const { SERVER_PROGRESS_COLLECTION } = require('../src/economy/store');
+const { connect, run } = require('./firestore_admin');
 
 const apply = process.argv.includes('--apply');
-const root = path.join(__dirname, '..', '..');
-const projectId = execFileSync('bash', [path.join(root, 'tools/project_config.sh'), 'backend.gcp_project'])
-  .toString().trim();
-
-// Bill API quota to this project, whatever project the Mac's gcloud login
-// happens to default to (gcloud adds its current project as the quota
-// project on `gcloud auth application-default login`).
-process.env.GOOGLE_CLOUD_QUOTA_PROJECT = projectId;
 
 async function main() {
-  const db = getFirestore(initializeApp({ credential: applicationDefault(), projectId }));
+  const { db, projectId } = await connect();
   let scanned = 0;
   let fixed = 0;
   let last = null;
@@ -53,11 +42,9 @@ async function main() {
     }
     if (writes) await batch.commit();
     last = page.docs[page.docs.length - 1];
+    console.log(`  ${scanned} wallets checked`);
   }
   console.log(`${projectId}: scanned ${scanned} wallets, ${fixed} ${apply ? 'updated' : 'need totalAup (dry run, nothing written; add --apply)'}`);
 }
 
-main().catch((error) => {
-  console.error('Backfill failed:', error.message);
-  process.exitCode = 1;
-});
+run(main, 'Backfill');

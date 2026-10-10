@@ -78,11 +78,15 @@ async function migrateLegacyWallet({ db, uid, apply = false }) {
 async function _candidateUids(db) {
   const uids = new Set();
   for (const name of [LEGACY_PROGRESS_COLLECTION, CLIENT_WALLET_COLLECTION]) {
-    for (const ref of await db.collection(name).listDocuments()) uids.add(ref.id);
+    const refs = await db.collection(name).listDocuments();
+    console.log(`  ${name}: ${refs.length} player(s) with old data`);
+    for (const ref of refs) uids.add(ref.id);
   }
   // Server wallets below the marker, including ones with no marker at all,
   // which a where() query cannot find.
   let last = null;
+  let scanned = 0;
+  let unfinished = 0;
   for (;;) {
     let query = db.collection(SERVER_PROGRESS_COLLECTION)
       .select('legacyMigrationVersion')
@@ -92,40 +96,63 @@ async function _candidateUids(db) {
     const page = await query.get();
     if (page.empty) break;
     for (const doc of page.docs) {
+      scanned += 1;
       if (int(doc.get('legacyMigrationVersion')) < MIGRATION_COMPLETE_VERSION) {
+        unfinished += 1;
         uids.add(doc.id);
       }
     }
     last = page.docs[page.docs.length - 1];
   }
+  console.log(
+    `  ${SERVER_PROGRESS_COLLECTION}: ${scanned} wallet(s), ` +
+    `${unfinished} not yet marked migrated`,
+  );
   return [...uids].sort();
 }
 
-async function main() {
-  const { execFileSync } = require('node:child_process');
-  const path = require('node:path');
-  const { initializeApp, applicationDefault } = require('firebase-admin/app');
-  const { getFirestore } = require('firebase-admin/firestore');
+// One batched read per 100 players drops everyone whose server wallet is
+// already migrated, so only the stragglers need a transaction each.
+async function _needingMigration(db, uids) {
+  const remaining = [];
+  for (let i = 0; i < uids.length; i += 100) {
+    const chunk = uids.slice(i, i + 100);
+    const snaps = await db.getAll(...chunk.map((uid) => walletRef(db, uid)));
+    snaps.forEach((snap, index) => {
+      const migrated = snap.exists &&
+        int(snap.get('legacyMigrationVersion')) >= MIGRATION_COMPLETE_VERSION;
+      if (!migrated) remaining.push(chunk[index]);
+    });
+  }
+  return remaining;
+}
 
+async function main() {
+  const { connect } = require('./firestore_admin');
   const apply = process.argv.includes('--apply');
-  const root = path.join(__dirname, '..', '..');
-  const projectId = execFileSync(
-    'bash',
-    [path.join(root, 'tools/project_config.sh'), 'backend.gcp_project'],
-  ).toString().trim();
-  // Bill API quota to this project, whatever project the Mac's gcloud login
-  // happens to default to.
-  process.env.GOOGLE_CLOUD_QUOTA_PROJECT = projectId;
-  const db = getFirestore(
-    initializeApp({ credential: applicationDefault(), projectId }),
+  const { db, projectId } = await connect();
+
+  console.log('Finding players with old-style wallets...');
+  const candidates = await _candidateUids(db);
+  const remaining = await _needingMigration(db, candidates);
+  console.log(
+    `${candidates.length - remaining.length} already migrated; ` +
+    `checking the other ${remaining.length} one by one...`,
   );
 
-  const counts = { migrated: 0, current: 0, conflict: 0, deleted: 0, none: 0 };
+  const counts = {
+    migrated: 0,
+    current: candidates.length - remaining.length,
+    conflict: 0,
+    deleted: 0,
+    none: 0,
+  };
   const conflicts = [];
-  for (const uid of await _candidateUids(db)) {
+  for (const [index, uid] of remaining.entries()) {
     const { outcome } = await migrateLegacyWallet({ db, uid, apply });
     counts[outcome] += 1;
     if (outcome === 'conflict') conflicts.push(uid);
+    if ((index + 1) % 25 === 0) console.log(`  ${index + 1} / ${remaining.length}`);
   }
   console.log(
     `${projectId}: ${counts.migrated} wallet(s) ` +
@@ -140,10 +167,7 @@ async function main() {
 }
 
 if (require.main === module) {
-  main().catch((error) => {
-    console.error('Migration failed:', error.message);
-    process.exitCode = 1;
-  });
+  require('./firestore_admin').run(main, 'Migration');
 }
 
 module.exports = {
