@@ -104,6 +104,7 @@ fi
 echo "==> Deploying verified Firestore rules and Firebase Hosting"
 deploy_log="$(mktemp)"
 if ! env -u DEBUG firebase deploy \
+  --project "$firebase_project" \
   --only firestore:rules,hosting \
   --non-interactive 2>&1 | tee "$deploy_log"; then
   if grep -q "Hosting storage quota" "$deploy_log"; then

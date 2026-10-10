@@ -23,6 +23,11 @@ const root = path.join(__dirname, '..', '..');
 const projectId = execFileSync('bash', [path.join(root, 'tools/project_config.sh'), 'backend.gcp_project'])
   .toString().trim();
 
+// Bill API quota to this project, whatever project the Mac's gcloud login
+// happens to default to (gcloud adds its current project as the quota
+// project on `gcloud auth application-default login`).
+process.env.GOOGLE_CLOUD_QUOTA_PROJECT = projectId;
+
 async function main() {
   const db = getFirestore(initializeApp({ credential: applicationDefault(), projectId }));
   let scanned = 0;
