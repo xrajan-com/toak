@@ -384,11 +384,47 @@ function _saveProgress(tx, ref, progress, { migratedFrom } = {}) {
     ref,
     {
       ...progress,
+      // Denormalised so the global rank is one indexed count query.
+      totalAup: _totalAup(progress),
       ...(migratedFrom ? { migratedFrom } : {}),
       updatedAt: FieldValue.serverTimestamp(),
     },
     { merge: true },
   );
+}
+
+/**
+ * The player's position among every registered wallet, by total AUP.
+ *
+ * rank = 1 + the number of wallets with strictly more AUP, so ties share a
+ * rank. Wallets with no AUP are unranked. Uses Firestore count aggregation:
+ * cost grows by one read per thousand wallets counted, not per wallet.
+ * A wallet saved before totalAup was stored gets it written here, so the
+ * ranking heals itself as players open their dashboards.
+ */
+async function _rankForUser({ db, uid }) {
+  const collection = db.collection(SERVER_PROGRESS_COLLECTION);
+  const ref = collection.doc(uid);
+  const snap = await ref.get();
+  const data = snap.exists ? snap.data() : null;
+  const totalAup = data ? _totalAup(_baseProgress(data)) : 0;
+  if (data && data.totalAup !== totalAup) {
+    await ref.set({ totalAup }, { merge: true });
+  }
+  const rankedPlayers = (
+    await collection.where('totalAup', '>', 0).count().get()
+  ).data().count;
+  if (totalAup <= 0) {
+    return { totalAup: 0, rank: null, rankedPlayers };
+  }
+  const ahead = (
+    await collection.where('totalAup', '>', totalAup).count().get()
+  ).data().count;
+  return {
+    totalAup,
+    rank: ahead + 1,
+    rankedPlayers: Math.max(rankedPlayers, ahead + 1),
+  };
 }
 
 function _findReservation(progress, attemptId) {
@@ -1279,6 +1315,15 @@ function economyRouter({ refreshLeaderboard } = {}) {
   );
 
   router.get(
+    '/rank',
+    requireRegisteredFirebaseAuth,
+    _asyncHandler(async (req, res) => {
+      const result = await _rankForUser({ db: _db(), uid: req.auth.uid });
+      return res.json({ ok: true, ...result });
+    }),
+  );
+
+  router.get(
     '/entries/:attemptId',
     eventLimiter,
     requireRegisteredFirebaseAuth,
@@ -1432,6 +1477,7 @@ module.exports = {
   _snapshotCircuitAup,
   _transitionEntryReservation,
   _entryReservationStatus,
+  _rankForUser,
   _refreshLeaderboard,
   _walletForUser,
 };

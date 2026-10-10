@@ -101,6 +101,15 @@ class FakeQuery {
     this._filters = filters;
   }
 
+  count() {
+    return {
+      get: async () => {
+        const { docs } = await this.get();
+        return { data: () => ({ count: docs.length }) };
+      },
+    };
+  }
+
   limit(count) {
     return new FakeQuery(this._db, this._collectionName, {
       orderField: this._orderField,
@@ -116,11 +125,19 @@ class FakeQuery {
         new FakeDocRef(this._db, this._collectionName, id),
         data,
       ));
+    const compare = {
+      '==': (a, b) => a === b,
+      '>': (a, b) => typeof a === 'number' && a > b,
+      '>=': (a, b) => typeof a === 'number' && a >= b,
+      '<': (a, b) => typeof a === 'number' && a < b,
+      '<=': (a, b) => typeof a === 'number' && a <= b,
+    };
     for (const { field, operator, value } of this._filters) {
-      if (operator !== '==') {
+      if (!compare[operator]) {
         throw new Error(`FakeFirestore does not support where ${operator}`);
       }
-      docs = docs.filter((doc) => doc.get(field) === value);
+      // Like Firestore, a document without the field never matches.
+      docs = docs.filter((doc) => compare[operator](doc.get(field), value));
     }
     if (this._orderField) {
       docs.sort((a, b) => {

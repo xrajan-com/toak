@@ -148,6 +148,69 @@ function createApp() {
   return app;
 }
 
+function _log(severity, event, fields = {}) {
+  const line = JSON.stringify({ severity, event, ...fields });
+  if (severity === 'ERROR') console.error(line);
+  else console.log(line);
+}
+
+/**
+ * Lets in-flight requests finish when the server is asked to stop.
+ *
+ * Cloud Run sends SIGTERM when it scales an instance down or rolls out a
+ * new revision, then kills the container 10 seconds later. On the signal the
+ * server stops accepting connections, drops idle keep-alive sockets, and
+ * waits for running requests (a wallet transaction, a settlement) to answer.
+ * If any are still running after graceMs it closes them and exits anyway,
+ * inside Cloud Run's window. Economy writes are idempotent, so a client that
+ * loses a reply can safely retry.
+ */
+function installGracefulShutdown(server, {
+  graceMs = 8000,
+  exit = (code) => process.exit(code),
+  bindProcessSignals = true,
+} = {}) {
+  let stopping = false;
+  let exited = false;
+  const finish = (code) => {
+    if (exited) return;
+    exited = true;
+    exit(code);
+  };
+  const shutdown = (reason, exitCode = 0) => {
+    if (stopping) return;
+    stopping = true;
+    _log('INFO', 'shutdown_started', { reason });
+    const forced = setTimeout(() => {
+      _log('WARNING', 'shutdown_forced', { reason, graceMs });
+      server.closeAllConnections?.();
+      finish(exitCode);
+    }, graceMs);
+    forced.unref?.();
+    server.close(() => {
+      clearTimeout(forced);
+      _log('INFO', 'shutdown_complete', { reason });
+      finish(exitCode);
+    });
+    server.closeIdleConnections?.();
+  };
+
+  if (bindProcessSignals) {
+    process.once('SIGTERM', () => shutdown('SIGTERM'));
+    process.once('SIGINT', () => shutdown('SIGINT'));
+    // A crash should still drain other players' requests before exiting.
+    process.on('unhandledRejection', (reason) => {
+      _log('ERROR', 'unhandled_rejection', { errorName: reason?.name || 'Error' });
+      shutdown('unhandled_rejection', 1);
+    });
+    process.on('uncaughtException', (error) => {
+      _log('ERROR', 'uncaught_exception', { errorName: error?.name || 'Error' });
+      shutdown('uncaught_exception', 1);
+    });
+  }
+  return shutdown;
+}
+
 async function start() {
   const port = Number.parseInt(process.env.PORT ?? '8080', 10);
   const host = (process.env.HOST ?? '0.0.0.0').toString();
@@ -157,11 +220,18 @@ async function start() {
 
   await new Promise((resolve) => server.listen(port, host, resolve));
   console.log(`Backend listening on http://${host}:${port}`);
+  installGracefulShutdown(server);
 
   return server;
 }
 
-module.exports = { createApp, start, _corsOptions, DEFAULT_PRODUCTION_CORS_ORIGINS };
+module.exports = {
+  createApp,
+  start,
+  installGracefulShutdown,
+  _corsOptions,
+  DEFAULT_PRODUCTION_CORS_ORIGINS,
+};
 
 if (require.main === module) {
   start().catch((e) => {

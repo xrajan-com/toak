@@ -10,6 +10,7 @@ const {
   _baseProgress,
   _catalogVersionForRequest,
   _entryReservationStatus,
+  _rankForUser,
   _reserveEntry,
   _snapshotCircuitAup,
   _transitionEntryReservation,
@@ -1088,4 +1089,56 @@ test('wallet migration prefers the dedicated version-2 client wallet', async () 
     `${LEGACY_PROGRESS_COLLECTION}+${CLIENT_WALLET_COLLECTION}`,
   );
   assert.deepEqual(saved.cleared, []);
+});
+
+test('saving a wallet stores its total AUP for ranking', async () => {
+  const db = new FakeFirestore();
+  await _walletForUser({ db, uid: 'rank-writer' });
+  const stored = db.dump(SERVER_PROGRESS_COLLECTION, 'rank-writer');
+  assert.equal(typeof stored.totalAup, 'number');
+  const expected = ['indiaAup', 'internationalAup', 'euroAup', 'oceaniaAup', 'northAmericaAup']
+    .reduce((sum, field) => sum + (stored[field] || 0), 0);
+  assert.equal(stored.totalAup, expected);
+});
+
+test('global rank counts players strictly ahead, so ties share a rank', async () => {
+  const db = new FakeFirestore({
+    [SERVER_PROGRESS_COLLECTION]: {
+      top: { indiaAup: 500, totalAup: 500 },
+      tieA: { indiaAup: 300, totalAup: 300 },
+      tieB: { euroAup: 300, totalAup: 300 },
+      broke: { totalAup: 0 },
+    },
+  });
+  assert.deepEqual(await _rankForUser({ db, uid: 'top' }),
+    { totalAup: 500, rank: 1, rankedPlayers: 3 });
+  assert.deepEqual(await _rankForUser({ db, uid: 'tieA' }),
+    { totalAup: 300, rank: 2, rankedPlayers: 3 });
+  assert.deepEqual(await _rankForUser({ db, uid: 'tieB' }),
+    { totalAup: 300, rank: 2, rankedPlayers: 3 });
+});
+
+test('players without AUP or without a wallet are unranked', async () => {
+  const db = new FakeFirestore({
+    [SERVER_PROGRESS_COLLECTION]: {
+      someone: { indiaAup: 100, totalAup: 100 },
+      broke: { totalAup: 0 },
+    },
+  });
+  assert.deepEqual(await _rankForUser({ db, uid: 'broke' }),
+    { totalAup: 0, rank: null, rankedPlayers: 1 });
+  assert.deepEqual(await _rankForUser({ db, uid: 'nobody' }),
+    { totalAup: 0, rank: null, rankedPlayers: 1 });
+});
+
+test('a wallet saved before totalAup existed is healed and ranked', async () => {
+  const db = new FakeFirestore({
+    [SERVER_PROGRESS_COLLECTION]: {
+      leader: { indiaAup: 900, totalAup: 900 },
+      legacy: { indiaAup: 400, oceaniaAup: 200 },
+    },
+  });
+  const result = await _rankForUser({ db, uid: 'legacy' });
+  assert.deepEqual(result, { totalAup: 600, rank: 2, rankedPlayers: 2 });
+  assert.equal(db.dump(SERVER_PROGRESS_COLLECTION, 'legacy').totalAup, 600);
 });
