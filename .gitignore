@@ -54,9 +54,5 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Flutter web build output copied into the hosting site
+# Flutter web build output copied into the hosting site by tools/deploy_web.sh
 hosting/web/
-website/frontend/web/
-
-# Legacy/nested website checkout. Clean or merge it deliberately as a separate repo.
-website/

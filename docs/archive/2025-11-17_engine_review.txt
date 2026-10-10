@@ -1,4 +1,4 @@
-TEN OF A KIND POKER - ENGINE REVIEW
+X POKER - ENGINE REVIEW (archived; findings from 2025-11-17, may since be fixed)
 Date: 2025-11-17
 
 Scope & current strengths

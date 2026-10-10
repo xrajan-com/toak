@@ -4,6 +4,11 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
+if ! command -v rg >/dev/null 2>&1; then
+  echo "ERROR: ripgrep (rg) is required to verify assets. Install it: brew install ripgrep" >&2
+  exit 1
+fi
+
 missing=0
 while IFS= read -r asset_path; do
   if [[ ! -e "$asset_path" ]]; then

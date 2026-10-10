@@ -270,7 +270,7 @@ of the base policy engine.
 4. **Sizing buckets + tells (B).** Once texture exists, route sizing
    through the bucket system and make bucket selection Aura-dependent
    (balanced at high Aura, strength-correlated at low Aura). This is also
-   where `poker_bot_training_reference.txt`'s blocker-bluff and polarized-
+   where `POKER_BOT_TRAINING_REFERENCE.txt`'s blocker-bluff and polarized-
    bet concepts get a real home instead of living only as reference notes.
 
 ## Validation

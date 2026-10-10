@@ -10,9 +10,6 @@
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
-  exclude:
-    - packages/**
-    - website/**
   errors:
     deprecated_member_use: ignore
     deprecated_member_use_from_same_package: ignore
