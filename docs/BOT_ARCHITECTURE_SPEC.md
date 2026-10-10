@@ -1,4 +1,4 @@
-# Ten Of A Kind - Dart Bot Architecture Spec
+# X Poker - Dart Bot Architecture Spec
 
 Date: 2026-03-01
 
