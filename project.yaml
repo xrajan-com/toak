@@ -30,8 +30,14 @@ backend:
   gcp_project: ten-of-a-kind-poker
   region: asia-south1
   service: toak-backend
+  # The one address apps and the website call. Firebase Hosting forwards
+  # tenofakind.com/api/** to the service by name and region (firebase.json),
+  # so moving or renaming the service changes firebase.json, never the apps.
+  public_url: https://tenofakind.com/api
+  # Cloud Run's own address: deploy checks, and app builds shipped before
+  # 1.2.11, which call it directly. Keep the service name and region, or
+  # those builds lose their backend.
   url: https://toak-backend-xolu57aqba-el.a.run.app   # what `gcloud run services describe` reports
-  custom_domain: null                  # no custom API domain is mapped; set one only after mapping it in Cloud Run
 
 firebase:
   project: ten-of-a-kind-poker

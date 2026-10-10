@@ -65,8 +65,9 @@ class AccountDeletionResult {
 
 class ApiClient {
   static const String _definedBaseUrl = String.fromEnvironment('API_BASE_URL');
-  static const String _productionBaseUrl =
-      'https://toak-backend-xolu57aqba-el.a.run.app';
+  // project.yaml backend.public_url. Firebase Hosting forwards /api/** to
+  // the Cloud Run service, so this address outlives any move of the server.
+  static const String _productionBaseUrl = 'https://tenofakind.com/api';
 
   final Duration _timeout;
   final http.Client _httpClient;

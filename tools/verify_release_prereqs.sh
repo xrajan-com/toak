@@ -46,8 +46,17 @@ else
           -z "${FIREBASE_TEST_PASSWORD:-}" ) ]]; then
     smoke_args+=(--ephemeral-user)
   fi
-  API_BASE_URL="$api_base_url" \
-    node tools/smoke_backend_live.mjs "${smoke_args[@]}"
+  # deploy_web.sh smokes Cloud Run directly here, because tenofakind.com/api
+  # only reaches the backend once that deploy publishes the Hosting route.
+  smoke_url="${SMOKE_API_BASE_URL:-$api_base_url}"
+  if ! API_BASE_URL="$smoke_url" \
+    node tools/smoke_backend_live.mjs "${smoke_args[@]}"; then
+    if [[ "$smoke_url" == "$api_base_url" && "$api_base_url" == */api ]]; then
+      echo "HINT: if $api_base_url has never answered before, run" >&2
+      echo "      bash tools/deploy_web.sh first; it publishes the /api route." >&2
+    fi
+    exit 1
+  fi
 fi
 
 echo "Backend-authoritative release prerequisites passed."

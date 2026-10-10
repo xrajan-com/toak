@@ -1,8 +1,14 @@
 # X Poker backend (`toak-backend`)
 
 Express API for X Poker, the game from Ten of a Kind. Its Cloud Run service,
-project, region and production URL are recorded in [`project.yaml`](../project.yaml);
+project, region and addresses are recorded in [`project.yaml`](../project.yaml);
 that file is the only place they are defined.
+
+Apps and the website call `https://tenofakind.com/api/...`. Firebase Hosting
+forwards `/api/**` to this service (the first rewrite in `firebase.json`), and
+the server strips the `/api` prefix, so the same routes also answer on Cloud
+Run's own `run.app` address, which builds before 1.2.11 still call. Every API
+response is `Cache-Control: no-store`, so the Hosting CDN never caches one.
 
 ## Local
 

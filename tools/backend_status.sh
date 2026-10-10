@@ -13,6 +13,7 @@ project="$(project_value backend.gcp_project)"
 region="$(project_value backend.region)"
 service="$(project_value backend.service)"
 url="$(project_value backend.url)"
+public_url="$(project_value backend.public_url)"
 days="${DAYS:-7}"
 tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
 
@@ -33,7 +34,10 @@ if gcloud run services describe "$service" --project "$project" --region "$regio
 else cat "$tmp/err"; fi
 
 section "Live /health"
-curl -fsS -m 20 "$url/health" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{const h=JSON.parse(d);console.log("ok:",h.ok," catalog:",h.catalogVersion," events:",h.catalogEventCount);console.log("supported catalog versions:",(h.supportedCatalogVersions||[]).join(", "))})' || echo "health check FAILED"
+for base in "$public_url" "$url"; do
+  echo "$base"
+  curl -fsS -m 20 "$base/health" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{const h=JSON.parse(d);console.log("  ok:",h.ok," catalog:",h.catalogVersion," events:",h.catalogEventCount);console.log("  supported catalog versions:",(h.supportedCatalogVersions||[]).join(", "))})' || echo "  health check FAILED"
+done
 
 section "Requests, last $days days"
 gcloud logging read "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"$service\" AND jsonPayload.event=\"http_request\"" \

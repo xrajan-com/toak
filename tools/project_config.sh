@@ -6,7 +6,7 @@
 #   source tools/project_config.sh; project_value backend.url
 #
 # A key that is missing is an error. A key set to null prints nothing, so
-# optional values (like backend.custom_domain) can be tested with -z.
+# optional values can be tested with -z.
 
 project_value() {
   local key="$1" root section field out

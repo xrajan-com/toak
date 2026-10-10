@@ -117,6 +117,13 @@
     ],
     "rewrites": [
       {
+        "source": "/api/**",
+        "run": {
+          "serviceId": "toak-backend",
+          "region": "asia-south1"
+        }
+      },
+      {
         "source": "/web",
         "destination": "/web/index.html"
       },

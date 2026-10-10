@@ -58,15 +58,37 @@ function _corsOptions() {
   return { origin: allow, credentials: false };
 }
 
+// Apps and the website call https://tenofakind.com/api/..., which Firebase
+// Hosting forwards here with the /api prefix intact. Builds shipped before
+// 1.2.11 call the run.app address with no prefix. Both reach the same routes.
+const PUBLIC_PATH_PREFIX = '/api';
+
+function _stripPublicPathPrefix(req, _res, next) {
+  const prefix = PUBLIC_PATH_PREFIX;
+  if (
+    req.url === prefix ||
+    req.url.startsWith(`${prefix}/`) ||
+    req.url.startsWith(`${prefix}?`)
+  ) {
+    const rest = req.url.slice(prefix.length);
+    req.url = rest.startsWith('/') ? rest : `/${rest}`;
+  }
+  next();
+}
+
 function createApp() {
   const app = express();
 
   app.disable('x-powered-by');
   if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1);
+  app.use(_stripPublicPathPrefix);
   app.use((req, res, next) => {
     const startedAt = process.hrtime.bigint();
     req.requestId = _requestId(req.get('x-request-id'));
     res.set('x-request-id', req.requestId);
+    // Every answer is per player and per moment. Nothing may be cached,
+    // least of all by the Firebase Hosting CDN in front of /api.
+    res.set('Cache-Control', 'no-store');
     res.on('finish', () => {
       const durationMs =
         Number(process.hrtime.bigint() - startedAt) / 1000000;
@@ -98,9 +120,15 @@ function createApp() {
     });
   });
 
+  // Every app checks for updates at launch, before sign-in. Behind Firebase
+  // Hosting those requests arrive from a few Hosting addresses, so an IP
+  // limit would throttle unrelated players together. The answer is cached
+  // for a minute (one Firestore read a minute at most), so it is left
+  // unlimited.
+  app.use('/v1/app-release', appReleaseRouter());
+
   app.use(playerRateLimit({ windowMs: 60 * 1000, max: 240 }));
 
-  app.use('/v1/app-release', appReleaseRouter());
   app.use('/v1/auth', authRouter());
   app.use('/v1/economy', economyRouter({
     refreshLeaderboard: _syncLeaderboard,

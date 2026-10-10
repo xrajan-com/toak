@@ -181,11 +181,25 @@ if [[ "$service_url" != "$configured_url" ]]; then
 WARNING: Cloud Run now reports a different URL than project.yaml.
   project.yaml backend.url: $configured_url
   Cloud Run:                $service_url
-Update backend.url in project.yaml and _productionBaseUrl in
-lib/services/api_client.dart, then run tools/verify_identity.sh.
-Client builds will refuse to ship until they match.
+Update backend.url in project.yaml, then run tools/verify_identity.sh.
+Apps call $(project_value backend.public_url) and are unaffected, but
+builds before 1.2.11 call the old address directly.
 EOF
   exit 1
+fi
+
+public_url="$(project_value backend.public_url)"
+echo "==> Checking the public route $public_url"
+if API_BASE_URL="$public_url" \
+  node "$repo_root/tools/smoke_backend_live.mjs" --health-only; then
+  echo "    $public_url reaches this backend."
+else
+  cat >&2 <<EOF
+
+WARNING: $public_url does not reach the backend yet. If the /api route has
+never been published, bash tools/deploy_web.sh publishes it. Otherwise check
+the /api/** rewrite in firebase.json.
+EOF
 fi
 
 echo

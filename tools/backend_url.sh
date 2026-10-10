@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Prints the production backend URL that release builds must call.
+# Prints the backend address that release builds must call.
 #
-# Order of truth:
-#   1. API_BASE_URL, if the caller set it explicitly (an override).
-#   2. backend.custom_domain from project.yaml, once one is mapped.
-#   3. backend.url from project.yaml.
+#   bash tools/backend_url.sh            # backend.public_url (what apps call)
+#   bash tools/backend_url.sh --direct   # backend.url (Cloud Run's own address)
 #
-# When gcloud is available, the project.yaml URL is checked against the live
-# Cloud Run service, so a stale value fails here instead of shipping a client
-# that calls the wrong address.
+# API_BASE_URL, if set, overrides both.
+#
+# When gcloud is available, project.yaml's Cloud Run URL is checked against
+# the live service, so a stale value fails here instead of quietly breaking
+# the deploy checks and the builds that still call it directly.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -22,7 +22,7 @@ if [[ -n "${API_BASE_URL:-}" ]]; then
 fi
 
 configured_url="$(project_value backend.url)"
-custom_domain="$(project_value backend.custom_domain)"
+public_url="$(project_value backend.public_url)"
 
 if command -v gcloud >/dev/null 2>&1; then
   live_url="$(
@@ -43,8 +43,8 @@ if command -v gcloud >/dev/null 2>&1; then
   fi
 fi
 
-if [[ -n "$custom_domain" ]]; then
-  printf 'https://%s\n' "${custom_domain#https://}"
-else
+if [[ "${1:-}" == "--direct" ]]; then
   printf '%s\n' "$configured_url"
+else
+  printf '%s\n' "$public_url"
 fi
