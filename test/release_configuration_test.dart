@@ -43,12 +43,14 @@ void main() {
 
   test('release builds retain the production economy endpoint', () {
     final apiClient = File('lib/services/api_client.dart').readAsStringSync();
+    // project.yaml is the source of truth for the production backend URL.
+    final backendUrl = RegExp(r'^backend:[\s\S]*?^\s+url:\s*(https://\S+)',
+            multiLine: true)
+        .firstMatch(File('project.yaml').readAsStringSync())!
+        .group(1)!;
 
     expect(apiClient, contains('kReleaseMode ? _productionBaseUrl'));
-    expect(
-      apiClient,
-      contains('https://toak-backend-xolu57aqba-el.a.run.app'),
-    );
+    expect(apiClient, contains("'$backendUrl'"));
   });
 
   test('phones are landscape-only from native launch through Flutter routes',

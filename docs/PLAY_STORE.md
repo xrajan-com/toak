@@ -1,15 +1,11 @@
 # Play Store release (Android)
 
-## 1) Pick your package name (Application ID)
+## 1) Listing and package name
 
-Current: `com.tenofakind.poker`.
-
-Decide a permanent package name now (you cannot change it later without publishing a new app), e.g.:
-
-- `com.tenofakind.poker.guest`
-- `com.yourstudio.tenofakindpoker`
-
-If you want, tell me what you want it to be and I can rename the Android package + Firebase config safely.
+The app is published as **X Poker** with application ID `com.tenofakind.poker`.
+The ID is permanent: changing it would mean publishing a new app. Both values
+are recorded in [`project.yaml`](../project.yaml) and checked before every
+release by `tools/verify_identity.sh`.
 
 ## 2) Create a release upload key (keystore)
 
@@ -29,10 +25,13 @@ Then create `android/key.properties` (copy from `android/key.properties.example`
 
 From the repo root:
 
+Bump `version:` in `pubspec.yaml` first (`<name>+<build>`, the build number
+must increase), then:
+
 ```bash
 flutter clean
 flutter pub get
-tools/build_public_release.sh --build-name=1.2.4 --build-number=45
+bash tools/build_public_release.sh
 ```
 
 Output: `build/releases/toak-public-release.aab`
@@ -42,7 +41,7 @@ Output: `build/releases/toak-public-release.aab`
 - Closed testing build with bot-training tools enabled:
 
 ```bash
-tools/build_closed_testing.sh --build-name=1.2.4 --build-number=45
+bash tools/build_closed_testing.sh
 ```
 
 Output: `build/releases/toak-closed-testing.aab`
@@ -50,7 +49,7 @@ Output: `build/releases/toak-closed-testing.aab`
 - Public release build with bot-training tools disabled:
 
 ```bash
-tools/build_public_release.sh --build-name=1.2.4 --build-number=45
+bash tools/build_public_release.sh
 ```
 
 Output: `build/releases/toak-public-release.aab`

@@ -8,7 +8,12 @@ OUTPUT_AAB="$OUTPUT_DIR/toak-public-release.aab"
 
 cd "$ROOT_DIR"
 
-API_BASE_URL="${API_BASE_URL:-}"
+# Store builds are always production builds: release mode is fixed and the
+# backend URL comes from project.yaml (checked against Cloud Run).
+export RELEASE_ECONOMY_MODE=backend
+API_BASE_URL="$(bash "$ROOT_DIR/tools/backend_url.sh")"
+export API_BASE_URL
+echo "Backend: $API_BASE_URL"
 APP_BUILD="$(bash "$ROOT_DIR/tools/app_build_number.sh")"
 bash "$ROOT_DIR/tools/verify_android_signing.sh"
 bash "$ROOT_DIR/tools/verify_release_prereqs.sh"

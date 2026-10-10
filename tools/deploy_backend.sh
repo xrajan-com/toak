@@ -3,9 +3,12 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-project_id="${PROJECT_ID:-${FIREBASE_PROJECT_ID:-ten-of-a-kind-poker}}"
-region="${CLOUD_RUN_REGION:-asia-south1}"
-service_name="${BACKEND_SERVICE_NAME:-toak-backend}"
+# shellcheck source=tools/project_config.sh
+source "$repo_root/tools/project_config.sh"
+
+project_id="${PROJECT_ID:-${FIREBASE_PROJECT_ID:-$(project_value backend.gcp_project)}}"
+region="${CLOUD_RUN_REGION:-$(project_value backend.region)}"
+service_name="${BACKEND_SERVICE_NAME:-$(project_value backend.service)}"
 cors_origin="${CORS_ORIGIN:-https://tenofakind.com,https://www.tenofakind.com,https://ten-of-a-kind-poker.web.app,https://ten-of-a-kind-poker.firebaseapp.com}"
 runtime_service_account="${BACKEND_SERVICE_ACCOUNT:-toak-backend@$project_id.iam.gserviceaccount.com}"
 preflight_tag="${BACKEND_PREFLIGHT_TAG:-preflight-550}"
@@ -55,6 +58,7 @@ echo "==> Testing backend"
 npm --prefix backend test
 npm --prefix backend audit --omit=dev --audit-level=high
 bash "$repo_root/tools/verify_assets.sh"
+bash "$repo_root/tools/verify_identity.sh"
 bash "$repo_root/tools/verify_economy_catalog.sh"
 use_java_21_or_newer_if_available
 bash "$repo_root/tools/verify_firestore_rules.sh"
@@ -167,13 +171,23 @@ if ! ALLOW_MUTATING_SMOKE=1 API_BASE_URL="$service_url" \
   exit 1
 fi
 
-cat <<EOF
-Backend deployed:
-  $service_url
+echo "Backend deployed:"
+echo "  $service_url"
 
-Build web/app clients against this verified backend with:
-  RELEASE_ECONOMY_MODE=backend API_BASE_URL=$service_url tools/deploy_web.sh
+configured_url="$(project_value backend.url)"
+if [[ "$service_url" != "$configured_url" ]]; then
+  cat >&2 <<EOF
 
-If api.tenofakind.com is mapped to this Cloud Run service later, pass
-API_BASE_URL=https://api.tenofakind.com explicitly.
+WARNING: Cloud Run now reports a different URL than project.yaml.
+  project.yaml backend.url: $configured_url
+  Cloud Run:                $service_url
+Update backend.url in project.yaml and _productionBaseUrl in
+lib/services/api_client.dart, then run tools/verify_identity.sh.
+Client builds will refuse to ship until they match.
 EOF
+  exit 1
+fi
+
+echo
+echo "Next, ship the web app against it:"
+echo "  bash tools/deploy_web.sh"

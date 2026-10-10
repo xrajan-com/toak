@@ -1,6 +1,8 @@
-# T-O-A-K Backend
+# X Poker backend (`toak-backend`)
 
-Express API for Ten Of A Kind.
+Express API for X Poker, the game from Ten of a Kind. Its Cloud Run service,
+project, region and production URL are recorded in [`project.yaml`](../project.yaml);
+that file is the only place they are defined.
 
 ## Local
 
@@ -34,9 +36,10 @@ firebase emulators:exec \
 
 ## Economy authority
 
-Distributable builds are backend-authoritative. They require
-`RELEASE_ECONOMY_MODE=backend` and a non-empty HTTPS `API_BASE_URL`; release
-scripts fail closed otherwise. Local wallets are only a debug/test facility.
+Distributable builds are backend-authoritative. The release scripts set
+`RELEASE_ECONOMY_MODE=backend` themselves and resolve `API_BASE_URL` with
+`tools/backend_url.sh` (project.yaml, checked against Cloud Run); they fail
+closed if either is wrong. Local wallets are only a debug/test facility.
 
 Firestore rules deny client writes to authoritative wallet, career, receipt,
 server-progress, and leaderboard data by default. A temporary admin-created
@@ -59,7 +62,7 @@ The backend is deployed separately from Firebase Hosting:
 tools/deploy_backend.sh
 ```
 
-Default Cloud Run target:
+Default Cloud Run target (read from `project.yaml`):
 
 - project: `ten-of-a-kind-poker`
 - service: `toak-backend`
@@ -82,9 +85,8 @@ generated catalog content hash, the production dependency audit passes, the
 generated catalog is current, and Firestore emulator tests pass:
 
 ```bash
-RELEASE_ECONOMY_MODE=backend \
-API_BASE_URL=https://api.tenofakind.com \
-tools/build_public_release.sh
+bash tools/deploy_web.sh             # web, served at tenofakind.com/web/
+bash tools/build_public_release.sh   # Play Store bundle
 ```
 
 ## Live smoke
@@ -92,26 +94,26 @@ tools/build_public_release.sh
 Health-only check:
 
 ```bash
-API_BASE_URL=https://api.tenofakind.com tools/smoke_backend_live.mjs --health-only
+API_BASE_URL="$(bash tools/backend_url.sh)" node tools/smoke_backend_live.mjs --health-only
 ```
 
 Authenticated smoke with a Firebase ID token:
 
 ```bash
-API_BASE_URL=https://api.tenofakind.com \
+API_BASE_URL="$(bash tools/backend_url.sh)" \
 FIREBASE_ID_TOKEN=... \
 ALLOW_MUTATING_SMOKE=1 \
-tools/smoke_backend_live.mjs
+node tools/smoke_backend_live.mjs
 ```
 
 Authenticated smoke with a Firebase test account:
 
 ```bash
-API_BASE_URL=https://api.tenofakind.com \
+API_BASE_URL="$(bash tools/backend_url.sh)" \
 FIREBASE_TEST_EMAIL=... \
 FIREBASE_TEST_PASSWORD=... \
 ALLOW_MUTATING_SMOKE=1 \
-tools/smoke_backend_live.mjs
+node tools/smoke_backend_live.mjs
 ```
 
 Without `ALLOW_MUTATING_SMOKE=1`, authenticated smoke is read-only. The

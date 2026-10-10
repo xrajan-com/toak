@@ -1,0 +1,38 @@
+# project.yaml - the single source of truth for this project's names, IDs and
+# addresses. Scripts read it through tools/project_config.sh, and
+# tools/verify_identity.sh fails every release if the app drifts from it.
+# Change a value here first; never hard-code it again somewhere else.
+
+brand:
+  name: Ten of a Kind                  # umbrella brand: the studio and the show
+  show: Ten of a Kind                  # content series, ten players at one table
+  domain: tenofakind.com
+  website: https://tenofakind.com
+
+app:
+  name: X Poker                        # store listings, home-screen label, page titles
+  tagline: A simulated Texas Hold'em strategy game from Ten of a Kind
+  play_store_name: X Poker
+  web_url: https://tenofakind.com/web/
+  android_application_id: com.tenofakind.poker   # permanent; cannot change after publishing
+  ios_bundle_id: com.tenofakind.poker            # permanent; cannot change after publishing
+  dart_package: ten_of_a_kind_poker              # internal code name, never shown to players
+  version_file: pubspec.yaml                     # version: <name>+<build>
+
+backend:
+  platform: cloud-run
+  gcp_project: ten-of-a-kind-poker
+  region: asia-south1
+  service: toak-backend
+  url: https://toak-backend-xolu57aqba-el.a.run.app   # what `gcloud run services describe` reports
+  custom_domain: null                  # no custom API domain is mapped; set one only after mapping it in Cloud Run
+
+firebase:
+  project: ten-of-a-kind-poker
+  hosting_site: ten-of-a-kind-poker
+  hosting_public_dir: hosting          # tenofakind.com is served from here
+  web_app_path: /web/                  # the Flutter web build lives under this path
+
+repo:
+  github: xrajan-com/toak
+  short_name: toak                     # prefix for the repo, backend service and build artifacts

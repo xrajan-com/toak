@@ -13,7 +13,13 @@ fi
 
 cd "$repo_root"
 
-api_base_url="${API_BASE_URL:-}"
+# This script only ever ships production, so release mode is not optional and
+# the backend URL comes from project.yaml (checked against Cloud Run).
+export RELEASE_ECONOMY_MODE=backend
+echo "==> Resolving the production backend URL"
+api_base_url="$(bash "$repo_root/tools/backend_url.sh")"
+export API_BASE_URL="$api_base_url"
+echo "    $api_base_url"
 app_build="$(bash "$repo_root/tools/app_build_number.sh")"
 
 echo "==> Getting Flutter packages"

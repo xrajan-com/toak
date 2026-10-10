@@ -11,20 +11,9 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
 port="${PORT:-8080}"
-api_base_url="${API_BASE_URL:-}"
-
-if [[ -z "$api_base_url" ]]; then
-  echo "==> Resolving the live backend URL (pass API_BASE_URL=... to override)"
-  api_base_url="$(gcloud run services describe toak-backend \
-    --project ten-of-a-kind-poker --region asia-south1 \
-    --format='value(status.url)' 2>/dev/null || true)"
-  if [[ -z "$api_base_url" ]]; then
-    echo "ERROR: Could not resolve the backend URL. Pass it explicitly:" >&2
-    echo "       API_BASE_URL=https://... bash tools/preview_web_release.sh" >&2
-    exit 1
-  fi
-  echo "    $api_base_url"
-fi
+echo "==> Resolving the production backend URL"
+api_base_url="$(bash "$repo_root/tools/backend_url.sh")"
+echo "    $api_base_url"
 
 app_build="$(bash "$repo_root/tools/app_build_number.sh")"
 
