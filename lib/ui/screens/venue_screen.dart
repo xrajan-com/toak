@@ -688,8 +688,9 @@ class _VenueScreenState extends State<VenueScreen>
       0,
       (sum, group) => sum + venuesForGroup(group).length,
     );
-    // A region is conquered once every kingdom in it has given up its title.
-    final int regionsConquered = kVenueGroups.where((group) {
+    // A region counts as unlocked once every kingdom in it has given up its
+    // title.
+    final int regionsUnlocked = kVenueGroups.where((group) {
       final kingdoms = venuesForGroup(group).length;
       return kingdoms > 0 && progress.titlesEarned(group) >= kingdoms;
     }).length;
@@ -807,8 +808,8 @@ class _VenueScreenState extends State<VenueScreen>
                     value: '$titlesWon / $titlesTotal',
                   ),
                   _MetricRow(
-                    label: 'Regions conquered',
-                    value: '$regionsConquered / $regionsTotal',
+                    label: 'Regions unlocked',
+                    value: '$regionsUnlocked / $regionsTotal',
                   ),
                   _GlobalRankRow(rankFuture: rankFuture),
                 ],
@@ -960,7 +961,7 @@ class _AupHeadline extends StatelessWidget {
   }
 }
 
-/// "#12 of 340" among every player who has won AUP. Equal AUP shares a rank.
+/// "#12" among every player who has won AUP. Equal AUP shares a rank.
 class _GlobalRankRow extends StatelessWidget {
   /// Null when there is no registered account to rank (guests).
   final Future<EconomyRank>? rankFuture;
@@ -983,12 +984,10 @@ class _GlobalRankRow extends StatelessWidget {
         } else if (!snapshot.hasData) {
           value = '…';
         } else {
-          final standing = snapshot.requireData;
-          final rank = standing.rank;
+          final rank = snapshot.requireData.rank;
           value = rank == null
               ? 'Win AUP to get ranked'
-              : '#${_dashboardCount.format(rank)} of '
-                  '${_dashboardCount.format(standing.rankedPlayers)}';
+              : '#${_dashboardCount.format(rank)}';
         }
         return _MetricRow(label: _label, value: value);
       },
