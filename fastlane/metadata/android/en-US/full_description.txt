@@ -1,52 +1,44 @@
-Ten seats. One crown. X Poker is no-limit Texas Hold'em tournament poker against AI opponents who play to win, from your first 6-seat fort table to a 10-handed main event for a kingdom's title.
+X Poker is a Texas Hold'em poker simulator, tournament strategy trainer, and classic card game set against the legendary backdrop of the Battle of Ten Kings. Sharpen your poker mind, master No-Limit Hold'em decision-making, and conquer 50 kingdom-themed arenas against intelligent AI opponents.
 
-THE BATTLE OF TEN KINGS
-Your poker career runs across five circuits: the Indian Ocean, Eurasia, Australasia, the Americas and the Rest of the World. Each circuit holds ten kingdoms, and each kingdom guards ten historic forts, from Jaipur to Japan and Scandinavia to the Andes.
-• 50 kingdoms, 500 forts and 50 titles to earn
-• Take a kingdom's forts, then fight for its title at the main event
-• Claim titles like Raja, Jarl, Emir, Shah, Pasha and Admiral
-• Short on time? Quick Game opens every venue for one table, no ladder required
+Whether you are a beginner learning poker hand rankings or an experienced card player looking to practice tournament strategy on the go, X Poker delivers a fast, realistic single-player poker experience.
 
-REAL TOURNAMENT POKER
-Every match is a Texas Hold'em single-table tournament in the sit and go style. Blinds rise, stacks shrink and the top finishers get paid.
-• No-limit Texas Hold'em betting: check, call, raise or move all-in
-• Fort tables seat 6 or 8 players; main events seat a full ring of 10
-• Rising blind levels that force real decisions
-• Bubble play, short stacks and final-table pressure that feel like a live tournament
+Play Authentic Texas Hold'em Tournaments
+Step up to the virtual felt and test your card skills across dynamic tables. X Poker focuses purely on strategic gameplay: calculating pot odds, reading table positions, sizing bets, managing chip stacks, and executing well-timed bluffs.
 
-AI OPPONENTS WORTH BEATING
-Face 100 named poker players from around the world, each with a home and a day job.
-• Opponents sharpen as the prize pool grows
-• They play tournament pressure the way strong players do: stack sizes and payouts change their decisions near the money
-• They notice who keeps raising them, and they push back
-• The toughest players wait for you in the title matches
-• Renoir deals every hand. The wild doesn't fold.
+Key Game Features:
 
-GET BETTER EVERY HAND
-X Poker doubles as a poker practice table for real strategy.
-• On your turn, see your chance of winning the hand as the flop, turn and river land
-• Get a suggested move (fold, call, raise or all-in) based on your hand, the board and the action
-• Learn hand rankings, position, pot odds and blind pressure by playing them, not memorising them
-• New to Texas Hold'em? Start with a Quick Game and learn at your own pace, with nothing to lose
+Single-Player Texas Hold'em Simulator: Smooth, single-player poker with no waiting for slow online players. Every match is a single-table tournament with rising blinds.
 
-CLIMB THE LEADERBOARD
-Earn Aura points from every paid finish. The global leaderboard shows who rules the circuits, and your titles show where you have already won.
+Smart Poker AI: Practice against 100 named AI opponents who adapt to the table. They sharpen as prize pools grow, weigh payouts near the money, and push back against players who keep raising them.
 
-PLAY YOUR WAY
-• Start instantly as a guest, no account needed
-• Sign in with Google to keep your career safe and synced across devices
-• Prefer a bigger screen? Play the same game in your browser at tenofakind.com
-• Landscape table built for phones and tablets
+Live Win Odds & Move Tips: On your turn, see your chance of winning the hand and a suggested move: fold, call, raise or all-in.
 
-PLAYED FOR SKILL, NEVER FOR MONEY
-X Poker is a simulated poker game for entertainment and skill-building.
-• No real-money gambling, deposits, cash-outs or prizes
-• No ads and nothing to buy
-• Aura points and titles have no cash value and cannot be bought, sold or exchanged
-• Practice or success at simulated poker does not imply future success at real-money gambling
-• Intended for adults 18+
+Battle of Ten Kings Campaign: Journey through five circuits, 50 kingdom venues, 500 fort tables, and high-stakes championship title battles.
 
-FROM TEN OF A KIND
-X Poker is made by Ten of a Kind, a studio built around ten players at one table. Rules and how-to-play guides are at tenofakind.com.
+6-Max, 8-Max & Full-Ring Tables: Fort tables seat 6 or 8 players. Championship title battles are played 10-handed, all the way down to heads-up for the crown.
 
-Take your seat. Ten players sit down. One walks away with the crown.
+Poker Strategy & Training: Ideal companion app for learning starting hand selection, post-flop betting lines, all-in risk management, and overall card game strategy.
+
+Aura Points & Career Progress: Collect Aura points, win kingdom titles, and climb the global leaderboard across every conquered kingdom.
+
+Instant Guest Play: Jump straight into the action with zero registration required, or sign in seamlessly with Google to back up your campaign progress across devices.
+
+Master Every Stage of the Game:
+
+Pre-Flop Strategy: Master opening ranges, pocket pairs, and suited connectors.
+
+Post-Flop Tactics: Navigate the Flop, Turn, and River with calculated check-raises, continuation bets, and smart value betting.
+
+Showdown & Hand Rankings: Test your knowledge of Royal Flushes, Straight Flushes, Four of a Kind, Full Houses, Flushes, Straights, Three of a Kind, Two Pair, One Pair, and High Card.
+
+Important Disclaimers & Policies:
+
+Simulation Only: X Poker is a social card game simulator intended strictly for entertainment, education, and strategy training.
+
+No Real-Money Gambling: This game does NOT offer real-money gambling, sports betting, cash wagering, or opportunities to win real money or physical prizes.
+
+Skill Practice: Success, virtual chips, or titles earned within this poker simulator do not imply future success at real-money gambling or live casino gaming.
+
+Audience: Intended for adults 18+ who enjoy card and strategy games. Governed by regional store content ratings.
+
+Privacy & Support: No ads and no in-app purchases. Account data management and privacy details are in our privacy policy at tenofakind.com/privacy.
