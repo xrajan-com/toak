@@ -45,6 +45,14 @@
     "label": "fort-and-junk",
     "sha256": "7837f578c1049f9aa0e05b19d9b7d1ab8f50e85236424437b9f47ac7fbe4b628",
     "source": "design_sources/brand/app-icon-master.png",
-    "note": "Rajput warrior on a desert fort at dusk (Ferrari Red) and a junk sailing home at dawn (Beach Blue), wavy split, white X disc. Made with Gemini; still carries its visible watermark."
+    "note": "Rajput warrior on a desert fort at dusk (Ferrari Red) and a junk sailing home at dawn (Beach Blue), wavy split, white X disc. Made with Gemini; still carries its visible watermark. Replaced the same day by the watermark-free vector redraw."
+  },
+  {
+    "file": "app-icon-2026-10-10-fort-and-junk-vector.png",
+    "first_used": "2026-10-10",
+    "label": "fort-and-junk-vector",
+    "sha256": "9db55932204d5113a1ae69ff13b1c78af3b0b1288491eebbecc061e84265d2dd",
+    "source": "design_sources/brand/app-icon-master.png",
+    "note": "Vector redraw of the fort-and-junk design with no watermark: Rajput warrior on a Rajasthani fort at dusk (Ferrari Red), junk with a n\u00f3n l\u00e1-hatted crew sailing home at dawn (Beach Blue), wavy split, shared sun, white X disc. Editable source: app-icon-2026-10-10-fort-and-junk-vector.svg."
   }
 ]
