@@ -33,8 +33,8 @@ app, Firebase targets) disagrees with it.
 | `web/` | Flutter web shell (index.html, manifest) used to build `hosting/web/` |
 | `tools/` | Release, deploy and verification scripts, plus generators and ML tooling |
 | `docs/` | Specs and guides; `docs/archive/` holds superseded reviews |
-| `fastlane/metadata/android/` | Google Play listing text, checked by `tools/verify_store_listing.sh` (fastlane layout, so it can be uploaded automatically later) |
-| `design_sources/` | Source artwork that is not bundled directly (brand, store, flags) |
+| `fastlane/metadata/android/` | Google Play listing text and `images/icon.png`, checked by `tools/verify_store_listing.sh` (fastlane layout, so it can be uploaded automatically later) |
+| `design_sources/` | Source artwork that is not bundled directly; `brand/app-icon-master.png` is the source of every app icon (`tools/generate_app_icons.py`) |
 | `android/`, `ios/` | Native shells (Android shipped, iOS in preparation) |
 | `macos/`, `linux/`, `windows/` | Flutter desktop shells; not shipped |
 
@@ -61,4 +61,5 @@ value.
 ## Requirements
 
 Flutter, Node.js, the Firebase CLI, the Google Cloud CLI (`gcloud`), Java 21
-(for the Firestore emulator) and ripgrep (`rg`).
+(for the Firestore emulator) and ripgrep (`rg`). Regenerating the app icons
+also needs Pillow and NumPy (`pip3 install pillow numpy`).
