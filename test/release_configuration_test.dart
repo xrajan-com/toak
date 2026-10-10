@@ -39,11 +39,12 @@ void main() {
 
   test('release builds retain the production economy endpoint', () {
     final apiClient = File('lib/services/api_client.dart').readAsStringSync();
-    // project.yaml is the source of truth for the production backend URL.
-    final backendUrl = RegExp(r'^backend:[\s\S]*?^\s+url:\s*(https://\S+)',
-            multiLine: true)
-        .firstMatch(File('project.yaml').readAsStringSync())!
-        .group(1)!;
+    // project.yaml is the source of truth for the address apps call.
+    final backendUrl =
+        RegExp(r'^backend:[\s\S]*?^\s+public_url:\s*(https://\S+)',
+                multiLine: true)
+            .firstMatch(File('project.yaml').readAsStringSync())!
+            .group(1)!;
 
     expect(apiClient, contains('kReleaseMode ? _productionBaseUrl'));
     expect(apiClient, contains("'$backendUrl'"));
