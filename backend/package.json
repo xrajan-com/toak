@@ -16,7 +16,7 @@
     "ten"
   ],
   "engines": {
-    "node": ">=22"
+    "node": "22.x"
   },
   "author": "xrajan",
   "license": "ISC",
