@@ -3,11 +3,12 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart' show NumberFormat;
 import 'package:provider/provider.dart';
 
 import 'package:ten_of_a_kind_poker/config/kingdom_titles.dart';
 import 'package:ten_of_a_kind_poker/config/sub_kingdoms.dart'
-    show subKingdomCountFor, subKingdomCountForGroup;
+    show subKingdomCountFor, totalSubKingdomCount;
 import 'package:ten_of_a_kind_poker/config/venues.dart';
 import 'package:ten_of_a_kind_poker/features/venue/game_mode.dart';
 import 'package:ten_of_a_kind_poker/ui/theme/colors.dart';
@@ -20,6 +21,7 @@ import 'package:ten_of_a_kind_poker/config/assets.dart';
 import 'package:ten_of_a_kind_poker/services/auth_service.dart';
 import 'package:ten_of_a_kind_poker/services/aura_points_service.dart';
 import 'package:ten_of_a_kind_poker/services/campaign_progress_service.dart';
+import 'package:ten_of_a_kind_poker/services/economy_api_service.dart';
 import 'package:ten_of_a_kind_poker/services/leaderboard_firestore_service.dart';
 import 'package:ten_of_a_kind_poker/services/profile_service.dart';
 import 'package:ten_of_a_kind_poker/services/x_music_service.dart';
@@ -313,6 +315,8 @@ class VenueScreen extends StatefulWidget {
 class _VenueScreenState extends State<VenueScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tab;
+  // One client for the dashboard's rank lookups, made on first use.
+  late final EconomyApiService _economyApi = EconomyApiService();
   static const _bannerAsset = 'assets/images/x_poker_logo.png';
   static const _leaderboardVisibleDuration = Duration(seconds: 4);
   int? _activeLeaderboardIndex;
@@ -448,21 +452,6 @@ class _VenueScreenState extends State<VenueScreen>
     );
     if (!mounted) return;
     _syncMusicForSelectedCircuit();
-  }
-
-  int _totalSubKingdomsForGroup(VenueGroup group) =>
-      subKingdomCountForGroup(group);
-
-  int _clearedSubKingdomsForGroup(
-    CampaignProgressService progress,
-    VenueGroup group,
-  ) {
-    final venues = venuesForGroup(group);
-    int total = 0;
-    for (final v in venues) {
-      total += progress.clearedCount(group: group, kingdomName: v.name);
-    }
-    return total;
   }
 
   void _openProfileEditor(BuildContext dialogContext) {
@@ -691,28 +680,26 @@ class _VenueScreenState extends State<VenueScreen>
     final about = profile.about.trim();
     final kingdom = (profile.kingdom ?? '').trim();
 
-    final subProgress = <VenueGroup, ({int cleared, int total})>{
-      for (final group in kVenueGroups)
-        group: (
-          cleared: _clearedSubKingdomsForGroup(progress, group),
-          total: _totalSubKingdomsForGroup(group),
-        ),
-    };
-    final titlesTotal = kVenueGroups.fold<int>(
-      0,
-      (sum, group) => sum + progress.titlesEarned(group),
-    );
-    final titlesPossible = kVenueGroups.fold<int>(
+    // The whole journey, in four numbers: forts, titles, regions, rank.
+    final int fortsWon = progress.totalClearedCount();
+    final int fortsTotal = totalSubKingdomCount();
+    final int titlesWon = progress.totalTitlesEarned();
+    final int titlesTotal = kVenueGroups.fold<int>(
       0,
       (sum, group) => sum + venuesForGroup(group).length,
     );
+    // A region is conquered once every kingdom in it has given up its title.
+    final int regionsConquered = kVenueGroups.where((group) {
+      final kingdoms = venuesForGroup(group).length;
+      return kingdoms > 0 && progress.titlesEarned(group) >= kingdoms;
+    }).length;
+    final int regionsTotal = kVenueGroups.length;
 
-    final double auraValue = aura.isLoaded ? aura.totalAura.clamp(0, 100) : 0;
-    final int auraInt = auraValue.round().clamp(0, 100);
-    final double auraProgress = auraInt / 100.0;
-    final int totalAup = aura.totalAup;
-    final int aupLeft =
-        (aup.kAupMaxTotal - totalAup).clamp(0, aup.kAupMaxTotal);
+    // Ranks live on the server, which only ranks registered accounts.
+    final bool canRank =
+        user != null && !user.isAnonymous && _economyApi.isConfigured;
+    final Future<EconomyRank>? rankFuture =
+        canRank ? _economyApi.rank() : null;
 
     showDialog<void>(
       context: context,
@@ -733,7 +720,7 @@ class _VenueScreenState extends State<VenueScreen>
               maxHeight: MediaQuery.sizeOf(ctx).height * 0.86,
             ),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -807,82 +794,23 @@ class _VenueScreenState extends State<VenueScreen>
                     ],
                   ),
                   const SizedBox(height: 14),
-                  for (final group in kVenueGroups)
-                    _MetricRow(
-                      label: 'Forts cleared (${venueGroupLabel(group)})',
-                      value:
-                          '${subProgress[group]!.cleared} / ${subProgress[group]!.total}',
-                    ),
-                  _MetricRow(
-                    label: 'Titles earned',
-                    value: '$titlesTotal / $titlesPossible',
+                  _AupHeadline(
+                    totalAup: aura.isLoaded ? aura.totalAup : null,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   _MetricRow(
-                    label: 'AUP won (total)',
-                    value: aup.formatAup(totalAup),
+                    label: 'Forts won',
+                    value: '$fortsWon / $fortsTotal',
                   ),
                   _MetricRow(
-                    label: 'AUP left to 100 Aura',
-                    value: aup.formatAup(aupLeft),
+                    label: 'Titles won',
+                    value: '$titlesWon / $titlesTotal',
                   ),
                   _MetricRow(
-                    label: 'Eurasia AUP',
-                    value: aup.formatAup(aura.euroAup),
+                    label: 'Regions conquered',
+                    value: '$regionsConquered / $regionsTotal',
                   ),
-                  _MetricRow(
-                    label: 'Indian Ocean AUP',
-                    value: aup.formatAup(aura.indiaAup),
-                  ),
-                  _MetricRow(
-                    label: 'Rest of the World AUP',
-                    value: aup.formatAup(aura.internationalAup),
-                  ),
-                  _MetricRow(
-                    label: 'Australasia AUP',
-                    value: aup.formatAup(aura.oceaniaAup),
-                  ),
-                  _MetricRow(
-                    label: 'Americas AUP',
-                    value: aup.formatAup(aura.northAmericaAup),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      const Icon(Icons.brightness_5,
-                          color: AppColors.blue, size: 16),
-                      const SizedBox(width: 6),
-                      const Text(
-                        'Aura',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12.5,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: LinearProgressIndicator(
-                            value: aura.isLoaded ? auraProgress : null,
-                            minHeight: 6,
-                            backgroundColor: Colors.white12,
-                            color: AppColors.blue,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        aura.isLoaded ? '$auraInt / 100' : '…',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12.5,
-                        ),
-                      ),
-                    ],
-                  ),
+                  _GlobalRankRow(rankFuture: rankFuture),
                 ],
               ),
             ),
@@ -977,6 +905,93 @@ class _VenueScreenState extends State<VenueScreen>
           ),
         ],
       ),
+    );
+  }
+}
+
+final NumberFormat _dashboardCount = NumberFormat.decimalPattern('en_IN');
+
+/// The player's total AUP, shown first and largest on the dashboard.
+class _AupHeadline extends StatelessWidget {
+  /// Null while the wallet is still loading.
+  final int? totalAup;
+  const _AupHeadline({required this.totalAup});
+
+  @override
+  Widget build(BuildContext context) {
+    final amount = totalAup;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.blue.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'AUP',
+            style: TextStyle(
+              color: AppColors.blue,
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+              letterSpacing: 1.4,
+            ),
+          ),
+          const SizedBox(height: 2),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              amount == null ? '…' : aup.formatAup(amount),
+              style: const TextStyle(
+                color: AppColors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 30,
+                height: 1.1,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "#12 of 340" among every player who has won AUP. Equal AUP shares a rank.
+class _GlobalRankRow extends StatelessWidget {
+  /// Null when there is no registered account to rank (guests).
+  final Future<EconomyRank>? rankFuture;
+  const _GlobalRankRow({required this.rankFuture});
+
+  static const String _label = 'Global rank';
+
+  @override
+  Widget build(BuildContext context) {
+    final future = rankFuture;
+    if (future == null) {
+      return const _MetricRow(label: _label, value: 'Sign in to get ranked');
+    }
+    return FutureBuilder<EconomyRank>(
+      future: future,
+      builder: (context, snapshot) {
+        final String value;
+        if (snapshot.hasError) {
+          value = 'Not available now';
+        } else if (!snapshot.hasData) {
+          value = '…';
+        } else {
+          final standing = snapshot.requireData;
+          final rank = standing.rank;
+          value = rank == null
+              ? 'Win AUP to get ranked'
+              : '#${_dashboardCount.format(rank)} of '
+                  '${_dashboardCount.format(standing.rankedPlayers)}';
+        }
+        return _MetricRow(label: _label, value: value);
+      },
     );
   }
 }

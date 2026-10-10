@@ -208,6 +208,40 @@ class EconomyOperationResult {
   bool get accepted => status == EconomyOperationStatus.accepted;
 }
 
+/// Where the signed-in player stands among every player who has won AUP.
+///
+/// [rank] is null until the player has won some AUP. Players with equal AUP
+/// share a rank, so two players can both be #2.
+class EconomyRank {
+  final int totalAup;
+  final int? rank;
+  final int rankedPlayers;
+
+  const EconomyRank({
+    required this.totalAup,
+    required this.rank,
+    required this.rankedPlayers,
+  });
+
+  bool get isRanked => rank != null;
+
+  factory EconomyRank.fromJson(Map<String, dynamic> json) {
+    int whole(Object? raw) => raw is num && raw.isFinite ? raw.toInt() : 0;
+    final totalAup = whole(json['totalAup']);
+    final rawRank = whole(json['rank']);
+    final rank = totalAup > 0 && rawRank > 0 ? rawRank : null;
+    final ranked = whole(json['rankedPlayers']);
+    final rankedPlayers = ranked < 0 ? 0 : ranked;
+    return EconomyRank(
+      totalAup: totalAup < 0 ? 0 : totalAup,
+      rank: rank,
+      // A ranked player is always counted among the ranked players.
+      rankedPlayers:
+          rank != null && rankedPlayers < rank ? rank : rankedPlayers,
+    );
+  }
+}
+
 class EconomyApiService {
   static const bool _allowLocalEconomyInRelease =
       bool.fromEnvironment('ALLOW_LOCAL_ECONOMY_DEV');
@@ -286,6 +320,21 @@ class EconomyApiService {
         status: EconomyWalletStatus.unavailable,
       );
     }
+  }
+
+  /// The signed-in player's global rank by total AUP.
+  ///
+  /// Needs a registered (non-guest) account; throws [ApiException] otherwise
+  /// or when the server cannot be reached.
+  Future<EconomyRank> rank() async {
+    final response = await _apiClient.get('/v1/economy/rank');
+    if (response is! Map<String, dynamic> || response['ok'] != true) {
+      throw const ApiException(
+        kind: ApiFailureKind.malformedResponse,
+        message: 'The rank response was invalid.',
+      );
+    }
+    return EconomyRank.fromJson(response);
   }
 
   /// Compatibility surface for existing test doubles.
