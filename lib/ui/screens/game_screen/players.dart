@@ -1143,7 +1143,7 @@ class _SeatBustedTextPainter extends CustomPainter {
 
     final Paint fillPaint = Paint()
       ..style = PaintingStyle.fill
-      ..color = const Color(0xFFD10D24);
+      ..color = const Color(0xFFC41230);
     TextPainter fill = buildPainter(fillPaint);
 
     while ((fill.didExceedMaxLines || fill.height > maxTextHeight) &&
@@ -1179,7 +1179,7 @@ class _SeatBustedTextPainter extends CustomPainter {
     final double left = offset.dx;
     final double right = offset.dx + stroke.width;
     final double width = stroke.width;
-    final Color dripColor = const Color(0xFF8D0014);
+    final Color dripColor = const Color(0xFFC41230);
     final Paint dripShadow = Paint()
       ..color = const Color(0xAA320008)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);

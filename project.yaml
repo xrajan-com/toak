@@ -9,6 +9,11 @@ brand:
   domain: tenofakind.com
   website: https://tenofakind.com
 
+colors:
+  ferrari_red: "#FF2800"               # primary accent (energy); inspired by Ferrari
+  action_red: "#C41230"                # action bar danger buttons and the red kingdom pill; the only other red
+  beach_blue: "#20D9FF"                # secondary accent (peace); inspired by beaches
+
 app:
   name: X Poker                        # store listings, home-screen label, page titles
   tagline: A simulated Texas Hold'em strategy game from Ten of a Kind

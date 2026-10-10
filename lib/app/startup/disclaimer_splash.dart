@@ -103,7 +103,7 @@ class _DisclaimerSplashState extends State<DisclaimerSplash> {
                     'Before You Play',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: const Color(0xFFFF4B36),
+                      color: const Color(0xFFFF2800),
                       fontWeight: FontWeight.w900,
                       fontSize: compact ? 24 : 30,
                       letterSpacing: 0.6,
@@ -168,7 +168,7 @@ class _DisclaimerSplashState extends State<DisclaimerSplash> {
                         Text(_saving ? 'Saving…' : 'I Understand — Continue'),
                     style: FilledButton.styleFrom(
                       minimumSize: const Size.fromHeight(52),
-                      backgroundColor: const Color(0xFFC62828),
+                      backgroundColor: const Color(0xFFC41230),
                       foregroundColor: Colors.white,
                       textStyle: const TextStyle(
                         fontSize: 16,

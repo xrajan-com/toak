@@ -750,7 +750,7 @@ class _AuthScreenState extends State<AuthScreen> {
                               key: const ValueKey('auth_error'),
                               textAlign: TextAlign.center,
                               style: const TextStyle(
-                                color: Color(0xFFFF8A80),
+                                color: Color(0xFFFF2800),
                                 fontWeight: FontWeight.w700,
                               ),
                             ),

@@ -42,16 +42,16 @@ Future<void> showScoreboardSheet(
   }
 
   Color nameColor(Seat s) {
-    if (s.busted) return const Color(0xFFFF5567);
+    if (s.busted) return const Color(0xFFFF2800);
     if (isHero(s)) return Colors.white;
     return const Color(0xFFFFD76E);
   }
 
   Color chipColor(Seat s) {
-    if (s.busted || s.chips <= 0) return const Color(0xFFFF5C6C);
+    if (s.busted || s.chips <= 0) return const Color(0xFFFF2800);
     if (leaders.contains(s)) return const Color(0xFF20D9FF);
     if (s.chips > s.startChips) return const Color(0xFF4CFFBE);
-    if (s.shortStack) return const Color(0xFFFF5C6C);
+    if (s.shortStack) return const Color(0xFFFF2800);
     if (s.chips < s.startChips) return const Color(0xFFFFD76E);
     return Colors.white;
   }
@@ -128,7 +128,7 @@ Future<void> showScoreboardSheet(
     if (aura >= 90) return const Color(0xFFFFF4C2);
     if (aura >= 75) return const Color(0xFF64FFDA);
     if (aura > 60) return const Color(0xFF81D4FA);
-    return const Color(0xFFFF8A80);
+    return const Color(0xFFFF2800);
   }
 
   Widget auraBadge(int aura) {

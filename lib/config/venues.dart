@@ -44,7 +44,7 @@ const _blue = Color(0xFF20D9FF);
 // brightest things on it. The highlight is that hue lifted for the venue
 // pills, where ten kingdoms sit side by side on black and have to be told
 // apart at a glance. Chosen so the closest pair in the set reads as two
-// colours (OKLab dE 17.5 against 8.6 before), no hue is washed out enough to
+// colours (OKLab dE 15.8 against 8.6 before), no hue is washed out enough to
 // read as grey, and every highlight clears 3:1 contrast on black.
 
 const kFeltRed = Color(0xFF68021A);
@@ -59,7 +59,7 @@ const kFeltDeepPurple = Color(0xFF5940A1);
 const kFeltMagenta = Color(0xFF741863);
 
 const Map<int, Color> _kFeltHighlights = <int, Color>{
-  0xFF68021A: Color(0xFFBA0135),
+  0xFF68021A: Color(0xFFC41230),
   0xFF633701: Color(0xFFB96C04),
   0xFF846C07: Color(0xFFD2AE0C),
   0xFF265F03: Color(0xFF47A900),

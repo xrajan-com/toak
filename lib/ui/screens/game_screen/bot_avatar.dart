@@ -149,7 +149,7 @@ class _FallbackAvatar extends StatelessWidget {
         tint = Colors.greenAccent.shade400;
         break;
       case AvatarMood.lose:
-        tint = Colors.redAccent.shade400;
+        tint = const Color(0xFFFF2800);
         break;
       case AvatarMood.busted:
         tint = Colors.grey.shade800;

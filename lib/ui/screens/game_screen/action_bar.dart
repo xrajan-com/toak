@@ -726,9 +726,9 @@ class _HeroButtonsRow extends StatelessWidget {
               child: _pillActionButton(
                 title: 'ALL-IN',
                 widgetKey: allInButtonKey,
-                // Deepened from #C41230. The most destructive action should
-                // read as danger, not as the brightest button on the bar.
-                color: const Color(0xFF8E2A38),
+                // Action red, the darker of the app's two reds: the most
+                // destructive action reads as danger, not as the brightest button.
+                color: const Color(0xFFC41230),
                 onTap: onAllIn,
                 enabled: enabled && allInEnabled,
                 active: !actionsOn || (enabled && allInEnabled),

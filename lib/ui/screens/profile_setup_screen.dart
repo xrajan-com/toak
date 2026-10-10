@@ -380,7 +380,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     error,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      color: Color(0xFFFF8A80),
+                      color: Color(0xFFFF2800),
                       fontWeight: FontWeight.w700,
                     ),
                   ),

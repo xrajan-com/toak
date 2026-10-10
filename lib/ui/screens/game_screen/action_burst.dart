@@ -94,7 +94,7 @@ class ActionBurstOverlayState extends State<ActionBurstOverlay>
     ];
     final List<Color> fireworkPalette = <Color>[
       const Color(0xFFFFD100),
-      const Color(0xFFFF5A36),
+      const Color(0xFFFF2800),
       const Color(0xFFFF2D95),
       const Color(0xFFC13CFF),
       const Color(0xFF7B61FF),

@@ -250,7 +250,7 @@ const Map<DealerAvatarStyle, _DealerPersonaOverride> _dealerPersonaOverrides =
     gender: DealerGender.female,
     skin: Color(0xFFF2D6C1), // fair
     hair: Color(0xFF0D0D12),
-    headgear: Color(0xFFE1202E), // red boxing helmet
+    headgear: Color(0xFFC41230), // red boxing helmet
     headgearAccent: Color(0xFFF2F2F6),
     hairStyle: _HairStyle.bald,
     hatStyle: _HatStyle.boxingHelmet,
@@ -300,7 +300,7 @@ const Map<DealerAvatarStyle, _DealerPersonaOverride> _dealerPersonaOverrides =
     gender: DealerGender.male,
     skin: Color(0xFFF2D6C1),
     hair: Color(0xFF0D0D12),
-    headgear: Color(0xFFE1202E), // Ferrari red
+    headgear: Color(0xFFFF2800), // Ferrari red
     headgearAccent: Color(0xFFF2F2F6),
     hairStyle: _HairStyle.bald,
     hatStyle: _HatStyle.helmet,
@@ -324,7 +324,7 @@ const Map<DealerAvatarStyle, _DealerPersonaOverride> _dealerPersonaOverrides =
   DealerAvatarStyle.hyderabad: _DealerPersonaOverride(
     gender: DealerGender.female,
     skin: Color(0xFF845035), // sizzling tanned brown
-    hair: Color(0xFFB21F2D), // long red hair
+    hair: Color(0xFFC41230), // long red hair
     hairStyle: _HairStyle.long,
     hatStyle: _HatStyle.none,
     glassesStyle: _GlassesStyle.none,
@@ -350,7 +350,7 @@ const Map<DealerAvatarStyle, _DealerPersonaOverride> _dealerPersonaOverrides =
     skin: Color(0xFFF2F2F6), // mask
     hair: Color(0xFF0D0D12),
     headgear: Color(0xFFF7F7FA), // bucket
-    headgearAccent: Color(0xFFB21F2D),
+    headgearAccent: Color(0xFFC41230),
     hairStyle: _HairStyle.shaved,
     hatStyle: _HatStyle.bucket,
     glassesStyle: _GlassesStyle.none,
@@ -425,7 +425,7 @@ const Map<DealerAvatarStyle, _DealerPersonaOverride> _dealerPersonaOverrides =
     gender: DealerGender.male,
     skin: Color(0xFFECC7A9),
     hair: Color(0xFF0D0D12),
-    headgear: Color(0xFFE1202E), // helmet
+    headgear: Color(0xFFC41230), // helmet
     headgearAccent: Color(0xFF111216), // eyes
     hairStyle: _HairStyle.shaved,
     hatStyle: _HatStyle.mouse,
@@ -1405,7 +1405,7 @@ class _KingdomDealerPainter extends CustomPainter {
 
         // Jewels (3 on band, 1 on each outer spike, 1 large center jewel).
         const gems = <Color>[
-          Color(0xFFE1202E), // ruby
+          Color(0xFFC41230), // ruby
           Color(0xFF16A34A), // emerald
           Color(0xFF2563EB), // sapphire
         ];
@@ -1780,7 +1780,7 @@ class _KingdomDealerPainter extends CustomPainter {
         // Pattern (Arabia: red/white checkered).
         final bool isArabia = style == DealerAvatarStyle.arabia;
         final Color patternColor =
-            isArabia ? const Color(0xFFE1202E) : trim.color;
+            isArabia ? const Color(0xFFC41230) : trim.color;
         final Paint pattern = Paint()
           ..color = patternColor.withValues(alpha: isArabia ? 0.22 : 0.10)
           ..strokeWidth = 1.6;
@@ -3544,7 +3544,7 @@ class _SlashAvatarPainter extends CustomPainter {
     final Paint skin = Paint()..color = const Color(0xFFECD0AF);
     final Paint card = Paint()..color = const Color(0xFFF9F6FF);
     final Paint cardEdge = Paint()..color = const Color(0xFFC9C3D8);
-    final Paint accent = Paint()..color = const Color(0xFFE15B59);
+    final Paint accent = Paint()..color = const Color(0xFFFF2800);
     final Paint knuckleShade = Paint()
       ..color = const Color(0xFFD1A578)
       ..strokeWidth = 1.1
@@ -4125,7 +4125,7 @@ class _BucketheadPainter extends CustomPainter {
       headR * 0.9,
       -headR * 1.25,
     );
-    canvas.drawRect(stripe, Paint()..color = const Color(0xFFE03A3E));
+    canvas.drawRect(stripe, Paint()..color = const Color(0xFFFF2800));
 
     // Simple text mark
     final TextPainter mark = TextPainter(
@@ -4357,7 +4357,7 @@ class _DharmaPainter extends CustomPainter {
       shirt,
     );
 
-    final Paint tie = Paint()..color = const Color(0xFFD62828);
+    final Paint tie = Paint()..color = const Color(0xFFC41230);
     final Path tiePath = Path()
       ..moveTo(0, -bodyH * 0.25)
       ..quadraticBezierTo(-6, -bodyH * 0.12, -2, -bodyH * 0.02)
@@ -4660,8 +4660,8 @@ class _RedrixPainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: const [
-          Color(0xFFB3001B),
-          Color(0xFFE61A2B),
+          Color(0xFFC41230),
+          Color(0xFFFF2800),
         ],
       ).createShader(Rect.fromCenter(
         center: Offset(0, bodyH * 0.08),
@@ -4688,7 +4688,7 @@ class _RedrixPainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: const [Color(0xFFB3001B), Color(0xFFE61A2B)],
+        colors: const [Color(0xFFC41230), Color(0xFFFF2800)],
       ).createShader(knotRect);
     canvas.drawRRect(
       RRect.fromRectAndRadius(knotRect, const Radius.circular(6)),
@@ -4749,7 +4749,7 @@ class _RedrixPainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.centerLeft,
         end: Alignment.centerRight,
-        colors: const [Color(0xFFB3001B), Color(0xFFE61A2B)],
+        colors: const [Color(0xFFC41230), Color(0xFFFF2800)],
       ).createShader(band);
     canvas.drawRRect(
       RRect.fromRectAndRadius(band, const Radius.circular(8)),

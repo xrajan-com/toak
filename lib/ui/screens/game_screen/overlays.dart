@@ -99,16 +99,16 @@ const Map<String, Color> _kKingdomFeltColors = {
   'Arabia': Color.fromARGB(227, 95, 65, 58),
   'Australia': Color.fromARGB(218, 203, 160, 20),
   'Baroda': Color.fromARGB(218, 203, 160, 20),
-  'China': Color(0xFF8B0000),
+  'China': Color(0xFFC41230),
   'Europe': Color.fromARGB(204, 220, 83, 220),
   'European Marches': Color.fromARGB(204, 220, 83, 220),
   'Gwalior': Color(0xFF1565C0),
   'Hyderabad': Color.fromARGB(173, 118, 30, 180),
-  'Indore': Color(0xFF8B0000),
+  'Indore': Color(0xFFC41230),
   'India': Color.fromARGB(208, 0, 166, 232),
   'International': Color(0xFF20D9FF),
   'Jaipur': Color.fromARGB(204, 220, 83, 220),
-  'Japan': Color(0xFFB71C1C),
+  'Japan': Color(0xFFC41230),
   'Maratha Empire': Color.fromARGB(212, 255, 107, 1),
   'Mewar': Color(0xFF2E8B57),
   'Mysore': Color.fromARGB(227, 95, 65, 58),
@@ -1234,14 +1234,14 @@ class _FireworksPainter extends CustomPainter {
   static const List<Color> _celebrationPalette = <Color>[
     Color(0xFFFFD100),
     Color(0xFF20D9FF),
-    Color(0xFFFF5A36),
+    Color(0xFFFF2800),
     Color(0xFF8CFF66),
     Color(0xFFFFF4C2),
   ];
 
   static const List<Color> _gameOverPalette = <Color>[
     Color(0xFFFF2800),
-    Color(0xFFFF6A3D),
+    Color(0xFFFF2800),
     Color(0xFF20D9FF),
     Color(0xFFFFD100),
   ];
@@ -1506,7 +1506,7 @@ Future<bool?> showConfirmDialog(
         TextButton(
           onPressed: () => Navigator.of(ctx, rootNavigator: true).pop(true),
           style: destructive
-              ? TextButton.styleFrom(foregroundColor: Colors.redAccent)
+              ? TextButton.styleFrom(foregroundColor: const Color(0xFFFF2800))
               : null,
           child: const Text('OK', style: _kBodyStyle),
         ),
@@ -1748,7 +1748,7 @@ class _AuraBadgeChip extends StatelessWidget {
     } else if (aura > 60) {
       color = const Color(0xFF81D4FA);
     } else {
-      color = const Color(0xFFFF8A80);
+      color = const Color(0xFFFF2800);
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -3124,7 +3124,7 @@ class _MiniCard extends StatelessWidget {
     final s = card.suit;
     final isRed = s.contains('♥') || s.contains('♦');
     final Color suitColor =
-        isRed ? (Colors.red[700] ?? Colors.red) : Colors.black;
+        isRed ? const Color(0xFFC41230) : Colors.black;
     final borderColor = highlight ? highlightColor : Colors.black12;
     final shadowColor =
         highlight ? highlightColor.withValues(alpha: 0.4) : Colors.black26;
@@ -3340,7 +3340,7 @@ class _ArcCongratsText extends StatelessWidget {
     final int n = chars.length;
     final double span = math.pi * 0.9; // near-semicircle
     final double start = -span / 2;
-    final Color color = Colors.red.shade700;
+    const Color color = Color(0xFFC41230);
     final double fontSize = 24;
 
     return SizedBox(

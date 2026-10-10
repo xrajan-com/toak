@@ -276,7 +276,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               child: Text(
                                 message,
                                 style: const TextStyle(
-                                  color: Color(0xFFFF8A80),
+                                  color: Color(0xFFFF2800),
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),

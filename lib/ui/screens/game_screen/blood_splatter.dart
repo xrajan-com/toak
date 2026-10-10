@@ -45,7 +45,7 @@ class _BloodSplatterState extends State<BloodSplatter>
     with TickerProviderStateMixin {
   // Darker, dried-blood palette with subtle edge highlight.
   static const Color _baseColor = Color(0xFF3B0505);
-  static const Color _highlightColor = Color(0xFF7A1A1A);
+  static const Color _highlightColor = Color(0xFFC41230);
 
   late final AnimationController _controller;
   late final AnimationController _life;
