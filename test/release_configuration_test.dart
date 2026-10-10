@@ -11,15 +11,11 @@ String _plistString(String source, String key) {
 }
 
 void main() {
-  test('CI compiles release code without requiring private signing files', () {
-    final workflow = File('.github/workflows/ci.yml').readAsStringSync();
+  // The GitHub CI workflow was removed on purpose (the local deploy scripts
+  // run the release gate); the Gradle half of this guarantee still matters.
+  test('release Gradle config compiles without private signing files', () {
     final gradle = File('android/app/build.gradle.kts').readAsStringSync();
 
-    expect(workflow,
-        contains('Compile unsigned backend-authoritative public AAB'));
-    expect(workflow, contains('flutter build appbundle'));
-    expect(
-        workflow, isNot(contains('run: bash tools/build_public_release.sh')));
     expect(gradle, contains('hasReleaseSigning'));
     expect(
       gradle,
