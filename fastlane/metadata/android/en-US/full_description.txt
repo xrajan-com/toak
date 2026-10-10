@@ -1,44 +1,47 @@
-X Poker is a Texas Hold'em poker simulator, tournament strategy trainer, and classic card game set against the legendary backdrop of the Battle of Ten Kings. Sharpen your poker mind, master No-Limit Hold'em decision-making, and conquer 50 kingdom-themed arenas against intelligent AI opponents.
+Every poker legend starts at one table. Yours runs through 50 kingdoms of the world, with a title waiting in each.
 
-Whether you are a beginner learning poker hand rankings or an experienced card player looking to practice tournament strategy on the go, X Poker delivers a fast, realistic single-player poker experience.
+X Poker is a Texas Hold'em tournament journey. Take a kingdom's forts, win its main event, claim its title, and move on to the next. Start at a 6-seat table and finish as a champion of the world.
 
-Play Authentic Texas Hold'em Tournaments
-Step up to the virtual felt and test your card skills across dynamic tables. X Poker focuses purely on strategic gameplay: calculating pot odds, reading table positions, sizing bets, managing chip stacks, and executing well-timed bluffs.
+The Journey
+Five regions of the world: the Indian Ocean, Eurasia, Australasia, the Americas, and the Rest of the World. Ten kingdoms in each. Ten historic forts in every kingdom.
 
-Key Game Features:
+• 50 kingdoms to travel, from Jaipur to Japan and Scandinavia to the Andes
+• 500 forts to take, each a single-table poker tournament
+• 50 titles to win, named after real ranks of history: Raja, Jarl, Emir, Shah, Pasha, Admiral, Strategos, Laksamana and more
+• Every kingdom ends in a 10-handed title match, played all the way down to heads-up for the crown
 
-Single-Player Texas Hold'em Simulator: Smooth, single-player poker with no waiting for slow online players. Every match is a single-table tournament with rising blinds.
+Rivals Along the Way
+Meet 100 named poker players from around the world, each with a home and a day job. They remember who pushed them around and push back. They sharpen as the prize pools grow, weigh payouts near the money, and the toughest of them wait for you in the title matches. Renoir deals every hand. The wild doesn't fold.
 
-Smart Poker AI: Practice against 100 named AI opponents who adapt to the table. They sharpen as prize pools grow, weigh payouts near the money, and push back against players who keep raising them.
+Real Texas Hold'em Tournaments
+• No-limit Texas Hold'em: check, call, raise or move all-in
+• Rising blinds, short stacks, bubble pressure and final tables
+• Fort tables of 6 or 8 seats; full-ring title matches of 10
+• Single-player, so there's no waiting for slow online players
 
-Live Win Odds & Move Tips: On your turn, see your chance of winning the hand and a suggested move: fold, call, raise or all-in.
+Get Better on the Road
+• On your turn, see your chance of winning the hand and a suggested move: fold, call, raise or all-in
+• Practice starting hands, position, pot odds, continuation bets and all-in decisions by playing them
+• New to poker? Quick Game opens every kingdom for a single table, no journey required
 
-Battle of Ten Kings Campaign: Journey through five circuits, 50 kingdom venues, 500 fort tables, and high-stakes championship title battles.
+Your Legend Grows
+Collect Aura points from every paid finish and climb the global leaderboard. Your titles show the world where you have already won.
 
-6-Max, 8-Max & Full-Ring Tables: Fort tables seat 6 or 8 players. Championship title battles are played 10-handed, all the way down to heads-up for the crown.
+Start Now
+• Play instantly as a guest, no registration required
+• Sign in with Google to keep your journey safe across devices
+• Prefer a bigger screen? Play the same game at tenofakind.com
 
-Poker Strategy & Training: Ideal companion app for learning starting hand selection, post-flop betting lines, all-in risk management, and overall card game strategy.
+Showdown & Hand Rankings
+Royal Flush, Straight Flush, Four of a Kind, Full House, Flush, Straight, Three of a Kind, Two Pair, One Pair, High Card. Learn them at the table.
 
-Aura Points & Career Progress: Collect Aura points, win kingdom titles, and climb the global leaderboard across every conquered kingdom.
-
-Instant Guest Play: Jump straight into the action with zero registration required, or sign in seamlessly with Google to back up your campaign progress across devices.
-
-Master Every Stage of the Game:
-
-Pre-Flop Strategy: Master opening ranges, pocket pairs, and suited connectors.
-
-Post-Flop Tactics: Navigate the Flop, Turn, and River with calculated check-raises, continuation bets, and smart value betting.
-
-Showdown & Hand Rankings: Test your knowledge of Royal Flushes, Straight Flushes, Four of a Kind, Full Houses, Flushes, Straights, Three of a Kind, Two Pair, One Pair, and High Card.
-
-Important Disclaimers & Policies:
-
+Important Disclaimers & Policies
 Simulation Only: X Poker is a social card game simulator intended strictly for entertainment, education, and strategy training.
 
 No Real-Money Gambling: This game does NOT offer real-money gambling, sports betting, cash wagering, or opportunities to win real money or physical prizes.
 
 Skill Practice: Success, virtual chips, or titles earned within this poker simulator do not imply future success at real-money gambling or live casino gaming.
 
-Audience: Intended for adults 18+ who enjoy card and strategy games. Governed by regional store content ratings.
+Audience: Intended for adults 18+ who enjoy card and strategy games.
 
-Privacy & Support: No ads and no in-app purchases. Account data management and privacy details are in our privacy policy at tenofakind.com/privacy.
+Privacy & Support: No ads and no in-app purchases. Privacy policy: tenofakind.com/privacy. Account deletion: tenofakind.com/delete-account.
