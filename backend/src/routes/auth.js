@@ -1,5 +1,4 @@
 const express = require('express');
-const rateLimit = require('express-rate-limit');
 const { getAuth } = require('firebase-admin/auth');
 const { FieldValue, getFirestore } = require('firebase-admin/firestore');
 
@@ -9,6 +8,7 @@ const {
   firebaseAdminApp,
   requireFirebaseAuth,
 } = require('../security/firebase_auth');
+const { playerRateLimit } = require('../security/rate_limit');
 const { leaderboardDocumentId } = require('../leaderboard_identity');
 
 const RECENT_AUTH_MAX_AGE_SECONDS = 5 * 60;
@@ -90,24 +90,11 @@ async function _deleteAccount({ db, auth, uid }) {
 function authRouter() {
   const router = express.Router();
 
-  const registerLimiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 10,
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
-
-  const loginLimiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 25,
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
-  const accountDeleteLimiter = rateLimit({
+  const registerLimiter = playerRateLimit({ windowMs: 60 * 1000, max: 10 });
+  const loginLimiter = playerRateLimit({ windowMs: 60 * 1000, max: 25 });
+  const accountDeleteLimiter = playerRateLimit({
     windowMs: 15 * 60 * 1000,
     max: 5,
-    standardHeaders: true,
-    legacyHeaders: false,
   });
 
   router.post('/register', registerLimiter, (_req, res) => {
@@ -143,8 +130,8 @@ function authRouter() {
 
   router.delete(
     '/account',
-    accountDeleteLimiter,
     requireFirebaseAuth,
+    accountDeleteLimiter,
     _asyncHandler(async (req, res) => {
       res.set('Cache-Control', 'no-store');
       if (req.body?.confirmation !== 'DELETE') {

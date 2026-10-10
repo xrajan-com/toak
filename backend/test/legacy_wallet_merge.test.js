@@ -1,10 +1,8 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
 
-const {
-  LEGACY_MIGRATION_VERSION,
-  mergeLegacyEconomy,
-} = require('../src/legacy_economy_migration');
+const { MIGRATION_COMPLETE_VERSION } = require('../src/economy/constants');
+const { mergeLegacyEconomy } = require('../scripts/legacy_wallet_merge');
 
 test('split legacy wallet and campaign documents merge field by field', () => {
   const result = mergeLegacyEconomy({
@@ -26,7 +24,7 @@ test('split legacy wallet and campaign documents merge field by field', () => {
   assert.deepEqual(result.data.cleared, ['sk:india:test:1']);
   assert.deepEqual(result.data.mainEventsCleared, ['me:india:test']);
   assert.equal(result.data.matchesPlayed, 5);
-  assert.equal(result.data.legacyMigrationVersion, LEGACY_MIGRATION_VERSION);
+  assert.equal(result.data.legacyMigrationVersion, MIGRATION_COMPLETE_VERSION);
   assert.deepEqual(result.sources, ['campaign_progress', 'aura_wallets']);
   assert.equal(result.walletConflict, false);
 });

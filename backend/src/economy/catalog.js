@@ -1,22 +1,25 @@
+// The campaign catalog: every fort and title match, with its circuit, entry
+// fee, table size and payouts. The server prices entries and pays results
+// from this, never from what a client claims.
+//
+// catalog.json is generated from the app's own tables by
+// tools/export_economy_catalog.dart; tools/verify_economy_catalog.sh fails a
+// release if the two drift.
 const crypto = require('node:crypto');
-const catalog = require('./economy_catalog.json');
-const compatibilityCatalog494 = require('./economy_catalog_compat_494.json');
-// The 550 catalog is the last one built before the circuits were redrawn
-// (Australia -> Australasia, Central Asia -> Eurasia, Pacific -> Rest of
-// the World). Clients already in the field compute their campaign ids and
-// prizes from it, so it stays servable until those builds age out.
-const compatibilityCatalog550 = require('./economy_catalog_compat_550.json');
-// The catalog built right after that redraw, while Eurasia held eleven
-// kingdoms and Central Asia's forts were sk:euro:central_asia:*. Central Asia
-// has since moved to the Rest of the World so every circuit holds ten; builds
-// already in the field pin this catalog, so it stays servable until they age
-// out.
-const compatibilityCatalog550Eurasia11 = require(
-  './economy_catalog_compat_550_eurasia11.json',
-);
 
-const LEGACY_ECONOMY_CATALOG_VERSION =
-  'v1:441:642c58b38694044f869bad6873e5c76df042c87e4abc8be3db29ebaea2e802fb';
+const catalog = require('./catalog.json');
+// Build 82 (1.2.8, September 2026) prices its forts from the catalog made
+// just before the circuits were redrawn (Australia -> Australasia, Central
+// Asia -> Eurasia, Pacific -> Rest of the World).
+const compatibilityCatalog550 = require('./catalog_compat_550.json');
+// Builds 83-85 (1.2.8-1.2.10) price theirs from the catalog in which Eurasia
+// held eleven kingdoms and Central Asia's forts were sk:euro:central_asia:*.
+const compatibilityCatalog550Eurasia11 = require(
+  './catalog_compat_550_eurasia11.json',
+);
+// Delete a compatibility catalog once Play Console shows no meaningful
+// installs of the builds that use it. A build whose catalog is gone is told
+// its economy is out of date and asked to update.
 
 function _validateCatalog(candidate) {
   const calculatedContentHash = crypto
@@ -52,38 +55,33 @@ function _validateCatalog(candidate) {
 }
 
 const ECONOMY_CATALOG_VERSION = _validateCatalog(catalog);
-const ECONOMY_CATALOG_494_VERSION = _validateCatalog(compatibilityCatalog494);
 const ECONOMY_CATALOG_550_VERSION = _validateCatalog(compatibilityCatalog550);
 const ECONOMY_CATALOG_550_EURASIA11_VERSION = _validateCatalog(
   compatibilityCatalog550Eurasia11,
 );
 const ECONOMY_CATALOG_CONTENT_HASH = catalog.contentHash;
-// Deduplicated: until the catalog is rebuilt after a content change, the
-// live version and the compatibility copy are the same string.
-const SUPPORTED_ECONOMY_CATALOG_VERSIONS = Object.freeze([
-  ...new Set([
-    ECONOMY_CATALOG_VERSION,
-    ECONOMY_CATALOG_550_EURASIA11_VERSION,
-    ECONOMY_CATALOG_550_VERSION,
-    ECONOMY_CATALOG_494_VERSION,
-    LEGACY_ECONOMY_CATALOG_VERSION,
-  ]),
-]);
+
 const catalogsByVersion = new Map([
   [ECONOMY_CATALOG_550_EURASIA11_VERSION, compatibilityCatalog550Eurasia11],
-  [ECONOMY_CATALOG_VERSION, catalog],
   [ECONOMY_CATALOG_550_VERSION, compatibilityCatalog550],
-  [ECONOMY_CATALOG_494_VERSION, compatibilityCatalog494],
-  // The 441 release did not contain North America. Its common events are
-  // compatible with the current non-North-America catalog entries.
-  [LEGACY_ECONOMY_CATALOG_VERSION, catalog],
+  // Last, so the live catalog wins if a compatibility copy is identical.
+  [ECONOMY_CATALOG_VERSION, catalog],
+]);
+const SUPPORTED_ECONOMY_CATALOG_VERSIONS = Object.freeze([
+  ECONOMY_CATALOG_VERSION,
+  ...[...catalogsByVersion.keys()].filter(
+    (version) => version !== ECONOMY_CATALOG_VERSION,
+  ),
 ]);
 
+/**
+ * The catalog a request is priced against: the one its build declares in
+ * X-Economy-Catalog-Version when the server still has it, otherwise the
+ * live catalog. The response echoes the version back, so a build whose
+ * catalog is gone sees the mismatch and asks the player to update.
+ */
 function requestedCatalogVersion(raw) {
-  if (typeof raw !== 'string' || raw.trim().length === 0) {
-    return LEGACY_ECONOMY_CATALOG_VERSION;
-  }
-  const requested = raw.trim();
+  const requested = typeof raw === 'string' ? raw.trim() : '';
   return catalogsByVersion.has(requested)
     ? requested
     : ECONOMY_CATALOG_VERSION;
@@ -107,11 +105,10 @@ function campaignEventCount(catalogVersion = ECONOMY_CATALOG_VERSION) {
 }
 
 module.exports = {
-  ECONOMY_CATALOG_494_VERSION,
   ECONOMY_CATALOG_550_EURASIA11_VERSION,
+  ECONOMY_CATALOG_550_VERSION,
   ECONOMY_CATALOG_CONTENT_HASH,
   ECONOMY_CATALOG_VERSION,
-  LEGACY_ECONOMY_CATALOG_VERSION,
   SUPPORTED_ECONOMY_CATALOG_VERSIONS,
   campaignEvent,
   campaignEventCount,

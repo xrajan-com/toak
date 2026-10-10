@@ -5,7 +5,6 @@ const crypto = require('node:crypto');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const { appReleaseRouter } = require('./routes/app_release');
@@ -20,7 +19,8 @@ const {
   ECONOMY_CATALOG_VERSION,
   SUPPORTED_ECONOMY_CATALOG_VERSIONS,
   campaignEventCount,
-} = require('./economy_catalog');
+} = require('./economy/catalog');
+const { playerRateLimit } = require('./security/rate_limit');
 
 const DEFAULT_PRODUCTION_CORS_ORIGINS = [
   'https://tenofakind.com',
@@ -98,13 +98,7 @@ function createApp() {
     });
   });
 
-  const limiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 240,
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
-  app.use(limiter);
+  app.use(playerRateLimit({ windowMs: 60 * 1000, max: 240 }));
 
   app.use('/v1/app-release', appReleaseRouter());
   app.use('/v1/auth', authRouter());

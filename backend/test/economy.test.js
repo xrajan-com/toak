@@ -2,36 +2,36 @@ const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
 const { test } = require('node:test');
 
+const economyCatalog = require('../src/economy/catalog.json');
 const {
-  CLIENT_WALLET_COLLECTION,
-  LEGACY_PROGRESS_COLLECTION,
-  SERVER_PROGRESS_COLLECTION,
-  _applyEconomyEvent,
-  _baseProgress,
-  _catalogVersionForRequest,
-  _entryReservationStatus,
-  _rankForUser,
-  _reserveEntry,
-  _snapshotCircuitAup,
-  _transitionEntryReservation,
-  _walletForUser,
-} = require('../src/routes/economy');
-const {
-  MAX_AUP_PER_CIRCUIT,
-  MAX_CAMPAIGN_WIN_AUP,
-} = require('../src/economy_constants');
-const { FakeFirestore } = require('./firestore_fake');
-const economyCatalog = require('../src/economy_catalog.json');
-const {
-  ECONOMY_CATALOG_494_VERSION,
   ECONOMY_CATALOG_550_EURASIA11_VERSION,
+  ECONOMY_CATALOG_550_VERSION,
   ECONOMY_CATALOG_VERSION,
   SUPPORTED_ECONOMY_CATALOG_VERSIONS,
   campaignEvent,
-} = require('../src/economy_catalog');
+} = require('../src/economy/catalog');
+const {
+  MAX_AUP_PER_CIRCUIT,
+  MAX_CAMPAIGN_WIN_AUP,
+} = require('../src/economy/constants');
+const {
+  entryReservationStatus,
+  reserveEntry,
+  transitionEntryReservation,
+} = require('../src/economy/entries');
+const { applyEconomyEvent } = require('../src/economy/events');
+const { baseProgress, snapshot } = require('../src/economy/progress');
+const { rankForUser } = require('../src/economy/rank');
+const { SERVER_PROGRESS_COLLECTION } = require('../src/economy/store');
+const { walletForUser } = require('../src/economy/wallet');
+const { catalogVersionForRequest } = require('../src/routes/economy');
+const { FakeFirestore } = require('./firestore_fake');
 const {
   ACCOUNT_DELETIONS_COLLECTION,
 } = require('../src/security/firebase_auth');
+
+const FREE_FORT = 'sk:international:arabia:3';
+const FREE_FORT_WIN = economyCatalog.events[FREE_FORT].payouts[0];
 
 function totalAup(progress) {
   return progress.indiaAup +
@@ -39,13 +39,6 @@ function totalAup(progress) {
     progress.euroAup +
     progress.oceaniaAup +
     progress.northAmericaAup;
-}
-
-function applyLegacyEconomyEvent(args) {
-  return _applyEconomyEvent({
-    ...args,
-    allowLegacyUnsafeEvents: true,
-  });
 }
 
 test('catalog compatibility version is bound to the exact catalog content', () => {
@@ -69,23 +62,32 @@ test('catalog compatibility version is bound to the exact catalog content', () =
   }
 });
 
-test('catalog negotiation keeps legacy clients compatible during rollout', () => {
-  const legacy = _catalogVersionForRequest({ get: () => undefined });
-  const current = _catalogVersionForRequest({
-    get: () => ECONOMY_CATALOG_VERSION,
-  });
-  const production494 = _catalogVersionForRequest({
-    get: () => ECONOMY_CATALOG_494_VERSION,
-  });
-  const unknown = _catalogVersionForRequest({ get: () => 'v1:999:unknown' });
+test('catalog negotiation serves recent builds their own catalog and everyone else the live one', () => {
+  const versionFor = (header) => catalogVersionForRequest({ get: () => header });
 
+  assert.equal(versionFor(undefined), ECONOMY_CATALOG_VERSION);
+  assert.equal(versionFor(ECONOMY_CATALOG_VERSION), ECONOMY_CATALOG_VERSION);
+  assert.equal(versionFor(ECONOMY_CATALOG_550_VERSION), ECONOMY_CATALOG_550_VERSION);
   assert.equal(
-    legacy,
-    'v1:441:642c58b38694044f869bad6873e5c76df042c87e4abc8be3db29ebaea2e802fb',
+    versionFor(ECONOMY_CATALOG_550_EURASIA11_VERSION),
+    ECONOMY_CATALOG_550_EURASIA11_VERSION,
   );
-  assert.equal(current, ECONOMY_CATALOG_VERSION);
-  assert.equal(production494, ECONOMY_CATALOG_494_VERSION);
-  assert.equal(unknown, ECONOMY_CATALOG_VERSION);
+  // Retired with builds from before August 2026: they now see a mismatch
+  // and ask the player to update.
+  assert.equal(
+    versionFor('v1:494:941a25a55ae5bb3d9d1fad40988b71b60d42480c2a9c16b8f49bd82889b0ea60'),
+    ECONOMY_CATALOG_VERSION,
+  );
+  assert.equal(
+    versionFor('v1:441:642c58b38694044f869bad6873e5c76df042c87e4abc8be3db29ebaea2e802fb'),
+    ECONOMY_CATALOG_VERSION,
+  );
+  assert.equal(versionFor('v1:999:unknown'), ECONOMY_CATALOG_VERSION);
+  assert.deepEqual(SUPPORTED_ECONOMY_CATALOG_VERSIONS, [
+    ECONOMY_CATALOG_VERSION,
+    ECONOMY_CATALOG_550_EURASIA11_VERSION,
+    ECONOMY_CATALOG_550_VERSION,
+  ]);
 });
 
 test('builds pinned to the eleven-kingdom Eurasia keep their Central Asia events', () => {
@@ -96,7 +98,7 @@ test('builds pinned to the eleven-kingdom Eurasia keep their Central Asia events
     true,
   );
   assert.equal(
-    _catalogVersionForRequest({
+    catalogVersionForRequest({
       get: () => ECONOMY_CATALOG_550_EURASIA11_VERSION,
     }),
     ECONOMY_CATALOG_550_EURASIA11_VERSION,
@@ -109,45 +111,40 @@ test('builds pinned to the eleven-kingdom Eurasia keep their Central Asia events
   assert.equal(pinned.requiredFortIds.length, 11);
 });
 
-test('494 reservations retain the exact event rules used before rollout', () => {
-  const event494 = campaignEvent(
-    'me:euro:france',
-    ECONOMY_CATALOG_494_VERSION,
-  );
-  const event550 = campaignEvent(
-    'me:euro:france',
-    ECONOMY_CATALOG_VERSION,
-  );
+test('a stored entry without a catalog version settles under the live catalog', () => {
+  const progress = baseProgress({
+    entryReservations: [{
+      attemptId: 'pre-catalog-version-entry',
+      campaignId: FREE_FORT,
+      group: 'international',
+      amount: 0,
+      status: 'committed',
+    }],
+  });
 
-  assert.equal(event494.requiredFortIds.length, 6);
-  assert.equal(event550.requiredFortIds.length, 8);
+  assert.equal(progress.entryReservations[0].catalogVersion, ECONOMY_CATALOG_VERSION);
 });
 
-test('legacy snapshots preserve the full visible 100-Aura balance', () => {
-  const progress = _baseProgress({
+test('a snapshot shows every circuit as stored, with the catalog it was priced by', () => {
+  const progress = baseProgress({
     indiaAup: 250000000,
     internationalAup: 250000000,
     euroAup: 250000000,
     oceaniaAup: 250000000,
   });
-  const legacyProjection = _snapshotCircuitAup(
-    progress,
-    'v1:441:642c58b38694044f869bad6873e5c76df042c87e4abc8be3db29ebaea2e802fb',
-  );
-  const currentProjection = _snapshotCircuitAup(
-    progress,
-    ECONOMY_CATALOG_VERSION,
-  );
+  const shown = snapshot(progress, ECONOMY_CATALOG_550_VERSION);
 
-  assert.equal(totalAup(legacyProjection), 1000000000);
-  assert.equal(legacyProjection.northAmericaAup, 0);
-  assert.deepEqual(currentProjection, {
-    indiaAup: 200000000,
-    internationalAup: 200000000,
-    euroAup: 200000000,
-    oceaniaAup: 200000000,
-    northAmericaAup: 200000000,
-  });
+  assert.equal(shown.catalogVersion, ECONOMY_CATALOG_550_VERSION);
+  assert.equal(totalAup(shown), 1000000000);
+  for (const field of [
+    'indiaAup',
+    'internationalAup',
+    'euroAup',
+    'oceaniaAup',
+    'northAmericaAup',
+  ]) {
+    assert.equal(shown[field], 200000000, field);
+  }
 });
 
 test('a deletion tombstone blocks every economy transaction from recreating state', async () => {
@@ -158,8 +155,8 @@ test('a deletion tombstone blocks every economy transaction from recreating stat
     },
   });
   const calls = [
-    () => _walletForUser({ db, uid }),
-    () => _reserveEntry({
+    () => walletForUser({ db, uid }),
+    () => reserveEntry({
       db,
       uid,
       body: {
@@ -167,18 +164,18 @@ test('a deletion tombstone blocks every economy transaction from recreating stat
         attemptId: 'deleted-attempt',
       },
     }),
-    () => _transitionEntryReservation({
+    () => transitionEntryReservation({
       db,
       uid,
       body: { attemptId: 'deleted-attempt' },
       transition: 'commit',
     }),
-    () => _entryReservationStatus({
+    () => entryReservationStatus({
       db,
       uid,
       attemptId: 'deleted-attempt',
     }),
-    () => _applyEconomyEvent({
+    () => applyEconomyEvent({
       db,
       uid,
       body: {
@@ -200,7 +197,7 @@ test('client-asserted rewarded ads never mint AUP', async () => {
   const uid = 'rewarded-ad-client-assertion';
   const db = new FakeFirestore();
 
-  const result = await _applyEconomyEvent({
+  const result = await applyEconomyEvent({
     db,
     uid,
     body: {
@@ -223,13 +220,13 @@ async function reserveAndCommit({
   campaignId,
   attemptId,
 }) {
-  const reserved = await _reserveEntry({
+  const reserved = await reserveEntry({
     db,
     uid,
     body: { campaignId, attemptId },
   });
   assert.equal(reserved.accepted, true);
-  const committed = await _transitionEntryReservation({
+  const committed = await transitionEntryReservation({
     db,
     uid,
     body: { attemptId },
@@ -258,7 +255,7 @@ test('an affordable paid fort can be reserved without clearing predecessors',
         },
       },
     });
-    const reserved = await _reserveEntry({
+    const reserved = await reserveEntry({
       db,
       uid,
       body: { campaignId, attemptId: 'out-of-sequence-paid-entry' },
@@ -280,28 +277,31 @@ test('economy event applies inside a transaction and persists the result', async
     },
   });
 
-  const result = await applyLegacyEconomyEvent({
+  const result = await applyEconomyEvent({
     db,
     uid: 'player1',
     body: {
-      action: 'entry_fee',
-      group: 'india',
-      amount: 2000,
-      eventId: 'fee:india:2000:1',
+      action: 'match_completed',
+      heroWon: false,
+      totalPlayers: 6,
+      finishRank: 3,
+      eventId: 'quick-game:1',
     },
   });
 
   assert.equal(db.transactionCount, 1);
   assert.equal(result.accepted, true);
-  assert.equal(result.delta, -2000);
+  // A loss costs one thousandth of the wallet.
+  assert.equal(result.delta, -5);
 
   const saved = db.dump(SERVER_PROGRESS_COLLECTION, 'player1');
-  assert.equal(saved.indiaAup, 3000);
-  assert.deepEqual(saved.appliedEventIds, ['fee:india:2000:1']);
+  assert.equal(saved.indiaAup, 4995);
+  assert.equal(saved.matchesPlayed, 1);
+  assert.deepEqual(saved.appliedEventIds, ['quick-game:1']);
 });
 
 test('backend limits match the 200M-per-circuit client economy', () => {
-  const progress = _baseProgress({
+  const progress = baseProgress({
     indiaAup: MAX_AUP_PER_CIRCUIT,
     internationalAup: MAX_AUP_PER_CIRCUIT,
   });
@@ -313,7 +313,7 @@ test('backend limits match the 200M-per-circuit client economy', () => {
 });
 
 test('legacy circuit overflow moves into North America without changing total Aura', () => {
-  const progress = _baseProgress({
+  const progress = baseProgress({
     indiaAup: 250000000,
     internationalAup: 250000000,
     euroAup: 250000000,
@@ -326,66 +326,74 @@ test('legacy circuit overflow moves into North America without changing total Au
   assert.equal(progress.oceaniaAup, 200000000);
   assert.equal(progress.northAmericaAup, 200000000);
   assert.equal(totalAup(progress), 1000000000);
-  assert.deepEqual(_baseProgress(progress), progress);
+  assert.deepEqual(baseProgress(progress), progress);
 });
 
-test('a legitimate main-event reward above 10M is credited in full', async () => {
+test('a legitimate title-match reward above 10M is credited in full', async () => {
+  const main = economyCatalog.events['me:euro:britain_ireland'];
+  assert.equal(main.payouts[0] > 10000000, true);
+  const uid = 'title-winner';
+  const db = new FakeFirestore({
+    [SERVER_PROGRESS_COLLECTION]: {
+      [uid]: {
+        schemaVersion: 1,
+        euroAup: main.entryFee,
+        registeredStarterGranted: true,
+        cleared: main.requiredFortIds,
+      },
+    },
+  });
+
+  await reserveAndCommit({ db, uid, campaignId: main.id, attemptId: 'title:1' });
+  const result = await applyEconomyEvent({
+    db,
+    uid,
+    body: {
+      action: 'campaign_result',
+      campaignId: main.id,
+      entryAttemptId: 'title:1',
+      placement: 1,
+      totalPlayers: main.maxPlayers,
+      eventId: 'title-result:1',
+    },
+  });
+
+  assert.equal(result.accepted, true, result.reason);
+  assert.equal(result.payoutDelta, main.payouts[0]);
+  assert.equal(result.progress.euroAup, main.payouts[0]);
+});
+
+test('an entry the player cannot afford is refused without a deduction', async () => {
+  const campaignId = 'sk:euro:balkans_mediterranean:1';
+  const event = economyCatalog.events[campaignId];
+  assert.equal(event.entryFee > 0, true);
   const db = new FakeFirestore({
     [SERVER_PROGRESS_COLLECTION]: {
       player1: {
         schemaVersion: 1,
-        internationalAup: 0,
+        euroAup: event.entryFee - 1,
         registeredStarterGranted: true,
       },
     },
   });
 
-  const result = await applyLegacyEconomyEvent({
+  const result = await reserveEntry({
     db,
     uid: 'player1',
-    body: {
-      action: 'campaign_win',
-      group: 'international',
-      amount: 15000000,
-      campaignId: 'me:international:europe',
-      eventId: 'win:me:international:europe:attempt-1',
-    },
-  });
-
-  assert.equal(result.accepted, true);
-  assert.equal(result.delta, 15000000);
-  assert.equal(result.progress.internationalAup, 15000000);
-});
-
-test('an insufficient entry fee is rejected without a deduction', async () => {
-  const db = new FakeFirestore({
-    [SERVER_PROGRESS_COLLECTION]: {
-      player1: {
-        schemaVersion: 1,
-        indiaAup: 1000,
-        registeredStarterGranted: true,
-      },
-    },
-  });
-
-  const result = await applyLegacyEconomyEvent({
-    db,
-    uid: 'player1',
-    body: {
-      action: 'entry_fee',
-      group: 'india',
-      amount: 2000,
-      eventId: 'fee:india:2000:insufficient',
-    },
+    body: { campaignId, attemptId: 'too-poor:1' },
   });
 
   assert.equal(result.accepted, false);
-  assert.equal(result.delta, 0);
-  assert.equal(result.progress.indiaAup, 1000);
+  assert.equal(result.reason, 'insufficient_funds');
+  assert.equal(result.progress.euroAup, event.entryFee - 1);
+  assert.equal(
+    db.dump(SERVER_PROGRESS_COLLECTION, 'player1').euroAup,
+    event.entryFee - 1,
+  );
 });
 
-test('invalid circuit names and zero entry fees are rejected', async () => {
-  const seed = {
+test('client-priced entry fees are refused; entries go through a reservation', async () => {
+  const db = new FakeFirestore({
     [SERVER_PROGRESS_COLLECTION]: {
       player1: {
         schemaVersion: 1,
@@ -393,153 +401,115 @@ test('invalid circuit names and zero entry fees are rejected', async () => {
         registeredStarterGranted: true,
       },
     },
-  };
-  const invalidGroupDb = new FakeFirestore(seed);
-  const invalidGroup = await applyLegacyEconomyEvent({
-    db: invalidGroupDb,
-    uid: 'player1',
-    body: {
-      action: 'entry_fee',
-      group: 'not-a-circuit',
-      amount: 1000,
-      eventId: 'fee:invalid:1',
-    },
   });
-  const zeroFeeDb = new FakeFirestore(seed);
-  const zeroFee = await applyLegacyEconomyEvent({
-    db: zeroFeeDb,
+
+  const result = await applyEconomyEvent({
+    db,
     uid: 'player1',
     body: {
       action: 'entry_fee',
       group: 'india',
-      amount: 0,
-      eventId: 'fee:india:zero',
+      amount: 2000,
+      eventId: 'fee:india:2000:1',
     },
   });
 
-  assert.equal(invalidGroup.accepted, false);
-  assert.equal(invalidGroup.progress.indiaAup, 5000);
-  assert.equal(zeroFee.accepted, false);
-  assert.equal(zeroFee.progress.indiaAup, 5000);
+  assert.equal(result.accepted, false);
+  assert.equal(result.reason, 'entry_reservation_required');
+  assert.equal(result.progress.indiaAup, 5000);
+  assert.deepEqual(db.ids('economy_receipts'), []);
 });
 
 test('duplicate event ids are idempotent', async () => {
-  const db = new FakeFirestore({
-    [SERVER_PROGRESS_COLLECTION]: {
-      player1: {
-        schemaVersion: 1,
-        euroAup: 1000,
-        awardedEventIds: [],
-        appliedEventIds: [],
-        registeredStarterGranted: true,
-      },
-    },
-  });
-
+  const db = new FakeFirestore();
+  const uid = 'player1';
+  await reserveAndCommit({ db, uid, campaignId: FREE_FORT, attemptId: 'dup:1' });
   const body = {
     action: 'campaign_win',
-    group: 'euro',
-    amount: 3000,
-    eventId: 'campaign:euro:final',
+    campaignId: FREE_FORT,
+    entryAttemptId: 'dup:1',
+    placement: 1,
+    eventId: 'campaign:dup:final',
   };
-  const first = await applyLegacyEconomyEvent({ db, uid: 'player1', body });
-  const afterFirst = db.dump(SERVER_PROGRESS_COLLECTION, 'player1');
-  const second = await applyLegacyEconomyEvent({ db, uid: 'player1', body });
-  const afterSecond = db.dump(SERVER_PROGRESS_COLLECTION, 'player1');
+
+  const first = await applyEconomyEvent({ db, uid, body });
+  const afterFirst = db.dump(SERVER_PROGRESS_COLLECTION, uid);
+  const second = await applyEconomyEvent({ db, uid, body });
+  const afterSecond = db.dump(SERVER_PROGRESS_COLLECTION, uid);
 
   assert.equal(first.accepted, true);
   assert.equal(first.duplicate, false);
-  assert.equal(first.delta, 3000);
+  assert.equal(first.delta, FREE_FORT_WIN);
   assert.equal(second.accepted, true);
   assert.equal(second.duplicate, true);
   assert.equal(second.delta, 0);
-  assert.equal(afterFirst.euroAup, afterSecond.euroAup);
-  assert.deepEqual(afterSecond.awardedEventIds, ['campaign:euro:final']);
+  assert.equal(afterFirst.internationalAup, afterSecond.internationalAup);
+  assert.deepEqual(afterSecond.awardedEventIds, [FREE_FORT]);
 });
 
-test('a campaign can be replayed with a new event id and remains idempotent', async () => {
-  const db = new FakeFirestore({
-    [SERVER_PROGRESS_COLLECTION]: {
-      player1: {
-        schemaVersion: 1,
-        euroAup: 0,
-        awardedEventIds: [],
-        appliedEventIds: [],
-        registeredStarterGranted: true,
-      },
-    },
-  });
-
-  const firstBody = {
+test('a settled entry pays once, whatever eventId it is reported under', async () => {
+  const db = new FakeFirestore();
+  const uid = 'player1';
+  await reserveAndCommit({ db, uid, campaignId: FREE_FORT, attemptId: 'replay:1' });
+  const body = {
     action: 'campaign_win',
-    group: 'euro',
-    amount: 3000,
-    campaignId: 'sk:euro:britain:1',
-    eventId: 'win:sk:euro:britain:1:attempt-1',
-  };
-  const replayBody = {
-    ...firstBody,
-    eventId: 'win:sk:euro:britain:1:attempt-2',
+    campaignId: FREE_FORT,
+    entryAttemptId: 'replay:1',
+    placement: 1,
   };
 
-  const first = await applyLegacyEconomyEvent({
+  const first = await applyEconomyEvent({
     db,
-    uid: 'player1',
-    body: firstBody,
+    uid,
+    body: { ...body, eventId: 'win:replay:1:a' },
   });
-  const replay = await applyLegacyEconomyEvent({
+  const sameEntryNewEvent = await applyEconomyEvent({
     db,
-    uid: 'player1',
-    body: replayBody,
+    uid,
+    body: { ...body, eventId: 'win:replay:1:b' },
   });
-  const duplicateReplay = await applyLegacyEconomyEvent({
-    db,
-    uid: 'player1',
-    body: replayBody,
-  });
-  const saved = db.dump(SERVER_PROGRESS_COLLECTION, 'player1');
 
-  assert.equal(first.delta, 3000);
-  assert.equal(replay.delta, 3000);
-  assert.equal(duplicateReplay.delta, 0);
-  assert.equal(saved.euroAup, 6000);
-  assert.deepEqual(saved.awardedEventIds, ['sk:euro:britain:1']);
+  assert.equal(first.delta, FREE_FORT_WIN);
+  assert.equal(sameEntryNewEvent.accepted, true);
+  assert.equal(sameEntryNewEvent.reason, 'duplicate_settlement');
+  assert.equal(sameEntryNewEvent.delta, 0);
+  assert.equal(
+    db.dump(SERVER_PROGRESS_COLLECTION, uid).internationalAup,
+    2000 + FREE_FORT_WIN,
+  );
 });
 
-test('fort replay rewards have no play-count limit', async () => {
-  const db = new FakeFirestore({
-    [SERVER_PROGRESS_COLLECTION]: {
-      player1: {
-        schemaVersion: 1,
-        euroAup: 0,
-        awardedEventIds: [],
-        appliedEventIds: [],
-        registeredStarterGranted: true,
-      },
-    },
-  });
+test('fort replays have no play-count limit and history stays bounded', async () => {
+  const db = new FakeFirestore();
+  const uid = 'player1';
+  const replays = 501;
 
-  for (let replay = 0; replay < 550; replay += 1) {
-    const result = await applyLegacyEconomyEvent({
+  for (let replay = 1; replay <= replays; replay += 1) {
+    const attemptId = `replay-entry:${replay}`;
+    await reserveAndCommit({ db, uid, campaignId: FREE_FORT, attemptId });
+    const result = await applyEconomyEvent({
       db,
-      uid: 'player1',
+      uid,
       body: {
         action: 'campaign_win',
-        group: 'euro',
-        amount: 1,
-        campaignId: 'sk:euro:britain:1',
-        eventId: `win:sk:euro:britain:1:attempt-${replay + 1}`,
+        campaignId: FREE_FORT,
+        entryAttemptId: attemptId,
+        placement: 1,
+        eventId: `replay-win:${replay}`,
       },
     });
-
-    assert.equal(result.accepted, true);
-    assert.equal(result.delta, 1);
+    assert.equal(result.accepted, true, result.reason);
+    assert.equal(result.delta, FREE_FORT_WIN);
   }
 
-  const saved = db.dump(SERVER_PROGRESS_COLLECTION, 'player1');
-  assert.equal(saved.euroAup, 550);
+  const saved = db.dump(SERVER_PROGRESS_COLLECTION, uid);
+  assert.equal(
+    saved.internationalAup,
+    Math.min(2000 + (replays * FREE_FORT_WIN), MAX_AUP_PER_CIRCUIT),
+  );
   assert.equal(saved.appliedEventIds.length, 500);
-  assert.deepEqual(saved.awardedEventIds, ['sk:euro:britain:1']);
+  assert.equal(saved.entryReservations.length, 40);
+  assert.deepEqual(saved.awardedEventIds, [FREE_FORT]);
 });
 
 test('catalog-backed entry and win ignore client fee, group, and prize claims', async () => {
@@ -548,7 +518,7 @@ test('catalog-backed entry and win ignore client fee, group, and prize claims', 
   const freeFort = 'sk:international:arabia:3';
   const attemptId = 'entry:central-asia-free:1';
 
-  const directWin = await _applyEconomyEvent({
+  const directWin = await applyEconomyEvent({
     db,
     uid,
     body: {
@@ -573,7 +543,7 @@ test('catalog-backed entry and win ignore client fee, group, and prize claims', 
   assert.equal(reserved.reservation.amount, 0);
   assert.equal(reserved.reservation.group, 'international');
 
-  const win = await _applyEconomyEvent({
+  const win = await applyEconomyEvent({
     db,
     uid,
     body: {
@@ -597,7 +567,7 @@ test('catalog-backed entry and win ignore client fee, group, and prize claims', 
   assert.deepEqual(afterWin.cleared, [freeFort]);
   assert.equal(afterWin.entryReservations[0].status, 'settled');
 
-  const paid = await _reserveEntry({
+  const paid = await reserveEntry({
     db,
     uid,
     body: {
@@ -622,7 +592,7 @@ test('secure catalog reservations allow unlimited fort replays with unique attem
   for (let replay = 1; replay <= 5; replay += 1) {
     const attemptId = `entry:secure-replay:${replay}`;
     await reserveAndCommit({ db, uid, campaignId, attemptId });
-    const win = await _applyEconomyEvent({
+    const win = await applyEconomyEvent({
       db,
       uid,
       body: {
@@ -662,7 +632,7 @@ test('committed entry recovery is delayed, idempotent, and penalized once', asyn
   const attemptId = 'entry:recovery:1';
   await reserveAndCommit({ db, uid, campaignId, attemptId });
 
-  const tooSoon = await _transitionEntryReservation({
+  const tooSoon = await transitionEntryReservation({
     db,
     uid,
     body: { attemptId },
@@ -676,7 +646,7 @@ test('committed entry recovery is delayed, idempotent, and penalized once', asyn
   stored.entryReservations[0].updatedAtMs = 1;
   await db.collection(SERVER_PROGRESS_COLLECTION).doc(uid).set(stored);
 
-  const recovered = await _transitionEntryReservation({
+  const recovered = await transitionEntryReservation({
     db,
     uid,
     body: { attemptId },
@@ -689,7 +659,7 @@ test('committed entry recovery is delayed, idempotent, and penalized once', asyn
   assert.equal(recovered.progress.matchesPlayed, 1);
   assert.equal(recovered.progress.abandonedGames, 1);
 
-  const duplicate = await _transitionEntryReservation({
+  const duplicate = await transitionEntryReservation({
     db,
     uid,
     body: { attemptId },
@@ -709,14 +679,14 @@ test('only one active entry is allowed and terminal history cannot replace it', 
   const campaignId = 'sk:international:arabia:3';
   const firstAttempt = 'entry:single-active:1';
 
-  const first = await _reserveEntry({
+  const first = await reserveEntry({
     db,
     uid,
     body: { campaignId, attemptId: firstAttempt },
   });
   assert.equal(first.accepted, true);
 
-  const conflict = await _reserveEntry({
+  const conflict = await reserveEntry({
     db,
     uid,
     body: { campaignId, attemptId: 'entry:single-active:2' },
@@ -725,13 +695,13 @@ test('only one active entry is allowed and terminal history cannot replace it', 
   assert.equal(conflict.reason, 'active_entry_conflict');
   assert.equal(conflict.reservation.attemptId, firstAttempt);
 
-  await _transitionEntryReservation({
+  await transitionEntryReservation({
     db,
     uid,
     body: { attemptId: firstAttempt },
     transition: 'commit',
   });
-  const committedConflict = await _reserveEntry({
+  const committedConflict = await reserveEntry({
     db,
     uid,
     body: { campaignId, attemptId: 'entry:single-active:3' },
@@ -739,7 +709,7 @@ test('only one active entry is allowed and terminal history cannot replace it', 
   assert.equal(committedConflict.accepted, false);
   assert.equal(committedConflict.reservation.status, 'committed');
 
-  await _applyEconomyEvent({
+  await applyEconomyEvent({
     db,
     uid,
     body: {
@@ -751,7 +721,7 @@ test('only one active entry is allowed and terminal history cannot replace it', 
       eventId: 'result:single-active:1',
     },
   });
-  const afterSettlement = await _reserveEntry({
+  const afterSettlement = await reserveEntry({
     db,
     uid,
     body: { campaignId, attemptId: 'entry:single-active:4' },
@@ -775,8 +745,8 @@ test('campaign result settles unpaid ranks, records stats once, and never refund
     totalPlayers,
     eventId: 'result:loss:1',
   };
-  const result = await _applyEconomyEvent({ db, uid, body });
-  const duplicate = await _applyEconomyEvent({ db, uid, body });
+  const result = await applyEconomyEvent({ db, uid, body });
+  const duplicate = await applyEconomyEvent({ db, uid, body });
 
   assert.equal(result.accepted, true);
   assert.equal(result.payoutDelta, 0);
@@ -787,7 +757,7 @@ test('campaign result settles unpaid ranks, records stats once, and never refund
   assert.equal(duplicate.duplicate, true);
   assert.equal(duplicate.progress.matchesPlayed, 1);
 
-  const recovery = await _transitionEntryReservation({
+  const recovery = await transitionEntryReservation({
     db,
     uid,
     body: { attemptId },
@@ -806,7 +776,7 @@ test('campaign results reject forged table sizes and use catalog size for stats'
   assert.equal(authoritativePlayers, 6);
   await reserveAndCommit({ db, uid, campaignId, attemptId });
 
-  const forged = await _applyEconomyEvent({
+  const forged = await applyEconomyEvent({
     db,
     uid,
     body: {
@@ -824,7 +794,7 @@ test('campaign results reject forged table sizes and use catalog size for stats'
   assert.equal(forged.progress.finishPermilleSum, 0);
   assert.equal(forged.progress.entryReservations[0].status, 'committed');
 
-  const valid = await _applyEconomyEvent({
+  const valid = await applyEconomyEvent({
     db,
     uid,
     body: {
@@ -850,7 +820,7 @@ test('campaign abandonment is always recorded at the catalog last place', async 
   const totalPlayers = economyCatalog.events[campaignId].maxPlayers;
   await reserveAndCommit({ db, uid, campaignId, attemptId });
 
-  const forged = await _applyEconomyEvent({
+  const forged = await applyEconomyEvent({
     db,
     uid,
     body: {
@@ -866,7 +836,7 @@ test('campaign abandonment is always recorded at the catalog last place', async 
   assert.equal(forged.reason, 'invalid_placement');
   assert.equal(forged.progress.matchesPlayed, 0);
 
-  const valid = await _applyEconomyEvent({
+  const valid = await applyEconomyEvent({
     db,
     uid,
     body: {
@@ -928,7 +898,7 @@ test('fresh authoritative wallet can clear all 500 forts and win all 50 titles',
           campaignId: freeEvent.id,
           attemptId: grindAttempt,
         });
-        const grindResult = await _applyEconomyEvent({
+        const grindResult = await applyEconomyEvent({
           db,
           uid,
           body: {
@@ -955,7 +925,7 @@ test('fresh authoritative wallet can clear all 500 forts and win all 50 titles',
         event.entryFee,
         `Catalog fee mismatch for ${event.id}`,
       );
-      const result = await _applyEconomyEvent({
+      const result = await applyEconomyEvent({
         db,
         uid,
         body: {
@@ -979,7 +949,7 @@ test('fresh authoritative wallet can clear all 500 forts and win all 50 titles',
       campaignId: main.id,
       attemptId: mainAttempt,
     });
-    const title = await _applyEconomyEvent({
+    const title = await applyEconomyEvent({
       db,
       uid,
       body: {
@@ -1022,8 +992,8 @@ test('fresh authoritative wallet can clear all 500 forts and win all 50 titles',
         totalPlayers: event.maxPlayers,
         eventId,
       };
-      const replayResult = await _applyEconomyEvent({ db, uid, body });
-      const duplicate = await _applyEconomyEvent({ db, uid, body });
+      const replayResult = await applyEconomyEvent({ db, uid, body });
+      const duplicate = await applyEconomyEvent({ db, uid, body });
       assert.equal(replayResult.accepted, true);
       assert.equal(duplicate.duplicate, true);
       assert.equal(duplicate.delta, 0);
@@ -1031,69 +1001,28 @@ test('fresh authoritative wallet can clear all 500 forts and win all 50 titles',
   }
 });
 
-test('wallet hydrates from legacy progress and grants starter AUP once', async () => {
+test('the server ignores pre-server collections; a new wallet starts migrated', async () => {
   const db = new FakeFirestore({
-    [LEGACY_PROGRESS_COLLECTION]: {
+    campaign_progress: {
       player1: {
         schemaVersion: 1,
-        awardedEventIds: ['legacy:event'],
+        indiaAup: 45000,
+        cleared: ['sk:india:test:1'],
       },
     },
   });
 
-  const result = await _walletForUser({
-    db,
-    uid: 'player1',
-    allowLegacyMigration: true,
-  });
-  const saved = db.dump(SERVER_PROGRESS_COLLECTION, 'player1');
+  const result = await walletForUser({ db, uid: 'player1' });
 
-  assert.equal(result.exists, true);
-  assert.equal(result.migrated, true);
+  assert.equal(result.progress.legacyMigrationVersion, 1);
   assert.equal(result.progress.registeredStarterGranted, true);
   assert.equal(totalAup(result.progress), 10000);
-  assert.equal(saved.migratedFrom, LEGACY_PROGRESS_COLLECTION);
-  assert.deepEqual(saved.awardedEventIds, ['legacy:event']);
-});
-
-test('wallet migration prefers the dedicated version-2 client wallet', async () => {
-  const db = new FakeFirestore({
-    [CLIENT_WALLET_COLLECTION]: {
-      player1: {
-        schemaVersion: 1,
-        walletStorageVersion: 2,
-        indiaAup: 45000,
-        registeredStarterGranted: true,
-      },
-    },
-    [LEGACY_PROGRESS_COLLECTION]: {
-      player1: {
-        schemaVersion: 1,
-        indiaAup: 1000,
-        registeredStarterGranted: true,
-      },
-    },
-  });
-
-  const result = await _walletForUser({
-    db,
-    uid: 'player1',
-    allowLegacyMigration: true,
-  });
-  const saved = db.dump(SERVER_PROGRESS_COLLECTION, 'player1');
-
-  assert.equal(result.migrated, true);
-  assert.equal(result.progress.indiaAup, 45000);
-  assert.equal(
-    saved.migratedFrom,
-    `${LEGACY_PROGRESS_COLLECTION}+${CLIENT_WALLET_COLLECTION}`,
-  );
-  assert.deepEqual(saved.cleared, []);
+  assert.deepEqual(result.progress.cleared, []);
 });
 
 test('saving a wallet stores its total AUP for ranking', async () => {
   const db = new FakeFirestore();
-  await _walletForUser({ db, uid: 'rank-writer' });
+  await walletForUser({ db, uid: 'rank-writer' });
   const stored = db.dump(SERVER_PROGRESS_COLLECTION, 'rank-writer');
   assert.equal(typeof stored.totalAup, 'number');
   const expected = ['indiaAup', 'internationalAup', 'euroAup', 'oceaniaAup', 'northAmericaAup']
@@ -1110,11 +1039,11 @@ test('global rank counts players strictly ahead, so ties share a rank', async ()
       broke: { totalAup: 0 },
     },
   });
-  assert.deepEqual(await _rankForUser({ db, uid: 'top' }),
+  assert.deepEqual(await rankForUser({ db, uid: 'top' }),
     { totalAup: 500, rank: 1, rankedPlayers: 3 });
-  assert.deepEqual(await _rankForUser({ db, uid: 'tieA' }),
+  assert.deepEqual(await rankForUser({ db, uid: 'tieA' }),
     { totalAup: 300, rank: 2, rankedPlayers: 3 });
-  assert.deepEqual(await _rankForUser({ db, uid: 'tieB' }),
+  assert.deepEqual(await rankForUser({ db, uid: 'tieB' }),
     { totalAup: 300, rank: 2, rankedPlayers: 3 });
 });
 
@@ -1125,9 +1054,9 @@ test('players without AUP or without a wallet are unranked', async () => {
       broke: { totalAup: 0 },
     },
   });
-  assert.deepEqual(await _rankForUser({ db, uid: 'broke' }),
+  assert.deepEqual(await rankForUser({ db, uid: 'broke' }),
     { totalAup: 0, rank: null, rankedPlayers: 1 });
-  assert.deepEqual(await _rankForUser({ db, uid: 'nobody' }),
+  assert.deepEqual(await rankForUser({ db, uid: 'nobody' }),
     { totalAup: 0, rank: null, rankedPlayers: 1 });
 });
 
@@ -1138,7 +1067,7 @@ test('a wallet saved before totalAup existed is healed and ranked', async () => 
       legacy: { indiaAup: 400, oceaniaAup: 200 },
     },
   });
-  const result = await _rankForUser({ db, uid: 'legacy' });
+  const result = await rankForUser({ db, uid: 'legacy' });
   assert.deepEqual(result, { totalAup: 600, rank: 2, rankedPlayers: 2 });
   assert.equal(db.dump(SERVER_PROGRESS_COLLECTION, 'legacy').totalAup, 600);
 });

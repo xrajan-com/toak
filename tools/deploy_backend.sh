@@ -97,7 +97,7 @@ gcloud run deploy "$service_name" \
   --concurrency 80 \
   --max-instances 2 \
   --min-instances 0 \
-  --set-env-vars="^@^NODE_ENV=production@FIREBASE_PROJECT_ID=$project_id@CORS_ORIGIN=$cors_origin@ALLOW_LEGACY_CLIENT_ECONOMY_MIGRATION=false@ALLOW_LEGACY_UNCATALOGUED_ECONOMY_EVENTS=false"
+  --set-env-vars="^@^NODE_ENV=production@FIREBASE_PROJECT_ID=$project_id@CORS_ORIGIN=$cors_origin"
 
 candidate_service_json="$(
   gcloud run services describe "$service_name" \

@@ -1,4 +1,9 @@
-const LEGACY_MIGRATION_VERSION = 1;
+// How the economy looked before the server owned it: a player's progress
+// lived in campaign_progress/{uid} and, from wallet storage v2, a dedicated
+// aura_wallets/{uid}. This merges those into one server wallet. Only
+// scripts/migrate_legacy_wallets.js uses it; the running server never reads
+// the old collections.
+const { MIGRATION_COMPLETE_VERSION } = require('../src/economy/constants');
 
 const CIRCUIT_FIELDS = Object.freeze([
   'indiaAup',
@@ -138,7 +143,7 @@ function mergeLegacyEconomy({
     server.registeredStarterGranted === true ||
     campaign.registeredStarterGranted === true ||
     wallet.registeredStarterGranted === true;
-  merged.legacyMigrationVersion = LEGACY_MIGRATION_VERSION;
+  merged.legacyMigrationVersion = MIGRATION_COMPLETE_VERSION;
   merged.legacyMigrationSources = sources;
 
   return {
@@ -152,7 +157,6 @@ function mergeLegacyEconomy({
 
 module.exports = {
   CIRCUIT_FIELDS,
-  LEGACY_MIGRATION_VERSION,
   mergeLegacyEconomy,
   _looksLikeFreshStarterServer,
   _totalAup,

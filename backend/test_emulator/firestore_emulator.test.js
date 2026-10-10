@@ -9,13 +9,20 @@ process.env.FIREBASE_PROJECT_ID =
 process.env.GCLOUD_PROJECT = process.env.GCLOUD_PROJECT || process.env.FIREBASE_PROJECT_ID;
 
 const {
-  LEGACY_PROGRESS_COLLECTION,
   CLIENT_WALLET_COLLECTION,
+  LEGACY_PROGRESS_COLLECTION,
+  migrateLegacyWallet,
+} = require('../scripts/migrate_legacy_wallets');
+const {
+  reserveEntry,
+  transitionEntryReservation,
+} = require('../src/economy/entries');
+const { applyEconomyEvent } = require('../src/economy/events');
+const {
   ECONOMY_RECEIPTS_COLLECTION,
   SERVER_PROGRESS_COLLECTION,
-  _applyEconomyEvent,
-  _walletForUser,
-} = require('../src/routes/economy');
+} = require('../src/economy/store');
+const { walletForUser } = require('../src/economy/wallet');
 const {
   ACCOUNT_DOCUMENT_COLLECTIONS,
   _deleteAccountData,
@@ -74,7 +81,7 @@ beforeEach(async () => {
   ]);
 });
 
-test('wallet migration writes legacy campaign progress into server progress', async () => {
+test('the migration script writes pre-server progress into a server wallet', async () => {
   const database = db();
   await database.collection(LEGACY_PROGRESS_COLLECTION).doc('emu-wallet').set({
     schemaVersion: 1,
@@ -82,52 +89,52 @@ test('wallet migration writes legacy campaign progress into server progress', as
     awardedEventIds: ['legacy:win'],
   });
 
-  const result = await _walletForUser({
+  const result = await migrateLegacyWallet({
     db: database,
     uid: 'emu-wallet',
-    allowLegacyMigration: true,
+    apply: true,
   });
   const server = await read(database, SERVER_PROGRESS_COLLECTION, 'emu-wallet');
 
-  assert.equal(result.exists, true);
-  assert.equal(result.migrated, true);
+  assert.equal(result.outcome, 'migrated');
   assert.equal(server.migratedFrom, LEGACY_PROGRESS_COLLECTION);
+  assert.equal(server.legacyMigrationVersion, 1);
   assert.equal(server.indiaAup, 7000);
   assert.deepEqual(server.awardedEventIds, ['legacy:win']);
-  assert.equal(server.registeredStarterGranted, true);
 });
 
 test('economy transaction is idempotent for duplicate event ids', async () => {
   const database = db();
+  const uid = 'emu-economy';
+  const campaignId = 'sk:international:arabia:3';
+  const attemptId = 'emu:entry:1';
+  await reserveEntry({ db: database, uid, body: { campaignId, attemptId } });
+  await transitionEntryReservation({
+    db: database,
+    uid,
+    body: { attemptId },
+    transition: 'commit',
+  });
   const body = {
     action: 'campaign_win',
-    group: 'india',
-    amount: 2500,
+    campaignId,
+    entryAttemptId: attemptId,
+    placement: 1,
     eventId: 'emu:campaign:win:1',
   };
 
-  const first = await _applyEconomyEvent({
-    db: database,
-    uid: 'emu-economy',
-    body,
-    allowLegacyUnsafeEvents: true,
-  });
-  const second = await _applyEconomyEvent({
-    db: database,
-    uid: 'emu-economy',
-    body,
-    allowLegacyUnsafeEvents: true,
-  });
-  const server = await read(database, SERVER_PROGRESS_COLLECTION, 'emu-economy');
+  const first = await applyEconomyEvent({ db: database, uid, body });
+  const second = await applyEconomyEvent({ db: database, uid, body });
+  const server = await read(database, SERVER_PROGRESS_COLLECTION, uid);
 
   assert.equal(first.accepted, true);
   assert.equal(first.duplicate, false);
-  assert.equal(first.delta, 2500);
+  assert.equal(first.delta, 143400);
   assert.equal(second.accepted, true);
   assert.equal(second.duplicate, true);
   assert.equal(second.delta, 0);
-  assert.equal(server.indiaAup, 4500);
-  assert.deepEqual(server.awardedEventIds, ['emu:campaign:win:1']);
+  assert.equal(server.internationalAup, 2000 + 143400);
+  assert.deepEqual(server.awardedEventIds, [campaignId]);
   assert.deepEqual(server.appliedEventIds, ['emu:campaign:win:1']);
 });
 
@@ -230,11 +237,11 @@ test('deletion tombstone prevents economy and leaderboard state recreation', asy
   );
 
   await assert.rejects(
-    _walletForUser({ db: database, uid }),
+    walletForUser({ db: database, uid }),
     { code: 'account_deleted' },
   );
   await assert.rejects(
-    _applyEconomyEvent({
+    applyEconomyEvent({
       db: database,
       uid,
       body: {
@@ -272,7 +279,7 @@ test('concurrent wallet creation and account deletion always finish tombstoned',
   for (let index = 0; index < 4; index += 1) {
     const uid = `emu-delete-race-${index}`;
     const outcomes = await Promise.allSettled([
-      _walletForUser({ db: database, uid }),
+      walletForUser({ db: database, uid }),
       _deleteAccountData({ db: database, uid }),
     ]);
 

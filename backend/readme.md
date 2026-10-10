@@ -121,9 +121,32 @@ mutating path reserves and commits a catalog-backed free fort, finalizes a
 first-place result, replays the same receipt to verify idempotency, and verifies
 that the authoritative wallet contains the career clear.
 
+## Code layout
+
+```
+src/index.js               app setup: /api prefix, CORS, rate limit, routes, shutdown
+src/routes/                HTTP only: economy, leaderboard, auth, app-release
+src/economy/constants.js   every number that sets the economy's rules
+src/economy/catalog.js     forts and title matches: fees, table sizes, payouts
+src/economy/progress.js    the wallet document and the arithmetic on it (pure)
+src/economy/store.js       Firestore collections and the wallet transaction
+src/economy/wallet.js      opening a wallet
+src/economy/entries.js     paying for a table: reserve, commit, refund, recover
+src/economy/events.js      results after a game
+src/economy/rank.js        global rank
+src/security/              Firebase auth and per-player rate limits
+scripts/                   one-off data jobs, run by hand (never loaded by the server)
+```
+
+The server reads only `server_progress`. The pre-server collections
+(`campaign_progress`, `aura_wallets`) are handled by
+`scripts/migrate_legacy_wallets.js`, once, before deploying a server without
+the old in-request migration.
+
 ## Economy endpoints
 
 - `GET /v1/economy/wallet`
+- `GET /v1/economy/rank`
 - `POST /v1/economy/entries/reserve`
 - `POST /v1/economy/entries/commit`
 - `POST /v1/economy/entries/refund`

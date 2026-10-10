@@ -15,9 +15,9 @@ const { execFileSync } = require('node:child_process');
 const path = require('node:path');
 const { initializeApp, applicationDefault } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
-const { SERVER_PROGRESS_COLLECTION, _baseProgress } = require('../src/routes/economy');
+const { baseProgress, totalAup } = require('../src/economy/progress');
+const { SERVER_PROGRESS_COLLECTION } = require('../src/economy/store');
 
-const CIRCUIT_FIELDS = ['indiaAup', 'internationalAup', 'euroAup', 'oceaniaAup', 'northAmericaAup'];
 const apply = process.argv.includes('--apply');
 const root = path.join(__dirname, '..', '..');
 const projectId = execFileSync('bash', [path.join(root, 'tools/project_config.sh'), 'backend.gcp_project'])
@@ -37,8 +37,7 @@ async function main() {
     let writes = 0;
     for (const doc of page.docs) {
       scanned += 1;
-      const progress = _baseProgress(doc.data());
-      const total = CIRCUIT_FIELDS.reduce((sum, f) => sum + (progress[f] || 0), 0);
+      const total = totalAup(baseProgress(doc.data()));
       if (doc.get('totalAup') !== total) {
         fixed += 1;
         if (apply) {

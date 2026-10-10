@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const localCatalog = require('../backend/src/economy_catalog.json');
+const localCatalog = require('../backend/src/economy/catalog.json');
 const DEFAULT_FIREBASE_WEB_API_KEY = 'AIzaSyBDxo0Cz8BH8jomP0zsmkl9UBLDC2SS8L4';
 const EXPECTED_CATALOG_EVENT_COUNT = localCatalog.eventCount;
 const EXPECTED_CATALOG_CONTENT_HASH = localCatalog.contentHash;

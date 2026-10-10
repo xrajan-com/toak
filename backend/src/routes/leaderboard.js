@@ -1,5 +1,4 @@
 const express = require('express');
-const rateLimit = require('express-rate-limit');
 const { FieldValue } = require('firebase-admin/firestore');
 
 const {
@@ -14,12 +13,13 @@ const {
   MAX_TOTAL_AUP,
   MAX_TOTAL_AURA_MILLI,
   normalizeCircuitAup,
-} = require('../economy_constants');
+} = require('../economy/constants');
 const {
   isOpaqueLeaderboardDocumentId,
   leaderboardDocumentId,
 } = require('../leaderboard_identity');
-const { SERVER_PROGRESS_COLLECTION } = require('./economy');
+const { SERVER_PROGRESS_COLLECTION } = require('../economy/store');
+const { playerRateLimit } = require('../security/rate_limit');
 
 const LEADERBOARD_COLLECTION = 'leaderboard';
 const USERS_COLLECTION = 'users';
@@ -342,17 +342,12 @@ async function _syncLeaderboard({ db, uid }) {
 function leaderboardRouter() {
   const router = express.Router();
 
-  const syncLimiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 30,
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
+  const syncLimiter = playerRateLimit({ windowMs: 60 * 1000, max: 30 });
 
   router.post(
     '/sync',
-    syncLimiter,
     requireRegisteredFirebaseAuth,
+    syncLimiter,
     _asyncHandler(async (req, res) => {
       // Kept as a read-free compatibility endpoint for older clients. Aura
       // mutations now maintain the projection; viewing it must not spend

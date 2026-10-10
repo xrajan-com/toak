@@ -29,7 +29,7 @@ void main() {
         Platform.environment['ECONOMY_CATALOG_OUTPUT']?.trim() ?? '';
     final payload = _catalogPayload();
     final destination =
-        configured.isEmpty ? 'backend/src/economy_catalog.json' : configured;
+        configured.isEmpty ? 'backend/src/economy/catalog.json' : configured;
     _writeCatalog(destination, payload);
     final dartDestination =
         Platform.environment['ECONOMY_CATALOG_DART_OUTPUT']?.trim() ?? '';

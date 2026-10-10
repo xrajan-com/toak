@@ -1,10 +1,9 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
 
-const {
-  SERVER_PROGRESS_COLLECTION,
-  _refreshLeaderboard,
-} = require('../src/routes/economy');
+const { SERVER_PROGRESS_COLLECTION } = require('../src/economy/store');
+const { walletForUser } = require('../src/economy/wallet');
+const { refreshLeaderboardSafely } = require('../src/routes/economy');
 const {
   isOpaqueLeaderboardDocumentId,
   leaderboardDocumentId,
@@ -133,7 +132,7 @@ test('Aura-changing economy traffic refreshes the public projection', async () =
     },
   });
 
-  const result = await _refreshLeaderboard({
+  const result = await refreshLeaderboardSafely({
     db,
     uid,
     refreshLeaderboard: _syncLeaderboard,
@@ -207,14 +206,13 @@ test('an unchanged wallet read does not require a leaderboard refresh', async ()
     },
   });
 
-  const { _walletForUser } = require('../src/routes/economy');
-  const result = await _walletForUser({ db, uid });
+  const result = await walletForUser({ db, uid });
 
   assert.equal(result.auraChanged, false);
 });
 
 test('leaderboard refresh failure never rolls back an economy response', async () => {
-  const result = await _refreshLeaderboard({
+  const result = await refreshLeaderboardSafely({
     db: new FakeFirestore(),
     uid: 'active-economy-player',
     refreshLeaderboard: async () => {

@@ -26,7 +26,7 @@ const {
   ECONOMY_CATALOG_VERSION,
   SUPPORTED_ECONOMY_CATALOG_VERSIONS,
   campaignEventCount,
-} = require('../src/economy_catalog');
+} = require('../src/economy/catalog');
 const { leaderboardDocumentId } = require('../src/leaderboard_identity');
 const { FakeFirestore } = require('./firestore_fake');
 const { economyRouter } = require('../src/routes/economy');

@@ -12,7 +12,7 @@ ECONOMY_CATALOG_DART_OUTPUT="$temp_dir/economy_catalog_version.dart" \
 
 if ! cmp -s \
   "$temp_dir/economy_catalog.json" \
-  "$repo_root/backend/src/economy_catalog.json"; then
+  "$repo_root/backend/src/economy/catalog.json"; then
   echo "ERROR: backend economy catalog is stale. Regenerate it with:" >&2
   echo "  flutter test tools/export_economy_catalog.dart --reporter compact" >&2
   exit 1
@@ -27,8 +27,8 @@ if ! cmp -s \
 fi
 
 node - <<'NODE'
-const catalog = require('./backend/src/economy_catalog.json');
-const { ECONOMY_CATALOG_VERSION } = require('./backend/src/economy_catalog');
+const catalog = require('./backend/src/economy/catalog.json');
+const { ECONOMY_CATALOG_VERSION } = require('./backend/src/economy/catalog');
 if (catalog.schemaVersion !== 1 || catalog.eventCount !== 550) {
   throw new Error(
     `Expected economy catalog v1 with 550 events; got ` +
