@@ -1,0 +1,50 @@
+[
+  {
+    "file": "app-icon-2025-12-28-flutter-default.png",
+    "first_used": "2025-12-28",
+    "label": "flutter-default",
+    "sha256": "7770183009e914112de7d8ef1d235a6a30c5834424858e0d2f8253f6b8d31926",
+    "source": "git 92df37c",
+    "note": "Flutter template placeholder from the initial commit (iOS 1024 px)."
+  },
+  {
+    "file": "app-icon-2026-06-12-ten-of-a-kind-neon-chip.png",
+    "first_used": "2026-06-12",
+    "label": "ten-of-a-kind-neon-chip",
+    "sha256": "135a2bc8b23122cd09d376cc7a4b82024a4c137989ab860f8caaad2bc74c0d72",
+    "source": "git 9bb29ee",
+    "note": "Neon \"Ten Of A Kind\" chip over a party scene; used for Android, iOS and the Play listing (iOS 1024 px)."
+  },
+  {
+    "file": "app-icon-2026-06-12-x-on-dried-blood-red.png",
+    "first_used": "2026-06-12",
+    "label": "x-on-dried-blood-red",
+    "sha256": "d0e361251c6205227ffa24f12976c42587c41301b2ef234ee141d853aebb2de1",
+    "source": "git 7df0dc0",
+    "note": "Black X on a white disc over #660000 dried-blood red; app logo source (180 px, the only size kept)."
+  },
+  {
+    "file": "app-icon-2026-09-05-fireworks-and-reef.png",
+    "first_used": "2026-09-05",
+    "label": "fireworks-and-reef",
+    "sha256": "21119323d1ffa0430e7ef572026467e1904468a8707d016b8fc21373ad100220",
+    "source": "git 24e5972",
+    "note": "Jeweled X chip between Singapore fireworks and a coral reef; Android launcher and Play listing icon (Android foreground layer, 432 px)."
+  },
+  {
+    "file": "app-icon-2026-09-05-red-blue-x.png",
+    "first_used": "2026-09-05",
+    "label": "red-blue-x",
+    "sha256": "34e2eb3ed9c148a837099f56851c5f2b6c3dcd03f7acc35cae7f47af45306d3c",
+    "source": "git 24e5972",
+    "note": "Black X on a white disc over a red-to-blue gradient; iOS icon and favicon style (iOS 1024 px)."
+  },
+  {
+    "file": "app-icon-2026-10-10-fort-and-junk.png",
+    "first_used": "2026-10-10",
+    "label": "fort-and-junk",
+    "sha256": "7837f578c1049f9aa0e05b19d9b7d1ab8f50e85236424437b9f47ac7fbe4b628",
+    "source": "design_sources/brand/app-icon-master.png",
+    "note": "Rajput warrior on a desert fort at dusk (Ferrari Red) and a junk sailing home at dawn (Beach Blue), wavy split, white X disc. Made with Gemini; still carries its visible watermark."
+  }
+]

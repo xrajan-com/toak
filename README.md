@@ -34,7 +34,7 @@ app, Firebase targets) disagrees with it.
 | `tools/` | Release, deploy and verification scripts, plus generators and ML tooling |
 | `docs/` | Specs and guides; `docs/archive/` holds superseded reviews |
 | `fastlane/metadata/android/` | Google Play listing text and `images/icon.png`, checked by `tools/verify_store_listing.sh` (fastlane layout, so it can be uploaded automatically later) |
-| `design_sources/` | Source artwork that is not bundled directly; `brand/app-icon-master.png` is the source of every app icon (`tools/generate_app_icons.py`) |
+| `design_sources/` | Source artwork that is not bundled directly; `brand/app-icon-master.png` is the source of every app icon (`tools/generate_app_icons.py`), and `brand/app-icon-history/` keeps every previous icon |
 | `android/`, `ios/` | Native shells (Android shipped, iOS in preparation) |
 | `macos/`, `linux/`, `windows/` | Flutter desktop shells; not shipped |
 

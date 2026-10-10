@@ -5,7 +5,17 @@ Master: design_sources/brand/app-icon-master.png (square, at least 1024 px,
 full-bleed artwork with no rounded corners; each platform applies its own
 shape). Replace the master and run this script; never edit the outputs by hand.
 
-    python3 tools/generate_app_icons.py      # needs: pip3 install pillow numpy
+    python3 tools/generate_app_icons.py                         # regenerate from the master
+    python3 tools/generate_app_icons.py --replace NEW.png --label fort-and-junk
+                                                                # swap in a new icon, keep the old one
+    (needs: pip3 install pillow numpy)
+
+History: every image that has ever been the master is kept, renamed, in
+design_sources/brand/app-icon-history/ as app-icon-<first-used date>-<label>.png
+and listed in its index.json (newest last). Each run archives the master it
+uses, unless an identical file is already there, so nothing is ever lost when
+the master is replaced. --replace also archives the outgoing master first,
+in case it was put there by hand and never generated.
 
 Writes:
   fastlane/metadata/android/en-US/images/icon.png      Play listing icon, 512 px
@@ -22,8 +32,13 @@ the artwork's own edges, mirrored and blurred, so launcher parallax and
 animations never reveal a hard edge. The web favicon is deliberately not
 generated here.
 """
+import argparse
+import datetime
+import hashlib
 import json
 import pathlib
+import re
+import shutil
 import sys
 
 import numpy as np
@@ -34,6 +49,8 @@ MASTER = ROOT / 'design_sources/brand/app-icon-master.png'
 RES = ROOT / 'android/app/src/main/res'
 IOS = ROOT / 'ios/Runner/Assets.xcassets/AppIcon.appiconset'
 PLAY = ROOT / 'fastlane/metadata/android/en-US/images/icon.png'
+HISTORY = ROOT / 'design_sources/brand/app-icon-history'
+INDEX = HISTORY / 'index.json'
 DENSITIES = {'mdpi': 1, 'hdpi': 1.5, 'xhdpi': 2, 'xxhdpi': 3, 'xxxhdpi': 4}
 
 ADAPTIVE_XML = """<?xml version="1.0" encoding="utf-8"?>
@@ -53,6 +70,31 @@ def load_master():
     if w != h or w < 1024:
         sys.exit(f'ERROR: master icon must be square and at least 1024 px, got {w}x{h}')
     return im
+
+
+def sha256(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def archive(path, label, date, note):
+    """Copies path into the history as app-icon-<date>-<label>.png unless an identical file is there."""
+    HISTORY.mkdir(parents=True, exist_ok=True)
+    index = json.loads(INDEX.read_text()) if INDEX.exists() else []
+    digest = sha256(path)
+    for entry in index:
+        if entry['sha256'] == digest:
+            return None
+    label = re.sub(r'[^a-z0-9]+', '-', (label or digest[:8]).lower()).strip('-') or digest[:8]
+    name = f'app-icon-{date}-{label}.png'
+    n = 2
+    while (HISTORY / name).exists():
+        name = f'app-icon-{date}-{label}-{n}.png'
+        n += 1
+    shutil.copyfile(path, HISTORY / name)
+    index.append({'file': name, 'first_used': date, 'label': label, 'sha256': digest,
+                  'source': str(MASTER.relative_to(ROOT)), 'note': note})
+    INDEX.write_text(json.dumps(index, indent=2) + '\n')
+    return name
 
 
 def sized(im, px):
@@ -87,7 +129,28 @@ def adaptive_background(im, px):
 
 
 def main():
+    parser = argparse.ArgumentParser(description='Generate every app icon from the master image.')
+    parser.add_argument('--replace', metavar='NEW_PNG',
+                        help='make this image the new master (the current one is kept in the history)')
+    parser.add_argument('--label', help='short name for the icon in the history, e.g. fort-and-junk')
+    args = parser.parse_args()
+    today = datetime.date.today().isoformat()
+
+    if args.replace:
+        new = pathlib.Path(args.replace).expanduser().resolve()
+        if not new.exists():
+            sys.exit(f'ERROR: {new} not found')
+        if MASTER.exists():
+            outgoing = datetime.date.fromtimestamp(MASTER.stat().st_mtime).isoformat()
+            kept = archive(MASTER, None, outgoing, 'Archived when it was replaced.')
+            if kept:
+                print(f'Kept the outgoing master as {HISTORY.relative_to(ROOT)}/{kept}')
+        shutil.copyfile(new, MASTER)
+
     im = load_master()
+    kept = archive(MASTER, args.label, today, 'Archived when first generated.')
+    if kept:
+        print(f'Recorded the master in the history as {HISTORY.relative_to(ROOT)}/{kept}')
     written = []
 
     PLAY.parent.mkdir(parents=True, exist_ok=True)
