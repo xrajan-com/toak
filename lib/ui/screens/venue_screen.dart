@@ -278,7 +278,7 @@ class _AmbientBackdrop extends StatelessWidget {
                 gradient: RadialGradient(
                   center: Alignment(-1.1, 1.2),
                   radius: 0.95,
-                  colors: [Color(0x1720D9FF), Color(0x0020D9FF)],
+                  colors: [Color(0x1700B5C8), Color(0x0000B5C8)],
                 ),
               ),
             ),

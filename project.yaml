@@ -12,7 +12,7 @@ brand:
 colors:
   ferrari_red: "#FF2800"               # primary accent (energy); inspired by Ferrari
   action_red: "#C41230"                # action bar danger buttons and the red kingdom pill; the only other red
-  beach_blue: "#20D9FF"                # secondary accent (peace); inspired by beaches
+  miami_blue: "#00B5C8"                # secondary accent (peace); Porsche Miami Blue (paint code M5C / J5). See docs/BRAND_COLOURS.md
 
 app:
   name: X Poker                        # store listings, home-screen label, page titles

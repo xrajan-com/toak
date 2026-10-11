@@ -2,7 +2,8 @@
 # Enforces the brand palette in project.yaml (colors.*) across lib/:
 #  - the app uses exactly two reds, colors.ferrari_red and colors.action_red;
 #    any other vivid red literal, or Colors.red / Colors.redAccent, fails;
-#  - AppColors and the theme accents match project.yaml.
+#  - AppColors and the theme accents match project.yaml;
+#  - the retired blue #20D9FF does not come back anywhere in lib/ or hosting/.
 # Dark felt surfaces, skin, lip and wood tones are not "reds" here: the check
 # only looks at saturated reds of mid lightness, the ones that read as brand red.
 set -euo pipefail
@@ -14,14 +15,14 @@ source "$root/tools/project_config.sh"
 
 FERRARI_RED="$(project_value colors.ferrari_red)" \
 ACTION_RED="$(project_value colors.action_red)" \
-BEACH_BLUE="$(project_value colors.beach_blue)" \
+MIAMI_BLUE="$(project_value colors.miami_blue)" \
 node - <<'JS'
 const fs = require('fs');
 const path = require('path');
 const norm = (h) => h.replace('#', '').toUpperCase();
 const ferrari = norm(process.env.FERRARI_RED);
 const action = norm(process.env.ACTION_RED);
-const blue = norm(process.env.BEACH_BLUE);
+const blue = norm(process.env.MIAMI_BLUE);
 const allowedReds = new Set([ferrari, action]);
 
 function hsl(hex) {
@@ -81,6 +82,23 @@ expectConst('lib/ui/theme/colors.dart', 'actionRed', action);
 expectConst('lib/ui/theme/colors.dart', 'blue', blue);
 expectConst('lib/themes/app_theme.dart', 'primaryAccent', ferrari);
 expectConst('lib/themes/app_theme.dart', 'secondaryAccent', blue);
+
+// The blue before Porsche Miami Blue. Kept out so the palette stays one blue.
+const retiredBlues = ['20D9FF'];
+function scan(dir) {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) { if (p !== path.join('hosting', 'web')) scan(p); continue; }
+    if (!/\.(dart|css|html|js)$/.test(p)) continue;
+    fs.readFileSync(p, 'utf8').split('\n').forEach((line, i) => {
+      for (const old of retiredBlues) {
+        if (line.toUpperCase().includes(old)) problems.push(`${p}:${i + 1}: retired blue #${old}; use Miami Blue #${blue}`);
+      }
+    });
+  }
+}
+scan('lib');
+scan('hosting');
 
 if (problems.length) {
   for (const p of problems) console.error(`PALETTE: ${p}`);

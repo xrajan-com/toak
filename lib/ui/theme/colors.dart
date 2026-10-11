@@ -11,7 +11,9 @@ class AppColors {
   // Any other red in lib/ fails the release gate.
   static const Color red = Color(0xFFFF2800);
   static const Color actionRed = Color(0xFFC41230);
-  static const Color blue = Color(0xFF20D9FF);
+  // Porsche Miami Blue (paint code M5C / J5), the secondary accent (peace).
+  // See docs/BRAND_COLOURS.md.
+  static const Color blue = Color(0xFF00B5C8);
   static const Color background = Colors.black;
   static const Color green = Color(0xFF2EB872);
   static const Color orange = Color(0xFFFFA500);

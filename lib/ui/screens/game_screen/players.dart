@@ -717,7 +717,7 @@ class _SeatWidgetState extends State<SeatWidget> with TickerProviderStateMixin {
     }
     // Blue ring for the current chip leader.
     else if (widget.isLeader) {
-      color = const Color(0xFF20D9FF);
+      color = const Color(0xFF00B5C8);
       width = 2.8;
     }
     // Green ring for players who are up vs their starting stack.
@@ -743,7 +743,7 @@ class _SeatWidgetState extends State<SeatWidget> with TickerProviderStateMixin {
 
   Color? _statusTint(Seat seat) {
     if (seat.busted) return null;
-    if (widget.isLeader) return const Color(0xFF20D9FF); // chip leader: blue
+    if (widget.isLeader) return const Color(0xFF00B5C8); // chip leader: blue
     if (seat.profitable) return const Color(0xFF3BB143); // up vs start: green
     if (seat.shortStack) return const Color(0xFFC41230); // low stack: red
     return null;
@@ -947,10 +947,10 @@ class _SeatTurnCaret extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: const Color(0xFF20D9FF).withValues(alpha: 0.18),
+          color: const Color(0xFF00B5C8).withValues(alpha: 0.18),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: const Color(0xFF20D9FF).withValues(alpha: 0.55),
+              color: const Color(0xFF00B5C8).withValues(alpha: 0.55),
               blurRadius: s * 0.45,
               spreadRadius: s * 0.02,
             ),
@@ -959,7 +959,7 @@ class _SeatTurnCaret extends StatelessWidget {
         child: Icon(
           Icons.arrow_drop_down_rounded,
           size: s,
-          color: const Color(0xFF20D9FF),
+          color: const Color(0xFF00B5C8),
         ),
       ),
     );
@@ -1264,7 +1264,7 @@ class _HeroGlow extends StatelessWidget {
         margin: const EdgeInsets.all(4),
         decoration: const ShapeDecoration(
           shape: CircleBorder(
-            side: BorderSide(color: Color(0x3320D9FF), width: 5),
+            side: BorderSide(color: Color(0x3300B5C8), width: 5),
           ),
         ),
       ),
@@ -1362,7 +1362,7 @@ class _SeatInfoChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color border = highlight
-        ? const Color(0xFF20D9FF)
+        ? const Color(0xFF00B5C8)
         : Colors.white.withValues(alpha: 0.18);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
