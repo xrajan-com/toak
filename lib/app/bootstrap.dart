@@ -16,6 +16,7 @@ import 'package:ten_of_a_kind_poker/firebase_options.dart';
 import 'package:ten_of_a_kind_poker/game/bot/policy_model.dart'
     show BotLearnedPolicyRegistry, BotLearnedPolicyWeights;
 import 'package:ten_of_a_kind_poker/services/ads_service.dart';
+import 'package:ten_of_a_kind_poker/services/crash_reporting.dart';
 import 'package:ten_of_a_kind_poker/services/poker_bot_learning_service.dart';
 
 enum AppErrorSeverity { warning, error, fatal }
@@ -46,9 +47,10 @@ typedef AppErrorSink = FutureOr<void> Function(AppErrorReport report);
 
 /// Structured, vendor-neutral reporting hook.
 ///
-/// Production builds emit only the safe fields in [AppErrorReport]. A future
-/// reporting provider can install [sink] without embedding service credentials
-/// or personal/account data in this app.
+/// The log line carries only the safe fields in [AppErrorReport]. Errors and
+/// fatal errors also go to crash reporting (release phone builds only; see
+/// [CrashReporting]) with their stack trace, never with account data.
+/// [debugError] and [debugStack] are printed in debug builds only.
 class AppErrorReporter {
   static AppErrorSink? sink;
 
@@ -58,6 +60,7 @@ class AppErrorReporter {
     required AppErrorSeverity severity,
     Object? debugError,
     StackTrace? debugStack,
+    bool sendCrashReport = true,
   }) async {
     final report = AppErrorReport(
       category: category,
@@ -74,6 +77,16 @@ class AppErrorReporter {
     } catch (error, stack) {
       if (kDebugMode) debugPrint('Error reporter sink failed: $error\n$stack');
     }
+    if (sendCrashReport &&
+        severity != AppErrorSeverity.warning &&
+        debugError != null) {
+      await CrashReporting.recordError(
+        debugError,
+        debugStack,
+        reason: '$category: $message',
+        fatal: severity == AppErrorSeverity.fatal,
+      );
+    }
   }
 }
 
@@ -89,6 +102,7 @@ Future<void> bootstrapApp() async {
       // blocked FlutterFire module request in a browser must not replace the
       // entire offline-capable game with a fatal startup screen.
       await _initializeOptionalFirebase();
+      await CrashReporting.start();
       _initializeAds();
       await _loadBotPolicyWeights();
       runApp(const TenOfAKindApp());
@@ -134,6 +148,8 @@ void _initializeAds() {
 void _installErrorHandlers() {
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
+    // Sent with the framework's own context (which widget, which phase).
+    unawaited(CrashReporting.recordFlutterError(details));
     unawaited(
       AppErrorReporter.report(
         category: 'flutter',
@@ -141,6 +157,7 @@ void _installErrorHandlers() {
         severity: AppErrorSeverity.error,
         debugError: details.exception,
         debugStack: details.stack,
+        sendCrashReport: false,
       ),
     );
   };

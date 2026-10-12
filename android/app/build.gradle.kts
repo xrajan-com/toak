@@ -9,6 +9,9 @@ plugins {
     // START: FlutterFire Configuration
     // Apply after Flutter plugin so generated res stay in the merged source sets.
     id("com.google.gms.google-services")
+    // Required by firebase_crashlytics: without it the app stops at launch
+    // with "The Crashlytics build ID is missing". Also uploads R8 mappings.
+    id("com.google.firebase.crashlytics")
     // END: FlutterFire Configuration
 }
 
@@ -67,11 +70,9 @@ android {
         }
     }
 
-    // Ensure google-services generated resources are merged (Flutter plugin can override sourceSets).
-    sourceSets {
-        getByName("debug").res.srcDir("$buildDir/generated/res/google-services/debug")
-        getByName("release").res.srcDir("$buildDir/generated/res/google-services/release")
-    }
+    // google-services 4.4 registers its generated resources through the
+    // variant API, so the old res.srcDir workaround for 4.3.10 is gone (it
+    // would now add a second, stale copy of the same values).
 }
 
 dependencies {
