@@ -100,12 +100,19 @@ class PayoutTable {
 class BlindLevel {
   final int smallBlind;
   final int bigBlind;
+
+  /// Paid by every player dealt in, before the cards. Dead money: it goes
+  /// straight into the pot and does not count towards calling a bet.
+  final int ante;
+
   const BlindLevel({
     required this.smallBlind,
     required this.bigBlind,
+    this.ante = 0,
   })  : assert(smallBlind > 0),
         assert(bigBlind > 0),
-        assert(bigBlind >= smallBlind);
+        assert(bigBlind >= smallBlind),
+        assert(ante >= 0);
 }
 
 /// Tournament-style blind progression driven by completed dealer orbits.

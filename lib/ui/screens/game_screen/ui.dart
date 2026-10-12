@@ -397,6 +397,13 @@ class GameScreenUI extends StatefulWidget {
   // Chrome
   final String venueTimeZoneId;
 
+  // Blinds at the current level (0 = unknown), shown on the rail beside the
+  // pot, and a short notice while a new level begins.
+  final int smallBlind;
+  final int bigBlind;
+  final int ante;
+  final String? blindLevelNotice;
+
   // Engine (optional)
   final Stream<EngineEvent>? engineEvents;
   final dynamic /*GameEngine?*/ engine;
@@ -470,6 +477,10 @@ class GameScreenUI extends StatefulWidget {
     required this.startingStack,
     this.renoirLiftPx = 0,
     required this.venueTimeZoneId,
+    this.smallBlind = 0,
+    this.bigBlind = 0,
+    this.ante = 0,
+    this.blindLevelNotice,
     this.engineEvents,
     this.onScriptLap,
     this.engine,
@@ -1670,7 +1681,13 @@ class _GameScreenUIState extends State<GameScreenUI>
   }
 
   _BoardInfoSpec? _activeBoardInfo(bool heroTurnActive) {
-    return null;
+    final String notice = (widget.blindLevelNotice ?? '').trim();
+    if (notice.isEmpty) return null;
+    return _BoardInfoSpec(
+      text: notice,
+      fillColor: const Color(0xFFFFD54A),
+      maxWidthFactor: 0.72,
+    );
   }
 
   List<Widget> _buildBoardInfoOverlay({
@@ -2118,6 +2135,9 @@ class _GameScreenUIState extends State<GameScreenUI>
                               tintWhite: false,
                               pot: widget.pot,
                               potPulse: widget.potPulse,
+                              smallBlind: widget.smallBlind,
+                              bigBlind: widget.bigBlind,
+                              ante: widget.ante,
 
                               // (still pass these so geometry math matches)
                               seats: seats,

@@ -39,6 +39,18 @@ class BlindsPosted extends EngineEvent {
   });
 }
 
+/// Emitted once per hand, after the blinds, when the level has an ante.
+/// [total] is what was collected from every player dealt in; a short stack
+/// pays what it has.
+class AntesPosted extends EngineEvent {
+  final int ante;
+  final int total;
+  const AntesPosted({
+    required this.ante,
+    required this.total,
+  });
+}
+
 /// Emitted when the configured tournament blind schedule advances.
 /// This happens between hands (at hand start) when the dealer button completes
 /// enough full orbits.
@@ -49,6 +61,8 @@ class BlindLevelChanged extends EngineEvent {
   final int previousBigBlind;
   final int smallBlind;
   final int bigBlind;
+  final int previousAnte;
+  final int ante;
   const BlindLevelChanged({
     required this.levelIndex,
     required this.completedOrbits,
@@ -56,6 +70,8 @@ class BlindLevelChanged extends EngineEvent {
     required this.previousBigBlind,
     required this.smallBlind,
     required this.bigBlind,
+    this.previousAnte = 0,
+    this.ante = 0,
   });
 }
 

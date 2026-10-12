@@ -13,6 +13,7 @@ import 'package:ten_of_a_kind_poker/app/system_ui.dart';
 import 'package:ten_of_a_kind_poker/core/aup.dart' as aup;
 import 'package:ten_of_a_kind_poker/core/sound_fx.dart';
 import 'package:ten_of_a_kind_poker/config/app_build.dart';
+import 'package:ten_of_a_kind_poker/config/blind_structure.dart';
 import 'package:ten_of_a_kind_poker/config/campaign_events.dart' as ce;
 import 'package:ten_of_a_kind_poker/config/sub_kingdoms.dart';
 import 'package:ten_of_a_kind_poker/config/venues.dart' show VenueGroup;
@@ -805,6 +806,8 @@ class _GameScreenState extends State<GameScreen>
   bool _showHandRankHighlight = false;
   List<GCard> _handRankHighlightCards = const <GCard>[];
   Timer? _actionFlashTimer;
+  Timer? _blindLevelNoticeTimer;
+  String? _blindLevelNotice;
   bool _showActionFlash = false;
   String _actionFlashName = '';
   String _actionFlashLabel = '';
@@ -1522,6 +1525,28 @@ class _GameScreenState extends State<GameScreen>
     _actionFlashTimer = Timer(const Duration(milliseconds: 500), () {
       if (!mounted || _disposing) return;
       setState(() => _showActionFlash = false);
+  /// "BLINDS UP · 300/600 · ANTE 75", over the empty board for a few
+  /// seconds as the new level's first hand is dealt.
+  void _announceBlindLevel(ge.BlindLevelChanged ev) {
+    final String level = blindLevelLabel(
+      smallBlind: ev.smallBlind,
+      bigBlind: ev.bigBlind,
+      ante: ev.ante,
+      format: aup.formatAup,
+    );
+    final bool antesBegin = ev.ante > 0 && ev.previousAnte <= 0;
+    _blindLevelNotice =
+        '${antesBegin ? 'ANTES BEGIN' : 'BLINDS UP'} · ${level.toUpperCase()}';
+    _accessibilityAnnouncement = antesBegin
+        ? 'Antes begin. Blinds $level.'
+        : 'Blinds up. $level.';
+    _blindLevelNoticeTimer?.cancel();
+    _blindLevelNoticeTimer = Timer(const Duration(milliseconds: 3200), () {
+      if (!mounted || _disposing) return;
+      setState(() => _blindLevelNotice = null);
+    });
+  }
+
     });
   }
 
@@ -2095,6 +2120,7 @@ class _GameScreenState extends State<GameScreen>
       t.cancel();
     }
     _actionHintTimers.clear();
+    _blindLevelNoticeTimer?.cancel();
     for (final t in _foldedHoleCardTimers.values) {
       t.cancel();
     }
@@ -2295,19 +2321,10 @@ class _GameScreenState extends State<GameScreen>
     final payoutTable = _campaignAupPayoutTable() ?? _campaignSpec?.payoutTable;
     final e = eng.GameEngine(
       config: eng.GameConfig(
-        smallBlind: 100,
-        bigBlind: 200,
+        smallBlind: kTournamentBlindLevels.first.smallBlind,
+        bigBlind: kTournamentBlindLevels.first.bigBlind,
         maxPlayers: _tableMaxSeats,
-        blindSchedule: eng.BlindSchedule(
-          orbitsPerLevel: 2,
-          levels: <eng.BlindLevel>[
-            eng.BlindLevel(smallBlind: 100, bigBlind: 200),
-            eng.BlindLevel(smallBlind: 200, bigBlind: 400),
-            eng.BlindLevel(smallBlind: 300, bigBlind: 600),
-            eng.BlindLevel(smallBlind: 400, bigBlind: 800),
-            eng.BlindLevel(smallBlind: 500, bigBlind: 1000),
-          ],
-        ),
+        blindSchedule: kTournamentBlindSchedule,
         payoutTable: payoutTable,
         payoutForRank: (rank) => rank == 1
             ? (campaignAupPrizePool ?? _campaignSpec?.prizePool ?? 100000)
@@ -2575,6 +2592,11 @@ class _GameScreenState extends State<GameScreen>
         if (!_handOverHandled) {
           _onHandOverAndContinue();
         }
+      if (ev is ge.BlindLevelChanged) {
+        _announceBlindLevel(ev);
+        needsSeatRefresh = true;
+        continue;
+      }
         continue;
       }
     }
@@ -4103,6 +4125,10 @@ class _GameScreenState extends State<GameScreen>
 
   /* ============================ Misc UI helpers =========================== */
 
+          smallBlind: _engine?.smallBlind ?? 0,
+          bigBlind: _engine?.bigBlind ?? 0,
+          ante: _engine?.ante ?? 0,
+          blindLevelNotice: _blindLevelNotice,
   Color _venueColor(dynamic v, String key, Color fallback) {
     if (v == null) return fallback;
 

@@ -60,6 +60,9 @@ class GameTableLayer extends StatefulWidget {
     // Pot
     required this.pot,
     required this.potPulse,
+    this.smallBlind = 0,
+    this.bigBlind = 0,
+    this.ante = 0,
 
     // Seats / state
     required this.seats,
@@ -118,6 +121,11 @@ class GameTableLayer extends StatefulWidget {
   // Pot
   final double pot;
   final Animation<double> potPulse;
+
+  /// Current level, shown on the rail beside the pot. 0 hides it.
+  final int smallBlind;
+  final int bigBlind;
+  final int ante;
 
   // Seats / state
   final List<Seat> seats;
@@ -325,6 +333,9 @@ class _GameTableLayerState extends State<GameTableLayer> {
                       0,
                       (int sum, Seat s) => sum + (s.bet > 0 ? s.bet : 0),
                     ),
+                    smallBlind: widget.smallBlind,
+                    bigBlind: widget.bigBlind,
+                    ante: widget.ante,
                     height: railW,
                   ),
                 ),
@@ -479,8 +490,9 @@ List<Widget> buildBlindChips({
   return chips;
 }
 
-/// Pot readout on the felt: what is already in the middle, plus whatever is
-/// still sitting in front of players on this street.
+/// Pot readout on the rail: the blinds and ante at the current level, what
+/// is already in the middle, and whatever is still sitting in front of
+/// players on this street.
 ///
 /// White at 75% so the felt reads through it, black for the settled pot and
 /// red for money still live on the current street — the two numbers a player
@@ -490,11 +502,17 @@ class _PotPill extends StatelessWidget {
     required this.pot,
     required this.streetBets,
     required this.height,
+    this.smallBlind = 0,
+    this.bigBlind = 0,
+    this.ante = 0,
   });
 
   final double pot;
   final int streetBets;
   final double height;
+  final int smallBlind;
+  final int bigBlind;
+  final int ante;
 
   static String _fmt(num v) {
     final int n = v.round();
@@ -509,11 +527,27 @@ class _PotPill extends StatelessWidget {
     return '$n';
   }
 
+  /// Blinds read exactly ("1,250/2,500"); only round thousands from 10,000
+  /// up are shortened ("15K/30K"), so a level is never misread.
+  static String _fmtBlind(int n) {
+    if (n >= 10000 && n % 1000 == 0) return '${n ~/ 1000}K';
+    final String digits = '${n.abs()}';
+    final StringBuffer out = StringBuffer(n < 0 ? '-' : '');
+    for (int i = 0; i < digits.length; i++) {
+      if (i > 0 && (digits.length - i) % 3 == 0) out.write(',');
+      out.write(digits[i]);
+    }
+    return out.toString();
+  }
+
   @override
   Widget build(BuildContext context) {
     final int settled = pot.round();
-    // Nothing on the table yet: a pill reading "POT 0" is noise.
-    if (settled <= 0 && streetBets <= 0) return const SizedBox.shrink();
+    final bool showBlinds = smallBlind > 0 && bigBlind > 0;
+    // Nothing on the table yet: a pill reading "POT 0" is noise. The blinds
+    // stay up between hands.
+    final bool showPot = settled > 0 || streetBets > 0;
+    if (!showPot && !showBlinds) return const SizedBox.shrink();
 
     final double h = height;
     // Ratios are tuned for the rail band (~24 logical px). The previous
@@ -523,11 +557,36 @@ class _PotPill extends StatelessWidget {
     final double fontSize = (h * 0.50).clamp(9.0, 18.0).toDouble();
     final double labelSize = (h * 0.36).clamp(7.5, 12.0).toDouble();
 
+    final String blindsSemantics = !showBlinds
+        ? ''
+        : ante > 0
+            ? 'Blinds ${_fmtBlind(smallBlind)}/${_fmtBlind(bigBlind)}, '
+                'ante ${_fmtBlind(ante)}. '
+            : 'Blinds ${_fmtBlind(smallBlind)}/${_fmtBlind(bigBlind)}. ';
+    final String potSemantics = !showPot
+        ? ''
+        : streetBets > 0
+            ? 'Pot ${_fmt(settled)}, ${_fmt(streetBets)} still in play'
+            : 'Pot ${_fmt(settled)}';
+    final TextStyle labelStyle = TextStyle(
+      color: const Color(0xFF11110F),
+      fontFamily: 'OpenSans',
+      fontWeight: FontWeight.w700,
+      fontSize: labelSize,
+      letterSpacing: 0.8,
+      height: 1.0,
+    );
+    final TextStyle valueStyle = TextStyle(
+      color: const Color(0xFF11110F),
+      fontFamily: 'OpenSans',
+      fontWeight: FontWeight.w800,
+      fontSize: fontSize,
+      height: 1.0,
+    );
+
     return IgnorePointer(
       child: Semantics(
-        label: streetBets > 0
-            ? 'Pot ${_fmt(settled)}, ${_fmt(streetBets)} still in play'
-            : 'Pot ${_fmt(settled)}',
+        label: '$blindsSemantics$potSemantics'.trim(),
         child: ExcludeSemantics(
           child: Container(
             height: h,
@@ -572,29 +631,33 @@ class _PotPill extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
-                Text(
-                  'POT',
-                  style: TextStyle(
-                    color: const Color(0xFF11110F),
-                    fontFamily: 'OpenSans',
-                    fontWeight: FontWeight.w700,
-                    fontSize: labelSize,
-                    letterSpacing: 0.8,
-                    height: 1.0,
+                if (showBlinds) ...<Widget>[
+                  Text('BLINDS', style: labelStyle),
+                  SizedBox(width: h * 0.22),
+                  Text(
+                    '${_fmtBlind(smallBlind)}/${_fmtBlind(bigBlind)}',
+                    style: valueStyle,
                   ),
-                ),
-                SizedBox(width: h * 0.22),
-                Text(
-                  _fmt(settled),
-                  style: TextStyle(
-                    color: const Color(0xFF11110F),
-                    fontFamily: 'OpenSans',
-                    fontWeight: FontWeight.w800,
-                    fontSize: fontSize,
-                    height: 1.0,
+                  if (ante > 0) ...<Widget>[
+                    SizedBox(width: h * 0.24),
+                    Text('ANTE', style: labelStyle),
+                    SizedBox(width: h * 0.18),
+                    Text(_fmtBlind(ante), style: valueStyle),
+                  ],
+                ],
+                if (showBlinds && showPot)
+                  Container(
+                    width: math.max(1.0, h * 0.04),
+                    height: h * 0.52,
+                    margin: EdgeInsets.symmetric(horizontal: h * 0.34),
+                    color: const Color(0xFF11110F).withValues(alpha: 0.28),
                   ),
-                ),
-                if (streetBets > 0) ...<Widget>[
+                if (showPot) ...<Widget>[
+                  Text('POT', style: labelStyle),
+                  SizedBox(width: h * 0.22),
+                  Text(_fmt(settled), style: valueStyle),
+                ],
+                if (showPot && streetBets > 0) ...<Widget>[
                   SizedBox(width: h * 0.24),
                   Text(
                     '+${_fmt(streetBets)}',

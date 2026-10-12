@@ -138,9 +138,10 @@ class GameEngine {
   int pot = 0;
   int handNumber = 0;
 
-  // Tournament-style blinds (mutable across hands).
+  // Tournament-style blinds and ante (mutable across hands).
   late int _smallBlind;
   late int _bigBlind;
+  late int _ante;
   int _completedOrbits = 0;
   int _blindLevelIndex = 0;
   // Optional: hero seat index for UI conveniences (action bar gating, skip button, etc.)
@@ -269,10 +270,12 @@ class GameEngine {
       final BlindLevel lvl = schedule.levels.first;
       _smallBlind = lvl.smallBlind;
       _bigBlind = lvl.bigBlind;
+      _ante = lvl.ante;
       return;
     }
     _smallBlind = config.smallBlind;
     _bigBlind = config.bigBlind;
+    _ante = config.ante;
   }
 
   int get completedOrbits => _completedOrbits;
@@ -281,6 +284,7 @@ class GameEngine {
   void setBlinds({
     required int smallBlind,
     required int bigBlind,
+    int? ante,
   }) {
     if (smallBlind <= 0) {
       throw ArgumentError.value(smallBlind, 'smallBlind', 'must be > 0');
@@ -291,8 +295,12 @@ class GameEngine {
     if (bigBlind < smallBlind) {
       throw ArgumentError('bigBlind must be >= smallBlind');
     }
+    if (ante != null && ante < 0) {
+      throw ArgumentError.value(ante, 'ante', 'must be >= 0');
+    }
     _smallBlind = smallBlind;
     _bigBlind = bigBlind;
+    if (ante != null) _ante = ante;
   }
 
   void setRandomSeed(int seed) {
@@ -363,6 +371,9 @@ class GameEngine {
   int get bigBlind => _bigBlind;
   int get smallBlind => _smallBlind;
 
+  /// What every player dealt in pays before the cards at the current level.
+  int get ante => _ante;
+
   // Eligible to be dealt in the NEXT hand
   bool _isEligibleForHand(Player p) => !p.sittingOut && !p.isOut && p.chips > 0;
 
@@ -403,11 +414,13 @@ class GameEngine {
 
     final int prevSb = _smallBlind;
     final int prevBb = _bigBlind;
+    final int prevAnte = _ante;
 
     _blindLevelIndex = target;
     final BlindLevel lvl = schedule.levels[_blindLevelIndex];
     _smallBlind = lvl.smallBlind;
     _bigBlind = lvl.bigBlind;
+    _ante = lvl.ante;
 
     _emit(BlindLevelChanged(
       levelIndex: _blindLevelIndex,
@@ -416,6 +429,8 @@ class GameEngine {
       previousBigBlind: prevBb,
       smallBlind: _smallBlind,
       bigBlind: _bigBlind,
+      previousAnte: prevAnte,
+      ante: _ante,
     ));
   }
 
@@ -744,8 +759,8 @@ class GameEngine {
     _prepareBotLearningStateForHand();
     final List<int> dealOrder = _eligibleDealOrder();
 
-    _postAntesIfAny();
     _postBlinds(); // sets SB/BB based on dealer & eligibility
+    _postAntesIfAny(); // after the blinds, so positions never shift
     if (config.allowButtonStraddle) _postStraddleIfAny();
     _dealHoleCardsInstant(dealOrder); // emits CardDealt immediately per card
 
@@ -805,12 +820,12 @@ class GameEngine {
     _prepareBotLearningStateForHand();
     final List<int> dealOrder = _eligibleDealOrder();
 
-    // Antes
-    _postAntesIfAny();
-
-    // Establish and post positions before any hole-card event. Capturing the
-    // deal order above ensures an all-in ante/blind still receives cards.
+    // Establish and post positions before any hole-card event, then the
+    // antes, so a stack too short for both still has its blind position.
+    // Capturing the deal order above ensures an all-in ante/blind still
+    // receives cards.
     _postBlinds();
+    _postAntesIfAny();
     if (config.allowButtonStraddle) _postStraddleIfAny();
 
     // Shuffle animation
@@ -840,13 +855,26 @@ class GameEngine {
   /// True when the rest of the hand is only a board runout.
   bool everyoneAllInMatched() => _earlyAllInClosed();
 
+  /// Collects the level's ante from every player dealt in. Antes are dead
+  /// money: they go into the pot (and count towards side pots, since every
+  /// player pays the same), but not into [Player.betThisStreet], so they
+  /// never count towards calling the big blind. Called after the blinds; a
+  /// player all in on a blind has nothing left to pay.
   void _postAntesIfAny() {
-    if (config.ante <= 0) return;
+    final int ante = _ante;
+    if (ante <= 0) return;
+    int total = 0;
     for (final p in players) {
       if (!_isEligibleForHand(p)) continue;
-      final pay = min(config.ante, p.chips);
-      _payIntoPot(p, pay);
+      final int pay = min(ante, p.chips);
+      if (pay <= 0) continue;
+      p.chips -= pay;
+      p.contributedThisHand += pay;
+      pot += pay;
+      total += pay;
+      if (p.chips == 0) p.allIn = true;
     }
+    if (total > 0) _emit(AntesPosted(ante: ante, total: total));
   }
 
   /* ==================== Dealing (Hole) ==================== */
