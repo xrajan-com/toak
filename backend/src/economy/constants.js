@@ -18,10 +18,27 @@ const MAX_ENTRY_FEE = 10000000;
 // wallet is empty.
 const REGISTERED_STARTER_AUP = 10000;
 
-// Share of the whole wallet, in thousandths, lost for quitting a table or
-// for finishing anywhere but first.
-const QUIT_PENALTY_PERMILLE = 3;
-const LOSS_PENALTY_PERMILLE = 1;
+// What a game can cost. The entry fee is the most a player can lose: a
+// finish outside the prizes, leaving the table, and a game interrupted
+// before it finished all cost the fee and nothing more. Quick Game is
+// practice and never changes the wallet. (Until October 2026 every loss
+// also took a share of the whole wallet; see docs/ECONOMY_RULES.md.)
+//
+// Clients send the rules they were built to explain in X-Economy-Rules.
+//   1  no header: builds up to 86. An interrupted game is refunded, because
+//      those builds tell the player the fee comes back.
+//   2  build 87 on. An interrupted game is forfeited, like leaving.
+const ECONOMY_RULES_VERSION = 2;
+const LEGACY_ECONOMY_RULES_VERSION = 1;
+
+/** The rules version a request asked for; missing or unknown means legacy. */
+function requestedRulesVersion(raw) {
+  const value = Number.parseInt(String(raw ?? '').trim(), 10);
+  if (!Number.isInteger(value) || value < LEGACY_ECONOMY_RULES_VERSION) {
+    return LEGACY_ECONOMY_RULES_VERSION;
+  }
+  return Math.min(value, ECONOMY_RULES_VERSION);
+}
 
 // An entry fee is held for an hour; an entry that never started is refunded
 // after that. A started entry can be written off as abandoned after ten
@@ -76,9 +93,10 @@ function normalizeCircuitAup(data = {}) {
 module.exports = {
   AUP_PER_AURA,
   AURA_MILLI_PER_AURA,
+  ECONOMY_RULES_VERSION,
   ENTRY_RECOVERY_DELAY_MS,
   ENTRY_RESERVATION_TTL_MS,
-  LOSS_PENALTY_PERMILLE,
+  LEGACY_ECONOMY_RULES_VERSION,
   MAX_AUP_PER_CIRCUIT,
   MAX_CAMPAIGN_WIN_AUP,
   MAX_ENTRY_FEE,
@@ -86,7 +104,7 @@ module.exports = {
   MAX_TOTAL_AUP,
   MAX_TOTAL_AURA_MILLI,
   MIGRATION_COMPLETE_VERSION,
-  QUIT_PENALTY_PERMILLE,
   REGISTERED_STARTER_AUP,
   normalizeCircuitAup,
+  requestedRulesVersion,
 };

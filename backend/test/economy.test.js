@@ -11,8 +11,10 @@ const {
   campaignEvent,
 } = require('../src/economy/catalog');
 const {
+  ECONOMY_RULES_VERSION,
   MAX_AUP_PER_CIRCUIT,
   MAX_CAMPAIGN_WIN_AUP,
+  requestedRulesVersion,
 } = require('../src/economy/constants');
 const {
   entryReservationStatus,
@@ -24,7 +26,10 @@ const { baseProgress, snapshot } = require('../src/economy/progress');
 const { rankForUser } = require('../src/economy/rank');
 const { SERVER_PROGRESS_COLLECTION } = require('../src/economy/store');
 const { walletForUser } = require('../src/economy/wallet');
-const { catalogVersionForRequest } = require('../src/routes/economy');
+const {
+  catalogVersionForRequest,
+  rulesVersionForRequest,
+} = require('../src/routes/economy');
 const { FakeFirestore } = require('./firestore_fake');
 const {
   ACCOUNT_DELETIONS_COLLECTION,
@@ -291,13 +296,141 @@ test('economy event applies inside a transaction and persists the result', async
 
   assert.equal(db.transactionCount, 1);
   assert.equal(result.accepted, true);
-  // A loss costs one thousandth of the wallet.
-  assert.equal(result.delta, -5);
+  // Quick Game is practice: a loss counts in the stats, not the wallet.
+  assert.equal(result.delta, 0);
 
   const saved = db.dump(SERVER_PROGRESS_COLLECTION, 'player1');
-  assert.equal(saved.indiaAup, 4995);
+  assert.equal(saved.indiaAup, 5000);
   assert.equal(saved.matchesPlayed, 1);
   assert.deepEqual(saved.appliedEventIds, ['quick-game:1']);
+});
+
+test('Quick Game never changes the wallet, win, loss or quit', async () => {
+  const uid = 'practice-player';
+  const db = new FakeFirestore({
+    [SERVER_PROGRESS_COLLECTION]: {
+      [uid]: {
+        schemaVersion: 1,
+        indiaAup: 150000000,
+        registeredStarterGranted: true,
+      },
+    },
+  });
+  const outcomes = [
+    { action: 'match_completed', heroWon: true, finishRank: 1, totalPlayers: 6 },
+    { action: 'match_completed', heroWon: false, finishRank: 6, totalPlayers: 6 },
+    { action: 'game_abandoned', totalPlayers: 9 },
+  ];
+  for (const [index, body] of outcomes.entries()) {
+    const result = await applyEconomyEvent({
+      db,
+      uid,
+      body: { ...body, eventId: `practice:${index}` },
+    });
+    assert.equal(result.accepted, true, result.reason);
+    assert.equal(result.delta, 0);
+    assert.equal(result.penaltyDelta, 0);
+  }
+  const saved = db.dump(SERVER_PROGRESS_COLLECTION, uid);
+  assert.equal(saved.indiaAup, 150000000);
+  assert.equal(saved.matchesPlayed, 3);
+  assert.equal(saved.abandonedGames, 1);
+});
+
+test('a loss or a quit costs the entry fee and nothing more, whatever the wallet holds', async () => {
+  const uid = 'rich-loser';
+  const start = 150000000;
+  const db = new FakeFirestore({
+    [SERVER_PROGRESS_COLLECTION]: {
+      [uid]: {
+        schemaVersion: 1,
+        internationalAup: start,
+        registeredStarterGranted: true,
+      },
+    },
+  });
+  const campaignId = 'sk:international:pacific:1';
+  const event = economyCatalog.events[campaignId];
+  assert.ok(event.entryFee > 0);
+  const totalPlayers = event.maxPlayers;
+
+  // Fourth place pays nothing: the fee is all it costs.
+  await reserveAndCommit({ db, uid, campaignId, attemptId: 'entry:fee-only:1' });
+  const loss = await applyEconomyEvent({
+    db,
+    uid,
+    body: {
+      action: 'campaign_result',
+      campaignId,
+      entryAttemptId: 'entry:fee-only:1',
+      placement: 4,
+      totalPlayers,
+      eventId: 'result:fee-only:1',
+    },
+  });
+  assert.equal(loss.accepted, true, loss.reason);
+  assert.equal(loss.delta, 0);
+  assert.equal(loss.penaltyDelta, 0);
+  assert.equal(loss.progress.internationalAup, start - event.entryFee);
+
+  // Second place is a loss that pays: the prize, with nothing taken off.
+  await reserveAndCommit({ db, uid, campaignId, attemptId: 'entry:fee-only:2' });
+  const second = await applyEconomyEvent({
+    db,
+    uid,
+    body: {
+      action: 'campaign_result',
+      campaignId,
+      entryAttemptId: 'entry:fee-only:2',
+      placement: 2,
+      totalPlayers,
+      eventId: 'result:fee-only:2',
+    },
+  });
+  assert.equal(second.delta, event.payouts[1]);
+  assert.equal(second.penaltyDelta, 0);
+  assert.equal(
+    second.progress.internationalAup,
+    start - (2 * event.entryFee) + event.payouts[1],
+  );
+
+  // Leaving the table: the fee, and nothing more.
+  await reserveAndCommit({ db, uid, campaignId, attemptId: 'entry:fee-only:3' });
+  const quit = await applyEconomyEvent({
+    db,
+    uid,
+    body: {
+      action: 'campaign_abandoned',
+      campaignId,
+      entryAttemptId: 'entry:fee-only:3',
+      placement: totalPlayers,
+      totalPlayers,
+      eventId: 'abandon:fee-only:3',
+    },
+  });
+  assert.equal(quit.accepted, true, quit.reason);
+  assert.equal(quit.delta, 0);
+  assert.equal(
+    quit.progress.internationalAup,
+    start - (3 * event.entryFee) + event.payouts[1],
+  );
+  assert.equal(quit.progress.abandonedGames, 1);
+});
+
+test('the rules version comes from X-Economy-Rules; missing or unknown means legacy', () => {
+  assert.equal(ECONOMY_RULES_VERSION, 2);
+  assert.equal(requestedRulesVersion(undefined), 1);
+  assert.equal(requestedRulesVersion(''), 1);
+  assert.equal(requestedRulesVersion('abc'), 1);
+  assert.equal(requestedRulesVersion('0'), 1);
+  assert.equal(requestedRulesVersion('1'), 1);
+  assert.equal(requestedRulesVersion(' 2 '), 2);
+  assert.equal(requestedRulesVersion('9'), ECONOMY_RULES_VERSION);
+  const header = (value) => rulesVersionForRequest({
+    get: (name) => (name === 'x-economy-rules' ? value : undefined),
+  });
+  assert.equal(header(undefined), 1);
+  assert.equal(header('2'), 2);
 });
 
 test('backend limits match the 200M-per-circuit client economy', () => {
@@ -616,8 +749,7 @@ test('secure catalog reservations allow unlimited fort replays with unique attem
   );
 });
 
-test('committed entry recovery is delayed, idempotent, and penalized once', async () => {
-  const uid = 'recovery-player';
+async function interruptedEntry({ uid }) {
   const db = new FakeFirestore({
     [SERVER_PROGRESS_COLLECTION]: {
       [uid]: {
@@ -629,48 +761,124 @@ test('committed entry recovery is delayed, idempotent, and penalized once', asyn
     },
   });
   const campaignId = 'sk:international:pacific:1';
-  const attemptId = 'entry:recovery:1';
+  const attemptId = `entry:${uid}:1`;
   await reserveAndCommit({ db, uid, campaignId, attemptId });
+  const fee = economyCatalog.events[campaignId].entryFee;
+  const seats = economyCatalog.events[campaignId].maxPlayers;
+  return { db, attemptId, fee, seats };
+}
 
-  const tooSoon = await transitionEntryReservation({
-    db,
-    uid,
-    body: { attemptId },
-    transition: 'recover',
-  });
-  assert.equal(tooSoon.accepted, false);
-  assert.equal(tooSoon.reason, 'recovery_not_ready');
-  assert.equal(tooSoon.progress.internationalAup, 32000);
-
+async function ageEntry(db, uid) {
   const stored = db.dump(SERVER_PROGRESS_COLLECTION, uid);
   stored.entryReservations[0].updatedAtMs = 1;
   await db.collection(SERVER_PROGRESS_COLLECTION).doc(uid).set(stored);
+}
 
-  const recovered = await transitionEntryReservation({
+test('an interrupted game waits out the safety window, then counts as leaving, once', async () => {
+  const uid = 'recovery-player';
+  const { db, attemptId, fee } = await interruptedEntry({ uid });
+  const recover = () => transitionEntryReservation({
     db,
     uid,
     body: { attemptId },
     transition: 'recover',
+    rulesVersion: 2,
   });
-  assert.equal(recovered.accepted, true);
-  assert.equal(recovered.duplicate, false);
-  assert.equal(recovered.reason, 'abandoned_entry_recovered');
-  assert.equal(recovered.progress.internationalAup, 99700);
-  assert.equal(recovered.progress.matchesPlayed, 1);
-  assert.equal(recovered.progress.abandonedGames, 1);
 
-  const duplicate = await transitionEntryReservation({
-    db,
-    uid,
-    body: { attemptId },
-    transition: 'recover',
-  });
+  const tooSoon = await recover();
+  assert.equal(tooSoon.accepted, false);
+  assert.equal(tooSoon.reason, 'recovery_not_ready');
+  assert.equal(tooSoon.progress.internationalAup, 100000 - fee);
+
+  await ageEntry(db, uid);
+  const forfeited = await recover();
+  assert.equal(forfeited.accepted, true);
+  assert.equal(forfeited.duplicate, false);
+  assert.equal(forfeited.reason, 'abandoned_entry_forfeited');
+  assert.equal(forfeited.delta, 0);
+  // The fee stays spent, exactly as if the player had left the table.
+  assert.equal(forfeited.progress.internationalAup, 100000 - fee);
+  assert.equal(forfeited.progress.matchesPlayed, 1);
+  assert.equal(forfeited.progress.abandonedGames, 1);
+  // Last place, so an interrupted game never flatters the average finish.
+  assert.equal(forfeited.progress.finishPermilleSum, 1000);
+  assert.equal(forfeited.reservation.status, 'settled');
+  assert.equal(forfeited.reservation.outcome, 'forfeited');
+
+  const duplicate = await recover();
   assert.equal(duplicate.accepted, true);
   assert.equal(duplicate.duplicate, true);
   assert.equal(duplicate.delta, 0);
-  assert.equal(duplicate.progress.internationalAup, 99700);
+  assert.equal(duplicate.progress.internationalAup, 100000 - fee);
   assert.equal(duplicate.progress.matchesPlayed, 1);
-  assert.equal(duplicate.progress.abandonedGames, 1);
+
+  // A result that arrives afterwards pays nothing.
+  const late = await applyEconomyEvent({
+    db,
+    uid,
+    body: {
+      action: 'campaign_win',
+      campaignId: 'sk:international:pacific:1',
+      entryAttemptId: attemptId,
+      placement: 1,
+      eventId: 'win:after-forfeit:1',
+    },
+  });
+  assert.equal(late.delta, 0);
+  assert.equal(late.progress.internationalAup, 100000 - fee);
+});
+
+test('builds that promise a refund (rules 1) get the fee back for an interrupted game', async () => {
+  const uid = 'legacy-recovery-player';
+  const { db, attemptId, fee } = await interruptedEntry({ uid });
+  await ageEntry(db, uid);
+  const recover = () => transitionEntryReservation({
+    db,
+    uid,
+    body: { attemptId },
+    transition: 'recover',
+    rulesVersion: 1,
+  });
+
+  const recovered = await recover();
+  assert.equal(recovered.accepted, true);
+  assert.equal(recovered.reason, 'abandoned_entry_recovered');
+  assert.equal(recovered.delta, fee);
+  assert.equal(recovered.progress.internationalAup, 100000);
+  assert.equal(recovered.progress.abandonedGames, 1);
+  assert.equal(recovered.reservation.status, 'refunded');
+
+  const duplicate = await recover();
+  assert.equal(duplicate.accepted, true);
+  assert.equal(duplicate.duplicate, true);
+  assert.equal(duplicate.progress.internationalAup, 100000);
+  assert.equal(duplicate.progress.matchesPlayed, 1);
+});
+
+test('a forfeited entry survives a save and load', () => {
+  const progress = baseProgress({
+    entryReservations: [
+      {
+        attemptId: 'a',
+        campaignId: 'sk:international:pacific:1',
+        group: 'international',
+        amount: 5,
+        status: 'settled',
+        outcome: 'forfeited',
+      },
+      {
+        attemptId: 'b',
+        campaignId: 'sk:international:pacific:1',
+        group: 'international',
+        amount: 5,
+        status: 'committed',
+        outcome: 'forfeited',
+      },
+    ],
+  });
+  assert.equal(progress.entryReservations[0].outcome, 'forfeited');
+  // Only a settled entry can carry the outcome.
+  assert.equal(progress.entryReservations[1].outcome, undefined);
 });
 
 test('only one active entry is allowed and terminal history cannot replace it', async () => {

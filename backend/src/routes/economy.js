@@ -8,6 +8,7 @@ const {
 } = require('../security/firebase_auth');
 const { playerRateLimit } = require('../security/rate_limit');
 const { requestedCatalogVersion } = require('../economy/catalog');
+const { requestedRulesVersion } = require('../economy/constants');
 const {
   entryReservationStatus,
   reserveEntry,
@@ -34,6 +35,11 @@ function _asyncHandler(fn) {
 
 function catalogVersionForRequest(req) {
   return requestedCatalogVersion(req.get('x-economy-catalog-version'));
+}
+
+// The economy rules the app explains to its player; see constants.js.
+function rulesVersionForRequest(req) {
+  return requestedRulesVersion(req.get('x-economy-rules'));
 }
 
 /**
@@ -159,6 +165,7 @@ function economyRouter({ refreshLeaderboard } = {}) {
           uid,
           body: req.body || {},
           transition,
+          rulesVersion: rulesVersionForRequest(req),
         }),
         entryResponse,
       ),
@@ -196,4 +203,5 @@ module.exports = {
   catalogVersionForRequest,
   economyRouter,
   refreshLeaderboardSafely,
+  rulesVersionForRequest,
 };

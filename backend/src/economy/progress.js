@@ -8,7 +8,6 @@ const {
   MAX_AUP_PER_CIRCUIT,
   MAX_ENTRY_FEE,
   MAX_STORED_ENTRY_RESERVATIONS,
-  MAX_TOTAL_AUP,
   MIGRATION_COMPLETE_VERSION,
   REGISTERED_STARTER_AUP,
   normalizeCircuitAup,
@@ -18,8 +17,7 @@ const {
   requestedCatalogVersion,
 } = require('./catalog');
 
-// Order matters: the starter grant gives the remainder to the last field,
-// and whole-wallet penalties are taken in this order.
+// Order matters: the starter grant gives the remainder to the last field.
 const CIRCUIT_FIELDS = Object.freeze([
   'northAmericaAup',
   'oceaniaAup',
@@ -124,6 +122,10 @@ function _reservation(raw) {
       : ECONOMY_CATALOG_VERSION,
     createdAtMs: int(raw.createdAtMs, { min: 0, max: MAX_TIMESTAMP_MS }),
     updatedAtMs: int(raw.updatedAtMs, { min: 0, max: MAX_TIMESTAMP_MS }),
+    // A settled entry closed without a result (entries.js _recover).
+    ...(status === 'settled' && raw.outcome === 'forfeited'
+      ? { outcome: 'forfeited' }
+      : {}),
   };
 }
 
@@ -227,26 +229,6 @@ function deductAup(progress, group, amount) {
   if (progress[field] < amount) return -1;
   progress[field] = clamp(progress[field] - amount, 0, MAX_AUP_PER_CIRCUIT);
   return amount;
-}
-
-function _deductAupTotal(progress, amount) {
-  let remaining = int(amount, { min: 0, max: MAX_TOTAL_AUP });
-  if (remaining <= 0) return 0;
-  const before = totalAup(progress);
-  for (const field of CIRCUIT_FIELDS) {
-    const take = Math.min(progress[field], remaining);
-    progress[field] -= take;
-    remaining -= take;
-    if (remaining <= 0) break;
-  }
-  return before - totalAup(progress);
-}
-
-/** Takes a share of the whole wallet; returns the AUP taken. */
-function deductPermille(progress, permille) {
-  const total = totalAup(progress);
-  const amount = Math.trunc((total * permille) / 1000);
-  return _deductAupTotal(progress, amount);
 }
 
 function grantRegisteredStarterAup(progress) {
@@ -383,7 +365,6 @@ module.exports = {
   clamp,
   cleanId,
   deductAup,
-  deductPermille,
   finishPermille,
   findReservation,
   grantRegisteredStarterAup,

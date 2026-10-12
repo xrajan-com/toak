@@ -12,15 +12,10 @@ const {
   ECONOMY_CATALOG_VERSION,
   campaignEvent,
 } = require('./catalog');
-const {
-  LOSS_PENALTY_PERMILLE,
-  MAX_CAMPAIGN_WIN_AUP,
-  QUIT_PENALTY_PERMILLE,
-} = require('./constants');
+const { MAX_CAMPAIGN_WIN_AUP } = require('./constants');
 const {
   addAup,
   cleanId,
-  deductPermille,
   findReservation,
   int,
   receiptId,
@@ -50,6 +45,10 @@ function _rejected(reason, progress) {
 /**
  * A fort or title-match result, settled against the paid entry it belongs
  * to. Returns the change to apply, or { reason } when it is refused.
+ *
+ * The entry fee was spent when the game started, so a result only ever
+ * adds: the prize for the place, if the place pays. Losing or leaving
+ * costs nothing beyond the fee.
  */
 function _settleCampaign(progress, body, action, catalogVersion) {
   const isAbandoned = action === 'campaign_abandoned';
@@ -105,7 +104,6 @@ function _settleCampaign(progress, body, action, catalogVersion) {
     };
   }
 
-  let penaltyDelta = 0;
   let matchRecorded = false;
   if (isFinalResult) {
     recordMatch(progress, {
@@ -114,11 +112,6 @@ function _settleCampaign(progress, body, action, catalogVersion) {
       abandoned: isAbandoned,
     });
     matchRecorded = true;
-    if (isAbandoned) {
-      penaltyDelta = -deductPermille(progress, QUIT_PENALTY_PERMILLE);
-    } else if (placement !== 1) {
-      penaltyDelta = -deductPermille(progress, LOSS_PENALTY_PERMILLE);
-    }
   }
   const payoutDelta = addAup(progress, event.group, payout);
   if (won) recordCampaignClear(progress, event);
@@ -129,23 +122,23 @@ function _settleCampaign(progress, body, action, catalogVersion) {
     accepted: true,
     reason: payout > 0 && payoutDelta === 0 ? 'wallet_cap_reached' : 'accepted',
     campaignId,
-    delta: payoutDelta + penaltyDelta,
+    delta: payoutDelta,
     payoutDelta,
-    penaltyDelta,
+    // Kept in the response for builds that read it; always 0 now.
+    penaltyDelta: 0,
     clearRecorded: won,
     matchRecorded,
   };
 }
 
-// A table outside the campaign (Quick Game): stats and the loss penalty.
+// Quick Game is practice: it counts towards the player's stats and never
+// changes the wallet.
 function _completeMatch(progress, body) {
-  const heroWon = body.heroWon === true;
   const totalPlayers = int(body.totalPlayers, { min: 1, max: 10 });
   const finishRank = int(body.finishRank, { min: 1, max: totalPlayers });
   recordMatch(progress, { finishRank, totalPlayers });
-  const delta = heroWon ? 0 : -deductPermille(progress, LOSS_PENALTY_PERMILLE);
   settleReservation(progress, body.entryAttemptId);
-  return { accepted: true, reason: 'accepted', delta };
+  return { accepted: true, reason: 'accepted', delta: 0 };
 }
 
 function _abandonMatch(progress, body) {
@@ -155,9 +148,8 @@ function _abandonMatch(progress, body) {
     totalPlayers,
     abandoned: true,
   });
-  const delta = -deductPermille(progress, QUIT_PENALTY_PERMILLE);
   settleReservation(progress, body.entryAttemptId);
-  return { accepted: true, reason: 'accepted', delta };
+  return { accepted: true, reason: 'accepted', delta: 0 };
 }
 
 async function applyEconomyEvent({

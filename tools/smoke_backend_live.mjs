@@ -6,6 +6,9 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const localCatalog = require('../backend/src/economy/catalog.json');
+const {
+  ECONOMY_RULES_VERSION,
+} = require('../backend/src/economy/constants.js');
 const DEFAULT_FIREBASE_WEB_API_KEY = 'AIzaSyBDxo0Cz8BH8jomP0zsmkl9UBLDC2SS8L4';
 const EXPECTED_CATALOG_EVENT_COUNT = localCatalog.eventCount;
 const EXPECTED_CATALOG_CONTENT_HASH = localCatalog.contentHash;
@@ -52,6 +55,7 @@ async function request(path, { method = 'GET', token, body } = {}) {
     headers: {
       accept: 'application/json',
       'x-economy-catalog-version': EXPECTED_CATALOG_VERSION,
+      'x-economy-rules': String(ECONOMY_RULES_VERSION),
       ...(token ? { authorization: `Bearer ${token}` } : {}),
       ...(body ? { 'content-type': 'application/json' } : {}),
     },
@@ -366,8 +370,36 @@ async function main() {
   if (paidLoss.accepted !== true || paidLoss.clearRecorded === true) {
     throw new Error(`paid loss settlement failed: ${JSON.stringify(paidLoss)}`);
   }
+  if (paidLoss.delta !== 0 || paidLoss.penaltyDelta !== 0) {
+    throw new Error(`a loss took more than the entry fee: ${JSON.stringify(paidLoss)}`);
+  }
 
   const afterPaidLoss = await request('/v1/economy/wallet', { token });
+  if (totalAup(afterPaidLoss.progress) !== totalAup(afterPaidReservation.progress)) {
+    throw new Error('a loss changed the wallet beyond the entry fee');
+  }
+  console.log('paid loss ok: the entry fee is the whole cost');
+
+  const practice = await request('/v1/economy/events', {
+    method: 'POST',
+    token,
+    body: {
+      action: 'match_completed',
+      heroWon: false,
+      finishRank: 6,
+      totalPlayers: 6,
+      eventId: `smoke:quick_game_loss:${stamp}`,
+    },
+  });
+  const afterPractice = await request('/v1/economy/wallet', { token });
+  if (
+    practice.accepted !== true ||
+    practice.delta !== 0 ||
+    totalAup(afterPractice.progress) !== totalAup(afterPaidLoss.progress)
+  ) {
+    throw new Error(`a Quick Game loss changed the wallet: ${JSON.stringify(practice)}`);
+  }
+  console.log('Quick Game ok: a loss is free');
   const rejectedPaidAttempt = await request('/v1/economy/entries/reserve', {
     method: 'POST',
     token,

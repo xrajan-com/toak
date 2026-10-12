@@ -1,35 +1,32 @@
 // Entering a table. A fort or title match is paid for in three steps, so a
-// crash or a closed app never loses AUP:
+// crash before the cards are dealt never loses AUP:
 //   reserve  the catalog entry fee is taken and held
 //   commit   the game has started; the fee is spent
 //   settle   the result arrives (events.js)
 // A reservation that never starts is refunded after an hour; a started game
-// with no result can be written off as abandoned ("recover").
+// with no result is closed as abandoned ("recover").
 const {
   ECONOMY_CATALOG_VERSION,
   campaignEvent,
 } = require('./catalog');
 const {
+  ECONOMY_RULES_VERSION,
   ENTRY_RECOVERY_DELAY_MS,
   MAX_ENTRY_FEE,
-  QUIT_PENALTY_PERMILLE,
 } = require('./constants');
 const {
   addAup,
-  clamp,
   cleanId,
   deductAup,
-  deductPermille,
   findReservation,
   int,
   isActiveReservation,
   putReservation,
   reconcileExpiredReservations,
+  recordMatch,
   touchActivity,
 } = require('./progress');
 const { saveProgress, withWallet } = require('./store');
-
-const MAX_COUNTER = 2000000000;
 
 function _entryPrerequisitesMet(progress, event) {
   if (event.kind === 'fort') {
@@ -169,9 +166,11 @@ function _refund(progress, reservation) {
   };
 }
 
-// A started game that never reported a result: give the fee back, then
-// charge the quit penalty, as if the player had left the table.
-function _recover(progress, reservation) {
+// A started game that never reported a result, closed after a safety
+// window in case it is still being played. It counts as leaving the table:
+// last place, and the fee stays spent. Builds that promise a refund
+// (rules version 1) get the fee back instead.
+function _recover(progress, reservation, rulesVersion) {
   if (reservation.status === 'committed') {
     const ageMs = Date.now() - reservation.updatedAtMs;
     if (ageMs < ENTRY_RECOVERY_DELAY_MS) {
@@ -182,17 +181,41 @@ function _recover(progress, reservation) {
         delta: 0,
       };
     }
-    const refunded = addAup(progress, reservation.group, reservation.amount);
-    const penalty = deductPermille(progress, QUIT_PENALTY_PERMILLE);
-    reservation.status = 'refunded';
+    const seats = campaignEvent(
+      reservation.campaignId,
+      reservation.catalogVersion,
+    )?.maxPlayers || 2;
+    recordMatch(progress, {
+      finishRank: seats,
+      totalPlayers: seats,
+      abandoned: true,
+    });
     reservation.updatedAtMs = Date.now();
-    progress.abandonedGames = clamp(progress.abandonedGames + 1, 0, MAX_COUNTER);
-    progress.matchesPlayed = clamp(progress.matchesPlayed + 1, 0, MAX_COUNTER);
+    if (rulesVersion >= 2) {
+      reservation.status = 'settled';
+      reservation.outcome = 'forfeited';
+      return {
+        accepted: true,
+        duplicate: false,
+        reason: 'abandoned_entry_forfeited',
+        delta: 0,
+      };
+    }
+    const refunded = addAup(progress, reservation.group, reservation.amount);
+    reservation.status = 'refunded';
     return {
       accepted: true,
       duplicate: false,
       reason: 'abandoned_entry_recovered',
-      delta: refunded - penalty,
+      delta: refunded,
+    };
+  }
+  if (reservation.status === 'settled' && reservation.outcome === 'forfeited') {
+    return {
+      accepted: true,
+      duplicate: true,
+      reason: 'abandoned_entry_forfeited',
+      delta: 0,
     };
   }
   if (reservation.status === 'refunded') {
@@ -213,8 +236,17 @@ function _recover(progress, reservation) {
   };
 }
 
-/** transition: 'commit' | 'refund' | 'recover'. */
-async function transitionEntryReservation({ db, uid, body, transition }) {
+/**
+ * transition: 'commit' | 'refund' | 'recover'. rulesVersion is what the
+ * client asked for (constants.requestedRulesVersion).
+ */
+async function transitionEntryReservation({
+  db,
+  uid,
+  body,
+  transition,
+  rulesVersion = ECONOMY_RULES_VERSION,
+}) {
   return withWallet(db, uid, ({ tx, ref, progress, auraChanged }) => {
     const expiredRefund = reconcileExpiredReservations(progress);
     const attemptId = cleanId(body.attemptId);
@@ -237,7 +269,9 @@ async function transitionEntryReservation({ db, uid, body, transition }) {
     };
     if (transition === 'commit') outcome = _commit(reservation);
     if (transition === 'refund') outcome = _refund(progress, reservation);
-    if (transition === 'recover') outcome = _recover(progress, reservation);
+    if (transition === 'recover') {
+      outcome = _recover(progress, reservation, rulesVersion);
+    }
 
     if (outcome.accepted || expiredRefund > 0) {
       saveProgress(tx, ref, progress);
