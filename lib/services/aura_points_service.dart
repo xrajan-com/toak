@@ -239,12 +239,9 @@ class AuraPointsService extends ChangeNotifier {
       'aup.registered_starter_granted';
   static const String _kPendingCampaignWinsKey = 'aup.pending_campaign_wins_v1';
 
-  // Aura is *only* gained by winning; it can decay based on behavior.
-  // These values are intentionally not shown in the UI copy.
-  static const int _kQuitPenaltyPermille = 3; // 0.3%
-  static const int _kLossPenaltyPermille = 1; // 0.1%
-  static const int _kLowFrequencyPenaltyPermille =
-      2; // 0.2% per week (<2 games/7d)
+  // Aura is only gained by winning, and the entry fee is the most a game
+  // can cost (lib/config/economy_rules.dart): nothing else leaves the wallet
+  // for losing, leaving, or a game that was interrupted.
 
   bool _loaded = false;
   bool _isDisposed = false;
@@ -1501,14 +1498,14 @@ class AuraPointsService extends ChangeNotifier {
       }
       if (result.accepted) {
         _removeEntryReservation(attemptId);
-        _entryRecoveryNotice =
-            'An interrupted entry was recovered. Its entry fee was returned '
-            'and the standard abandonment adjustment was applied.';
+        _entryRecoveryNotice = result.reason == 'abandoned_entry_recovered'
+            ? 'Your last table did not finish. Its entry fee was returned.'
+            : _interruptedEntryNotice(reservation);
         await _persist(syncRemote: false);
         notifyListeners();
-        return const EntryPaymentResult(
+        return EntryPaymentResult(
           status: EntryPaymentStatus.recovered,
-          reason: 'abandoned_entry_recovered',
+          reason: result.reason,
         );
       }
       if (result.reason == 'entry_already_settled' ||
@@ -1529,25 +1526,27 @@ class AuraPointsService extends ChangeNotifier {
       );
     }
 
-    _setAupForGroup(
-      reservation.group,
-      aupForGroup(reservation.group) + reservation.amount,
-    );
-    _deductPermilleOfTotalAup(_kQuitPenaltyPermille);
+    // Same rule as the server: an interrupted game counts as leaving the
+    // table. Last place, and the entry fee stays spent.
     _abandonedGames = (_abandonedGames + 1).clamp(0, 1 << 30);
     _matchesPlayed = (_matchesPlayed + 1).clamp(0, 1 << 30);
+    _finishPermilleSum = (_finishPermilleSum + 1000).clamp(0, 1 << 30);
     _removeEntryReservation(attemptId);
-    _entryRecoveryNotice =
-        'An interrupted entry was recovered. Its entry fee was returned '
-        'and the standard abandonment adjustment was applied.';
+    _entryRecoveryNotice = _interruptedEntryNotice(reservation);
     _markLocalMutation();
     await _persist();
     notifyListeners();
     return const EntryPaymentResult(
       status: EntryPaymentStatus.recovered,
-      reason: 'abandoned_entry_recovered',
+      reason: 'abandoned_entry_forfeited',
     );
   }
+
+  static String _interruptedEntryNotice(EntryReservation reservation) =>
+      reservation.amount > 0
+          ? 'Your last table did not finish, so it counts as leaving: '
+              'the entry fee is not returned.'
+          : 'Your last table did not finish, so it was closed.';
 
   Future<void> clearActiveEntry(String attemptId) async {
     _removeEntryReservation(attemptId);
@@ -1847,7 +1846,6 @@ class AuraPointsService extends ChangeNotifier {
     _finishPermilleSum = (_finishPermilleSum +
             _finishPermille(finishRank: rank, totalPlayers: players))
         .clamp(0, 1 << 30);
-    if (rank != 1) _deductPermilleOfTotalAup(_kLossPenaltyPermille);
     _awardedEventIds.add(campaignId);
     _removeEntryReservation(entryAttemptId);
     _markLocalMutation();
@@ -1952,14 +1950,13 @@ class AuraPointsService extends ChangeNotifier {
       );
     }
 
-    final deducted = await recordGameAbandoned(
+    await recordGameAbandoned(
       totalPlayers: players,
       entryAttemptId: entryAttemptId,
     );
-    return CampaignSettlementResult(
+    return const CampaignSettlementResult(
       status: CampaignSettlementStatus.accepted,
       reason: 'accepted',
-      creditedAup: -deducted,
     );
   }
 
@@ -2288,36 +2285,9 @@ class AuraPointsService extends ChangeNotifier {
     return ((r - 1) * 1000 ~/ denom).clamp(0, 1000);
   }
 
-  int _deductAupTotal(int amount) {
-    if (amount <= 0) return 0;
-
-    final int before = totalAup;
-    int remaining = amount;
-
-    while (remaining > 0) {
-      final groups = VenueGroup.values.toList()
-        ..sort((a, b) => aupForGroup(b).compareTo(aupForGroup(a)));
-      final group = groups.first;
-      final balance = aupForGroup(group);
-      if (balance <= 0) break;
-      final take = balance.clamp(0, remaining);
-      _setAupForGroup(group, balance - take);
-      remaining -= take;
-    }
-
-    return (before - totalAup).clamp(0, before);
-  }
-
-  int _deductPermilleOfTotalAup(int permille) {
-    if (permille <= 0) return 0;
-    final int total = totalAup;
-    if (total <= 0) return 0;
-    final int amount = (total * permille) ~/ 1000;
-    if (amount <= 0) return 0;
-    return _deductAupTotal(amount);
-  }
-
-  Future<int> recordMatchCompleted({
+  /// Records a Quick Game result. Quick Game is practice: it counts in the
+  /// player's stats and never changes the wallet.
+  Future<void> recordMatchCompleted({
     required bool heroWon,
     required int finishRank,
     required int totalPlayers,
@@ -2340,7 +2310,7 @@ class AuraPointsService extends ChangeNotifier {
         _removeEntryReservation(settledAttemptId);
         await _persist(syncRemote: false);
       }
-      return server.delta < 0 ? -server.delta : 0;
+      return;
     }
 
     final now = DateTime.now().toUtc();
@@ -2357,18 +2327,18 @@ class AuraPointsService extends ChangeNotifier {
             _finishPermille(finishRank: finishRank, totalPlayers: totalPlayers))
         .clamp(0, 1 << 30);
 
-    final int deducted =
-        heroWon ? 0 : _deductPermilleOfTotalAup(_kLossPenaltyPermille);
     if (settledAttemptId != null) {
       _removeEntryReservation(settledAttemptId);
     }
     _markLocalMutation();
     await _persist();
     notifyListeners();
-    return deducted;
   }
 
-  Future<int> recordGameAbandoned({
+  /// Records leaving a table early: last place in the stats. Leaving never
+  /// takes anything from the wallet; a paid table's entry fee was already
+  /// spent when the cards were dealt.
+  Future<void> recordGameAbandoned({
     required int totalPlayers,
     String? entryAttemptId,
   }) async {
@@ -2387,7 +2357,7 @@ class AuraPointsService extends ChangeNotifier {
         _removeEntryReservation(settledAttemptId);
         await _persist(syncRemote: false);
       }
-      return server.delta < 0 ? -server.delta : 0;
+      return;
     }
 
     final now = DateTime.now().toUtc();
@@ -2405,55 +2375,12 @@ class AuraPointsService extends ChangeNotifier {
                 finishRank: totalPlayers, totalPlayers: totalPlayers))
         .clamp(0, 1 << 30);
 
-    final int deducted = _deductPermilleOfTotalAup(_kQuitPenaltyPermille);
     if (settledAttemptId != null) {
       _removeEntryReservation(settledAttemptId);
     }
     _markLocalMutation();
     await _persist();
     notifyListeners();
-    return deducted;
-  }
-
-  Future<int> applyInactivityDecayIfNeeded() async {
-    if (!_loaded) await init();
-    if (_lastActiveAtMs <= 0) return 0;
-    if (totalAup <= 0) return 0;
-
-    final int nowMs = DateTime.now().toUtc().millisecondsSinceEpoch;
-    final int secondLatestMs =
-        _prevActiveAtMs > 0 ? _prevActiveAtMs : _lastActiveAtMs;
-
-    final int daysSinceSecondLatest =
-        ((nowMs - secondLatestMs) ~/ Duration.millisecondsPerDay)
-            .clamp(0, 99999);
-    final int weeksNow = daysSinceSecondLatest ~/ 7;
-    if (weeksNow <= 0) return 0;
-
-    final int penalizedDays = _lastLowFreqDecayAtMs <= secondLatestMs
-        ? 0
-        : ((_lastLowFreqDecayAtMs - secondLatestMs) ~/
-                Duration.millisecondsPerDay)
-            .clamp(0, 99999);
-    final int weeksPenalized = penalizedDays ~/ 7;
-
-    final int newWeeks = (weeksNow - weeksPenalized).clamp(0, 99999);
-    if (newWeeks <= 0) return 0;
-
-    int deductedTotal = 0;
-    for (int i = 0; i < newWeeks; i++) {
-      final int deducted =
-          _deductPermilleOfTotalAup(_kLowFrequencyPenaltyPermille);
-      if (deducted <= 0) break;
-      deductedTotal += deducted;
-    }
-    if (deductedTotal <= 0) return 0;
-
-    _lastLowFreqDecayAtMs = nowMs;
-    _markLocalMutation();
-    await _persist();
-    notifyListeners();
-    return deductedTotal;
   }
 
   static String _mainEventId({

@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:ten_of_a_kind_poker/config/economy_catalog_version.dart';
+import 'package:ten_of_a_kind_poker/config/economy_rules.dart';
 
 enum ApiFailureKind {
   notConfigured,
@@ -244,6 +245,7 @@ class ApiClient {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
       'X-Economy-Catalog-Version': economyCatalogVersion,
+      'X-Economy-Rules': '$economyRulesVersion',
     };
     if (!authenticated) return headers;
 
