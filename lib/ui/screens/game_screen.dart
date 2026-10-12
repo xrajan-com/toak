@@ -416,7 +416,8 @@ class GameScreen extends StatefulWidget {
         campaignEntryReservation: campaignEntryReservation,
       );
 
-  @visibleForTesting
+  /// How many seats a table has. The entry sheet uses this too, so the
+  /// player is told the table size they will actually sit at.
   static int resolvedTableMaxSeats({
     required VenueEntryMode venueMode,
     required bool campaignMainEvent,
