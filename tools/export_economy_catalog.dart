@@ -9,7 +9,6 @@ import 'package:ten_of_a_kind_poker/config/sub_kingdoms.dart'
 import 'package:ten_of_a_kind_poker/config/venues.dart'
     show VenueGroup, kVenueGroups, venuesForGroup;
 import 'package:ten_of_a_kind_poker/core/aup.dart' as aup;
-import 'package:ten_of_a_kind_poker/game/models.dart' show PayoutTable;
 
 String _slug(String raw) {
   final lower = raw.trim().toLowerCase();
@@ -70,15 +69,6 @@ Map<String, Object> _catalogPayload() {
           kingdomName: canonical,
           subKingdomIndex: index,
         );
-        final prizePool = aup.aupForSubKingdomEvent(
-          group: group,
-          kingdomName: canonical,
-          subKingdomIndex: index,
-        );
-        final payoutTable = PayoutTable.fromPercentages(
-          prizePool,
-          const <double>[0.60, 0.25, 0.15],
-        );
         events[id] = <String, Object?>{
           'id': id,
           'group': group.name,
@@ -91,7 +81,11 @@ Map<String, Object> _catalogPayload() {
             kingdomName: canonical,
             subKingdomIndex: index,
           ),
-          'payouts': payoutTable.byRank,
+          'payouts': aup.payoutsForSubKingdomEvent(
+            group: group,
+            kingdomName: canonical,
+            subKingdomIndex: index,
+          ),
           // Forts are independent entry choices. AUP affordability is the
           // only fort-level gate; clearing every fort still unlocks the Main
           // Event below.
@@ -101,10 +95,6 @@ Map<String, Object> _catalogPayload() {
 
       final mainId = _mainId(group, canonical);
       final mainSpec = campaign.kingdomMainEventSpec(
-        group: group,
-        kingdomName: canonical,
-      );
-      final mainPrize = aup.aupForKingdomMainEvent(
         group: group,
         kingdomName: canonical,
       );
@@ -118,7 +108,10 @@ Map<String, Object> _catalogPayload() {
           group: group,
           kingdomName: canonical,
         ),
-        'payouts': <int>[mainPrize],
+        'payouts': aup.payoutsForKingdomMainEvent(
+          group: group,
+          kingdomName: canonical,
+        ),
         'requiredFortIds': fortIds,
       };
     }

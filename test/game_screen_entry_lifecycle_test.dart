@@ -77,7 +77,7 @@ class _ControlledAuraPointsService extends AuraPointsService {
     recoveryCalls++;
     return const EntryPaymentResult(
       status: EntryPaymentStatus.recovered,
-      reason: 'abandoned_entry_recovered',
+      reason: 'abandoned_entry_forfeited',
     );
   }
 }
@@ -200,7 +200,7 @@ void main() {
     expect(find.textContaining('still being reconciled'), findsOneWidget);
   });
 
-  testWidgets('interrupted committed entry is visible and recoverable',
+  testWidgets('an unfinished table is shown and closes as leaving',
       (WidgetTester tester) async {
     final EntryReservation interrupted =
         reservedEntry.copyWith(state: 'committed');
@@ -216,13 +216,14 @@ void main() {
     ));
     await tester.pump();
 
-    expect(find.textContaining('previous tournament was interrupted'),
+    expect(find.textContaining('Your last table did not finish'),
         findsOneWidget);
-    expect(find.text('RECOVER'), findsOneWidget);
+    expect(find.text('CLOSE'), findsOneWidget);
 
-    await tester.tap(find.text('RECOVER'));
+    await tester.tap(find.text('CLOSE'));
     await tester.pump();
     expect(aura.recoveryCalls, 1);
-    expect(find.textContaining('entry value was returned'), findsOneWidget);
+    // A free table: closing it costs nothing, so nothing is said about fees.
+    expect(find.text('Table closed.'), findsOneWidget);
   });
 }

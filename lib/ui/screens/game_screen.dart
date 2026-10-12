@@ -869,9 +869,20 @@ class _GameScreenState extends State<GameScreen>
     );
   }
 
+  /// What leaving costs, said before the player confirms.
+  String get _exitStakesMessage {
+    final int fee = widget.campaignEntryReservation?.amount ?? 0;
+    if (_isCampaignEvent && _campaignEntryCommitted && !_matchOver && fee > 0) {
+      return 'Leaving counts as finishing last. The entry fee of '
+          'AUP ${aup.formatAup(fee)} is not returned.';
+    }
+    return 'Your current match will be closed.';
+  }
+
   Future<bool> _showExitDialog() async {
     if (_exitDialogOpen) return false;
     _exitDialogOpen = true;
+    final String exitStakes = _exitStakesMessage;
     final result = await _withGameplayPaused<bool?>(() => showDialog<bool>(
           context: context,
           barrierDismissible: false,
@@ -913,9 +924,9 @@ class _GameScreenState extends State<GameScreen>
                     ),
                   ],
                 ),
-                content: const Text(
-                  'Your current match will be closed.',
-                  style: TextStyle(color: Colors.white70),
+                content: Text(
+                  exitStakes,
+                  style: const TextStyle(color: Colors.white70),
                 ),
                 actionsAlignment: MainAxisAlignment.center,
                 actions: [
@@ -1514,17 +1525,6 @@ class _GameScreenState extends State<GameScreen>
         ));
   }
 
-  void _flashLastAction(String name, String label) {
-    if (label.trim().isEmpty) return;
-    _actionFlashTimer?.cancel();
-    _actionFlashName = name.trim();
-    _actionFlashLabel = label.trim();
-    _accessibilityAnnouncement = '${name.trim()} ${label.trim()}';
-    _showActionFlash = true;
-    if (mounted && !_disposing) setState(() {});
-    _actionFlashTimer = Timer(const Duration(milliseconds: 500), () {
-      if (!mounted || _disposing) return;
-      setState(() => _showActionFlash = false);
   /// "BLINDS UP · 300/600 · ANTE 75", over the empty board for a few
   /// seconds as the new level's first hand is dealt.
   void _announceBlindLevel(ge.BlindLevelChanged ev) {
@@ -1547,6 +1547,17 @@ class _GameScreenState extends State<GameScreen>
     });
   }
 
+  void _flashLastAction(String name, String label) {
+    if (label.trim().isEmpty) return;
+    _actionFlashTimer?.cancel();
+    _actionFlashName = name.trim();
+    _actionFlashLabel = label.trim();
+    _accessibilityAnnouncement = '${name.trim()} ${label.trim()}';
+    _showActionFlash = true;
+    if (mounted && !_disposing) setState(() {});
+    _actionFlashTimer = Timer(const Duration(milliseconds: 500), () {
+      if (!mounted || _disposing) return;
+      setState(() => _showActionFlash = false);
     });
   }
 
@@ -2109,6 +2120,7 @@ class _GameScreenState extends State<GameScreen>
     _renoirTimer?.cancel();
     _clearHandRankHighlight(notify: false);
     _clearActionFlash(notify: false);
+    _blindLevelNoticeTimer?.cancel();
     RenoirSignals.canAct.removeListener(_onCanActChanged);
     _disarmHeroTurnClock();
     for (final t in _bustTimers.values) {
@@ -2120,7 +2132,6 @@ class _GameScreenState extends State<GameScreen>
       t.cancel();
     }
     _actionHintTimers.clear();
-    _blindLevelNoticeTimer?.cancel();
     for (final t in _foldedHoleCardTimers.values) {
       t.cancel();
     }
@@ -2309,7 +2320,7 @@ class _GameScreenState extends State<GameScreen>
     if (widget.campaignSubKingdomIndex != null) {
       return game_models.PayoutTable.fromPercentages(
         prizePool,
-        const <double>[0.60, 0.25, 0.15],
+        aup.kFortPayoutShares,
       );
     }
     return null;
@@ -2581,6 +2592,11 @@ class _GameScreenState extends State<GameScreen>
       if (ev is ge.StreetDealt) {
         continue;
       }
+      if (ev is ge.BlindLevelChanged) {
+        _announceBlindLevel(ev);
+        needsSeatRefresh = true;
+        continue;
+      }
       if (ev is ge.HandSettled) {
         _clearSeatActions();
         _lastSettledHand = ev.handNumber;
@@ -2592,11 +2608,6 @@ class _GameScreenState extends State<GameScreen>
         if (!_handOverHandled) {
           _onHandOverAndContinue();
         }
-      if (ev is ge.BlindLevelChanged) {
-        _announceBlindLevel(ev);
-        needsSeatRefresh = true;
-        continue;
-      }
         continue;
       }
     }
@@ -4114,6 +4125,10 @@ class _GameScreenState extends State<GameScreen>
           onToggleShow: () {},
           startingStack: _startingStackChips,
           venueTimeZoneId: venueTimeZoneId,
+          smallBlind: _engine?.smallBlind ?? 0,
+          bigBlind: _engine?.bigBlind ?? 0,
+          ante: _engine?.ante ?? 0,
+          blindLevelNotice: _blindLevelNotice,
           engineEvents: _dealEventCtrl.stream,
           engine: _engine,
           onRenoirShuffle: _handleRenoirShuffle,
@@ -4125,10 +4140,6 @@ class _GameScreenState extends State<GameScreen>
 
   /* ============================ Misc UI helpers =========================== */
 
-          smallBlind: _engine?.smallBlind ?? 0,
-          bigBlind: _engine?.bigBlind ?? 0,
-          ante: _engine?.ante ?? 0,
-          blindLevelNotice: _blindLevelNotice,
   Color _venueColor(dynamic v, String key, Color fallback) {
     if (v == null) return fallback;
 

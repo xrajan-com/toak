@@ -73,7 +73,7 @@ void main() {
             widget is Text &&
             widget.data != null &&
             widget.data!.contains('Entry FREE') &&
-            widget.data!.contains('Prize AUP')),
+            widget.data!.contains('Win AUP')),
       ),
       findsOneWidget,
     );
@@ -101,14 +101,14 @@ void main() {
       matching: find.byWidgetPredicate((widget) {
         if (widget is! Text || widget.data == null) return false;
         return widget.data!.contains('Entry AUP') &&
-            widget.data!.contains('Prize AUP');
+            widget.data!.contains('Win AUP');
       }),
     );
     expect(paidFortDetails, findsOneWidget);
     final Text detailsText = tester.widget<Text>(paidFortDetails);
     final String details = detailsText.data!;
     expect(details, contains('Entry AUP'));
-    expect(details, contains('Prize AUP'));
+    expect(details, contains('Win AUP'));
     expect(
       find.descendant(
         of: paidFort,
@@ -133,7 +133,7 @@ void main() {
               widget is Text &&
               widget.data != null &&
               widget.data!.contains('Entry AUP') &&
-              widget.data!.contains('Prize AUP')),
+              widget.data!.contains('Win AUP')),
         ),
         findsOneWidget);
     expect(
@@ -181,6 +181,11 @@ void main() {
     final fort = find.byKey(ValueKey<String>('fort-$freeIndex'));
     await tester.ensureVisible(fort);
     await tester.tap(fort);
+    await tester.pumpAndSettle();
+    // What is at stake comes first; nothing is reserved until ENTER.
+    expect(find.text('Free entry: nothing to lose.'), findsOneWidget);
+    expect(wallet.reserveCalls, 0);
+    await tester.tap(find.text('ENTER · FREE'));
     await tester.pump();
     expect(wallet.reserveCalls, 1);
 

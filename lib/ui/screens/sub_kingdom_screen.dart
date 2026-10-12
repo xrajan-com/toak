@@ -17,6 +17,7 @@ import 'package:ten_of_a_kind_poker/services/x_music_service.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen.dart';
 import 'package:ten_of_a_kind_poker/ui/theme/colors.dart';
 import 'package:ten_of_a_kind_poker/ui/utils/deck_cache.dart';
+import 'package:ten_of_a_kind_poker/ui/widgets/entry_stakes_sheet.dart';
 import 'package:ten_of_a_kind_poker/ui/widgets/stadium_banner.dart';
 
 class SubKingdomScreen extends StatefulWidget {
@@ -145,15 +146,20 @@ class _SubKingdomScreenState extends State<SubKingdomScreen> {
     );
     if (!context.mounted) return;
     final String message = switch (result.status) {
-      EntryPaymentStatus.recovered =>
-        'Interrupted entry recovered. The entry value was returned and the normal quit penalty applied.',
+      EntryPaymentStatus.recovered
+          when result.reason == 'abandoned_entry_recovered' =>
+        'Table closed. Its entry fee was returned.',
+      EntryPaymentStatus.recovered when reservation.amount > 0 =>
+        'Table closed. It counts as leaving, so the entry fee is not returned.',
+      EntryPaymentStatus.recovered => 'Table closed.',
       EntryPaymentStatus.pending =>
-        'Recovery is queued. The safety window has not elapsed yet; try again shortly.',
+        'An unfinished table can be closed 10 minutes after it stopped. '
+            'Try again shortly.',
       EntryPaymentStatus.serviceUnavailable =>
-        'Recovery service is unavailable. Your committed entry remains protected.',
+        'The server could not be reached. Try again shortly.',
       _ when result.reason == 'entry_already_settled' =>
-        'That tournament was already settled.',
-      _ => 'The interrupted entry could not be recovered yet.',
+        'That table already has a result.',
+      _ => 'The unfinished table could not be closed yet.',
     };
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -449,7 +455,7 @@ class _SubKingdomScreenState extends State<SubKingdomScreen> {
             SliverToBoxAdapter(
               child: Semantics(
                 liveRegion: true,
-                label: 'Interrupted tournament entry needs recovery',
+                label: 'Unfinished table needs closing',
                 child: Container(
                   margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   padding: const EdgeInsets.all(14),
@@ -467,11 +473,14 @@ class _SubKingdomScreenState extends State<SubKingdomScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'A previous tournament was interrupted. '
-                          '${interruptedEntry.campaignId} '
-                          '(${interruptedEntry.state.toUpperCase()}). '
-                          'Recover ${aup.formatAup(interruptedEntry.amount)} '
-                          'before entering another event.',
+                          interruptedEntry.amount > 0
+                              ? 'Your last table did not finish. Close it to '
+                                  'enter another event. It counts as leaving, '
+                                  'so the entry fee of AUP '
+                                  '${aup.formatAup(interruptedEntry.amount)} '
+                                  'is not returned.'
+                              : 'Your last table did not finish. Close it to '
+                                  'enter another event.',
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w700,
@@ -493,7 +502,7 @@ class _SubKingdomScreenState extends State<SubKingdomScreen> {
                             _entryActionInProgress = false;
                           }
                         },
-                        child: const Text('RECOVER'),
+                        child: const Text('CLOSE'),
                       ),
                     ],
                   ),
@@ -516,7 +525,7 @@ class _SubKingdomScreenState extends State<SubKingdomScreen> {
                         content: Text(
                           hasPendingSettlement
                               ? 'Wait for the queued tournament result first.'
-                              : 'Recover the interrupted tournament first.',
+                              : 'Close your unfinished table first.',
                         ),
                       ),
                     );
@@ -552,6 +561,32 @@ class _SubKingdomScreenState extends State<SubKingdomScreen> {
                       );
                       return;
                     }
+                    final mainSpec = ce.kingdomMainEventSpec(
+                      group: group,
+                      kingdomName: kingdom.name,
+                    );
+                    final bool enter = await showEntryStakesSheet(
+                      context,
+                      stakes: EntryStakes(
+                        tableName: '${kingdom.name} — Main Event',
+                        isMainEvent: true,
+                        seats: GameScreen.resolvedTableMaxSeats(
+                          venueMode: VenueEntryMode.career,
+                          campaignMainEvent: true,
+                          isFreeSubKingdom: false,
+                          campaignMaxPlayers: mainSpec.maxPlayers,
+                        ),
+                        startingChips: mainSpec.startingStack,
+                        entryFee: mainEntryFee,
+                        payouts: aup.payoutsForKingdomMainEvent(
+                          group: group,
+                          kingdomName: kingdom.name,
+                        ),
+                        circuitLabel: walletReady ? _circuitLabel : null,
+                        walletAup: walletReady ? walletAup : null,
+                      ),
+                    );
+                    if (!enter || !context.mounted) return;
 
                     final entry = await auraService.reserveCampaignEntry(
                       group: group,
@@ -649,14 +684,17 @@ class _SubKingdomScreenState extends State<SubKingdomScreen> {
                             kingdomName: kingdom.name,
                             subKingdomIndex: idx,
                           );
-                          final prizeAup = aup.aupForSubKingdomEvent(
-                            group: group,
-                            kingdomName: kingdom.name,
-                            subKingdomIndex: idx,
-                          );
-                          final prizeLabel = aup.formatAup(prizeAup);
+                          // The first prize, not the pool: what a win pays.
+                          final firstPrize = aup
+                              .payoutsForSubKingdomEvent(
+                                group: group,
+                                kingdomName: kingdom.name,
+                                subKingdomIndex: idx,
+                              )
+                              .first;
+                          final prizeLabel = aup.formatAup(firstPrize);
                           final base = '${spec.tableSizeLabel()} • '
-                              'Prize AUP $prizeLabel';
+                              'Win AUP $prizeLabel';
                           if (entryFee <= 0 || idx == freeSubKingdomIndex) {
                             return '$base • Entry FREE';
                           }
@@ -685,7 +723,7 @@ class _SubKingdomScreenState extends State<SubKingdomScreen> {
                                 content: Text(
                                   hasPendingSettlement
                                       ? 'Wait for the queued tournament result first.'
-                                      : 'Recover the interrupted tournament first.',
+                                      : 'Close your unfinished table first.',
                                 ),
                               ),
                             );
@@ -712,6 +750,36 @@ class _SubKingdomScreenState extends State<SubKingdomScreen> {
                               );
                               return;
                             }
+                            final fortSpec = ce.subKingdomEventSpec(
+                              group: group,
+                              kingdomName: kingdom.name,
+                              subKingdomIndex: idx,
+                            );
+                            final bool enter = await showEntryStakesSheet(
+                              context,
+                              stakes: EntryStakes(
+                                tableName: '${kingdom.name} — $name',
+                                isMainEvent: false,
+                                // Seated exactly as the game screen seats it.
+                                seats: GameScreen.resolvedTableMaxSeats(
+                                  venueMode: VenueEntryMode.career,
+                                  campaignMainEvent: false,
+                                  isFreeSubKingdom: idx == freeSubKingdomIndex,
+                                  campaignMaxPlayers: fortSpec.maxPlayers,
+                                ),
+                                startingChips: fortSpec.startingStack,
+                                entryFee: entryFee,
+                                payouts: aup.payoutsForSubKingdomEvent(
+                                  group: group,
+                                  kingdomName: kingdom.name,
+                                  subKingdomIndex: idx,
+                                ),
+                                circuitLabel:
+                                    walletReady ? _circuitLabel : null,
+                                walletAup: walletReady ? walletAup : null,
+                              ),
+                            );
+                            if (!enter || !context.mounted) return;
 
                             final entry =
                                 await auraService.reserveCampaignEntry(

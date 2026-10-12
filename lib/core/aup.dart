@@ -6,6 +6,7 @@ import 'package:ten_of_a_kind_poker/config/sub_kingdoms.dart'
     show subKingdomCountFor, subKingdomNamesFor;
 import 'package:ten_of_a_kind_poker/config/venues.dart'
     show VenueGroup, venuesForGroup;
+import 'package:ten_of_a_kind_poker/game/models.dart' show PayoutTable;
 
 const int kAupPerAura = 10000000;
 const int kAuraMilliPerAura = 1000;
@@ -201,6 +202,36 @@ int aupForSubKingdomEvent({
       _subKingdomAupPrizesFor(group: group, canonicalKingdomName: canonical);
   if (prizes.isEmpty) return 0;
   return prizes[idx.clamp(1, prizes.length) - 1];
+}
+
+/// How a fort's prize pool is paid: 1st, 2nd and 3rd.
+const List<double> kFortPayoutShares = <double>[0.60, 0.25, 0.15];
+
+/// AUP paid for each finishing place at a fort, 1st first. The backend
+/// catalog is exported from this, so it is exactly what the server pays.
+List<int> payoutsForSubKingdomEvent({
+  required VenueGroup group,
+  required String kingdomName,
+  required int subKingdomIndex,
+}) {
+  final int pool = aupForSubKingdomEvent(
+    group: group,
+    kingdomName: kingdomName,
+    subKingdomIndex: subKingdomIndex,
+  );
+  return List<int>.unmodifiable(
+    PayoutTable.fromPercentages(pool, kFortPayoutShares).byRank,
+  );
+}
+
+/// A title match is winner takes all.
+List<int> payoutsForKingdomMainEvent({
+  required VenueGroup group,
+  required String kingdomName,
+}) {
+  return List<int>.unmodifiable(<int>[
+    aupForKingdomMainEvent(group: group, kingdomName: kingdomName),
+  ]);
 }
 
 int _entryFeeFromPrize({
