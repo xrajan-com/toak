@@ -144,14 +144,20 @@ From build 88 the app sends a Firebase App Check token with every backend call
 (`backend/src/security/app_check.js`). It starts in **monitor** mode: requests
 without a valid token still work and are logged as `app_check` events.
 
-One-time setup in the Firebase console → App Check:
+One-time setup (done for Android on 2026-10-15):
 
-1. **Android:** register the app with **Play Integrity**. Paste the SHA-256 of
-   the *app signing key* from Play Console → Test and release → App
-   integrity (not the upload key). In Play Console, link Play Integrity to
-   the `ten-of-a-kind-poker` Google Cloud project on the same page.
-2. **iOS (when it ships):** register with **DeviceCheck** using a DeviceCheck
-   key (.p8) from the Apple Developer account.
+1. **Android:** Play Console → Protected with Play → Play Integrity API →
+   link the **Ten of a Kind** Cloud project (96098527170). Then Firebase
+   console → Security → App Check → Apps → `com.tenofakind.poker` →
+   **Play Integrity**, with the SHA-256 of the *app signing key* (Play
+   Console → Protected with Play → Play Store protection → Manage Play app
+   signing), not the upload key.
+2. **Web:** Google Cloud console (project Ten of a Kind) → Security →
+   reCAPTCHA → create a **website** key, domains `tenofakind.com`,
+   `www.tenofakind.com`, `ten-of-a-kind-poker.web.app` and
+   `ten-of-a-kind-poker.firebaseapp.com`, no checkbox challenge. Put the key
+   in `lib/config/app_check_config.dart`, then Firebase console → App Check →
+   Apps → the web app → **reCAPTCHA Enterprise**, with the same key.
 3. Leave enforcement for Firestore and Auth **off** in the console. Only the
    backend checks tokens for now.
 

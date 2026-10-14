@@ -1,5 +1,5 @@
 // Firebase App Check: proof that a request comes from a real copy of the app
-// (Play Integrity on Android, DeviceCheck on iOS), not from a script.
+// (Play Integrity on Android, reCAPTCHA Enterprise on the web), not from a script.
 //
 // The app sends its App Check token in the X-Firebase-AppCheck header. Checking
 // it is a local signature check against Google's cached public keys, so it

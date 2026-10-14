@@ -3,16 +3,17 @@ import 'dart:async';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
+import 'package:ten_of_a_kind_poker/config/app_check_config.dart';
 
 /// Firebase App Check: proves to the backend that a request comes from a real
-/// copy of X Poker (Play Integrity on Android, DeviceCheck on iOS), so the API
-/// cannot simply be scripted with a player's login.
+/// copy of X Poker (Play Integrity on Android, reCAPTCHA Enterprise on the
+/// web), so the API cannot simply be scripted with a player's login.
 ///
-/// Like [CrashReporting], it runs only in release builds on a phone. Debug
-/// builds and tests never call the production backend, and the web app has no
-/// reCAPTCHA key yet, so neither sends a token. The backend decides what a
-/// missing token means (backend/src/security/app_check.js): while older
-/// builds are still installed it only logs it.
+/// It runs only in release builds. Debug builds and tests never call the
+/// production backend, so they send no token. The web app needs
+/// [recaptchaEnterpriseSiteKey] set; until then it sends none. The backend
+/// decides what a missing token means (backend/src/security/app_check.js):
+/// while older builds are still installed it only logs it.
 class AppCheckService {
   AppCheckService._();
 
@@ -23,12 +24,13 @@ class AppCheckService {
   /// True once tokens are being issued.
   static bool get active => _active;
 
-  /// Whether this build may use App Check at all.
-  static bool get supported =>
-      kReleaseMode &&
-      !kIsWeb &&
-      (defaultTargetPlatform == TargetPlatform.android ||
-          defaultTargetPlatform == TargetPlatform.iOS);
+  /// Whether this build may use App Check at all. X Poker ships on Android
+  /// and the web; other platforms send no token.
+  static bool get supported {
+    if (!kReleaseMode) return false;
+    if (kIsWeb) return recaptchaEnterpriseSiteKey.isNotEmpty;
+    return defaultTargetPlatform == TargetPlatform.android;
+  }
 
   /// Call once Firebase has initialized. Does nothing if it did not.
   static Future<void> start() async {
@@ -36,7 +38,9 @@ class AppCheckService {
     try {
       await FirebaseAppCheck.instance.activate(
         androidProvider: AndroidProvider.playIntegrity,
-        appleProvider: AppleProvider.deviceCheck,
+        webProvider: kIsWeb
+            ? ReCaptchaEnterpriseProvider(recaptchaEnterpriseSiteKey)
+            : null,
       );
       await FirebaseAppCheck.instance.setTokenAutoRefreshEnabled(true);
       _active = true;
