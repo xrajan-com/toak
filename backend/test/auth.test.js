@@ -129,7 +129,7 @@ test('account deletion requires a fresh Firebase authentication time', () => {
   assert.equal(_isRecentAuth({ auth_time: nowSeconds + 1 }, nowMs), false);
 });
 
-test('Firebase token verification checks server-side revocation state', async () => {
+test('gameplay token verification skips the revocation round trip', async () => {
   const calls = [];
   const decoded = await _verifyFirebaseIdToken(
     {
@@ -142,6 +142,22 @@ test('Firebase token verification checks server-side revocation state', async ()
   );
 
   assert.deepEqual(decoded, { uid: 'registered-user' });
+  assert.deepEqual(calls, [['signed-token', false]]);
+});
+
+test('account deletion still checks server-side revocation state', async () => {
+  const calls = [];
+  await _verifyFirebaseIdToken(
+    {
+      verifyIdToken: async (...args) => {
+        calls.push(args);
+        return { uid: 'registered-user' };
+      },
+    },
+    'signed-token',
+    { checkRevoked: true },
+  );
+
   assert.deepEqual(calls, [['signed-token', true]]);
 });
 
@@ -210,7 +226,9 @@ test('every shared economy route requires registration while guest deletion rema
     (layer) => layer.route?.path === '/account',
   );
   const middlewareNames = deleteRoute.route.stack.map((entry) => entry.name);
-  assert.ok(middlewareNames.includes('requireFirebaseAuth'));
+  // Deleting an account is the one place a revoked login must be caught at
+  // once, so it pays for the revocation check that gameplay routes skip.
+  assert.ok(middlewareNames.includes('requireFreshFirebaseAuth'));
   assert.equal(middlewareNames.includes('requireRegisteredFirebaseAuth'), false);
 });
 

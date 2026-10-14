@@ -42,39 +42,63 @@ function _bearerToken(req) {
   return match ? match[1].trim() : '';
 }
 
-async function _verifyFirebaseIdToken(authClient, token) {
-  return authClient.verifyIdToken(token, true);
+// Checking revocation costs a round trip to Firebase Auth on every request,
+// so only account deletion does it (requireFreshFirebaseAuth). Everywhere
+// else the signature and expiry are enough: an ID token lives at most an hour,
+// a disabled or deleted account cannot get a new one, and every wallet and
+// leaderboard write also refuses deleted accounts inside its own transaction
+// (assertAccountActiveInTransaction).
+async function _verifyFirebaseIdToken(authClient, token, { checkRevoked = false } = {}) {
+  return authClient.verifyIdToken(token, checkRevoked);
 }
 
-async function requireFirebaseAuth(req, res, next) {
-  try {
-    const token = _bearerToken(req);
-    if (!token) {
-      return res.status(401).json({ error: 'Missing Firebase ID token' });
+// Route tests find guards by function name.
+function _named(name, fn) {
+  return Object.defineProperty(fn, 'name', { value: name });
+}
+
+function _firebaseAuthGuard({ checkRevoked }) {
+  return async function firebaseAuthGuard(req, res, next) {
+    try {
+      const token = _bearerToken(req);
+      if (!token) {
+        return res.status(401).json({ error: 'Missing Firebase ID token' });
+      }
+
+      const decoded = await _verifyFirebaseIdToken(
+        getAuth(firebaseAdminApp()),
+        token,
+        { checkRevoked },
+      );
+      req.auth = decoded;
+      return next();
+    } catch (error) {
+      // Keep authentication failures opaque to callers, but retain enough
+      // server-side detail to distinguish malformed tokens from IAM or Firebase
+      // configuration failures. Never log the bearer token or decoded claims.
+      console.warn(JSON.stringify({
+        severity: 'WARNING',
+        event: 'firebase_auth_rejected',
+        errorName: error?.name || 'Error',
+        errorCode: error?.code || 'unknown',
+        errorMessage: error?.message || 'Firebase token verification failed',
+      }));
+      return res.status(401).json({ error: 'Invalid Firebase ID token' });
     }
-
-    // Checking revocation is intentional here. A signature-valid token must not
-    // remain usable after the account is disabled, revoked, or deleted.
-    const decoded = await _verifyFirebaseIdToken(
-      getAuth(firebaseAdminApp()),
-      token,
-    );
-    req.auth = decoded;
-    return next();
-  } catch (error) {
-    // Keep authentication failures opaque to callers, but retain enough
-    // server-side detail to distinguish malformed tokens from IAM or Firebase
-    // configuration failures. Never log the bearer token or decoded claims.
-    console.warn(JSON.stringify({
-      severity: 'WARNING',
-      event: 'firebase_auth_rejected',
-      errorName: error?.name || 'Error',
-      errorCode: error?.code || 'unknown',
-      errorMessage: error?.message || 'Firebase token verification failed',
-    }));
-    return res.status(401).json({ error: 'Invalid Firebase ID token' });
-  }
+  };
 }
+
+/** Signature and expiry only: no network call. Used by every gameplay route. */
+const requireFirebaseAuth = _named(
+  'requireFirebaseAuth',
+  _firebaseAuthGuard({ checkRevoked: false }),
+);
+
+/** Also asks Firebase whether the login was revoked. Account deletion only. */
+const requireFreshFirebaseAuth = _named(
+  'requireFreshFirebaseAuth',
+  _firebaseAuthGuard({ checkRevoked: true }),
+);
 
 function _isRegisteredFirebaseAuth(auth) {
   const provider = auth?.firebase?.sign_in_provider;
@@ -123,5 +147,6 @@ module.exports = {
   firebaseAdminApp,
   isAccountDeletedError,
   requireFirebaseAuth,
+  requireFreshFirebaseAuth,
   requireRegisteredFirebaseAuth,
 };

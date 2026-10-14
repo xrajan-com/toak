@@ -7,6 +7,7 @@ const {
   accountDeletionRef,
   firebaseAdminApp,
   requireFirebaseAuth,
+  requireFreshFirebaseAuth,
 } = require('../security/firebase_auth');
 const { playerRateLimit } = require('../security/rate_limit');
 const { leaderboardDocumentId } = require('../leaderboard_identity');
@@ -130,7 +131,7 @@ function authRouter() {
 
   router.delete(
     '/account',
-    requireFirebaseAuth,
+    requireFreshFirebaseAuth,
     accountDeleteLimiter,
     _asyncHandler(async (req, res) => {
       res.set('Cache-Control', 'no-store');
