@@ -16,6 +16,7 @@ import 'package:ten_of_a_kind_poker/firebase_options.dart';
 import 'package:ten_of_a_kind_poker/game/bot/policy_model.dart'
     show BotLearnedPolicyRegistry, BotLearnedPolicyWeights;
 import 'package:ten_of_a_kind_poker/services/ads_service.dart';
+import 'package:ten_of_a_kind_poker/services/app_check.dart';
 import 'package:ten_of_a_kind_poker/services/crash_reporting.dart';
 import 'package:ten_of_a_kind_poker/services/poker_bot_learning_service.dart';
 
@@ -103,6 +104,7 @@ Future<void> bootstrapApp() async {
       // entire offline-capable game with a fatal startup screen.
       await _initializeOptionalFirebase();
       await CrashReporting.start();
+      await AppCheckService.start();
       _initializeAds();
       await _loadBotPolicyWeights();
       runApp(const TenOfAKindApp());

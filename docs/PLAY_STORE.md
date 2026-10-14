@@ -136,3 +136,31 @@ For `version 1.2.4 build 45`:
 - `Made guest tables and free-entry tables 6-player for smoother onboarding`
 - `Improved bot all-in decisions to reduce unrealistic multiway pile-ups`
 - `Improved winner celebration visuals and general UI polish`
+
+## 6) App Check (proof that API calls come from the real app)
+
+From 1.2.12 the app sends a Firebase App Check token with every backend call
+(`lib/services/app_check.dart`), and the backend checks it
+(`backend/src/security/app_check.js`). It starts in **monitor** mode: requests
+without a valid token still work and are logged as `app_check` events.
+
+One-time setup in the Firebase console → App Check:
+
+1. **Android:** register the app with **Play Integrity**. Paste the SHA-256 of
+   the *app signing key* from Play Console → Test and release → App
+   integrity (not the upload key). In Play Console, link Play Integrity to
+   the `ten-of-a-kind-poker` Google Cloud project on the same page.
+2. **iOS (when it ships):** register with **DeviceCheck** using a DeviceCheck
+   key (.p8) from the Apple Developer account.
+3. Leave enforcement for Firestore and Auth **off** in the console. Only the
+   backend checks tokens for now.
+
+Turning on enforcement, once Cloud Logging shows almost no `app_check` events
+with `outcome: missing` (so almost nobody is still on a build before 1.2.12):
+
+```bash
+APP_CHECK_MODE=enforce bash tools/deploy_backend.sh
+```
+
+Old builds will then get "Update the app to keep playing online" from the API.
+To undo it, deploy again without `APP_CHECK_MODE` (back to monitor).

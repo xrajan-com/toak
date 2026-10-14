@@ -20,6 +20,7 @@ const {
   SUPPORTED_ECONOMY_CATALOG_VERSIONS,
   campaignEventCount,
 } = require('./economy/catalog');
+const { appCheckGate } = require('./security/app_check');
 const { playerRateLimit } = require('./security/rate_limit');
 
 const DEFAULT_PRODUCTION_CORS_ORIGINS = [
@@ -128,6 +129,10 @@ function createApp() {
   app.use('/v1/app-release', appReleaseRouter());
 
   app.use(playerRateLimit({ windowMs: 60 * 1000, max: 240 }));
+  // Everything below needs a real copy of the app (see security/app_check.js).
+  // Health and the update check stay open: an old build must always be able
+  // to learn that it needs updating.
+  app.use(appCheckGate());
 
   app.use('/v1/auth', authRouter());
   app.use('/v1/economy', economyRouter({
