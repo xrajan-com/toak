@@ -22,17 +22,16 @@ import 'package:ten_of_a_kind_poker/services/auth_service.dart';
 import 'package:ten_of_a_kind_poker/services/aura_points_service.dart';
 import 'package:ten_of_a_kind_poker/services/campaign_progress_service.dart';
 import 'package:ten_of_a_kind_poker/services/economy_api_service.dart';
-import 'package:ten_of_a_kind_poker/services/leaderboard_firestore_service.dart';
 import 'package:ten_of_a_kind_poker/services/profile_service.dart';
 import 'package:ten_of_a_kind_poker/services/x_music_service.dart';
 import 'package:ten_of_a_kind_poker/core/aup.dart' as aup;
 import 'package:ten_of_a_kind_poker/ui/screens/profile_screen.dart';
 import 'package:ten_of_a_kind_poker/ui/widgets/app_settings_sheet.dart';
 import 'package:ten_of_a_kind_poker/ui/widgets/stadium_banner.dart';
+import 'package:ten_of_a_kind_poker/ui/widgets/trailblazers_panel.dart';
 
 const _red = AppColors.red;
 const _blue = AppColors.blue;
-const _navyBlue = Color(0xFF001F3F);
 
 /* ----------------------- HEADER ----------------------- */
 
@@ -92,20 +91,17 @@ class _HeaderIconFace extends StatelessWidget {
   }
 }
 
-enum _HeaderMenuAction { dashboard, settings }
-
 class _HeaderActions extends StatelessWidget {
   final VoidCallback? onProfile;
-  final VoidCallback? onDashboard;
+  final VoidCallback? onTrailblazers;
   final VoidCallback? onSettings;
   const _HeaderActions({
     this.onProfile,
-    this.onDashboard,
+    this.onTrailblazers,
     this.onSettings,
   });
   @override
   Widget build(BuildContext context) {
-    final compact = MediaQuery.sizeOf(context).width < 600;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -114,49 +110,16 @@ class _HeaderActions extends StatelessWidget {
           tooltip: 'My Profile',
           onTap: onProfile ?? () {},
         ),
-        if (compact)
-          PopupMenuButton<_HeaderMenuAction>(
-            tooltip: 'More options',
-            onSelected: (action) {
-              switch (action) {
-                case _HeaderMenuAction.dashboard:
-                  onDashboard?.call();
-                case _HeaderMenuAction.settings:
-                  onSettings?.call();
-              }
-            },
-            itemBuilder: (_) => const [
-              PopupMenuItem(
-                value: _HeaderMenuAction.dashboard,
-                child: ListTile(
-                  leading: Icon(Icons.dashboard_customize_outlined),
-                  title: Text('Dashboard'),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-              PopupMenuItem(
-                value: _HeaderMenuAction.settings,
-                child: ListTile(
-                  leading: Icon(Icons.settings_outlined),
-                  title: Text('Settings'),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-            ],
-            child: const _HeaderIconFace(icon: Icons.more_horiz),
-          )
-        else ...[
-          _HeaderIcon(
-            icon: Icons.dashboard_customize_outlined,
-            tooltip: 'Dashboard',
-            onTap: onDashboard ?? () {},
-          ),
-          _HeaderIcon(
-            icon: Icons.settings_outlined,
-            tooltip: 'Settings',
-            onTap: onSettings ?? () {},
-          ),
-        ],
+        _HeaderIcon(
+          icon: Icons.flag_outlined,
+          tooltip: 'Trailblazers',
+          onTap: onTrailblazers ?? () {},
+        ),
+        _HeaderIcon(
+          icon: Icons.settings_outlined,
+          tooltip: 'Settings',
+          onTap: onSettings ?? () {},
+        ),
       ],
     );
   }
@@ -318,12 +281,6 @@ class _VenueScreenState extends State<VenueScreen>
   // One client for the dashboard's rank lookups, made on first use.
   late final EconomyApiService _economyApi = EconomyApiService();
   static const _bannerAsset = 'assets/images/x_poker_logo.png';
-  static const _leaderboardVisibleDuration = Duration(seconds: 4);
-  int? _activeLeaderboardIndex;
-  Timer? _leaderboardDismissTimer;
-  List<LeaderboardEntry> _leaderboardEntries = const <LeaderboardEntry>[];
-  bool _leaderboardLoading = true;
-  String? _leaderboardError;
 
   @override
   void initState() {
@@ -333,7 +290,6 @@ class _VenueScreenState extends State<VenueScreen>
     _syncMusicForSelectedCircuit();
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      unawaited(_loadCircuitLeaderboardEntries());
       await DeckCache.ensureDeckReadySafely();
       if (!mounted) return;
       final ctx = context;
@@ -350,7 +306,6 @@ class _VenueScreenState extends State<VenueScreen>
 
   @override
   void dispose() {
-    _leaderboardDismissTimer?.cancel();
     _tab.removeListener(_syncMusicForSelectedCircuit);
     _tab.dispose();
     super.dispose();
@@ -362,56 +317,6 @@ class _VenueScreenState extends State<VenueScreen>
       return;
     }
     XMusicService.instance.playCareerCircuit(kVenueGroups[_tab.index]);
-  }
-
-  void _showCircuitLeaderboard(int index) {
-    _leaderboardDismissTimer?.cancel();
-    if (_activeLeaderboardIndex != index) {
-      setState(() => _activeLeaderboardIndex = index);
-    }
-    _leaderboardDismissTimer = Timer(_leaderboardVisibleDuration, () {
-      if (mounted) _hideCircuitLeaderboard();
-    });
-  }
-
-  void _hideCircuitLeaderboard() {
-    _leaderboardDismissTimer?.cancel();
-    _leaderboardDismissTimer = null;
-    if (_activeLeaderboardIndex == null) return;
-    setState(() => _activeLeaderboardIndex = null);
-  }
-
-  Future<void> _loadCircuitLeaderboardEntries() async {
-    if (mounted) {
-      setState(() {
-        _leaderboardLoading = true;
-        _leaderboardError = null;
-      });
-    }
-    try {
-      final aura = context.read<AuraPointsService>();
-      await aura.init();
-      await leaderboardFirestoreService.syncCurrentUserIfTop10(wallet: aura);
-      final entries = await leaderboardFirestoreService.fetchTop10ByAura();
-      if (!mounted) return;
-      setState(() {
-        _leaderboardEntries = entries;
-        _leaderboardLoading = false;
-      });
-    } on ProviderNotFoundException {
-      if (!mounted) return;
-      setState(() {
-        _leaderboardLoading = false;
-        _leaderboardError = 'Leaderboard service is unavailable.';
-      });
-    } catch (error) {
-      debugPrint('Venue leaderboard fetch failed: $error');
-      if (!mounted) return;
-      setState(() {
-        _leaderboardLoading = false;
-        _leaderboardError = 'Could not load the leaderboard.';
-      });
-    }
   }
 
   Future<void> _pushQuickGame(VenueTheme venue, VenueGroup group) async {
@@ -549,6 +454,19 @@ class _VenueScreenState extends State<VenueScreen>
                       ),
                       const Spacer(),
                       IconButton(
+                        tooltip: 'Dashboard',
+                        splashRadius: 18,
+                        icon: const Icon(
+                          Icons.dashboard_customize_outlined,
+                          color: Colors.white,
+                        ),
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          _showProgressDialog();
+                        },
+                      ),
+                      IconButton(
+                        tooltip: 'Close',
                         splashRadius: 18,
                         icon: const Icon(Icons.close, color: Colors.white70),
                         onPressed: () => Navigator.pop(ctx),
@@ -846,14 +764,12 @@ class _VenueScreenState extends State<VenueScreen>
                     logoAsset: _bannerAsset,
                     title: widget.mode.venueHeading,
                     compact: compact,
-                    tabs: _TitleAndTabs(
-                      controller: _tab,
-                      onLeaderboardShown: _showCircuitLeaderboard,
-                      onLeaderboardHidden: _hideCircuitLeaderboard,
-                    ),
+                    tabs: _TitleAndTabs(controller: _tab),
                     actions: _HeaderActions(
                       onProfile: _showMyProfileDialog,
-                      onDashboard: _showProgressDialog,
+                      onTrailblazers: () {
+                        unawaited(showTrailblazers(context));
+                      },
                       onSettings: () {
                         unawaited(showAppSettingsSheet(context));
                       },
@@ -866,36 +782,15 @@ class _VenueScreenState extends State<VenueScreen>
                   ),
                   SizedBox(height: compact ? 6 : 10),
                   Expanded(
-                    child: Stack(
+                    child: TabBarView(
+                      controller: _tab,
                       children: [
-                        TabBarView(
-                          controller: _tab,
-                          children: [
-                            for (final group in kVenueGroups)
-                              _VenueGrid(
-                                group: group,
-                                venues: venuesForGroup(group),
-                                mode: widget.mode,
-                                onOpen: _openVenue,
-                              ),
-                          ],
-                        ),
-                        if (_activeLeaderboardIndex case final index?)
-                          Positioned.fill(
-                            child: Center(
-                              child: TapRegion(
-                                onTapOutside: (_) => _hideCircuitLeaderboard(),
-                                child: _CircuitLeaderboardPopover(
-                                  spec: _circuitLeaderboards[index],
-                                  entries: _leaderboardEntries,
-                                  loading: _leaderboardLoading,
-                                  errorMessage: _leaderboardError,
-                                  onRetry: () {
-                                    unawaited(_loadCircuitLeaderboardEntries());
-                                  },
-                                ),
-                              ),
-                            ),
+                        for (final group in kVenueGroups)
+                          _VenueGrid(
+                            group: group,
+                            venues: venuesForGroup(group),
+                            mode: widget.mode,
+                            onOpen: _openVenue,
                           ),
                       ],
                     ),
@@ -1205,13 +1100,7 @@ class _TranslateGradient extends GradientTransform {
 
 class _TitleAndTabs extends StatefulWidget {
   final TabController controller;
-  final ValueChanged<int> onLeaderboardShown;
-  final VoidCallback onLeaderboardHidden;
-  const _TitleAndTabs({
-    required this.controller,
-    required this.onLeaderboardShown,
-    required this.onLeaderboardHidden,
-  });
+  const _TitleAndTabs({required this.controller});
   @override
   State<_TitleAndTabs> createState() => _TitleAndTabsState();
 }
@@ -1316,10 +1205,7 @@ class _TitleAndTabsState extends State<_TitleAndTabs> {
     final bg = highlighted ? color : Colors.transparent;
     final fg = highlighted ? textOn : Colors.white;
 
-    void activate() {
-      widget.controller.animateTo(index);
-      widget.onLeaderboardShown(index);
-    }
+    void activate() => widget.controller.animateTo(index);
 
     return Semantics(
       button: true,
@@ -1343,14 +1229,8 @@ class _TitleAndTabsState extends State<_TitleAndTabs> {
           ),
         },
         child: MouseRegion(
-          onEnter: (_) {
-            setState(() => _hoveredIndex = index);
-            widget.onLeaderboardShown(index);
-          },
-          onExit: (_) {
-            setState(() => _hoveredIndex = -1);
-            widget.onLeaderboardHidden();
-          },
+          onEnter: (_) => setState(() => _hoveredIndex = index),
+          onExit: (_) => setState(() => _hoveredIndex = -1),
           cursor: SystemMouseCursors.click,
           child: GestureDetector(
             onTap: activate,
@@ -1389,313 +1269,6 @@ class _TitleAndTabsState extends State<_TitleAndTabs> {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _CircuitLeaderboardSpec {
-  final String label;
-  final Color background;
-  final Color foreground;
-  final Color headingBackground;
-  final Color headingForeground;
-
-  const _CircuitLeaderboardSpec({
-    required this.label,
-    required this.background,
-    required this.foreground,
-    required this.headingBackground,
-    required this.headingForeground,
-  });
-}
-
-final _circuitLeaderboards = <_CircuitLeaderboardSpec>[
-  _CircuitLeaderboardSpec(
-    label: venueGroupLabel(kVenueGroups[0]),
-    background: Colors.green,
-    foreground: Colors.white,
-    headingBackground: Colors.black,
-    headingForeground: Colors.green,
-  ),
-  _CircuitLeaderboardSpec(
-    label: venueGroupLabel(kVenueGroups[1]),
-    background: Colors.white,
-    foreground: Colors.black,
-    headingBackground: Colors.black,
-    headingForeground: Colors.white,
-  ),
-  _CircuitLeaderboardSpec(
-    label: venueGroupLabel(kVenueGroups[2]),
-    background: Colors.yellow,
-    foreground: Colors.black,
-    headingBackground: Colors.black,
-    headingForeground: Colors.yellow,
-  ),
-  _CircuitLeaderboardSpec(
-    label: venueGroupLabel(kVenueGroups[3]),
-    background: _red,
-    foreground: Colors.white,
-    headingBackground: Colors.black,
-    headingForeground: _red,
-  ),
-  _CircuitLeaderboardSpec(
-    label: venueGroupLabel(kVenueGroups[4]),
-    background: _blue,
-    foreground: Colors.black,
-    headingBackground: Colors.black,
-    headingForeground: _blue,
-  ),
-];
-
-class _CircuitLeaderboardPopover extends StatelessWidget {
-  final _CircuitLeaderboardSpec spec;
-  final List<LeaderboardEntry> entries;
-  final bool loading;
-  final String? errorMessage;
-  final VoidCallback onRetry;
-
-  const _CircuitLeaderboardPopover({
-    required this.spec,
-    required this.entries,
-    required this.loading,
-    required this.errorMessage,
-    required this.onRetry,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final rows = _leaderboardRowsFor(entries);
-
-    return Semantics(
-      label: '${spec.label} global Aura leaderboard',
-      liveRegion: true,
-      child: FittedBox(
-        key: const ValueKey<String>('circuit-leaderboard-fitted-box'),
-        fit: BoxFit.scaleDown,
-        alignment: Alignment.topCenter,
-        child: SizedBox(
-          width: 300,
-          child: Material(
-            color: Colors.transparent,
-            elevation: 18,
-            shadowColor: spec.background.withValues(alpha: 0.42),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: DecoratedBox(
-              key: ValueKey<String>('${spec.label}-leaderboard-body'),
-              decoration: BoxDecoration(
-                color: spec.background,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: spec.headingBackground.withValues(alpha: 0.55),
-                  width: 1.2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.42),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-                  BoxShadow(
-                    color: spec.background.withValues(alpha: 0.35),
-                    blurRadius: 22,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _LeaderboardHeadingRow(spec: spec),
-                    if (loading)
-                      Padding(
-                        padding: const EdgeInsets.all(18),
-                        child: CircularProgressIndicator(
-                          color: spec.foreground,
-                          strokeWidth: 2.5,
-                        ),
-                      )
-                    else if (errorMessage != null)
-                      Padding(
-                        padding: const EdgeInsets.all(14),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              errorMessage!,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: spec.foreground,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            TextButton.icon(
-                              onPressed: onRetry,
-                              icon: const Icon(Icons.refresh_rounded),
-                              label: const Text('Retry'),
-                              style: TextButton.styleFrom(
-                                foregroundColor: spec.foreground,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    else if (rows.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.all(18),
-                        child: Text(
-                          'No ranked players yet.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: spec.foreground,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      )
-                    else
-                      for (int i = 0; i < rows.length; i++)
-                        _LeaderboardNameRow(
-                          rank: i + 1,
-                          name: rows[i].name,
-                          auraText: rows[i].auraText,
-                          spec: spec,
-                        ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _LeaderboardRowData {
-  final String name;
-  final int auraMilli;
-
-  const _LeaderboardRowData({
-    required this.name,
-    required this.auraMilli,
-  });
-
-  String get auraText {
-    if (auraMilli % 1000 == 0) return '${auraMilli ~/ 1000}';
-    final tenths = (auraMilli / 100).round() / 10;
-    return tenths.toStringAsFixed(tenths.truncateToDouble() == tenths ? 0 : 1);
-  }
-}
-
-List<_LeaderboardRowData> _leaderboardRowsFor(
-  List<LeaderboardEntry> entries,
-) {
-  final rows = entries
-      .where((entry) => entry.auraMilli > 0)
-      .map(
-        (entry) => _LeaderboardRowData(
-          name: entry.displayName.trim().isEmpty
-              ? 'Player'
-              : entry.displayName.trim(),
-          auraMilli: entry.cappedAuraMilli,
-        ),
-      )
-      .toList()
-    ..sort((a, b) => b.auraMilli.compareTo(a.auraMilli));
-
-  return rows.take(10).toList(growable: false);
-}
-
-class _LeaderboardHeadingRow extends StatelessWidget {
-  final _CircuitLeaderboardSpec spec;
-
-  const _LeaderboardHeadingRow({required this.spec});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 28,
-      color: spec.headingBackground,
-      alignment: Alignment.center,
-      child: Text(
-        'GLOBAL AURA',
-        style: TextStyle(
-          color: spec.headingForeground,
-          fontSize: 12,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 0.4,
-        ),
-      ),
-    );
-  }
-}
-
-class _LeaderboardNameRow extends StatelessWidget {
-  final int rank;
-  final String name;
-  final String auraText;
-  final _CircuitLeaderboardSpec spec;
-
-  const _LeaderboardNameRow({
-    required this.rank,
-    required this.name,
-    required this.auraText,
-    required this.spec,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final borderColor = spec.foreground.withValues(alpha: 0.18);
-
-    return Container(
-      height: 25,
-      decoration: BoxDecoration(
-        color: spec.background,
-        border: Border(
-          top: BorderSide(color: borderColor, width: 0.8),
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 13),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 24,
-            child: Text(
-              rank.toString().padLeft(2, '0'),
-              style: TextStyle(
-                color: spec.foreground.withValues(alpha: 0.66),
-                fontSize: 10.5,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              name.toUpperCase(),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: spec.foreground,
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0.25,
-              ),
-            ),
-          ),
-          Text(
-            '$auraText AURA',
-            style: TextStyle(
-              color: spec.foreground,
-              fontSize: 10.5,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
       ),
     );
   }

@@ -17,12 +17,16 @@ class LeaderboardEntry {
   final int totalAup;
   final int activityScore;
 
+  /// Forts cleared out of the 500, on Trailblazers rows. 0 on Aura rows.
+  final int fortsCleared;
+
   const LeaderboardEntry({
     required this.uid,
     required this.displayName,
     required this.auraMilli,
     required this.totalAup,
     required this.activityScore,
+    this.fortsCleared = 0,
   });
 
   int get cappedAuraMilli => auraMilli.clamp(
@@ -45,6 +49,9 @@ class LeaderboardLoadException implements Exception {
 
 class LeaderboardFirestoreService {
   static const String kCollection = 'leaderboard';
+
+  /// Top ten by forts cleared, kept by the backend on every fort clear.
+  static const String kTrailblazersCollection = 'trailblazers';
   static const String _firestoreProjectId = 'ten-of-a-kind-poker';
   static const int _auraMilliMultiplier = 2000000000;
   static const int _activityMultiplier = 100000;
@@ -232,13 +239,52 @@ class LeaderboardFirestoreService {
     }
   }
 
+  /// Trailblazers: the ten players with the most forts cleared, most first
+  /// (ties go to more Aura; the backend's trailScore already orders them).
+  Future<List<LeaderboardEntry>> fetchTrailblazers() async {
+    if (kIsWeb) {
+      return _fetchTop10FromPublicRest(
+        orderBy: 'trailScore',
+        collection: kTrailblazersCollection,
+      );
+    }
+
+    final db = _firestoreOrNull();
+    if (db == null) {
+      throw const LeaderboardLoadException(
+        'Leaderboard service is unavailable.',
+      );
+    }
+
+    try {
+      final snap = await db
+          .collection(kTrailblazersCollection)
+          .orderBy('trailScore', descending: true)
+          .limit(10)
+          .get();
+
+      return snap.docs
+          .map(_entryFromDoc)
+          .where((entry) => entry.fortsCleared > 0)
+          .toList(growable: false);
+    } catch (error) {
+      debugPrint('Trailblazers fetch failed: $error');
+      throw LeaderboardLoadException(
+        'Could not load the Trailblazers.',
+        cause: error,
+      );
+    }
+  }
+
   Future<List<LeaderboardEntry>> _fetchTop10FromPublicRest({
     required String orderBy,
+    String collection = kCollection,
   }) async {
+    final trailblazers = collection == kTrailblazersCollection;
     final uri = Uri.https(
       'firestore.googleapis.com',
       '/v1/projects/$_firestoreProjectId/databases/(default)/documents/'
-          '$kCollection',
+          '$collection',
       <String, String>{
         'pageSize': '10',
         'orderBy': '$orderBy desc',
@@ -270,13 +316,16 @@ class LeaderboardFirestoreService {
           .map((document) => _entryFromRestDocument(
                 Map<String, dynamic>.from(document),
               ))
-          .where((entry) => entry.auraMilli > 0)
+          .where((entry) =>
+              trailblazers ? entry.fortsCleared > 0 : entry.auraMilli > 0)
           .take(10)
           .toList(growable: false);
     } catch (error) {
       debugPrint('Public leaderboard REST fetch failed: $error');
       throw LeaderboardLoadException(
-        'Could not load the Aura leaderboard.',
+        trailblazers
+            ? 'Could not load the Trailblazers.'
+            : 'Could not load the Aura leaderboard.',
         cause: error,
       );
     }
@@ -285,8 +334,9 @@ class LeaderboardFirestoreService {
   @visibleForTesting
   Future<List<LeaderboardEntry>> fetchTop10FromPublicRestForTesting({
     String orderBy = 'auraMilli',
+    String collection = kCollection,
   }) {
-    return _fetchTop10FromPublicRest(orderBy: orderBy);
+    return _fetchTop10FromPublicRest(orderBy: orderBy, collection: collection);
   }
 
   LeaderboardEntry _entryFromRestDocument(Map<String, dynamic> document) {
@@ -307,6 +357,7 @@ class LeaderboardFirestoreService {
       auraMilli: auraMilli,
       totalAup: _restInt(fields['totalAup']),
       activityScore: _restInt(fields['activityScore']),
+      fortsCleared: _restInt(fields['fortsCleared']),
     );
   }
 
@@ -343,6 +394,7 @@ class LeaderboardFirestoreService {
       auraMilli: auraMilli,
       totalAup: _numToInt(data['totalAup']),
       activityScore: _numToInt(data['activityScore']),
+      fortsCleared: _numToInt(data['fortsCleared']),
     );
   }
 }

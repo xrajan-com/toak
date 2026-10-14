@@ -44,87 +44,33 @@ void main() {
         .setMockMessageHandler('flutter/assets', null);
   });
 
-  testWidgets('venue screen exposes truthful Aura leaderboard state on tap',
+  testWidgets('circuit tabs only switch circuit, with no leaderboard popup',
       (tester) async {
     await binding.setSurfaceSize(const Size(1200, 900));
     addTearDown(() => binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: VenueScreen(),
-      ),
-    );
+    await tester.pumpWidget(const MaterialApp(home: VenueScreen()));
     await tester.pump();
-
-    expect(find.text('GLOBAL AURA'), findsNothing);
 
     await tester.tap(find.text('Australasia'));
     await tester.pump();
 
-    expect(find.text('GLOBAL AURA'), findsOneWidget);
-    expect(find.text('Leaderboard service is unavailable.'), findsOneWidget);
-    expect(find.text('NUR AISYAH'), findsNothing);
-    expect(find.text('99 AURA'), findsNothing);
-    expect(find.text('90 AURA'), findsNothing);
-
-    await tester.tap(find.text('Choose a Kingdom'));
-    await tester.pump();
-
     expect(find.text('GLOBAL AURA'), findsNothing);
+    expect(find.text('TRAILBLAZERS'), findsNothing);
   });
 
-  testWidgets('Aura leaderboard closes automatically after four seconds',
-      (tester) async {
+  testWidgets('the header shows Profile, Trailblazers and Settings, and '
+      'Dashboard lives in My Profile', (tester) async {
     await binding.setSurfaceSize(const Size(1200, 900));
     addTearDown(() => binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: VenueScreen(),
-      ),
-    );
+    await tester.pumpWidget(const MaterialApp(home: VenueScreen()));
     await tester.pump();
 
-    await tester.tap(find.text('Australasia'));
-    await tester.pump();
-    expect(find.text('GLOBAL AURA'), findsOneWidget);
-
-    await tester.pump(const Duration(milliseconds: 3999));
-    expect(find.text('GLOBAL AURA'), findsOneWidget);
-
-    await tester.pump(const Duration(milliseconds: 1));
-    expect(find.text('GLOBAL AURA'), findsNothing);
-  });
-
-  testWidgets('Eurasia and Rest of the World Aura headings use black strips',
-      (tester) async {
-    await binding.setSurfaceSize(const Size(1200, 900));
-    addTearDown(() => binding.setSurfaceSize(null));
-
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: VenueScreen(),
-      ),
-    );
-    await tester.pump();
-
-    for (final circuit in <String>['Eurasia', 'Rest of the World']) {
-      await tester.tap(find.text(circuit));
-      await tester.pump();
-
-      final headingBox = tester.widget<Container>(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is Container &&
-              widget.child is Text &&
-              (widget.child! as Text).data == 'GLOBAL AURA',
-        ),
-      );
-      expect(headingBox.color, Colors.black);
-
-      await tester.tap(find.text('Choose a Kingdom'));
-      await tester.pump();
-    }
+    expect(find.byTooltip('My Profile'), findsOneWidget);
+    expect(find.byTooltip('Trailblazers'), findsOneWidget);
+    expect(find.byTooltip('Settings'), findsOneWidget);
+    expect(find.byTooltip('Dashboard'), findsNothing);
   });
 
   testWidgets('all circuit selectors share one row in phone landscape',
@@ -163,39 +109,9 @@ void main() {
     final selectedEuroDecoration =
         selectedEuroChip.decoration! as ShapeDecoration;
     final selectedEuroLabel = tester.widget<Text>(find.text('Eurasia'));
-    final leaderboardHeading = tester.widget<Text>(find.text('GLOBAL AURA'));
-    final leaderboardHeadingBox = tester.widget<Container>(
-      find.byWidgetPredicate(
-        (widget) =>
-            widget is Container &&
-            widget.child is Text &&
-            (widget.child! as Text).data == 'GLOBAL AURA',
-      ),
-    );
-    final leaderboardBody = tester.widget<DecoratedBox>(
-      find.byKey(const ValueKey<String>('Eurasia-leaderboard-body')),
-    );
-    final leaderboardBodyDecoration =
-        leaderboardBody.decoration as BoxDecoration;
-    final unavailableMessage = tester.widget<Text>(
-      find.text('Leaderboard service is unavailable.'),
-    );
-
     expect(selectedEuroDecoration.color, Colors.white);
     expect(selectedEuroLabel.style?.color, Colors.black);
-    expect(leaderboardHeadingBox.color, Colors.black);
-    expect(leaderboardHeading.style?.color, Colors.white);
-    expect(leaderboardBodyDecoration.color, Colors.white);
-    expect(unavailableMessage.style?.color, Colors.black);
-    final fittedLeaderboard = find.byKey(
-      const ValueKey<String>('circuit-leaderboard-fitted-box'),
-    );
-    expect(tester.getTopLeft(fittedLeaderboard).dy, greaterThanOrEqualTo(0));
-    expect(tester.getBottomRight(fittedLeaderboard).dy, lessThanOrEqualTo(360));
     expect(tester.takeException(), isNull);
-
-    await tester.tap(find.text('Choose a Kingdom'));
-    await tester.pump();
   });
 
   testWidgets('venue exposes an accessible Settings entry', (tester) async {
