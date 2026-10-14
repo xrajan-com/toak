@@ -2,6 +2,8 @@
 
 import 'dart:math' show max, min;
 
+import 'package:ten_of_a_kind_poker/game/bot/aura_variance.dart'
+    show BotAuraVariance;
 import 'package:ten_of_a_kind_poker/game/bot/icm_guard.dart'
     show BotIcmGuard;
 import 'package:ten_of_a_kind_poker/game/bot/tournament_context.dart'
@@ -374,6 +376,18 @@ class BotAdvisor {
     }
     final bool highAura = auraSkill >= 0.7;
     final bool lowAura = auraSkill <= 0.4;
+    // Aura in every decision: one zero-mean misread of how good this hand
+    // is, sized by Aura, applied to the bot's read (preflop score and win
+    // probability) before any threshold below looks at it. A 95-Aura bot
+    // reads within a fraction of a percent; a 20-Aura bot is often several
+    // points off either way, and part of the misread lasts the whole hand.
+    // See lib/game/bot/aura_variance.dart.
+    final double readError = BotAuraVariance.readError(
+      auraSkill: auraSkill,
+      handKey: '${eng.tableSeed}|${eng.handNumber}|$idx|${p.name}',
+      decisionKey: '${eng.tableSeed}|${eng.handNumber}|${eng.phase.index}|'
+          '${eng.currentBet}|${eng.pot}|$idx|${p.name}',
+    );
     double potOddsBias = (skill == BotSkill.killer ? 0.04 : -0.02) +
         switch (temperament) {
           BotTemperament.aggressive => 0.02,
@@ -476,15 +490,17 @@ class BotAdvisor {
     final bool oneGap = !pocketPair && gap == 2;
     final bool broadway =
         hi >= rankValue(Rank.ten) && lo >= rankValue(Rank.ten);
+    // What the bot believes its starting hand is worth (see readError).
     final double preflopScore = _preflopScore(
-      hi: hi,
-      lo: lo,
-      pocketPair: pocketPair,
-      suited: suited,
-      connectors: connectors,
-      oneGap: oneGap,
-      broadway: broadway,
-    );
+          hi: hi,
+          lo: lo,
+          pocketPair: pocketPair,
+          suited: suited,
+          connectors: connectors,
+          oneGap: oneGap,
+          broadway: broadway,
+        ) +
+        readError * 0.7;
 
     // Postflop: precompute actual made-hand rank when possible.
     final HandRank? madeRank = _tryEvaluateRank(eng, idx);
@@ -592,7 +608,9 @@ class BotAdvisor {
     );
     final int liveOpp = _liveOpponents(eng: eng, idx: idx);
     final double baseEquity = liveOpp > 0 ? (1.0 / (liveOpp + 1)) : 1.0;
-    final double winProb = _estimateWinProb(eng: eng, idx: idx);
+    // The equity the bot believes it has: the estimate plus its read error.
+    final double winProb =
+        (_estimateWinProb(eng: eng, idx: idx) + readError).clamp(0.01, 0.99);
     final double winEdge = winProb - baseEquity;
     if (winEdge >= 0.03 ||
         (posScore >= 2 &&
@@ -622,6 +640,7 @@ class BotAdvisor {
           auraSkill: auraSkill,
           temperament: temperament,
           skill: skill,
+          readError: readError,
           base: (
             action: ActionType.check,
             toAmount: 0,
@@ -661,6 +680,7 @@ class BotAdvisor {
             auraSkill: auraSkill,
             temperament: temperament,
             skill: skill,
+            readError: readError,
             base: (
               action: actionType,
               toAmount: target,
@@ -710,6 +730,7 @@ class BotAdvisor {
             auraSkill: auraSkill,
             temperament: temperament,
             skill: skill,
+            readError: readError,
             base: (
               action: actionType,
               toAmount: target,
@@ -731,6 +752,7 @@ class BotAdvisor {
         auraSkill: auraSkill,
         temperament: temperament,
         skill: skill,
+        readError: readError,
         base: (
           action: ActionType.check,
           toAmount: 0,
@@ -921,6 +943,7 @@ class BotAdvisor {
             auraSkill: auraSkill,
             temperament: temperament,
             skill: skill,
+            readError: readError,
             base: (
               action: ActionType.fold,
               toAmount: 0,
@@ -962,6 +985,7 @@ class BotAdvisor {
             auraSkill: auraSkill,
             temperament: temperament,
             skill: skill,
+            readError: readError,
             base: (
               action: ActionType.fold,
               toAmount: 0,
@@ -1026,6 +1050,7 @@ class BotAdvisor {
               auraSkill: auraSkill,
               temperament: temperament,
               skill: skill,
+              readError: readError,
               base: (
                 action: ActionType.fold,
                 toAmount: 0,
@@ -1090,6 +1115,7 @@ class BotAdvisor {
               auraSkill: auraSkill,
               temperament: temperament,
               skill: skill,
+              readError: readError,
               base: (
                 action: ActionType.fold,
                 toAmount: 0,
@@ -1130,6 +1156,7 @@ class BotAdvisor {
               auraSkill: auraSkill,
               temperament: temperament,
               skill: skill,
+              readError: readError,
               base: (
                 action: ActionType.raise,
                 toAmount: target,
@@ -1157,6 +1184,7 @@ class BotAdvisor {
             auraSkill: auraSkill,
             temperament: temperament,
             skill: skill,
+            readError: readError,
             base: (
               action: ActionType.raise,
               toAmount: target,
@@ -1197,6 +1225,7 @@ class BotAdvisor {
             auraSkill: auraSkill,
             temperament: temperament,
             skill: skill,
+            readError: readError,
             base: (
               action: ActionType.raise,
               toAmount: target,
@@ -1255,6 +1284,7 @@ class BotAdvisor {
           auraSkill: auraSkill,
           temperament: temperament,
           skill: skill,
+          readError: readError,
           base: (
             action: ActionType.call,
             toAmount: 0,
@@ -1278,6 +1308,7 @@ class BotAdvisor {
           auraSkill: auraSkill,
           temperament: temperament,
           skill: skill,
+          readError: readError,
           base: (
             action: ActionType.call,
             toAmount: 0,
@@ -1308,6 +1339,7 @@ class BotAdvisor {
           auraSkill: auraSkill,
           temperament: temperament,
           skill: skill,
+          readError: readError,
           base: (
             action: ActionType.call,
             toAmount: 0,
@@ -1329,6 +1361,7 @@ class BotAdvisor {
         auraSkill: auraSkill,
         temperament: temperament,
         skill: skill,
+        readError: readError,
         base: (
           action: ActionType.fold,
           toAmount: 0,
@@ -1956,6 +1989,7 @@ class BotAdvisor {
       double confidence,
       double strength
     }) base,
+    double readError = 0.0,
   }) {
     final Set<ActionType> legal = eng.legalActionsFor(idx);
     final bool isManiac = temperament == BotTemperament.aggressive;
@@ -2041,7 +2075,10 @@ class BotAdvisor {
 
     final int liveOpp = _liveOpponents(eng: eng, idx: idx);
     final double baseEquity = liveOpp > 0 ? (1.0 / (liveOpp + 1)) : 1.0;
-    final double winProb = _estimateWinProb(eng: eng, idx: idx);
+    // Same misread as suggest(), so the follow-up choices (hero calls,
+    // probes, value bets) believe what the main decision believed.
+    final double winProb =
+        (_estimateWinProb(eng: eng, idx: idx) + readError).clamp(0.01, 0.99);
     final double winEdge = winProb - baseEquity;
     final HandRank? madeRank = _tryEvaluateRank(eng, idx);
     final BotStyleState styleState = eng.styleStateForSeat(idx);

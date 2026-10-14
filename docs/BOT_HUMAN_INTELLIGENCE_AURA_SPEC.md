@@ -514,3 +514,45 @@ this change tests an unrelated config object, never a live engine.
   directly from here. Run `flutter test test/bot_icm_awareness_test.dart`
   (and the full suite, to confirm the gating is truly inert for existing
   tests) from a real terminal before merging.
+
+## Aura in every decision (shipped in 1.2.11+88)
+
+The core thesis, finally applied to the whole decision tree rather than to
+three corners of it (the ICM guard, the river bluff rate, think time).
+
+`lib/game/bot/aura_variance.dart` gives every decision one zero-mean
+*read error*, the gap between the equity a bot believes it has and the
+equity it has:
+
+```
+readError   = sigma(aura) * (sqrt(0.6) * zHand + sqrt(0.4) * zDecision)
+sigma(aura) = 0.10 * (1 - auraSkill) ^ 1.4      (same curve as the ICM guard)
+```
+
+`BotAdvisor.suggest` adds it to the bot's win probability and (x0.7) to its
+preflop score *before* any threshold is checked, and passes it to
+`_humanizeDecision`, so the follow-up choices (hero calls, probes, value
+bets) believe the same thing. Every comparison downstream (opening range,
+pot-odds call, all-in continue, pressure folds, river discipline) inherits
+one consistent misjudgement instead of each threshold being nudged
+separately.
+
+- **Size.** One standard deviation: Aura 95 +-0.2% equity, Aura 80 +-1.1%,
+  Aura 50 +-3.8%, Aura 20 +-7.3%. Rock-profile bots read at Aura 80 or
+  better, as before.
+- **Streaky, not random.** 60% of the variance is drawn once per bot per hand
+  (zHand), so a misread lasts across streets the way a human sticks with a
+  wrong read; 40% is fresh each decision.
+- **Direction stays with fear/greed.** The error is zero-mean; which way a
+  bot leans is still `BotStyleState.fearGreed`.
+- **Deterministic.** Seeded from table, hand, street, bet, pot and seat
+  (FNV-1a plus the MurmurHash3 finaliser, web-safe 32-bit multiplies), so
+  replays, tests and the decision cache are unaffected.
+- **Kept.** The existing directional low-Aura terms (looser opening range,
+  lower all-in floor) stay as the *mean* of a weak player; the read error is
+  the spread around it.
+
+Measured by `test/bot_aura_simulation_report_test.dart`, which plays the same
+seeded tables with the read error on and off and writes
+`build/bot_simulation_report.md` (VPIP, PFR, postflop aggression, fold to
+bet, and how often a replayed deal changes its answer, per Aura band).
