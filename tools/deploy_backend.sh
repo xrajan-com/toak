@@ -83,6 +83,18 @@ if [[ -z "$previous_revision" ]]; then
   exit 1
 fi
 
+# App Check (backend/src/security/app_check.js). Stays "monitor" until the
+# logs show almost every request carries a valid token; then deploy with
+#   APP_CHECK_MODE=enforce bash tools/deploy_backend.sh
+app_check_mode="${APP_CHECK_MODE:-monitor}"
+case "$app_check_mode" in
+  off|monitor|enforce) ;;
+  *) echo "ERROR: APP_CHECK_MODE must be off, monitor or enforce." >&2; exit 1 ;;
+esac
+echo "App Check: $app_check_mode"
+
+# One instance always stays warm (min 1), so the first player after a quiet
+# spell does not wait for a cold start; --cpu-boost speeds up any new one.
 echo "==> Deploying backend candidate with no production traffic"
 gcloud run deploy "$service_name" \
   --project "$project_id" \
@@ -96,8 +108,9 @@ gcloud run deploy "$service_name" \
   --memory 256Mi \
   --concurrency 80 \
   --max-instances 2 \
-  --min-instances 0 \
-  --set-env-vars="^@^NODE_ENV=production@FIREBASE_PROJECT_ID=$project_id@CORS_ORIGIN=$cors_origin"
+  --min-instances 1 \
+  --cpu-boost \
+  --set-env-vars="^@^NODE_ENV=production@FIREBASE_PROJECT_ID=$project_id@CORS_ORIGIN=$cors_origin@APP_CHECK_MODE=$app_check_mode"
 
 candidate_service_json="$(
   gcloud run services describe "$service_name" \
