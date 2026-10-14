@@ -144,7 +144,7 @@ From build 88 the app sends a Firebase App Check token with every backend call
 (`backend/src/security/app_check.js`). It starts in **monitor** mode: requests
 without a valid token still work and are logged as `app_check` events.
 
-One-time setup (done for Android on 2026-10-15):
+One-time setup (done for Android and the web on 2026-10-15):
 
 1. **Android:** Play Console → Protected with Play → Play Integrity API →
    link the **Ten of a Kind** Cloud project (96098527170). Then Firebase
