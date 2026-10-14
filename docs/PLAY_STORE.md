@@ -139,7 +139,7 @@ For `version 1.2.4 build 45`:
 
 ## 6) App Check (proof that API calls come from the real app)
 
-From 1.2.12 the app sends a Firebase App Check token with every backend call
+From build 88 the app sends a Firebase App Check token with every backend call
 (`lib/services/app_check.dart`), and the backend checks it
 (`backend/src/security/app_check.js`). It starts in **monitor** mode: requests
 without a valid token still work and are logged as `app_check` events.
@@ -156,7 +156,7 @@ One-time setup in the Firebase console → App Check:
    backend checks tokens for now.
 
 Turning on enforcement, once Cloud Logging shows almost no `app_check` events
-with `outcome: missing` (so almost nobody is still on a build before 1.2.12):
+with `outcome: missing` (so almost nobody is still on a build before 88):
 
 ```bash
 APP_CHECK_MODE=enforce bash tools/deploy_backend.sh

@@ -8,7 +8,7 @@
 // APP_CHECK_MODE decides what happens to a request without a valid token:
 //   off      - not checked at all (the default outside production)
 //   monitor  - let through, but logged as an `app_check` event (the default in
-//              production). Builds before 1.2.12 send no token, so this is the
+//              production). Builds before build 88 send no token, so this is the
 //              only safe mode while they are still in players' hands.
 //   enforce  - refused with 401 app_check_required. Turn this on once the
 //              logs show almost every request carries a valid token.
