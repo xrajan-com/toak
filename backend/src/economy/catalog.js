@@ -104,23 +104,41 @@ function campaignEvent(
 const FORT_TOTAL = Object.values(catalog.events)
   .filter((event) => event.kind === 'fort').length;
 
+// Live fort id by kingdom and fort number ("australia:3"). Redrawing the
+// circuits moved three kingdoms (Australia, Central Asia, Pacific) to another
+// circuit, which changed their ids (sk:<circuit>:<kingdom>:<n>) but not their
+// forts: the same kingdom and number is the same fort.
+const LIVE_FORT_BY_KINGDOM_NUMBER = new Map(
+  Object.values(catalog.events)
+    .filter((event) => event.kind === 'fort')
+    .map((event) => [event.id.split(':').slice(2).join(':'), event.id]),
+);
+
+/** The live id of a fort cleared under any catalog the server knows, or null. */
+function liveFortId(rawId) {
+  if (typeof rawId !== 'string') return null;
+  const id = rawId.trim();
+  if (catalog.events[id]?.kind === 'fort') return id;
+  for (const known of catalogsByVersion.values()) {
+    if (known.events[id]?.kind === 'fort') {
+      return LIVE_FORT_BY_KINGDOM_NUMBER.get(id.split(':').slice(2).join(':')) ||
+        null;
+    }
+  }
+  return null;
+}
+
 /**
- * How many different forts a list of cleared campaign ids names. An id counts
- * if any catalog the server still knows lists it as a fort, so clears made on
- * an older build keep counting. Never more than FORT_TOTAL.
+ * How many different forts a list of cleared campaign ids names. A fort
+ * cleared before its kingdom moved circuit still counts, and counts once
+ * even if it was cleared again under its new id. Never more than FORT_TOTAL.
  */
 function fortsClearedCount(clearedIds) {
   if (!Array.isArray(clearedIds)) return 0;
   const forts = new Set();
   for (const raw of clearedIds) {
-    if (typeof raw !== 'string') continue;
-    const id = raw.trim();
-    for (const known of catalogsByVersion.values()) {
-      if (known.events[id]?.kind === 'fort') {
-        forts.add(id);
-        break;
-      }
-    }
+    const id = liveFortId(raw);
+    if (id) forts.add(id);
   }
   return Math.min(forts.size, FORT_TOTAL);
 }
@@ -139,5 +157,6 @@ module.exports = {
   campaignEvent,
   campaignEventCount,
   fortsClearedCount,
+  liveFortId,
   requestedCatalogVersion,
 };

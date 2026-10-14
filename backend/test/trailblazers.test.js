@@ -31,6 +31,26 @@ test('the journey has 500 forts, and only real, distinct forts count', () => {
   assert.equal(fortsClearedCount(FORT_IDS), 500);
 });
 
+test('forts cleared before their kingdom moved circuit still count, once', () => {
+  // Australia moved from Rest of the World to Australasia; its forts kept
+  // their numbers, so sk:international:australia:3 is today's
+  // sk:oceania:australia:3.
+  assert.equal(
+    fortsClearedCount(['sk:international:australia:3']),
+    1,
+  );
+  assert.equal(
+    fortsClearedCount([
+      'sk:international:australia:3',
+      'sk:oceania:australia:3',
+      'sk:euro:central_asia:1',
+      'sk:international:central_asia:1',
+      'sk:oceania:pacific:2',
+    ]),
+    3,
+  );
+});
+
 test('more forts always ranks higher; Aura only breaks ties', () => {
   assert.ok(_trailScore(2, 0) > _trailScore(1, 100000));
   assert.ok(_trailScore(5, 2000) > _trailScore(5, 1000));
