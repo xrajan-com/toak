@@ -221,6 +221,13 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    match /trailblazers/{publicId} {
+      // Top ten by forts cleared. Same projection rules as the leaderboard:
+      // the server writes, everyone may read.
+      allow read: if true;
+      allow create, update, delete: if false;
+    }
+
     match /server_progress/{uid} {
       allow read: if isSelf(uid) && accountIsActive(uid);
       allow create, update, delete: if false;

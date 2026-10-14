@@ -74,12 +74,14 @@ function economyRouter({ refreshLeaderboard } = {}) {
   const writeLimiter = playerRateLimit({ windowMs: 60 * 1000, max: 40 });
 
   // Runs an economy operation for the signed-in player, refreshes their
-  // leaderboard row if their Aura moved, then answers with `respond`.
+  // public board rows if their Aura or forts moved, then answers with
+  // `respond`.
   const handle = (operation, respond) => _asyncHandler(async (req, res) => {
     const db = firestore();
     const catalogVersion = catalogVersionForRequest(req);
     const result = await operation({ req, db, uid: req.auth.uid, catalogVersion });
-    if (result.auraChanged) {
+    // A fort clear moves the Trailblazers board even when no Aura changed.
+    if (result.auraChanged || result.clearRecorded === true) {
       await refreshLeaderboardSafely({
         db,
         uid: req.auth.uid,

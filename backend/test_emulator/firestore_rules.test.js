@@ -15,6 +15,9 @@ const {
   doc,
   getDoc,
   getDocs,
+  limit,
+  orderBy,
+  query,
   serverTimestamp,
   setDoc,
   updateDoc,
@@ -92,6 +95,13 @@ test('authoritative economy writes deny clients by default', async () => {
       totalAup: 10000,
       activityScore: 1,
       rankScore: 1,
+    }),
+  );
+  await assertFails(
+    setDoc(doc(alice, 'trailblazers/rules-default-deny'), {
+      displayName: 'Rules Alice',
+      fortsCleared: 500,
+      trailScore: 1,
     }),
   );
   await assertFails(
@@ -308,5 +318,23 @@ test('account deletion tombstones are private and block client recreation', asyn
       activityScore: 1,
       rankScore: 1,
     }),
+  );
+});
+
+test('anyone may read Trailblazers, nobody but the server may write it', async () => {
+  const visitor = testEnv.unauthenticatedContext().firestore();
+  await assertSucceeds(
+    getDocs(query(
+      collection(visitor, 'trailblazers'),
+      orderBy('trailScore', 'desc'),
+      limit(10),
+    )),
+  );
+  const alice = authedDb('rules-alice');
+  await assertFails(
+    setDoc(
+      doc(alice, 'trailblazers/lb1_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'),
+      { displayName: 'Rules Alice', fortsCleared: 500, trailScore: 1 },
+    ),
   );
 });

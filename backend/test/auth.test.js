@@ -247,6 +247,9 @@ test('account deletion creates a durable lock before removing user data', async 
   seed.leaderboard[publicLeaderboardId] = {
     marker: 'opaque-leaderboard',
   };
+  seed.trailblazers = {
+    [publicLeaderboardId]: { marker: 'opaque-trailblazer' },
+  };
   const db = new FakeFirestore(seed);
   let authDeletionObservedLockedData = false;
 
@@ -275,6 +278,7 @@ test('account deletion creates a durable lock before removing user data', async 
     assert.equal(db.dump(collection, uid), undefined);
   }
   assert.equal(db.dump('leaderboard', publicLeaderboardId), undefined);
+  assert.equal(db.dump('trailblazers', publicLeaderboardId), undefined);
   assert.equal(db.dump('economy_receipts', 'ownReceipt'), undefined);
   assert.equal(db.dump('economy_receipts', 'otherReceipt').uid, 'other-user');
 });

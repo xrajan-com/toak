@@ -19,9 +19,16 @@ const {
   leaderboardDocumentId,
 } = require('../leaderboard_identity');
 const { SERVER_PROGRESS_COLLECTION } = require('../economy/store');
+const { fortsClearedCount } = require('../economy/catalog');
 const { playerRateLimit } = require('../security/rate_limit');
 
 const LEADERBOARD_COLLECTION = 'leaderboard';
+// Trailblazers: the ten players who have cleared the most of the 500 forts.
+// Its own top-10 collection, because the Aura board above only holds the
+// Aura top ten and a fort-heavy player may not be in it.
+const TRAILBLAZERS_COLLECTION = 'trailblazers';
+// Orders by forts, then Aura: forts * (max Aura milli + 1) + Aura milli.
+const TRAIL_FORT_MULTIPLIER = MAX_TOTAL_AURA_MILLI + 1;
 const USERS_COLLECTION = 'users';
 
 const AURA_MILLI_MULTIPLIER = 2000000000;
@@ -339,6 +346,82 @@ async function _syncLeaderboard({ db, uid }) {
   return result;
 }
 
+function _trailScore(fortsCleared, auraMilli) {
+  return (
+    _clamp(fortsCleared, 0, 1000) * TRAIL_FORT_MULTIPLIER +
+    _clamp(auraMilli, 0, MAX_TOTAL_AURA_MILLI)
+  );
+}
+
+/**
+ * Keeps the player's Trailblazers row current: written while they are in the
+ * top ten by forts cleared (ties go to more Aura), removed when they have
+ * none. Same shape and rules as _syncLeaderboard, ranked by trailScore.
+ */
+async function _syncTrailblazers({ db, uid }) {
+  const publicId = leaderboardDocumentId(uid);
+  const rowRef = db.collection(TRAILBLAZERS_COLLECTION).doc(publicId);
+  const progressRef = db.collection(SERVER_PROGRESS_COLLECTION).doc(uid);
+  const profileRef = db.collection(USERS_COLLECTION).doc(uid);
+  const top10Query = db
+    .collection(TRAILBLAZERS_COLLECTION)
+    .orderBy('trailScore', 'desc')
+    .limit(10);
+
+  return db.runTransaction(async (tx) => {
+    await assertAccountActiveInTransaction({ tx, db, uid });
+    const progressSnap = await tx.get(progressRef);
+    const top10Snap = await tx.get(top10Query);
+    const rowSnap = await tx.get(rowRef);
+    const progress = progressSnap.data();
+    const fortsCleared = fortsClearedCount(progress?.cleared);
+    const { auraMilli } = _progressStats(progress);
+    const trailScore = _trailScore(fortsCleared, auraMilli);
+
+    if (!progressSnap.exists || fortsCleared <= 0) {
+      if (rowSnap.exists) tx.delete(rowRef);
+      return { synced: false, removed: rowSnap.exists, reason: 'no_forts' };
+    }
+
+    const inTop10 = top10Snap.docs.some((doc) => doc.id === publicId);
+    const cutoff = _numInt(
+      top10Snap.docs[top10Snap.docs.length - 1]?.get('trailScore'),
+      { fallback: -1, min: -1 },
+    );
+    const qualifies = rowSnap.exists || inTop10 ||
+      top10Snap.docs.length < 10 || trailScore > cutoff;
+    if (!qualifies) {
+      return { synced: false, removed: false, reason: 'below_top_10' };
+    }
+
+    const profileSnap = await tx.get(profileRef);
+    const displayName = _displayNameFor(profileSnap.data());
+    // A newcomer replaces the current tenth row in the same transaction, so
+    // the collection never grows past ten.
+    if (!rowSnap.exists && !inTop10 && top10Snap.docs.length >= 10) {
+      tx.delete(top10Snap.docs[top10Snap.docs.length - 1].ref);
+    }
+    const entry = { displayName, fortsCleared, auraMilli, trailScore };
+    tx.set(rowRef, { ...entry, updatedAt: FieldValue.serverTimestamp() });
+    return { synced: true, removed: false, entry };
+  });
+}
+
+/**
+ * Refreshes both public boards after a player's Aura or forts change. Each
+ * board is tried even if the other fails; the first failure is rethrown so
+ * the caller can log it.
+ */
+async function _refreshPublicBoards({ db, uid }) {
+  const [aura, trail] = await Promise.allSettled([
+    _syncLeaderboard({ db, uid }),
+    _syncTrailblazers({ db, uid }),
+  ]);
+  if (aura.status === 'rejected') throw aura.reason;
+  if (trail.status === 'rejected') throw trail.reason;
+  return { aura: aura.value, trailblazers: trail.value };
+}
+
 function leaderboardRouter() {
   const router = express.Router();
 
@@ -365,10 +448,14 @@ function leaderboardRouter() {
 
 module.exports = {
   LEADERBOARD_COLLECTION,
+  TRAILBLAZERS_COLLECTION,
   USERS_COLLECTION,
   leaderboardRouter,
   _progressStats,
   _pruneLeaderboard,
   _qualifiesForTop10,
+  _refreshPublicBoards,
   _syncLeaderboard,
+  _syncTrailblazers,
+  _trailScore,
 };

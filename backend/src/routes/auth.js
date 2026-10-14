@@ -54,6 +54,9 @@ async function _deleteAccountData({ db, uid }) {
     tx.delete(
       db.collection('leaderboard').doc(leaderboardDocumentId(uid)),
     );
+    tx.delete(
+      db.collection('trailblazers').doc(leaderboardDocumentId(uid)),
+    );
   });
 
   // Receipt ids are event-derived, so remove them in bounded batches after the

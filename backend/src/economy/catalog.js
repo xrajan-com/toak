@@ -100,6 +100,31 @@ function campaignEvent(
   return event;
 }
 
+/** Forts in the live journey (500): every catalog event that is not a title. */
+const FORT_TOTAL = Object.values(catalog.events)
+  .filter((event) => event.kind === 'fort').length;
+
+/**
+ * How many different forts a list of cleared campaign ids names. An id counts
+ * if any catalog the server still knows lists it as a fort, so clears made on
+ * an older build keep counting. Never more than FORT_TOTAL.
+ */
+function fortsClearedCount(clearedIds) {
+  if (!Array.isArray(clearedIds)) return 0;
+  const forts = new Set();
+  for (const raw of clearedIds) {
+    if (typeof raw !== 'string') continue;
+    const id = raw.trim();
+    for (const known of catalogsByVersion.values()) {
+      if (known.events[id]?.kind === 'fort') {
+        forts.add(id);
+        break;
+      }
+    }
+  }
+  return Math.min(forts.size, FORT_TOTAL);
+}
+
 function campaignEventCount(catalogVersion = ECONOMY_CATALOG_VERSION) {
   return (catalogsByVersion.get(catalogVersion) || catalog).eventCount;
 }
@@ -109,8 +134,10 @@ module.exports = {
   ECONOMY_CATALOG_550_VERSION,
   ECONOMY_CATALOG_CONTENT_HASH,
   ECONOMY_CATALOG_VERSION,
+  FORT_TOTAL,
   SUPPORTED_ECONOMY_CATALOG_VERSIONS,
   campaignEvent,
   campaignEventCount,
+  fortsClearedCount,
   requestedCatalogVersion,
 };

@@ -12,7 +12,7 @@ const { authRouter } = require('./routes/auth');
 const { economyRouter } = require('./routes/economy');
 const {
   leaderboardRouter,
-  _syncLeaderboard,
+  _refreshPublicBoards,
 } = require('./routes/leaderboard');
 const {
   ECONOMY_CATALOG_CONTENT_HASH,
@@ -136,7 +136,7 @@ function createApp() {
 
   app.use('/v1/auth', authRouter());
   app.use('/v1/economy', economyRouter({
-    refreshLeaderboard: _syncLeaderboard,
+    refreshLeaderboard: _refreshPublicBoards,
   }));
   app.use('/v1/leaderboard', leaderboardRouter());
 
