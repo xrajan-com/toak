@@ -10,6 +10,10 @@ import 'package:ten_of_a_kind_poker/game/bot/tournament_context.dart'
     show StackThreat, TableStanding;
 import 'package:ten_of_a_kind_poker/game/bot/memory.dart'
     show BotOpponentMemory, BotStyleState;
+import 'package:ten_of_a_kind_poker/game/bot/preflop_range.dart'
+    show BotPreflopRange;
+import 'package:ten_of_a_kind_poker/game/equity/preflop_equity_table.dart'
+    show lookupPreflopEquity;
 import 'package:ten_of_a_kind_poker/game/bot/policy_model.dart'
     show BotPolicyAdjustment, BotPolicyFeatures, kExperimentalBotPolicyModel;
 import 'package:ten_of_a_kind_poker/game/bot/safety.dart' show BotSafetyGuard;
@@ -308,6 +312,105 @@ class BotAdvisor {
 
   static ({ActionType action, int toAmount, double confidence, double strength})
       suggest(GameEngine eng, int idx) {
+    final decision = _suggestCore(eng, idx);
+    return _withinPreflopRange(eng, idx, decision);
+  }
+
+  /// Keeps preflop play inside the bot's hand range (preflop_range.dart):
+  /// a voluntary call, bet or raise with a hand outside it becomes a check
+  /// when that is free, otherwise a fold. Stack-off spots are left alone.
+  static ({ActionType action, int toAmount, double confidence, double strength})
+      _withinPreflopRange(
+    GameEngine eng,
+    int idx,
+    ({ActionType action, int toAmount, double confidence, double strength})
+        decision,
+  ) {
+    if (eng.phase != GamePhase.preflop) return decision;
+    final ActionType action = decision.action;
+    final bool voluntary = action == ActionType.call ||
+        action == ActionType.bet ||
+        action == ActionType.raise ||
+        action == ActionType.allIn;
+    if (!voluntary) return decision;
+
+    final Player p = eng.players[idx];
+    if (p.hole.length < 2) return decision;
+    final int toCall = eng.toCallFor(idx);
+    final int bb = eng.bigBlind;
+    // Push/fold territory and all-ins keep their own logic.
+    if (p.chips <= bb * 10 || toCall >= p.chips ~/ 2) return decision;
+    if (_activeAllInOpponents(eng: eng, idx: idx, currentBetOnly: true) > 0) {
+      return decision;
+    }
+
+    final traits = _traitsForAura(
+      aura: p.aura,
+      name: p.name,
+      seed: eng.tableSeed,
+    );
+    final BotTemperament temperament = p.temperament ?? traits.temperament;
+    final BotSkill skill = p.skill ?? traits.skill;
+    double auraSkill = p.aura.clamp(0, 100) / 100.0;
+    if (temperament == BotTemperament.worldChamp) {
+      auraSkill = max(auraSkill, 0.80);
+    }
+    final double readError = BotAuraVariance.readError(
+      auraSkill: auraSkill,
+      handKey: '${eng.tableSeed}|${eng.handNumber}|$idx|${p.name}',
+      decisionKey: '${eng.tableSeed}|${eng.handNumber}|${eng.phase.index}|'
+          '${eng.currentBet}|${eng.pot}|$idx|${p.name}',
+    );
+
+    final int seats = eng.players.length;
+    final int seatsFromButton = eng.dealerIndex >= 0
+        ? (eng.dealerIndex - idx + seats) % seats
+        : 3;
+    final int raisesFaced = eng.currentBet <= bb
+        ? 0
+        : eng.currentBet <= bb * 5
+            ? 1
+            : 2;
+    final double share = BotPreflopRange.targetShare(
+      aura: (auraSkill * 100).round(),
+      temperament: temperament,
+      skill: skill,
+      seatsFromButton: seatsFromButton,
+      isSmallBlind: idx == eng.smallBlindIndex,
+      isBigBlind: idx == eng.bigBlindIndex,
+      raisesFaced: raisesFaced,
+      fearGreed: eng.styleStateForSeat(idx).fearGreedSigned,
+    );
+    if (BotPreflopRange.inRange(
+      hole: p.hole,
+      share: share,
+      readError: readError,
+    )) {
+      return decision;
+    }
+
+    final Set<ActionType> legal = eng.legalActionsFor(idx);
+    if (toCall <= 0 && legal.contains(ActionType.check)) {
+      return (
+        action: ActionType.check,
+        toAmount: 0,
+        confidence: decision.confidence,
+        strength: decision.strength,
+      );
+    }
+    if (legal.contains(ActionType.fold)) {
+      return (
+        action: ActionType.fold,
+        toAmount: 0,
+        confidence: decision.confidence,
+        strength: decision.strength,
+      );
+    }
+    return decision;
+  }
+
+  static ({ActionType action, int toAmount, double confidence, double strength})
+      _suggestCore(GameEngine eng, int idx) {
     final p = eng.players[idx];
     // Reset first so a seat can never pace this decision off the leftover
     // difficulty of an earlier street; the real value is recorded below,
@@ -1825,6 +1928,18 @@ class BotAdvisor {
     );
     final cached = _winProbCache[key];
     if (cached != null) return cached;
+
+    // Before the flop the exact table (50,000 deals per hand) replaces a
+    // 40-140 deal estimate whose own error, about +-5% equity, used to swamp
+    // Aura: even a 95-Aura bot misjudged its hand that much.
+    if (eng.community.isEmpty) {
+      final exact = lookupPreflopEquity(p.hole, liveOpp + 1);
+      if (exact != null) {
+        _winProbCache[key] = exact.equity;
+        if (_winProbCache.length > 400) _winProbCache.clear();
+        return exact.equity;
+      }
+    }
 
     final int baseIters = switch (eng.phase) {
       GamePhase.preflop => 120,

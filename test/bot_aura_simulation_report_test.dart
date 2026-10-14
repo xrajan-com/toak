@@ -6,8 +6,9 @@
 // It prints a table and writes build/bot_simulation_report.md.
 //
 // What to look for:
-//   * VPIP / PFR / AF / Fold-to-bet stay in a sensible human range per band
-//     (variance is zero-mean, so the averages should barely move);
+//   * VPIP (share of hands played) near the preflop_range.dart targets:
+//     Aura 95 ~20%, 80 ~25%, 50 ~35%, 20 ~50%, PFR below it;
+//   * fold to a bet, preflop and postflop, in a human range;
 //   * "Unstable": real deals whose first decision is replayed with the same
 //     cards. High Aura should nearly always give the same answer; low Aura
 //     should change its mind more, and more with variance on than off.
@@ -27,15 +28,20 @@ class _Stats {
   int pfr = 0;
   int postflopAggressive = 0;
   int postflopCalls = 0;
-  int facedBet = 0;
-  int foldedToBet = 0;
+  int facedBetPre = 0;
+  int foldedToBetPre = 0;
+  int facedBetPost = 0;
+  int foldedToBetPost = 0;
 
   double get vpipRate => hands == 0 ? 0 : vpip / hands;
   double get pfrRate => hands == 0 ? 0 : pfr / hands;
   double get af => postflopCalls == 0
       ? postflopAggressive.toDouble()
       : postflopAggressive / postflopCalls;
-  double get foldToBet => facedBet == 0 ? 0 : foldedToBet / facedBet;
+  double get foldToBetPre =>
+      facedBetPre == 0 ? 0 : foldedToBetPre / facedBetPre;
+  double get foldToBetPost =>
+      facedBetPost == 0 ? 0 : foldedToBetPost / facedBetPost;
 }
 
 bool _aggressive(eng.ActionType a) =>
@@ -93,9 +99,12 @@ _Stats _playBand(int aura) {
         if (_aggressive(a)) stats.postflopAggressive++;
         if (a == eng.ActionType.call) stats.postflopCalls++;
       }
-      if (toCall > 0) {
-        stats.facedBet++;
-        if (a == eng.ActionType.fold) stats.foldedToBet++;
+      if (toCall > 0 && preflop) {
+        stats.facedBetPre++;
+        if (a == eng.ActionType.fold) stats.foldedToBetPre++;
+      } else if (toCall > 0) {
+        stats.facedBetPost++;
+        if (a == eng.ActionType.fold) stats.foldedToBetPost++;
       }
       e.recordBotDecision(
         seat: seat,
@@ -182,7 +191,8 @@ void main() {
         final u = _unstableShare(aura);
         unstable[mode]![aura] = u;
         rows.add('| $aura | $mode | ${_pct(s.vpipRate)} | ${_pct(s.pfrRate)} | '
-            '${s.af.toStringAsFixed(2)} | ${_pct(s.foldToBet)} | ${_pct(u)} |');
+            '${s.af.toStringAsFixed(2)} | ${_pct(s.foldToBetPre)} | '
+            '${_pct(s.foldToBetPost)} | ${_pct(u)} |');
 
         expect(s.hands, greaterThan(0));
         expect(s.vpipRate, inInclusiveRange(0.0, 1.0));
@@ -199,9 +209,9 @@ void main() {
           '$_spotReplays replays of the same cards. "on" = Aura in every '
           'decision, "off" = without.')
       ..writeln()
-      ..writeln('| Aura | Variance | VPIP | PFR | Postflop AF | Fold to bet | '
-          'Unstable |')
-      ..writeln('|---|---|---|---|---|---|---|');
+      ..writeln('| Aura | Variance | VPIP | PFR | Postflop AF | '
+          'Fold to bet (preflop) | Fold to bet (postflop) | Unstable |')
+      ..writeln('|---|---|---|---|---|---|---|---|');
     rows.forEach(report.writeln);
 
     // ignore: avoid_print
