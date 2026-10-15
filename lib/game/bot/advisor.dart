@@ -2016,9 +2016,11 @@ class BotAdvisor {
       return _estimateWinProb(eng: eng, idx: idx);
     }
     final int toCall = eng.toCallFor(idx);
-    if (toCall <= 0) return _estimateWinProb(eng: eng, idx: idx);
-    final int bettor = _bettorIndex(eng, idx);
-    if (bettor < 0) return _estimateWinProb(eng: eng, idx: idx);
+    // No bet to face: still judge the hand against what opponents actually
+    // play, not random cards. Against random cards ace-high "wins" about
+    // 60% of the time, so bots bet nearly every flop (the report measured
+    // 75-100% continuation bets; people bet roughly 50-70%).
+    final int bettor = toCall > 0 ? _bettorIndex(eng, idx) : -1;
     return _estimateEquityVsRanges(
       eng: eng,
       idx: idx,
@@ -2090,8 +2092,10 @@ class BotAdvisor {
   static final Map<String, double> _rangeEquityCache = <String, double>{};
 
   /// Equity against what the field is likely to hold, by weighted
-  /// simulation: every sampled opponent hand counts in proportion to how
-  /// plausible it is.
+  /// simulation. [bettor] is the seat whose bet is being faced, or -1 when
+  /// there is no bet (then only the opponents' preflop ranges count).
+  /// Every sampled opponent hand counts in proportion to how plausible it
+  /// is.
   ///
   /// - Every opponent still in the hand played it before the flop, so a
   ///   hand outside their usual range counts for less.
@@ -2122,16 +2126,21 @@ class BotAdvisor {
     ];
     if (opponents.isEmpty) return 1.0;
 
-    final BotOpponentMemory memory = eng.opponentMemoryForSeat(bettor);
-    double credibility = 1.0 +
-        (memory.showdownStrength - 0.5) -
-        (memory.aggressionIndex - 0.5) * 1.2;
-    credibility = credibility.clamp(0.3, 1.3).toDouble();
+    final BotOpponentMemory? memory =
+        bettor >= 0 ? eng.opponentMemoryForSeat(bettor) : null;
+    double credibility = memory == null
+        ? 0.0
+        : 1.0 +
+            (memory.showdownStrength - 0.5) -
+            (memory.aggressionIndex - 0.5) * 1.2;
+    credibility = credibility.clamp(memory == null ? 0.0 : 0.3, 1.3).toDouble();
     // Big bets again and again (the pattern repeat-pressure defense exists
     // for) earn little respect; merely betting often earns somewhat less.
-    if (memory.largePressureActions >= 2 && memory.pressureHeat >= 0.42) {
+    if (memory != null &&
+        memory.largePressureActions >= 2 &&
+        memory.pressureHeat >= 0.42) {
       credibility *= 0.3;
-    } else if (memory.appliesRepeatPressure) {
+    } else if (memory != null && memory.appliesRepeatPressure) {
       credibility *= 0.7;
     }
     final double trustBet =

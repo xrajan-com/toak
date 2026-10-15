@@ -600,3 +600,12 @@ postflop aggression at 2-4.5 (people: about 1.5-3). Four causes, four fixes:
   repeated *large* pressure does; frequent ordinary betting costs 30%.
 
 The report gains a flop c-bet column (people: roughly 50-70%).
+
+**Follow-up.** The third report showed the continuation-bet fix overshooting
+(flop c-bets 70-100%, postflop AF up to 6.7) and, because of it, few folds:
+against a player who bets every flop with anything, calling is right. The
+cause was the betting side: with no bet to face, bots still judged their
+hand against random cards, where ace-high "wins" about 60%. Postflop
+equity is now range-aware in every spot (opponents' preflop ranges; plus the
+bettor's action when there is a bet). The report now plays 300 hands per
+band, so rates rest on more than a handful of chances.

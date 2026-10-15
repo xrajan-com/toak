@@ -22,7 +22,7 @@ import 'package:ten_of_a_kind_poker/game/bot/aura_variance.dart';
 import 'package:ten_of_a_kind_poker/game/game_engine.dart' as eng;
 
 const List<int> _bands = <int>[20, 50, 80, 95];
-const int _handsPerBand = 120;
+const int _handsPerBand = 300;
 const int _spotReplays = 15;
 
 class _Stats {
@@ -252,5 +252,5 @@ void main() {
       unstable['on']![20]!,
       greaterThanOrEqualTo(unstable['off']![20]! - 0.05),
     );
-  }, timeout: const Timeout(Duration(minutes: 5)));
+  }, timeout: const Timeout(Duration(minutes: 10)));
 }
