@@ -18,6 +18,7 @@ import 'package:ten_of_a_kind_poker/game/bot/policy_model.dart'
 import 'package:ten_of_a_kind_poker/services/ads_service.dart';
 import 'package:ten_of_a_kind_poker/services/app_check.dart';
 import 'package:ten_of_a_kind_poker/services/crash_reporting.dart';
+import 'package:ten_of_a_kind_poker/services/game_analytics.dart';
 import 'package:ten_of_a_kind_poker/services/poker_bot_learning_service.dart';
 
 enum AppErrorSeverity { warning, error, fatal }
@@ -105,6 +106,7 @@ Future<void> bootstrapApp() async {
       await _initializeOptionalFirebase();
       await CrashReporting.start();
       await AppCheckService.start();
+      await GameAnalytics.start();
       _initializeAds();
       await _loadBotPolicyWeights();
       runApp(const TenOfAKindApp());

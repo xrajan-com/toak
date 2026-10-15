@@ -20,6 +20,7 @@ import 'package:ten_of_a_kind_poker/config/venues.dart' show VenueGroup;
 import 'package:ten_of_a_kind_poker/features/venue/game_mode.dart';
 import 'package:ten_of_a_kind_poker/game/bot/policy_model.dart'
     show BotLearnedPolicyRegistry, BotLearnedPolicyWeights, BotPolicyAdjustment;
+import 'package:ten_of_a_kind_poker/services/game_analytics.dart';
 import 'package:ten_of_a_kind_poker/services/aura_points_service.dart';
 import 'package:ten_of_a_kind_poker/services/ads_service.dart';
 import 'package:ten_of_a_kind_poker/services/app_settings_service.dart';
@@ -1992,9 +1993,20 @@ class _GameScreenState extends State<GameScreen>
     }
   }
 
+  /// Which kind of game this is, for analytics: quick, fort or title.
+  String get _analyticsKind => !_isCampaignEvent
+      ? 'quick'
+      : widget.campaignMainEvent
+          ? 'title'
+          : 'fort';
+
   void _startGameplay() {
     if (_gameplayStarted || _disposing) return;
     _gameplayStarted = true;
+    unawaited(GameAnalytics.gameStarted(
+      kind: _analyticsKind,
+      circuit: widget.campaignGroup?.name,
+    ));
     _initEngineAndStart();
     _scheduleInitialPresentation();
   }
@@ -2406,6 +2418,12 @@ class _GameScreenState extends State<GameScreen>
       _heroFinalRank = 1;
       _heroFinalWinnings = ev.prize;
     }
+    unawaited(GameAnalytics.gameFinished(
+      kind: _analyticsKind,
+      circuit: widget.campaignGroup?.name,
+      place: finishRank.clamp(1, _totalPlayerCount),
+      players: _totalPlayerCount,
+    ));
     _matchActivitySettlementFuture ??= _recordMatchCompleted(
       heroWon: heroWon,
       finishRank: finishRank,
@@ -2460,6 +2478,13 @@ class _GameScreenState extends State<GameScreen>
       );
 
       if (result.accepted) {
+        if (rank == 1 && result.clearConfirmed) {
+          unawaited(GameAnalytics.campaignWon(
+            title: widget.campaignMainEvent,
+            circuit: group.name,
+            kingdom: kingdomName,
+          ));
+        }
         if (mounted && _heroFinalRank == rank) {
           setState(() => _heroFinalWinnings = result.creditedAup);
         } else {
@@ -2514,6 +2539,10 @@ class _GameScreenState extends State<GameScreen>
     final existing = _matchActivitySettlementFuture;
     if (existing != null) return existing;
     if (_matchOver || !_gameplayStarted) return Future<void>.value();
+    unawaited(GameAnalytics.gameLeft(
+      kind: _analyticsKind,
+      circuit: widget.campaignGroup?.name,
+    ));
     final AuraPointsService? service = _auraService;
     if (service == null) return Future<void>.value();
     return _matchActivitySettlementFuture = () async {

@@ -37,6 +37,14 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Analytics counts players and game moments, never the advertising
+             id (lib/services/game_analytics.dart). -->
+        <meta-data
+            android:name="google_analytics_adid_collection_enabled"
+            android:value="false" />
+        <meta-data
+            android:name="google_analytics_default_allow_ad_personalization_signals"
+            android:value="false" />
         <!-- Crash reports stay off until the app turns them on, which only a
              release build does (lib/services/crash_reporting.dart). -->
         <meta-data

@@ -170,3 +170,24 @@ APP_CHECK_MODE=enforce bash tools/deploy_backend.sh
 
 Old builds will then get "Update the app to keep playing online" from the API.
 To undo it, deploy again without `APP_CHECK_MODE` (back to monitor).
+
+## 7) Data safety form (from 1.2.11+88)
+
+Play Console -> Policy -> App content -> Data safety. This build adds two
+collectors; declare both as **collected, not shared** (Google processes the
+data as our service provider), **processed ephemerally: no**, **required**:
+
+| Data type | Why | From |
+|---|---|---|
+| App info and performance -> Crash logs, Diagnostics | Analytics (stability) | Firebase Crashlytics |
+| App activity -> App interactions | Analytics | Google Analytics for Firebase |
+| Device or other IDs | Analytics | both (random installation / app-instance ids, not the advertising id) |
+
+The advertising id is not collected: the manifest removes the AD_ID
+permission and turns off ad-id collection, so answer **No** to "Does your app
+use advertising ID?".
+
+Retention (day 1 / 7 / 30) appears in the Firebase console under Analytics ->
+Retention (or Google Analytics -> Reports -> Retention) about a day after
+the first players open the new build; game moments are the events
+game_started, game_finished, game_left, fort_won and title_won.
