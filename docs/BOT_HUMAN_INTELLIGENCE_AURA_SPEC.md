@@ -609,3 +609,26 @@ hand against random cards, where ace-high "wins" about 60%. Postflop
 equity is now range-aware in every spot (opponents' preflop ranges; plus the
 bettor's action when there is a bet). The report now plays 300 hands per
 band, so rates rest on more than a handful of chances.
+
+**Second follow-up.** The fourth report (all VPIP bands on target) still had
+flop c-bets at 76-96%, postflop AF 3-5 and postflop fold-to-bet 13-29%.
+Three causes, three fixes:
+
+- **"Value" meant an optimistic read.** The betting-lead rule counted a hand
+  as value when its believed equity was 62% or more, which heads-up covers
+  most of a raiser's range. Value now means the hole cards hit the board
+  (`_boardConnection`: top pair, an overpair, trips or better; any pair on
+  the flop), a real draw (open-ender or flush draw, 0.32+) or a monster.
+  Hands that missed keep the lead with probability flop 32% / turn 25% /
+  river 20%, same temperament and multiway scaling.
+- **Min-raises when facing a bet.** Probe raises and value raises fired as
+  often facing a bet as when checked to, so bots raised far more than people
+  do. Facing a bet, probe raises are x0.45 and value raises x0.6.
+- **Missed hands never let go.** Against range-aware equity, ace-high still
+  looked like a call to a half-pot bet. `_withinPostflopPrice` now folds a
+  hand that missed the board with no draw (gutshot or better keeps it) with
+  probability 0.40 + 0.35 x aura: rocks +0.10, calling stations -0.20,
+  maniacs -0.10, flukes -0.05, a repeat-pressure bettor -0.15, a tiny bet
+  (pot odds 18% or less) -0.15, the river +0.10, two overcards on the flop
+  -0.10; clamped to 0-0.90 and seeded per decision. Hands that pass go on to
+  the price check as before.

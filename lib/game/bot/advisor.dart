@@ -384,13 +384,52 @@ class BotAdvisor {
       return decision;
     }
 
+    if (!eng.legalActionsFor(idx).contains(ActionType.fold)) return decision;
+    final fold = (
+      action: ActionType.fold,
+      toAmount: 0,
+      confidence: decision.confidence,
+      strength: decision.strength,
+    );
+
     final view = _botView(eng, idx);
+    final double need = _breakEvenEquity(potBeforeCall: eng.pot, toCall: toCall);
+    final double draw = eng.phase == GamePhase.river
+        ? 0.0
+        : _estimateDrawPotential(eng: eng, idx: idx);
+    final int bettor = _bettorIndex(eng, idx);
+    final bool repeatBettor = bettor >= 0 &&
+        eng.opponentMemoryForSeat(bettor).appliesRepeatPressure;
+
+    // People let go of hands that missed. With nothing from the hole cards
+    // and no real draw, a bet is usually folded, more often by stronger
+    // players. Calling stations and maniacs float more, two overcards on the
+    // flop hang on a little, a bettor who keeps firing gets looked up, tiny
+    // bets get called, and river bets are respected more.
+    if (_boardConnection(eng, idx) == 0 && draw < 0.25) {
+      double foldChance = 0.40 + 0.35 * view.auraSkill;
+      foldChance += switch (view.temperament) {
+        BotTemperament.worldChamp => 0.10,
+        BotTemperament.stoic => -0.20,
+        BotTemperament.aggressive => -0.10,
+      };
+      if (view.skill == BotSkill.fluke) foldChance -= 0.05;
+      if (repeatBettor) foldChance -= 0.15;
+      if (need <= 0.18) foldChance -= 0.15;
+      if (eng.phase == GamePhase.river) foldChance += 0.10;
+      if (eng.phase == GamePhase.flop && _hasTwoOvercards(eng, idx)) {
+        foldChance -= 0.10;
+      }
+      foldChance = foldChance.clamp(0.0, 0.90);
+      final double roll =
+          _decisionUnit(eng: eng, idx: idx, salt: 'missed_board_fold');
+      if (roll < foldChance) return fold;
+    }
+
     final double equity =
         (_decisionEquity(eng: eng, idx: idx, auraSkill: view.auraSkill) +
                 view.readError)
             .clamp(0.01, 0.99);
-    final double need = _breakEvenEquity(potBeforeCall: eng.pot, toCall: toCall);
-
     double slack = switch (view.temperament) {
       BotTemperament.stoic => 0.07,
       BotTemperament.aggressive => 0.04,
@@ -398,22 +437,56 @@ class BotAdvisor {
     };
     slack += (1.0 - view.auraSkill) * 0.10;
     if (view.skill == BotSkill.fluke) slack += 0.02;
-    if (eng.phase != GamePhase.river) {
-      final double draw = _estimateDrawPotential(eng: eng, idx: idx);
-      slack += draw * (eng.phase == GamePhase.flop ? 0.20 : 0.12);
-    }
-    final int bettor = _bettorIndex(eng, idx);
-    if (bettor >= 0 && eng.opponentMemoryForSeat(bettor).appliesRepeatPressure) {
-      slack += 0.04;
-    }
+    slack += draw * (eng.phase == GamePhase.flop ? 0.20 : 0.12);
+    if (repeatBettor) slack += 0.04;
     if (equity + slack >= need) return decision;
-    if (!eng.legalActionsFor(idx).contains(ActionType.fold)) return decision;
-    return (
-      action: ActionType.fold,
-      toAmount: 0,
-      confidence: decision.confidence,
-      strength: decision.strength,
-    );
+    return fold;
+  }
+
+  /// How the hole cards meet the board: 0 when they miss it (a shared board
+  /// pair does not count), 1 for a weak connection (middle or bottom pair,
+  /// a pocket pair under the top card), 2 for top pair, an overpair, two
+  /// pair from both hole cards, trips or better.
+  static int _boardConnection(GameEngine eng, int idx) {
+    final p = eng.players[idx];
+    final board = eng.community;
+    if (p.hole.length < 2 || board.length < 3) return 0;
+    final int a = rankValue(p.hole[0].rank);
+    final int b = rankValue(p.hole[1].rank);
+    final boardRanks = <int>{};
+    int topBoard = 0;
+    for (final c in board) {
+      final int v = rankValue(c.rank);
+      boardRanks.add(v);
+      topBoard = max(topBoard, v);
+    }
+    final bool aHits = boardRanks.contains(a);
+    final bool bHits = boardRanks.contains(b);
+    final bool pocketPair = a == b;
+    final bool connects = aHits || bHits || pocketPair;
+    final HandRank? made = _tryEvaluateRank(eng, idx);
+    if (made != null) {
+      if (made.category.index >= HandCategory.straight.index) return 2;
+      if (connects && made.category.index >= HandCategory.threeKind.index) {
+        return 2;
+      }
+    }
+    if (pocketPair) return a > topBoard ? 2 : 1;
+    if (aHits && bHits) return 2;
+    if (aHits) return a == topBoard ? 2 : 1;
+    if (bHits) return b == topBoard ? 2 : 1;
+    return 0;
+  }
+
+  static bool _hasTwoOvercards(GameEngine eng, int idx) {
+    final p = eng.players[idx];
+    if (p.hole.length < 2 || eng.community.isEmpty) return false;
+    int topBoard = 0;
+    for (final c in eng.community) {
+      topBoard = max(topBoard, rankValue(c.rank));
+    }
+    return rankValue(p.hole[0].rank) > topBoard &&
+        rankValue(p.hole[1].rank) > topBoard;
   }
 
   /// Keeps preflop play inside the bot's hand range (preflop_range.dart):
@@ -2643,6 +2716,8 @@ class BotAdvisor {
         if (isRock) probeChance -= 0.04;
         if (skill == BotSkill.fluke) probeChance += 0.10;
         probeChance += modelAdjustment.raiseBias;
+        // Facing a bet, a raise is a big statement; people mostly call.
+        if (hasToCall) probeChance *= 0.45;
         probeChance = probeChance.clamp(0.0, 0.85);
 
         if (eng.handRng.nextDouble() < probeChance) {
@@ -2682,6 +2757,7 @@ class BotAdvisor {
       if (isRock) pushChance -= 0.06;
       if (auraSkill >= 0.75) pushChance += 0.04;
       pushChance += modelAdjustment.valueBias;
+      if (hasToCall) pushChance *= 0.6;
       pushChance = pushChance.clamp(0.0, 0.9);
 
       if (eng.handRng.nextDouble() < pushChance) {
@@ -3032,13 +3108,17 @@ class BotAdvisor {
         sameBotAggressedLastStreet &&
         (action == ActionType.bet || action == ActionType.raise) &&
         legal.contains(ActionType.check)) {
-      final bool valueHand = strengthScore >= 0.66 || winProb >= 0.62;
+      final int connection = _boardConnection(eng, idx);
+      final bool valueHand = strengthScore >= 0.66 ||
+          connection == 2 ||
+          (eng.phase == GamePhase.flop && connection == 1) ||
+          _estimateDrawPotential(eng: eng, idx: idx) >= 0.32;
       if (!valueHand) {
         double keepChance = switch (eng.phase) {
-          GamePhase.flop => 0.62,
-          GamePhase.turn => 0.45,
-          GamePhase.river => 0.32,
-          _ => 0.40,
+          GamePhase.flop => 0.32,
+          GamePhase.turn => 0.25,
+          GamePhase.river => 0.20,
+          _ => 0.25,
         };
         keepChance *= switch (temperament) {
           BotTemperament.aggressive => 1.30,
