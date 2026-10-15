@@ -16,11 +16,22 @@ import 'package:ten_of_a_kind_poker/config/app_build.dart';
 import 'package:ten_of_a_kind_poker/config/blind_structure.dart';
 import 'package:ten_of_a_kind_poker/config/campaign_events.dart' as ce;
 import 'package:ten_of_a_kind_poker/config/sub_kingdoms.dart';
-import 'package:ten_of_a_kind_poker/config/venues.dart' show VenueGroup;
+import 'package:ten_of_a_kind_poker/config/venues.dart'
+    show VenueGroup, kVenueGroups, venuesForGroup;
+import 'package:ten_of_a_kind_poker/ui/screens/game_screen/finish_notes.dart';
+import 'package:ten_of_a_kind_poker/ui/screens/game_screen/first_game_tips.dart';
+import 'package:ten_of_a_kind_poker/ui/screens/game_screen/share_hand.dart';
+import 'package:ten_of_a_kind_poker/config/kingdom_titles.dart'
+    show kingdomTitleFor;
 import 'package:ten_of_a_kind_poker/features/venue/game_mode.dart';
 import 'package:ten_of_a_kind_poker/game/bot/policy_model.dart'
     show BotLearnedPolicyRegistry, BotLearnedPolicyWeights, BotPolicyAdjustment;
 import 'package:ten_of_a_kind_poker/services/game_analytics.dart';
+import 'package:ten_of_a_kind_poker/services/rival_service.dart';
+import 'package:ten_of_a_kind_poker/game/bot/table_talk.dart';
+import 'package:ten_of_a_kind_poker/game/bot/style_read.dart';
+import 'package:ten_of_a_kind_poker/game/hand_evaluator.dart'
+    show HandCategory;
 import 'package:ten_of_a_kind_poker/services/aura_points_service.dart';
 import 'package:ten_of_a_kind_poker/services/ads_service.dart';
 import 'package:ten_of_a_kind_poker/services/app_settings_service.dart';
@@ -573,6 +584,23 @@ class _GameScreenState extends State<GameScreen>
   bool _heroInBottomHalf = false;
   bool _heroPrizeSecuredCuePlayed = false;
   int? _heroFinalRank;
+
+  // Table talk, style reads and rivals (see lib/game/bot/table_talk.dart,
+  // style_read.dart, lib/services/rival_service.dart).
+  final Map<int, Timer> _seatNoteTimers = <int, Timer>{};
+  final Map<int, int> _seatQuietUntilHand = <int, int>{};
+  final Map<int, int> _bustRankBySeat = <int, int>{};
+  ({int seat, String line})? _pendingTalk;
+  bool _rivalNotesShown = false;
+
+  // Guided first game (game_screen/first_game_tips.dart).
+  late final bool _coachTipsActive = FirstGameTips.instance.pending;
+  final Set<CoachTip> _coachTipsShown = <CoachTip>{};
+  CoachTip? _coachTip;
+  Timer? _coachTipTimer;
+
+  // The game's most share-worthy hand (game_screen/share_hand.dart).
+  ShareMoment? _shareMoment;
   int _heroFinalWinnings = 0;
   bool _heroFinishOverlayShown = false;
   Future<void>? _tournamentSettlementFuture;
@@ -1650,6 +1678,8 @@ class _GameScreenState extends State<GameScreen>
       if (e != null) {
         _scheduleBotActionIfNeeded(e);
       }
+    } else {
+      _offerCoachTip(CoachTip.yourTurn);
     }
     final bool announced = _maybePlayHeroTurnCue();
     _armHeroTurnClockIfNeeded();
@@ -2136,6 +2166,11 @@ class _GameScreenState extends State<GameScreen>
     _blindLevelNoticeTimer?.cancel();
     RenoirSignals.canAct.removeListener(_onCanActChanged);
     _disarmHeroTurnClock();
+    for (final t in _seatNoteTimers.values) {
+      t.cancel();
+    }
+    _seatNoteTimers.clear();
+    _coachTipTimer?.cancel();
     for (final t in _bustTimers.values) {
       t.cancel();
     }
@@ -2278,9 +2313,24 @@ class _GameScreenState extends State<GameScreen>
         }
       }
 
+      // Rivals who remember you: opponents met in earlier games come back
+      // some of the time (lib/services/rival_service.dart).
+      final rivalNames = RivalService.instance.rivalsToSeat(
+        pool.where((s) => !picked.contains(s)).map((s) => s.name),
+        _rng.nextDouble,
+      );
+      for (final name in rivalNames) {
+        if (picked.length >= botsNeeded) break;
+        final rival = pool.firstWhere((s) => s.name == name);
+        picked.add(rival);
+      }
+
       final remaining = pool.where((s) => !picked.contains(s)).toList()
         ..shuffle(_rng);
       picked.addAll(remaining.take(botsNeeded - picked.length));
+      for (final s in picked) {
+        s.rivalNote = RivalService.instance.noteFor(s.name);
+      }
       picked.shuffle(_rng); // randomize seating order
     }
     // Temperament/skill assignments handled in the engine after seats are added.
@@ -2418,12 +2468,6 @@ class _GameScreenState extends State<GameScreen>
       _heroFinalRank = 1;
       _heroFinalWinnings = ev.prize;
     }
-    unawaited(GameAnalytics.gameFinished(
-      kind: _analyticsKind,
-      circuit: widget.campaignGroup?.name,
-      place: finishRank.clamp(1, _totalPlayerCount),
-      players: _totalPlayerCount,
-    ));
     _matchActivitySettlementFuture ??= _recordMatchCompleted(
       heroWon: heroWon,
       finishRank: finishRank,
@@ -2446,6 +2490,16 @@ class _GameScreenState extends State<GameScreen>
     required int finishRank,
     int payoutAup = 0,
   }) async {
+    // The first game is over: no more first-game tips.
+    if (_coachTipsActive) unawaited(FirstGameTips.instance.markDone());
+    // Runs once per game, whether the player won or went out.
+    unawaited(GameAnalytics.gameFinished(
+      kind: _analyticsKind,
+      circuit: widget.campaignGroup?.name,
+      place: finishRank.clamp(1, _totalPlayerCount),
+      players: _totalPlayerCount,
+    ));
+    _recordRivalResults(heroWon: heroWon, heroRank: finishRank);
     final AuraPointsService? service = _auraService;
     if (service == null) return;
     final int rank = finishRank.clamp(1, _totalPlayerCount);
@@ -2614,12 +2668,14 @@ class _GameScreenState extends State<GameScreen>
         continue;
       }
       if (ev is ge.HandStarted) {
+        _showRivalNotesOnce();
         _handWinSoundPlayed = false;
         needsSeatRefresh = _clearSeatActions() || needsSeatRefresh;
         _handOverHandled = false; // new hand started, allow next winners flow
         continue;
       }
       if (ev is ge.StreetDealt) {
+        if (ev.phase == eng.GamePhase.flop) _offerCoachTip(CoachTip.theFlop);
         continue;
       }
       if (ev is ge.BlindLevelChanged) {
@@ -2629,6 +2685,9 @@ class _GameScreenState extends State<GameScreen>
       }
       if (ev is ge.HandSettled) {
         _clearSeatActions();
+        _planTableTalk(ev);
+        _refreshStyleReads();
+        _captureShareMoment(ev);
         _lastSettledHand = ev.handNumber;
         _scheduleBustsFromSettlement(ev);
         // Keep cards on the table until the winners overlay is shown.
@@ -2645,6 +2704,278 @@ class _GameScreenState extends State<GameScreen>
     if (needsSeatRefresh && mounted) {
       setState(() {});
     }
+  }
+
+  /// Shows a first-game tip once, during the player's first game only.
+  void _offerCoachTip(CoachTip tip) {
+    if (!_coachTipsActive || _matchOver || !mounted) return;
+    if (!_coachTipsShown.add(tip)) return;
+    _coachTipTimer?.cancel();
+    setState(() => _coachTip = tip);
+    _coachTipTimer = Timer(const Duration(seconds: 9), _dismissCoachTip);
+    if (_coachTipsShown.length == CoachTip.values.length) {
+      unawaited(FirstGameTips.instance.markDone());
+    }
+  }
+
+  void _dismissCoachTip() {
+    _coachTipTimer?.cancel();
+    _coachTipTimer = null;
+    if (!mounted || _coachTip == null) return;
+    setState(() => _coachTip = null);
+  }
+
+  /// Keeps the player's most share-worthy hand of the game: a showdown they
+  /// played to the end, scored by pot (bad beats and strong wins count up).
+  void _captureShareMoment(ge.HandSettled hs) {
+    final e = _engine;
+    final int hero = _heroIndex;
+    if (e == null || hero < 0 || hero >= e.players.length) return;
+    final heroPlayer = e.players[hero];
+    if (heroPlayer.folded || heroPlayer.hole.length < 2) return;
+    if (e.community.length < 5) return;
+    eng.HandRank? rankOf(List<eng.Card> hole) {
+      try {
+        return eng.HandEvaluator.evaluate(<eng.Card>[...hole, ...e.community]);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    final eng.HandRank? heroRank = rankOf(heroPlayer.hole);
+    if (heroRank == null) return;
+    final bool heroWon = hs.winners.contains(hero);
+    // The opponent to show: the winner if the player lost, otherwise the
+    // strongest hand they beat.
+    int opponent = -1;
+    eng.HandRank? opponentRank;
+    for (int i = 0; i < e.players.length; i++) {
+      if (i == hero) continue;
+      final p = e.players[i];
+      if (p.folded || p.hole.length < 2) continue;
+      if (!heroWon && !hs.winners.contains(i)) continue;
+      final eng.HandRank? rank = rankOf(p.hole);
+      if (rank == null) continue;
+      if (opponentRank == null || rank.compareTo(opponentRank) > 0) {
+        opponent = i;
+        opponentRank = rank;
+      }
+    }
+    if (opponent < 0) return;
+    final int pot = hs.payouts.fold<int>(0, (sum, p) => sum + p.amount);
+    final moment = ShareMoment(
+      board: e.community.map(_mapEngCard).toList(growable: false),
+      heroHole: heroPlayer.hole.map(_mapEngCard).toList(growable: false),
+      opponentHole:
+          e.players[opponent].hole.map(_mapEngCard).toList(growable: false),
+      opponentName: e.players[opponent].name,
+      heroWon: heroWon,
+      pot: pot,
+      heroHand: heroRank.category,
+      opponentHand: opponentRank?.category,
+    );
+    final ShareMoment? best = _shareMoment;
+    if (best == null || moment.score > best.score) _shareMoment = moment;
+  }
+
+  Future<void> _openShareHand() async {
+    final ShareMoment? moment = _shareMoment;
+    if (moment == null || !mounted) return;
+    final String kingdom = (widget.venue?.name ?? '').toString().trim();
+    final VenueGroup? group = widget.campaignGroup;
+    String title = '';
+    final CampaignProgressService? progress = _campaignProgressService;
+    if (group != null &&
+        kingdom.isNotEmpty &&
+        progress != null &&
+        progress.hasTitle(group: group, kingdomName: kingdom)) {
+      final String t = kingdomTitleFor(group: group, kingdomName: kingdom);
+      if (t != 'N/A') title = '${t.toUpperCase()} OF ${kingdom.toUpperCase()}';
+    }
+    final int? subIdx = widget.campaignSubKingdomIndex;
+    final String place = (group != null && subIdx != null && kingdom.isNotEmpty)
+        ? subKingdomDisplayName(
+            group: group,
+            kingdomName: kingdom,
+            index: subIdx,
+          )
+        : kingdom;
+    unawaited(GameAnalytics.handShared(heroWon: moment.heroWon));
+    await showShareHandSheet(
+      context,
+      moment: moment,
+      placeLine: place.isEmpty ? 'TEN OF A KIND' : place.toUpperCase(),
+      kingdomTitle: title,
+    );
+  }
+
+  /* ================= Table talk, style reads, rivals ================= */
+
+  /// Shows [text] above seat [idx] for [duration], replacing any note there.
+  void _showSeatNote(
+    int idx,
+    String text,
+    SeatNoteKind kind, {
+    Duration duration = const Duration(milliseconds: 3400),
+  }) {
+    if (!mounted || idx < 0 || idx >= seats.length) return;
+    _seatNoteTimers.remove(idx)?.cancel();
+    setState(() {
+      seats[idx].note = text;
+      seats[idx].noteKind = kind;
+    });
+    _seatNoteTimers[idx] = Timer(duration, () {
+      _seatNoteTimers.remove(idx);
+      if (!mounted || idx >= seats.length) return;
+      setState(() => seats[idx].note = null);
+    });
+  }
+
+  /// Decides whether a bot says something about the hand that just ended.
+  /// At most one line per hand; it is spoken once the winners overlay
+  /// closes, so the player actually sees it.
+  void _planTableTalk(ge.HandSettled hs) {
+    _pendingTalk = null;
+    final e = _engine;
+    if (e == null) return;
+    final int pot = hs.payouts.fold<int>(0, (sum, p) => sum + p.amount);
+    final bool bigPot =
+        pot >= math.max(e.bigBlind * 12, (_startingStackChips * 0.2).round());
+    final bool showdown = hs.payouts.any((p) => p.best != null);
+    final Map<int, HandCategory> bestBySeat = <int, HandCategory>{
+      for (final p in hs.payouts)
+        if (p.best != null) p.playerIndex: p.best!.category,
+    };
+
+    final candidates = <({int seat, TalkMoment moment})>[];
+    for (int i = 0; i < e.players.length && i < seats.length; i++) {
+      final ep = e.players[i];
+      if (!ep.isBot || seats[i].isHero) continue;
+      if ((_seatQuietUntilHand[i] ?? -1) > hs.handNumber) continue;
+      if (hs.bustedThisHand.contains(i)) {
+        candidates.add((seat: i, moment: TalkMoment.busted));
+        continue;
+      }
+      if (!showdown || !bigPot || ep.folded) continue;
+      if (hs.winners.contains(i)) {
+        candidates.add((seat: i, moment: TalkMoment.wonBigPot));
+      } else {
+        final HandCategory? held = bestBySeat[i] ?? ep.best?.category;
+        final bool beat =
+            held != null && held.index >= HandCategory.twoPair.index;
+        candidates.add((
+          seat: i,
+          moment: beat ? TalkMoment.badBeat : TalkMoment.lostBigPot,
+        ));
+      }
+    }
+    if (candidates.isEmpty) return;
+    int priority(TalkMoment m) => switch (m) {
+          TalkMoment.busted => 0,
+          TalkMoment.badBeat => 1,
+          TalkMoment.lostBigPot => 2,
+          TalkMoment.wonBigPot => 3,
+        };
+    candidates.sort((a, b) => priority(a.moment).compareTo(priority(b.moment)));
+
+    for (final c in candidates) {
+      final ep = e.players[c.seat];
+      final rng = math.Random(
+        Object.hash(e.tableSeed.hashCode, hs.handNumber, c.seat, ep.name),
+      );
+      final String? line = BotTableTalk.lineFor(
+        moment: c.moment,
+        temperament: ep.temperament ?? eng.BotTemperament.stoic,
+        mood: e.styleStateForSeat(c.seat).mood,
+        roll: rng.nextDouble(),
+        pick: rng.nextDouble(),
+      );
+      if (line == null) continue;
+      _pendingTalk = (seat: c.seat, line: line);
+      _seatQuietUntilHand[c.seat] = hs.handNumber + BotTableTalk.seatRestHands;
+      return;
+    }
+  }
+
+  void _speakPendingTalk() {
+    final talk = _pendingTalk;
+    _pendingTalk = null;
+    if (talk == null) return;
+    _showSeatNote(talk.seat, talk.line, SeatNoteKind.talk);
+  }
+
+  /// Updates each bot's style read from what the table has seen, and
+  /// briefly shows a read the first time it appears or when it changes
+  /// (one per hand, never over a line of table talk).
+  void _refreshStyleReads() {
+    final e = _engine;
+    if (e == null) return;
+    int? flashSeat;
+    String? flashRead;
+    for (int i = 0; i < e.players.length && i < seats.length; i++) {
+      final ep = e.players[i];
+      if (!ep.isBot || seats[i].isHero || ep.isOut) continue;
+      final String? read = PlayerStyleRead.readFor(e.opponentMemoryForSeat(i));
+      if (read == seats[i].styleRead) continue;
+      seats[i].styleRead = read;
+      if (read != null && flashSeat == null && _pendingTalk?.seat != i) {
+        flashSeat = i;
+        flashRead = read;
+      }
+    }
+    if (flashSeat != null && flashRead != null) {
+      final int seat = flashSeat;
+      final String read = flashRead;
+      // After the winners overlay, alongside any table talk elsewhere.
+      Future<void>.delayed(const Duration(milliseconds: 1600), () {
+        if (!mounted || _matchOver) return;
+        if (seats[seat].note != null) return;
+        _showSeatNote(seat, 'Read: $read', SeatNoteKind.info);
+      });
+    }
+  }
+
+  /// At the first hand, shows each returning rival's record over their seat.
+  void _showRivalNotesOnce() {
+    if (_rivalNotesShown) return;
+    _rivalNotesShown = true;
+    int delayMs = 600;
+    for (int i = 0; i < seats.length; i++) {
+      final String? note = seats[i].rivalNote;
+      if (note == null || seats[i].isHero) continue;
+      final int seat = i;
+      Future<void>.delayed(Duration(milliseconds: delayMs), () {
+        if (!mounted || _matchOver) return;
+        _showSeatNote(
+          seat,
+          note,
+          SeatNoteKind.info,
+          duration: const Duration(milliseconds: 4200),
+        );
+      });
+      delayMs += 900;
+    }
+  }
+
+  /// Once the player's game ends, records who finished ahead of whom.
+  void _recordRivalResults({required bool heroWon, required int heroRank}) {
+    final int hero = _heroIndex;
+    if (hero < 0) return;
+    final ahead = <String, bool>{};
+    for (int i = 0; i < seats.length; i++) {
+      if (i == hero || seats[i].isHero) continue;
+      final String name = seats[i].name.trim();
+      if (name.isEmpty) continue;
+      if (heroWon) {
+        ahead[name] = true;
+      } else {
+        // A bot that went out before the player has the higher (worse) rank;
+        // one still in when the player went out finished ahead.
+        final int? botRank = _bustRankBySeat[i];
+        ahead[name] = botRank != null && botRank > heroRank;
+      }
+    }
+    unawaited(RivalService.instance.recordGame(ahead));
   }
 
   void _scheduleBustsFromSettlement(ge.HandSettled hs) {
@@ -2825,6 +3156,7 @@ class _GameScreenState extends State<GameScreen>
   }
 
   void _handlePlayerBusted(ge.PlayerBusted ev) {
+    _bustRankBySeat[ev.playerIndex] = ev.rank;
     _playBustSound(ev.playerIndex);
     final int idx = ev.playerIndex;
     if (idx >= 0 && idx < seats.length) {
@@ -2907,11 +3239,50 @@ class _GameScreenState extends State<GameScreen>
         !(rank > 0 && rank <= 3) &&
         adsService.rewardedAdsSupported;
 
+    final game_models.PayoutTable? payouts = _campaignAupPayoutTable();
+    final int paidPlaces =
+        payouts == null ? 0 : payouts.byRank.where((a) => a > 0).length;
+    final String? closeCall = FinishNotes.closeCall(
+      rank: rank,
+      totalPlayers: totalPlayers,
+      paidPlaces: paidPlaces,
+    );
+    String? progressNote;
+    final CampaignProgressService? progress = _campaignProgressService;
+    final String kingdomName = (widget.venue?.name ?? '').toString().trim();
+    if (_isCampaignEvent &&
+        progress != null &&
+        campaignGroup != null &&
+        kingdomName.isNotEmpty) {
+      progressNote = FinishNotes.progress(
+        kingdom: kingdomName,
+        titleGame: widget.campaignMainEvent,
+        kingdomCleared: progress.clearedCount(
+          group: campaignGroup,
+          kingdomName: kingdomName,
+        ),
+        kingdomTotal: subKingdomCountFor(
+          group: campaignGroup,
+          kingdomName: kingdomName,
+        ),
+        overallCleared: progress.totalClearedCount(),
+        overallTotal: totalSubKingdomCount(),
+        titlesWon: progress.totalTitlesEarned(),
+        titlesTotal: kVenueGroups.fold<int>(
+          0,
+          (sum, group) => sum + venuesForGroup(group).length,
+        ),
+      );
+    }
+
     await go.showHeroFinishOverlay(
       context,
       heroSeat: heroSeat,
       rank: rank,
       totalPlayers: totalPlayers,
+      closeCall: closeCall,
+      progressNote: progressNote,
+      onShareHand: _shareMoment == null ? null : _openShareHand,
       handsPlayed: handsPlayed,
       finalChips: finalChips,
       winnings: winnings,
@@ -3697,6 +4068,9 @@ class _GameScreenState extends State<GameScreen>
   }
 
   Future<void> _afterWinnersClosed() async {
+    _speakPendingTalk();
+    // After the winners overlay, so the player actually sees it.
+    _offerCoachTip(CoachTip.handOver);
     final settlement = _tournamentSettlementFuture;
     if (settlement != null) await settlement;
     final placementSettlement = _heroPlacementSettlementFuture;
@@ -4088,7 +4462,10 @@ class _GameScreenState extends State<GameScreen>
       onWillPop: _handleBackPressed,
       child: GameViewport(
         backgroundColor: bg,
-        child: GameScreenUI(
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: GameScreenUI(
           bg: bg,
           venueName: venueName,
           flagPath: flagPath,
@@ -4163,6 +4540,22 @@ class _GameScreenState extends State<GameScreen>
           engine: _engine,
           onRenoirShuffle: _handleRenoirShuffle,
           dealerAvatarStyle: _dealerAvatarStyle,
+              ),
+            ),
+            if (_coachTip case final CoachTip tip)
+              Positioned(
+                left: 16,
+                right: 16,
+                top: MediaQuery.paddingOf(context).top + 64,
+                child: Center(
+                  child: CoachTipBanner(
+                    key: ValueKey<CoachTip>(tip),
+                    text: tip.text,
+                    onDismiss: _dismissCoachTip,
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

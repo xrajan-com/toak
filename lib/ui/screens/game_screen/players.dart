@@ -31,6 +31,10 @@ Color _seatShellColor(
   );
 }
 
+/// What a seat note is: something the player said, or information about
+/// them (a style read or a rival record).
+enum SeatNoteKind { talk, info }
+
 /* ──────────────────────────────────────────────
  * Seat model (UI)
  * ─────────────────────────────────────────── */
@@ -56,6 +60,17 @@ class Seat {
   /// nothing notable to show. Set from the engine's fearGreed axis; always
   /// null for the human seat.
   String? moodLabel;
+
+  /// A short-lived note above the seat: a line of table talk, a fresh read
+  /// of how this player plays, or a rival's record. Null when there is none.
+  String? note;
+  SeatNoteKind noteKind = SeatNoteKind.talk;
+
+  /// How this player has been seen to play ("Calls a lot"), once known.
+  String? styleRead;
+
+  /// The player's record against this opponent ("Rival · you lead 3-2").
+  String? rivalNote;
 
   Seat({
     required this.name,
@@ -809,6 +824,35 @@ class SeatTopBubbleOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String actionLabel = _seatOverlayActionLabel(seat.lastAction);
+    // A seat note (table talk, a read, a rival record) is short-lived and
+    // only appears between actions, so it outranks everything except the
+    // action just taken: a busted bot can still say "GG".
+    final String? note = seat.note;
+    if (actionLabel.isEmpty && note != null && note.isNotEmpty) {
+      final bool talk = seat.noteKind == SeatNoteKind.talk;
+      return Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            top: -seatHeight * 0.36,
+            left: -seatWidth * 0.25,
+            right: -seatWidth * 0.25,
+            child: IgnorePointer(
+              child: Center(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 260),
+                  child: _SeatInfoChip(
+                    key: ValueKey('seat-note-${seat.avatarKey}-$note'),
+                    text: talk ? '\u201C$note\u201D' : note,
+                    highlight: !talk,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
     final bool showBustedBubble = seat.busted &&
         seat.chips <= 0 &&
         (persistBustedBubble || seatVisibleOpacity > 0.0);

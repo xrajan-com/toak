@@ -42,6 +42,9 @@ dependencies:
   shared_preferences: ^2.2.3
   just_audio: ^0.9.38
   url_launcher: ^6.3.0
+  # 9.x-10.x: newer releases need package:web 1.x, which the 2024 Firebase
+  # web plugins pinned above do not allow.
+  share_plus: '>=9.0.0 <11.0.0'
 
   # Icons / cards
   cupertino_icons: ^1.0.6

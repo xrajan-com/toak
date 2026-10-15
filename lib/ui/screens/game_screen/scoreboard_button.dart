@@ -216,9 +216,21 @@ Future<void> showScoreboardSheet(
                               final s = sorted[i];
                               final kingdom = s.kingdom.trim();
                               final about = s.about.trim();
-                              final aboutDisplay = about.isNotEmpty
-                                  ? truncateNice(about, 40)
-                                  : '—';
+                              // What the table has learned about a player
+                              // (rival record, style read) is more useful
+                              // mid-game than their profile line.
+                              final String learned = <String?>[
+                                s.rivalNote,
+                                s.styleRead,
+                              ]
+                                  .whereType<String>()
+                                  .where((t) => t.isNotEmpty)
+                                  .join(' · ');
+                              final aboutDisplay = learned.isNotEmpty
+                                  ? learned
+                                  : about.isNotEmpty
+                                      ? truncateNice(about, 40)
+                                      : '—';
                               final Color accentColor = go.feltColorForKingdom(
                                 kingdom.isNotEmpty ? kingdom : null,
                               );

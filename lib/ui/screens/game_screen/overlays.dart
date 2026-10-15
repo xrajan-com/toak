@@ -655,6 +655,9 @@ Future<void> showHeroFinishOverlay(
   String rewardedAdUnavailableMessage = 'Rewarded ad is not ready yet.',
   Future<int> Function()? onWatchRewardedAd,
   VoidCallback? onExitToVenue,
+  String? closeCall,
+  String? progressNote,
+  Future<void> Function()? onShareHand,
 }) async {
   final bool podiumFinish = rank > 0 && rank <= 3;
   final bool champion = rank == 1;
@@ -677,13 +680,14 @@ Future<void> showHeroFinishOverlay(
       : rank > 0
           ? 'YOU FINISHED $finishLabel OF $totalPlayers.'
           : 'YOUR RUN ENDS HERE.';
-  final String summary = podiumFinish
+  final String summary = closeCall ??
+      (podiumFinish
       ? (winnings > 0
           ? 'PODIUM FINISH. AUP PAYOUT EARNED.'
           : 'PODIUM FINISH. STRONG RUN TO THE END.')
       : (winnings > 0
           ? 'YOU STILL PICKED UP AN AUP PAYOUT.'
-          : 'NO AUP PAYOUT THIS TIME. RESET AND COME AGAIN.');
+          : 'NO AUP PAYOUT THIS TIME. RESET AND COME AGAIN.'));
   final String vName = venueName.trim();
   final String vFlag = venueFlagAsset.trim();
   bool matchEndAdStarted = false;
@@ -888,6 +892,51 @@ Future<void> showHeroFinishOverlay(
                                                 fontSize: 13.5,
                                               ),
                                             ),
+                                            if (progressNote != null &&
+                                                progressNote
+                                                    .trim()
+                                                    .isNotEmpty) ...[
+                                              const SizedBox(height: 6),
+                                              Text(
+                                                progressNote.trim(),
+                                                textAlign: TextAlign.center,
+                                                style: _kBodyStyle.copyWith(
+                                                  color: const Color(
+                                                      0xFF00B5C8),
+                                                  fontSize: 12.5,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                            ],
+                                            if (onShareHand != null) ...[
+                                              const SizedBox(height: 10),
+                                              Center(
+                                                child: OutlinedButton.icon(
+                                                  onPressed: () =>
+                                                      onShareHand!(),
+                                                  style:
+                                                      OutlinedButton.styleFrom(
+                                                    foregroundColor:
+                                                        Colors.white,
+                                                    side: const BorderSide(
+                                                      color: Color(0xFF00B5C8),
+                                                    ),
+                                                  ),
+                                                  icon: const Icon(
+                                                    Icons.ios_share,
+                                                    size: 18,
+                                                  ),
+                                                  label: const Text(
+                                                    'SHARE YOUR BEST HAND',
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w800,
+                                                      letterSpacing: 0.6,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ],
                                         ),
                                       ),

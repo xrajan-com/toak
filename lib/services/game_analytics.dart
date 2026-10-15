@@ -81,6 +81,10 @@ class GameAnalytics {
         'kingdom': kingdom.length <= 100 ? kingdom : kingdom.substring(0, 100),
       });
 
+  /// The player opened the share card for a hand.
+  static Future<void> handShared({required bool heroWon}) =>
+      _log('hand_shared', <String, Object>{'won': heroWon ? 1 : 0});
+
   static Future<void> _log(String name, Map<String, Object> parameters) async {
     if (!_enabled) return;
     try {
