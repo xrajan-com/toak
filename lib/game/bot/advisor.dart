@@ -433,9 +433,18 @@ class BotAdvisor {
 
   /// Keeping the betting lead. The bot that bet the last street keeps
   /// betting with value: the hole cards hit the board (top pair or better;
-  /// any pair on the flop), a real draw, or a monster. A hand that missed
-  /// keeps the lead some of the time: flop 32%, turn 25%, river 20%
-  /// (maniacs x1.3, calling stations x0.6, rocks x0.85, multiway x0.6).
+  /// any pair on the flop), a real draw, or a monster. With a hand that
+  /// missed:
+  ///
+  /// * on the flop it continuation-bets at a set rate whatever the decision
+  ///   tree said (maniacs 48%, rocks 38%, calling stations 25%, x0.85-1.15
+  ///   by Aura, halved multiway). Strong bots used to c-bet a missed flop
+  ///   about 7% of the time, so their bets meant value and their checks
+  ///   meant weakness: easy to read;
+  /// * on the turn and river it keeps betting only some of the time: 25% /
+  ///   20% (maniacs x1.3, calling stations x0.6, rocks x0.85, multiway
+  ///   x0.6).
+  ///
   /// This runs on the final decision, so no route around it (a stab, a
   /// fluke shove that the safety guard turned back into a bet) keeps a
   /// missed hand betting street after street.
@@ -451,13 +460,14 @@ class BotAdvisor {
         eng.phase != GamePhase.river) {
       return decision;
     }
-    if (decision.action != ActionType.bet &&
-        decision.action != ActionType.raise) {
-      return decision;
-    }
+    final bool betting = decision.action == ActionType.bet ||
+        decision.action == ActionType.raise;
+    final bool checking = decision.action == ActionType.check;
+    if (!betting && !checking) return decision;
     if (eng.currentBet != 0 || eng.toCallFor(idx) > 0) return decision;
     if (!eng.wasAggressorPreviousStreet(idx)) return decision;
-    if (!eng.legalActionsFor(idx).contains(ActionType.check)) return decision;
+    final Set<ActionType> legal = eng.legalActionsFor(idx);
+    if (!legal.contains(ActionType.check)) return decision;
 
     final int connection = _boardConnection(eng, idx);
     final bool valueHand = decision.strength >= 0.66 ||
@@ -467,30 +477,59 @@ class BotAdvisor {
     if (valueHand) return decision;
 
     final view = _botView(eng, idx);
-    double keepChance = switch (eng.phase) {
-      GamePhase.flop => 0.32,
-      GamePhase.turn => 0.25,
-      GamePhase.river => 0.20,
-      _ => 0.25,
-    };
-    keepChance *= switch (view.temperament) {
-      BotTemperament.aggressive => 1.30,
-      BotTemperament.stoic => 0.60,
-      BotTemperament.worldChamp => 0.85,
-    };
     final int foldableSeats = eng.players
         .where((p) => !p.folded && !p.allIn && !p.sittingOut && !p.isOut)
         .length;
-    if (foldableSeats >= 3) keepChance *= 0.60;
-    final double keepRoll =
+    final bool multiway = foldableSeats >= 3;
+    final double roll =
         _decisionUnit(eng: eng, idx: idx, salt: 'continuation_bet');
-    if (keepRoll < keepChance.clamp(0.0, 0.90)) return decision;
-    return (
+    final check = (
       action: ActionType.check,
       toAmount: 0,
       confidence: (decision.confidence * 0.92).clamp(0.05, 0.95),
       strength: decision.strength,
     );
+
+    if (eng.phase == GamePhase.flop) {
+      double cbet = switch (view.temperament) {
+        BotTemperament.aggressive => 0.48,
+        BotTemperament.stoic => 0.25,
+        BotTemperament.worldChamp => 0.38,
+      };
+      cbet *= 0.85 + 0.30 * view.auraSkill;
+      if (multiway) cbet *= 0.50;
+      if (roll >= cbet) return betting ? check : decision;
+      if (betting) return decision;
+      if (!legal.contains(ActionType.bet)) return decision;
+      final bounds = eng.raiseBoundsTo(idx);
+      if (bounds.minTo > bounds.maxTo) return decision;
+      final double frac = switch (view.temperament) {
+        BotTemperament.aggressive => 0.50,
+        BotTemperament.stoic => 0.33,
+        BotTemperament.worldChamp => 0.40,
+      };
+      int to = max(eng.bigBlind, (max(0, eng.pot) * frac).round());
+      if (to < bounds.minTo) to = bounds.minTo;
+      // A stack-sized "c-bet" with nothing is not one; check instead.
+      if (to >= bounds.maxTo) return decision;
+      return (
+        action: ActionType.bet,
+        toAmount: to,
+        confidence: decision.confidence,
+        strength: decision.strength,
+      );
+    }
+
+    if (!betting) return decision;
+    double keepChance = eng.phase == GamePhase.turn ? 0.25 : 0.20;
+    keepChance *= switch (view.temperament) {
+      BotTemperament.aggressive => 1.30,
+      BotTemperament.stoic => 0.60,
+      BotTemperament.worldChamp => 0.85,
+    };
+    if (multiway) keepChance *= 0.60;
+    if (roll < keepChance.clamp(0.0, 0.90)) return decision;
+    return check;
   }
 
   /// A bot's traits, effective Aura (rocks read at 80 or better) and its
@@ -579,7 +618,8 @@ class BotAdvisor {
     // players. Calling stations and maniacs float more, two overcards on the
     // flop hang on a little, a bettor who keeps firing gets looked up, tiny
     // bets get called, and river bets are respected more.
-    if (_boardConnection(eng, idx) == 0 && draw < 0.25) {
+    final int connection = _boardConnection(eng, idx);
+    if (connection == 0 && draw < 0.25) {
       double foldChance = 0.40 + 0.35 * view.auraSkill;
       foldChance += switch (view.temperament) {
         BotTemperament.worldChamp => 0.10,
@@ -597,6 +637,33 @@ class BotAdvisor {
       final double roll =
           _decisionUnit(eng: eng, idx: idx, salt: 'missed_board_fold');
       if (roll < foldChance) return fold;
+    }
+
+    // A weak pair (middle or bottom pair, an underpair) without a draw
+    // calls the flop but gives up to a turn or river bet a fair share of
+    // the time, more often for strong players, more on the river, and on
+    // the flop only to a big bet (pot odds 28% or more, about two thirds
+    // of the pot). Bots used to call down with any pair.
+    if (connection == 1 && draw < 0.25) {
+      double foldChance = eng.phase == GamePhase.flop
+          ? (need >= 0.28 ? 0.15 + 0.20 * view.auraSkill : 0.0)
+          : 0.25 + 0.30 * view.auraSkill;
+      if (foldChance > 0) {
+        foldChance += switch (view.temperament) {
+          BotTemperament.worldChamp => 0.10,
+          BotTemperament.stoic => -0.20,
+          BotTemperament.aggressive => -0.05,
+        };
+        if (view.skill == BotSkill.fluke) foldChance -= 0.05;
+        if (repeatBettor) foldChance -= 0.15;
+        if (need <= 0.18) foldChance -= 0.15;
+        if (eng.phase == GamePhase.river) foldChance += 0.10;
+        if (_liveOpponents(eng: eng, idx: idx) >= 2) foldChance += 0.05;
+        foldChance = foldChance.clamp(0.0, 0.85);
+        final double roll =
+            _decisionUnit(eng: eng, idx: idx, salt: 'weak_pair_fold');
+        if (roll < foldChance) return fold;
+      }
     }
 
     final double equity =

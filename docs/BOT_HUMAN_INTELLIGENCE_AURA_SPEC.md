@@ -673,3 +673,19 @@ the lead rule seemed not to work at low Aura. `_withLegalAmount`, the last
 gate in `suggest()`, snaps every bet and raise to a legal amount.
 `test/bot_bet_amount_legal_test.dart` plays 480 hands across the Aura bands
 and fails on any action the engine refuses; the report counts refusals too.
+
+**After the legal-amount fix** (seventh report: 0 refusals, lead flag 100%,
+c-bets 45-65%) two gaps were left, both about what bets mean:
+
+- **Strong bots only bet when they had it.** Aura 80-95 bots c-bet a missed
+  flop 6-17% of the time, so their bets meant value and their checks meant
+  weakness. With a missed hand the flop c-bet is now a set rate, whatever
+  the decision tree said: maniacs 48%, rocks 38%, calling stations 25%,
+  x(0.85 + 0.30 x aura), halved multiway; a third to half the pot.
+- **Calling down with any pair.** Postflop fold-to-bet was 14-30% and AF
+  1.0-1.3 (people: 1.5-3). A weak pair (middle or bottom pair, an underpair)
+  without a draw now folds to a turn or river bet with probability
+  0.25 + 0.30 x aura, and on the flop only to a bet of two thirds of the pot
+  or more (0.15 + 0.20 x aura); rocks +0.10, calling stations -0.20, maniacs
+  -0.05, flukes -0.05, a repeat-pressure bettor -0.15, a tiny bet -0.15, the
+  river +0.10, two or more opponents +0.05.
