@@ -556,3 +556,21 @@ Measured by `test/bot_aura_simulation_report_test.dart`, which plays the same
 seeded tables with the read error on and off and writes
 `build/bot_simulation_report.md` (VPIP, PFR, postflop aggression, fold to
 bet, and how often a replayed deal changes its answer, per Aura band).
+
+## Hand ranges, exact preflop equity, and reading the bettor (1.2.11+88)
+
+The first simulation report (variance on and off) exposed three problems
+older than this work:
+
+| Problem | Measured | Fix |
+|---|---|---|
+| Bots played almost every hand | VPIP 81-97% at every Aura | `preflop_range.dart`: target share of starting hands by Aura (95 ~20%, 80 ~25%, 50 ~35%, 20 ~50%), scaled by temperament, seat, raises faced and mood; voluntary preflop play outside it becomes a check or fold. Stack-off spots (10 BB or less, facing an all-in) keep push/fold logic. |
+| Preflop equity was a 40-140 deal estimate | about +-5% equity for every bot; Aura 95 changed its answer on a third of replayed deals | the 50,000-deal preflop table. After the fix, replays change only through Aura: 2.5% at Aura 95 up to 80% at Aura 20. |
+| Strong bots never folded after the flop | Aura 95 folded to 0% of postflop bets, Aura 80 to 16% | `_decisionEquity` / `_estimateEquityVsRanges`: facing a postflop bet, equity is a weighted simulation over the hands the field likely holds (each opponent's preflop range; for the bettor, how likely each hand is to make this bet). |
+
+How much a bot believes the bet is its game awareness and grows with Aura:
+`trustBet = (0.25 + 0.65 * aura) * credibility`, where credibility rises with
+the bettor's showdown strength, falls with their aggression, and drops to
+30% for a player applying repeat pressure, so bots still call down someone
+who bets every hand. A 20-Aura bot mostly thinks about its own cards; a
+95-Aura bot reads ranges.

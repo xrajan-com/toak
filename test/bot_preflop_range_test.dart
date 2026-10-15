@@ -19,15 +19,19 @@ double _share(int aura, {int fromButton = 2, int raises = 0}) =>
     );
 
 void main() {
-  test('the Aura curve hits the agreed targets', () {
-    expect(BotPreflopRange.baseShareForAura(95), closeTo(0.20, 1e-9));
-    expect(BotPreflopRange.baseShareForAura(80), closeTo(0.25, 1e-9));
-    expect(BotPreflopRange.baseShareForAura(50), closeTo(0.35, 1e-9));
-    expect(BotPreflopRange.baseShareForAura(20), closeTo(0.50, 1e-9));
-    expect(
-      BotPreflopRange.baseShareForAura(65),
-      closeTo((0.35 + 0.25) / 2, 1e-9),
-    );
+  test('the Aura curve is calibrated and falls as Aura rises', () {
+    // Base shares before temperament and seat; the simulation report shows
+    // the measured averages (targets 20/25/35/50%).
+    expect(BotPreflopRange.baseShareForAura(95), closeTo(0.225, 1e-9));
+    expect(BotPreflopRange.baseShareForAura(80), closeTo(0.245, 1e-9));
+    expect(BotPreflopRange.baseShareForAura(50), closeTo(0.29, 1e-9));
+    expect(BotPreflopRange.baseShareForAura(20), closeTo(0.42, 1e-9));
+    for (var a = 0; a < 100; a += 5) {
+      expect(
+        BotPreflopRange.baseShareForAura(a),
+        greaterThan(BotPreflopRange.baseShareForAura(a + 5)),
+      );
+    }
   });
 
   test('ranking covers every starting hand once, best first', () {

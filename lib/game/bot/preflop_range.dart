@@ -25,7 +25,7 @@
 
 import 'package:ten_of_a_kind_poker/game/core.dart' show Card, Rank, Suit;
 import 'package:ten_of_a_kind_poker/game/equity/preflop_equity_table.dart'
-    show lookupPreflopEquity;
+    show canonicalPreflopClass, lookupPreflopEquity;
 import 'package:ten_of_a_kind_poker/game/models.dart'
     show BotSkill, BotTemperament;
 
@@ -34,13 +34,18 @@ class BotPreflopRange {
 
   /// Target share of starting hands a bot plays, by Aura (0..100), before
   /// temperament, position and situation. Linear between these points.
+  ///
+  /// Calibrated against the simulation report so that the *measured* share
+  /// across a real mix of temperaments and seats lands on the targets
+  /// (Aura 95 ~20%, 80 ~25%, 50 ~35%, 20 ~50%). Weak Aura levels draw more
+  /// maniacs and calling stations, so their base sits below the target.
   static const List<(int, double)> _auraCurve = <(int, double)>[
-    (0, 0.58),
-    (20, 0.50),
-    (50, 0.35),
-    (80, 0.25),
-    (95, 0.20),
-    (100, 0.18),
+    (0, 0.48),
+    (20, 0.42),
+    (50, 0.29),
+    (80, 0.245),
+    (95, 0.225),
+    (100, 0.21),
   ];
 
   static double baseShareForAura(int aura) {
@@ -117,6 +122,19 @@ class BotPreflopRange {
       }
     }
     return above / 1326.0;
+  }
+
+  static final Map<String, double> _topShareByClass = <String, double>{};
+
+  /// [topShareOfEquity] for a two-card hand, cached by hand class (AKs,
+  /// T9o, 77...). Used when a bot weighs the hands an opponent might hold.
+  static double topShareOfHole(List<Card> hole) {
+    if (hole.length < 2) return 1.0;
+    final String key = canonicalPreflopClass(hole[0], hole[1]);
+    return _topShareByClass.putIfAbsent(key, () {
+      final double? equity = handEquity(hole);
+      return equity == null ? 1.0 : topShareOfEquity(equity);
+    });
   }
 
   /// Whether a bot that reads its hand with [readError] (equity units, see

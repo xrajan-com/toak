@@ -48,7 +48,11 @@ class TrailblazersPanel extends StatefulWidget {
 class _TrailblazersPanelState extends State<TrailblazersPanel> {
   late Future<List<LeaderboardEntry>> _entries = widget.load();
 
-  void _retry() => setState(() => _entries = widget.load());
+  void _retry() {
+    setState(() {
+      _entries = widget.load();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

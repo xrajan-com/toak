@@ -711,9 +711,12 @@ class BotAdvisor {
     );
     final int liveOpp = _liveOpponents(eng: eng, idx: idx);
     final double baseEquity = liveOpp > 0 ? (1.0 / (liveOpp + 1)) : 1.0;
-    // The equity the bot believes it has: the estimate plus its read error.
+    // The equity the bot believes it has: against what its opponents are
+    // likely to hold when facing a bet (_decisionEquity), plus its read
+    // error.
     final double winProb =
-        (_estimateWinProb(eng: eng, idx: idx) + readError).clamp(0.01, 0.99);
+        (_decisionEquity(eng: eng, idx: idx, auraSkill: auraSkill) + readError)
+            .clamp(0.01, 0.99);
     final double winEdge = winProb - baseEquity;
     if (winEdge >= 0.03 ||
         (posScore >= 2 &&
@@ -1908,6 +1911,209 @@ class BotAdvisor {
     return (total / seen).clamp(0.0, 1.0).toDouble();
   }
 
+  /// The equity a bot judges its decision by.
+  ///
+  /// Facing a bet after the flop, a bet is information: a tight player's
+  /// bet means strength, so equity against random cards overstates what the
+  /// bot really has. The simulation report showed the cost: Aura 95 bots
+  /// folded to 0% of postflop bets. Here the bot weighs the hands the field
+  /// is likely to hold (_estimateEquityVsRanges). Everywhere else, plain
+  /// equity against random hands.
+  static double _decisionEquity({
+    required GameEngine eng,
+    required int idx,
+    required double auraSkill,
+  }) {
+    if (eng.phase == GamePhase.preflop || eng.community.length < 3) {
+      return _estimateWinProb(eng: eng, idx: idx);
+    }
+    final int toCall = eng.toCallFor(idx);
+    if (toCall <= 0) return _estimateWinProb(eng: eng, idx: idx);
+    final int bettor = _bettorIndex(eng, idx);
+    if (bettor < 0) return _estimateWinProb(eng: eng, idx: idx);
+    return _estimateEquityVsRanges(
+      eng: eng,
+      idx: idx,
+      bettor: bettor,
+      toCall: toCall,
+      auraSkill: auraSkill,
+    );
+  }
+
+  /// The seat whose bet this bot is facing, or -1.
+  static int _bettorIndex(GameEngine eng, int idx) {
+    bool inHand(int i) {
+      if (i < 0 || i >= eng.players.length || i == idx) return false;
+      final Player o = eng.players[i];
+      return !o.folded && !o.sittingOut && !o.isOut;
+    }
+
+    final int heroBet = eng.players[idx].betThisStreet;
+    final int? last = eng.lastAggressorIndex;
+    if (last != null && inHand(last) && eng.players[last].betThisStreet > heroBet) {
+      return last;
+    }
+    int best = -1;
+    int bestBet = heroBet;
+    for (int i = 0; i < eng.players.length; i++) {
+      if (!inHand(i)) continue;
+      final int bet = eng.players[i].betThisStreet;
+      if (bet > bestBet) {
+        bestBet = bet;
+        best = i;
+      }
+    }
+    return best;
+  }
+
+  /// The share of starting hands an opponent usually plays: a bot's own
+  /// preflop range at an average seat, or a broad 45% for a person.
+  static double _likelyPreflopShare(GameEngine eng, int seat) {
+    final Player o = eng.players[seat];
+    if (!o.isBot) return 0.45;
+    final traits = _traitsForAura(
+      aura: o.aura,
+      name: o.name,
+      seed: eng.tableSeed,
+    );
+    return BotPreflopRange.targetShare(
+      aura: o.aura,
+      temperament: o.temperament ?? traits.temperament,
+      skill: o.skill ?? traits.skill,
+      seatsFromButton: 1,
+      isSmallBlind: false,
+      isBigBlind: false,
+      raisesFaced: 0,
+      fearGreed: 0,
+    );
+  }
+
+  /// How likely a player is to make a bet of [betFrac] of the pot holding a
+  /// hand of [category] on the current board (1.0 = always). Two pair or
+  /// better always bets; one pair bets less often the bigger the bet; a
+  /// hand with nothing is a bluff, about three times in ten.
+  static double _betLikelihood(HandCategory category, double betFrac) {
+    final double size = betFrac.clamp(0.0, 1.5) / 1.5;
+    if (category.index >= HandCategory.twoPair.index) return 1.0;
+    if (category == HandCategory.pair) return 0.85 - 0.35 * size;
+    return 0.30;
+  }
+
+  static final Map<String, double> _rangeEquityCache = <String, double>{};
+
+  /// Equity against what the field is likely to hold, by weighted
+  /// simulation: every sampled opponent hand counts in proportion to how
+  /// plausible it is.
+  ///
+  /// - Every opponent still in the hand played it before the flop, so a
+  ///   hand outside their usual range counts for less.
+  /// - The bettor more likely holds a hand that bets: strong hands fully,
+  ///   one pair less as the bet grows, nothing only as a bluff.
+  ///
+  /// How much the bot believes this is its game awareness, and it grows
+  /// with Aura: a 20-Aura bot mostly thinks about its own cards, a 95-Aura
+  /// bot reads ranges. A bettor who keeps applying pressure, or bluffs a
+  /// lot, earns far less respect, so bots still call down a player who bets
+  /// every hand (test/bot_repeat_pressure_defense_test.dart).
+  static double _estimateEquityVsRanges({
+    required GameEngine eng,
+    required int idx,
+    required int bettor,
+    required int toCall,
+    required double auraSkill,
+  }) {
+    final Player p = eng.players[idx];
+    if (p.hole.length < 2) return 0.0;
+    final List<int> opponents = <int>[
+      for (int i = 0; i < eng.players.length; i++)
+        if (i != idx &&
+            !eng.players[i].folded &&
+            !eng.players[i].sittingOut &&
+            !eng.players[i].isOut)
+          i,
+    ];
+    if (opponents.isEmpty) return 1.0;
+
+    final BotOpponentMemory memory = eng.opponentMemoryForSeat(bettor);
+    double credibility = 1.0 +
+        (memory.showdownStrength - 0.5) -
+        (memory.aggressionIndex - 0.5) * 1.2;
+    credibility = credibility.clamp(0.3, 1.3).toDouble();
+    if (memory.appliesRepeatPressure) credibility *= 0.3;
+    final double trustBet =
+        ((0.25 + 0.65 * auraSkill) * credibility).clamp(0.0, 0.95);
+    final double trustRange = 0.20 + 0.60 * auraSkill.clamp(0.0, 1.0);
+    final double betFrac = toCall / max(1, eng.pot - toCall);
+
+    final String key = '${eng.handNumber}|$idx|${eng.phase.index}|'
+        '${eng.currentBet}|${eng.pot}|$bettor|'
+        '${(trustBet * 100).round()}|${(trustRange * 100).round()}|'
+        '${_cardsKey(p.hole)}|${_cardsKey(eng.community)}|'
+        '${opponents.join(',')}';
+    final double? cached = _rangeEquityCache[key];
+    if (cached != null) return cached;
+
+    final List<double> shares = <double>[
+      for (final o in opponents) _likelyPreflopShare(eng, o),
+    ];
+    final List<Card> remaining =
+        _remainingDeck(exclude: <Card>[...p.hole, ...eng.community]);
+    final int needBoard = 5 - eng.community.length;
+    final int need = needBoard + opponents.length * 2;
+    if (remaining.length < need) return _estimateWinProb(eng: eng, idx: idx);
+
+    final int iters =
+        (220 / (1 + (opponents.length - 1) * 0.35)).round().clamp(90, 220);
+    final rng = Pcg32(
+      bigSeed: _simulationSeed(eng: eng, idx: idx) ^ BigInt.from(0x5EED),
+    );
+    final List<Card> deck = List<Card>.from(remaining);
+    double score = 0.0;
+    double totalWeight = 0.0;
+
+    for (int i = 0; i < iters; i++) {
+      _shuffleInPlace(deck, rng);
+      final List<Card> board = <Card>[
+        ...eng.community,
+        ...deck.take(needBoard),
+      ];
+      final HandRank heroRank =
+          HandEvaluator.evaluate(<Card>[...p.hole, ...board]);
+      int off = needBoard;
+      double weight = 1.0;
+      bool heroBest = true;
+      int ties = 1;
+      for (int k = 0; k < opponents.length; k++) {
+        final List<Card> oppHole = <Card>[deck[off], deck[off + 1]];
+        off += 2;
+        final double inRange =
+            BotPreflopRange.topShareOfHole(oppHole) < shares[k] ? 1.0 : 0.15;
+        weight *= 1.0 - trustRange * (1.0 - inRange);
+        if (opponents[k] == bettor) {
+          final HandRank now =
+              HandEvaluator.evaluate(<Card>[...oppHole, ...eng.community]);
+          weight *= 1.0 -
+              trustBet * (1.0 - _betLikelihood(now.category, betFrac));
+        }
+        final int cmp = HandEvaluator.evaluate(<Card>[...oppHole, ...board])
+            .compareTo(heroRank);
+        if (cmp > 0) {
+          heroBest = false;
+        } else if (cmp == 0) {
+          ties += 1;
+        }
+      }
+      totalWeight += weight;
+      if (heroBest) score += weight / ties;
+    }
+
+    final double equity =
+        totalWeight > 0 ? (score / totalWeight).clamp(0.0, 1.0) : 0.5;
+    _rangeEquityCache[key] = equity;
+    if (_rangeEquityCache.length > 400) _rangeEquityCache.clear();
+    return equity;
+  }
+
   static double _estimateWinProb({
     required GameEngine eng,
     required int idx,
@@ -2193,7 +2399,8 @@ class BotAdvisor {
     // Same misread as suggest(), so the follow-up choices (hero calls,
     // probes, value bets) believe what the main decision believed.
     final double winProb =
-        (_estimateWinProb(eng: eng, idx: idx) + readError).clamp(0.01, 0.99);
+        (_decisionEquity(eng: eng, idx: idx, auraSkill: auraSkill) + readError)
+            .clamp(0.01, 0.99);
     final double winEdge = winProb - baseEquity;
     final HandRank? madeRank = _tryEvaluateRank(eng, idx);
     final BotStyleState styleState = eng.styleStateForSeat(idx);
