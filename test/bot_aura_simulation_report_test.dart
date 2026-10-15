@@ -37,6 +37,16 @@ class _Stats {
   int foldedToBetPre = 0;
   int facedBetPost = 0;
   int foldedToBetPost = 0;
+  // Postflop detail, to see where aggression comes from.
+  int cbetLeadFlag = 0;
+  int cbetHitChances = 0;
+  int cbetHitBets = 0;
+  int cbetAirChances = 0;
+  int cbetAirBets = 0;
+  int betsCheckedTo = 0;
+  int checksCheckedTo = 0;
+  int raisesFacingBet = 0;
+  int allIns = 0;
 
   double get vpipRate => hands == 0 ? 0 : vpip / hands;
   double get pfrRate => hands == 0 ? 0 : pfr / hands;
@@ -49,6 +59,15 @@ class _Stats {
   double get foldToBetPost =>
       facedBetPost == 0 ? 0 : foldedToBetPost / facedBetPost;
 }
+
+/// A pocket pair or a hole card paired on the board (draws count as air).
+bool _hitBoard(List<eng.Card> hole, List<eng.Card> board) {
+  if (hole.length < 2) return false;
+  if (hole[0].rank == hole[1].rank) return true;
+  return board.any((c) => c.rank == hole[0].rank || c.rank == hole[1].rank);
+}
+
+String _rate(int n, int d) => d == 0 ? '-' : '${(n * 100 / d).round()}% of $d';
 
 bool _aggressive(eng.ActionType a) =>
     a == eng.ActionType.bet ||
@@ -116,9 +135,26 @@ _Stats _playBand(int aura) {
           cbetCounted = true;
           stats.cbetChances++;
           if (_aggressive(a)) stats.cbets++;
+          if (e.wasAggressorPreviousStreet(seat)) stats.cbetLeadFlag++;
+          if (_hitBoard(e.players[seat].hole, e.community)) {
+            stats.cbetHitChances++;
+            if (_aggressive(a)) stats.cbetHitBets++;
+          } else {
+            stats.cbetAirChances++;
+            if (_aggressive(a)) stats.cbetAirBets++;
+          }
         }
         if (_aggressive(a)) stats.postflopAggressive++;
         if (a == eng.ActionType.call) stats.postflopCalls++;
+        if (a == eng.ActionType.allIn) {
+          stats.allIns++;
+        } else if (toCall == 0 && a == eng.ActionType.bet) {
+          stats.betsCheckedTo++;
+        } else if (toCall == 0 && a == eng.ActionType.check) {
+          stats.checksCheckedTo++;
+        } else if (toCall > 0 && a == eng.ActionType.raise) {
+          stats.raisesFacingBet++;
+        }
       }
       if (toCall > 0 && preflop) {
         stats.facedBetPre++;
@@ -203,6 +239,7 @@ String _pct(double v) => '${(v * 100).toStringAsFixed(1)}%';
 void main() {
   test('bot simulation report by Aura band', () {
     final rows = <String>[];
+    final detail = <String>[];
     final unstable = <String, Map<int, double>>{'on': {}, 'off': {}};
 
     for (final mode in <String>['off', 'on']) {
@@ -211,6 +248,13 @@ void main() {
         final s = _playBand(aura);
         final u = _unstableShare(aura);
         unstable[mode]![aura] = u;
+        detail.add('| $aura | $mode | ${_rate(s.cbetLeadFlag, s.cbetChances)} | '
+            '${_rate(s.cbetHitBets, s.cbetHitChances)} | '
+            '${_rate(s.cbetAirBets, s.cbetAirChances)} | '
+            '${_rate(s.betsCheckedTo, s.betsCheckedTo + s.checksCheckedTo)} | '
+            '${_rate(s.raisesFacingBet, s.facedBetPost)} | ${s.allIns} | '
+            '${s.postflopCalls} | '
+            '${s.foldedToBetPost} |');
         rows.add('| $aura | $mode | ${_pct(s.vpipRate)} | ${_pct(s.pfrRate)} | '
             '${s.af.toStringAsFixed(2)} | ${_pct(s.cbetRate)} | '
             '${_pct(s.foldToBetPre)} | '
@@ -235,6 +279,20 @@ void main() {
           'Fold to bet (preflop) | Fold to bet (postflop) | Unstable |')
       ..writeln('|---|---|---|---|---|---|---|---|---|');
     rows.forEach(report.writeln);
+    report
+      ..writeln()
+      ..writeln('## Postflop detail')
+      ..writeln()
+      ..writeln('"Lead flag" = the c-bet chances where the engine marks the '
+          'raiser as last street\'s aggressor. "Hit" = pocket pair or a hole '
+          'card paired; everything else counts as air, draws included. '
+          '"Bet when checked to" covers every player, every street.')
+      ..writeln()
+      ..writeln('| Aura | Variance | Lead flag | C-bet, hit | C-bet, air | '
+          'Bet when checked to | Raises facing a bet | All-ins | Calls | '
+          'Folds to a bet |')
+      ..writeln('|---|---|---|---|---|---|---|---|---|---|');
+    detail.forEach(report.writeln);
 
     // ignore: avoid_print
     print(report);

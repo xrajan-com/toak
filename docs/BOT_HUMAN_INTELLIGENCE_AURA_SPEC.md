@@ -646,3 +646,16 @@ what the lead rule allows) and postflop AF stayed 3.4-6. Causes and fixes:
   0.24 (any hand) and stabs ran at x2.1 (85% for a fluke maniac). Now the
   value threshold is 0.40, stabs x1.6, fluke stabs x1.2 + 0.04, and stabs
   into three or more players x0.6.
+
+**Raising wars.** The sixth report's numbers only add up if bots raised
+about 45% of the bets they faced (with AF = bets / calls, AF 7 at a 43%
+fold rate leaves ~14% for calls). Several routes raised on an equity read
+alone, and pocket tens or better raised every bet on every street, so two
+bots min-raised each other until one was all-in. `_withinRaiseAppetite`
+(the first gate in `suggest()`) turns a raise facing a bet into a call
+unless: postflop, top pair or better, a real draw or a monster read for the
+first raise, and trips or better, two pair from both hole cards or a
+near-certain read to re-raise; preflop, a top-3.5% hand (QQ+, AK) to 4-bet.
+The converted call then goes through the range and price checks. The report
+gains a "Postflop detail" table (c-bets split by hit/air, the lead flag,
+bets when checked to, raises per bet faced, all-ins, calls, folds).

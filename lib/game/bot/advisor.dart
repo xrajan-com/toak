@@ -319,8 +319,74 @@ class BotAdvisor {
       _withinPostflopPrice(
         eng,
         idx,
-        _withinPreflopRange(eng, idx, decision),
+        _withinPreflopRange(
+          eng,
+          idx,
+          _withinRaiseAppetite(eng, idx, decision),
+        ),
       ),
+    );
+  }
+
+  /// People raise a bet with a real hand or a real draw, and re-raise only
+  /// with the very top. Several routes in the decision tree raise on a high
+  /// equity read alone (and pocket tens or better raised every bet on every
+  /// street), so two bots could min-raise each other until one was all-in:
+  /// the clearest bot tell left after the flop. A raise facing a bet that
+  /// falls short here becomes a call, and the call still goes through the
+  /// range and price checks.
+  ///
+  /// Postflop: the first raise needs top pair or better, a real draw
+  /// (open-ender or flush draw) or a monster read; re-raising a raise needs
+  /// trips or better from the hole cards, two pair from both hole cards, or
+  /// a near-certain read. Preflop: a 4-bet needs a top-3.5% hand (QQ+, AK).
+  static ({ActionType action, int toAmount, double confidence, double strength})
+      _withinRaiseAppetite(
+    GameEngine eng,
+    int idx,
+    ({ActionType action, int toAmount, double confidence, double strength})
+        decision,
+  ) {
+    if (decision.action != ActionType.raise) return decision;
+    final Player p = eng.players[idx];
+    if (p.hole.length < 2 || eng.toCallFor(idx) <= 0) return decision;
+    if (!eng.legalActionsFor(idx).contains(ActionType.call)) return decision;
+
+    final bool reRaise = eng.phase == GamePhase.preflop
+        ? p.betThisStreet > eng.bigBlind
+        : p.betThisStreet > 0;
+    bool allowed;
+    if (eng.phase == GamePhase.preflop) {
+      if (!reRaise) return decision;
+      allowed = BotPreflopRange.topShareOfHole(p.hole) <= 0.035;
+    } else {
+      final int connection = _boardConnection(eng, idx);
+      if (reRaise) {
+        final HandRank? made = _tryEvaluateRank(eng, idx);
+        final int a = rankValue(p.hole[0].rank);
+        final int b = rankValue(p.hole[1].rank);
+        final bool bothHoleCardsPaired = a != b &&
+            eng.community.any((c) => rankValue(c.rank) == a) &&
+            eng.community.any((c) => rankValue(c.rank) == b);
+        allowed = decision.strength >= 0.82 ||
+            bothHoleCardsPaired ||
+            (connection == 2 &&
+                made != null &&
+                made.category.index >= HandCategory.threeKind.index);
+      } else {
+        final double draw = eng.phase == GamePhase.river
+            ? 0.0
+            : _estimateDrawPotential(eng: eng, idx: idx);
+        allowed =
+            decision.strength >= 0.66 || connection == 2 || draw >= 0.32;
+      }
+    }
+    if (allowed) return decision;
+    return (
+      action: ActionType.call,
+      toAmount: 0,
+      confidence: decision.confidence,
+      strength: decision.strength,
     );
   }
 
