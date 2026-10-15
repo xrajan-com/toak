@@ -46,11 +46,18 @@ class TrailblazersPanel extends StatefulWidget {
 }
 
 class _TrailblazersPanelState extends State<TrailblazersPanel> {
-  late Future<List<LeaderboardEntry>> _entries = widget.load();
+  late Future<List<LeaderboardEntry>> _entries = _load();
+
+  // A retry's future is created now but only listened to by the
+  // FutureBuilder on the next frame; a failure in between would be reported
+  // as unhandled. ignore() marks it handled here, and the FutureBuilder
+  // still receives the error and shows Retry.
+  Future<List<LeaderboardEntry>> _load() => widget.load()..ignore();
 
   void _retry() {
+    final next = _load();
     setState(() {
-      _entries = widget.load();
+      _entries = next;
     });
   }
 
