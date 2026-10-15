@@ -313,10 +313,76 @@ class BotAdvisor {
   static ({ActionType action, int toAmount, double confidence, double strength})
       suggest(GameEngine eng, int idx) {
     final decision = _suggestCore(eng, idx);
-    return _withinPostflopPrice(
+    return _withinBettingLead(
       eng,
       idx,
-      _withinPreflopRange(eng, idx, decision),
+      _withinPostflopPrice(
+        eng,
+        idx,
+        _withinPreflopRange(eng, idx, decision),
+      ),
+    );
+  }
+
+  /// Keeping the betting lead. The bot that bet the last street keeps
+  /// betting with value: the hole cards hit the board (top pair or better;
+  /// any pair on the flop), a real draw, or a monster. A hand that missed
+  /// keeps the lead some of the time: flop 32%, turn 25%, river 20%
+  /// (maniacs x1.3, calling stations x0.6, rocks x0.85, multiway x0.6).
+  /// This runs on the final decision, so no route around it (a stab, a
+  /// fluke shove that the safety guard turned back into a bet) keeps a
+  /// missed hand betting street after street.
+  static ({ActionType action, int toAmount, double confidence, double strength})
+      _withinBettingLead(
+    GameEngine eng,
+    int idx,
+    ({ActionType action, int toAmount, double confidence, double strength})
+        decision,
+  ) {
+    if (eng.phase != GamePhase.flop &&
+        eng.phase != GamePhase.turn &&
+        eng.phase != GamePhase.river) {
+      return decision;
+    }
+    if (decision.action != ActionType.bet &&
+        decision.action != ActionType.raise) {
+      return decision;
+    }
+    if (eng.currentBet != 0 || eng.toCallFor(idx) > 0) return decision;
+    if (!eng.wasAggressorPreviousStreet(idx)) return decision;
+    if (!eng.legalActionsFor(idx).contains(ActionType.check)) return decision;
+
+    final int connection = _boardConnection(eng, idx);
+    final bool valueHand = decision.strength >= 0.66 ||
+        connection == 2 ||
+        (eng.phase == GamePhase.flop && connection == 1) ||
+        _estimateDrawPotential(eng: eng, idx: idx) >= 0.32;
+    if (valueHand) return decision;
+
+    final view = _botView(eng, idx);
+    double keepChance = switch (eng.phase) {
+      GamePhase.flop => 0.32,
+      GamePhase.turn => 0.25,
+      GamePhase.river => 0.20,
+      _ => 0.25,
+    };
+    keepChance *= switch (view.temperament) {
+      BotTemperament.aggressive => 1.30,
+      BotTemperament.stoic => 0.60,
+      BotTemperament.worldChamp => 0.85,
+    };
+    final int foldableSeats = eng.players
+        .where((p) => !p.folded && !p.allIn && !p.sittingOut && !p.isOut)
+        .length;
+    if (foldableSeats >= 3) keepChance *= 0.60;
+    final double keepRoll =
+        _decisionUnit(eng: eng, idx: idx, salt: 'continuation_bet');
+    if (keepRoll < keepChance.clamp(0.0, 0.90)) return decision;
+    return (
+      action: ActionType.check,
+      toAmount: 0,
+      confidence: (decision.confidence * 0.92).clamp(0.05, 0.95),
+      strength: decision.strength,
     );
   }
 
@@ -2556,7 +2622,6 @@ class BotAdvisor {
     final double stackFrac = stackRemaining > 0
         ? (toCall / stackRemaining).clamp(0.0, 1.0).toDouble()
         : 1.0;
-    final bool sameBotAggressedLastStreet = eng.wasAggressorPreviousStreet(idx);
     final bool allInPressure =
         toCall > 0 && (stackFrac >= 0.90 || toCall >= stackRemaining);
     final int foldableSeats = eng.players
@@ -2829,7 +2894,7 @@ class BotAdvisor {
       double valueThreshold = switch (temperament) {
         BotTemperament.worldChamp => 0.60,
         BotTemperament.stoic => 0.52,
-        BotTemperament.aggressive => 0.24,
+        BotTemperament.aggressive => 0.40,
       };
       if (auraSkill >= 0.75) valueThreshold -= 0.03;
       if (isManiac) valueThreshold -= 0.02;
@@ -2960,13 +3025,14 @@ class BotAdvisor {
           stabChance *= 0.22;
           break;
         case BotTemperament.aggressive:
-          stabChance *= 2.10;
+          stabChance *= 1.60;
           break;
       }
+      if (multiway) stabChance *= 0.60;
       stabChance = (stabChance + bluffBias).clamp(0.0, 0.85);
       stabChance = (stabChance + modelAdjustment.bluffBias).clamp(0.0, 0.88);
       if (skill == BotSkill.fluke) {
-        stabChance = (stabChance * 1.35 + 0.08).clamp(0.0, 0.92);
+        stabChance = (stabChance * 1.20 + 0.04).clamp(0.0, 0.92);
       }
       // People rarely lead into the player who bet the last street.
       bool someoneElseHasTheLead = false;
@@ -3073,6 +3139,7 @@ class BotAdvisor {
       final bool valueShove = winProb >= 0.74 || strengthScore >= 0.82;
       final bool bluffShove =
           (eng.phase == GamePhase.flop || eng.phase == GamePhase.turn) &&
+              stackRemaining <= eng.bigBlind * 25 &&
               strengthScore < 0.48 &&
               winProb <= (baseEquity - 0.03);
       double shoveChance = 0.0;
@@ -3095,47 +3162,6 @@ class BotAdvisor {
         action = ActionType.allIn;
         toAmount = 0;
         confidence = (confidence * 0.85 + 0.1).clamp(0.08, 0.95);
-      }
-    }
-
-    // Keeping the betting lead. This used to force every bot that bet the
-    // previous street to check, so the preflop raiser never continuation-
-    // bet and the caller led every flop: a pattern people notice at once.
-    // Now strong hands keep betting, and weaker ones keep up the pressure
-    // some of the time: often on the flop, less on the turn and river.
-    if (!hasToCall &&
-        eng.currentBet == 0 &&
-        sameBotAggressedLastStreet &&
-        (action == ActionType.bet || action == ActionType.raise) &&
-        legal.contains(ActionType.check)) {
-      final int connection = _boardConnection(eng, idx);
-      final bool valueHand = strengthScore >= 0.66 ||
-          connection == 2 ||
-          (eng.phase == GamePhase.flop && connection == 1) ||
-          _estimateDrawPotential(eng: eng, idx: idx) >= 0.32;
-      if (!valueHand) {
-        double keepChance = switch (eng.phase) {
-          GamePhase.flop => 0.32,
-          GamePhase.turn => 0.25,
-          GamePhase.river => 0.20,
-          _ => 0.25,
-        };
-        keepChance *= switch (temperament) {
-          BotTemperament.aggressive => 1.30,
-          BotTemperament.stoic => 0.60,
-          BotTemperament.worldChamp => 0.85,
-        };
-        if (multiway) keepChance *= 0.60;
-        final double keepRoll = _decisionUnit(
-          eng: eng,
-          idx: idx,
-          salt: 'continuation_bet',
-        );
-        if (keepRoll >= keepChance.clamp(0.0, 0.90)) {
-          action = ActionType.check;
-          toAmount = 0;
-          confidence = (confidence * 0.92).clamp(0.05, 0.95);
-        }
       }
     }
 

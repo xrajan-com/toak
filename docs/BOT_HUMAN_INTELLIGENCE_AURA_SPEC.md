@@ -632,3 +632,17 @@ Three causes, three fixes:
   (pot odds 18% or less) -0.15, the river +0.10, two overcards on the flop
   -0.10; clamped to 0-0.90 and seeded per decision. Hands that pass go on to
   the price check as before.
+
+**Third follow-up.** The fifth report put postflop folds at 26-39% and the
+Aura 95 c-bet at 43-57%, but Aura 20-50 bots still c-bet 88-100% (above
+what the lead rule allows) and postflop AF stayed 3.4-6. Causes and fixes:
+
+- **Routes around the lead rule.** Fluke bluff shoves were converted by the
+  safety guard back into half-pot bets after the lead rule had run, and low
+  Aura tables are mostly flukes. The lead rule is now `_withinBettingLead`,
+  the last gate in `suggest()`, so it sees the final decision. Fluke bluff
+  shoves need a stack of 25 big blinds or less.
+- **Maniacs bet everything when checked to.** Their "value" threshold was
+  0.24 (any hand) and stabs ran at x2.1 (85% for a fluke maniac). Now the
+  value threshold is 0.40, stabs x1.6, fluke stabs x1.2 + 0.04, and stabs
+  into three or more players x0.6.
