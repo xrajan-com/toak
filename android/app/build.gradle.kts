@@ -25,7 +25,7 @@ val hasReleaseSigning = releaseSigningKeys.all {
     keystoreProperties.getProperty(it)?.isNotBlank() == true
 }
 
-val appMinSdk = 23
+val appMinSdk = 24
 
 android {
     namespace = "com.tenofakind.poker"
