@@ -47,6 +47,7 @@ class _Stats {
   int checksCheckedTo = 0;
   int raisesFacingBet = 0;
   int allIns = 0;
+  int refused = 0;
 
   double get vpipRate => hands == 0 ? 0 : vpip / hands;
   double get pfrRate => hands == 0 ? 0 : pfr / hands;
@@ -171,6 +172,7 @@ _Stats _playBand(int aura) {
         strength: advice.strength,
       );
       if (e.act(a, amount: advice.toAmount) != eng.ActionResult.ok) {
+        stats.refused++;
         if (e.canCheck(seat)) {
           e.act(eng.ActionType.check);
         } else {
@@ -254,7 +256,7 @@ void main() {
             '${_rate(s.betsCheckedTo, s.betsCheckedTo + s.checksCheckedTo)} | '
             '${_rate(s.raisesFacingBet, s.facedBetPost)} | ${s.allIns} | '
             '${s.postflopCalls} | '
-            '${s.foldedToBetPost} |');
+            '${s.foldedToBetPost} | ${s.refused} |');
         rows.add('| $aura | $mode | ${_pct(s.vpipRate)} | ${_pct(s.pfrRate)} | '
             '${s.af.toStringAsFixed(2)} | ${_pct(s.cbetRate)} | '
             '${_pct(s.foldToBetPre)} | '
@@ -290,8 +292,8 @@ void main() {
       ..writeln()
       ..writeln('| Aura | Variance | Lead flag | C-bet, hit | C-bet, air | '
           'Bet when checked to | Raises facing a bet | All-ins | Calls | '
-          'Folds to a bet |')
-      ..writeln('|---|---|---|---|---|---|---|---|---|---|');
+          'Folds to a bet | Refused by engine |')
+      ..writeln('|---|---|---|---|---|---|---|---|---|---|---|');
     detail.forEach(report.writeln);
 
     // ignore: avoid_print

@@ -313,18 +313,59 @@ class BotAdvisor {
   static ({ActionType action, int toAmount, double confidence, double strength})
       suggest(GameEngine eng, int idx) {
     final decision = _suggestCore(eng, idx);
-    return _withinBettingLead(
+    return _withLegalAmount(
       eng,
       idx,
-      _withinPostflopPrice(
+      _withinBettingLead(
         eng,
         idx,
-        _withinPreflopRange(
+        _withinPostflopPrice(
           eng,
           idx,
-          _withinRaiseAppetite(eng, idx, decision),
+          _withinPreflopRange(
+            eng,
+            idx,
+            _withinRaiseAppetite(eng, idx, decision),
+          ),
         ),
       ),
+    );
+  }
+
+  /// The engine only accepts bets and raises in steps of [kRaiseIncrement]
+  /// (an all-in excepted). Bot sizes are scaled by temperament and a little
+  /// noise, so they rarely landed on a step: the engine refused most bot
+  /// bets and raises, and its fallback checked or folded instead. Aggressive
+  /// bots folded hands they meant to raise, and most bot bets never
+  /// happened. Every bet and raise is snapped to a legal amount here.
+  static ({ActionType action, int toAmount, double confidence, double strength})
+      _withLegalAmount(
+    GameEngine eng,
+    int idx,
+    ({ActionType action, int toAmount, double confidence, double strength})
+        decision,
+  ) {
+    if (decision.action != ActionType.bet &&
+        decision.action != ActionType.raise) {
+      return decision;
+    }
+    final bounds = eng.raiseBoundsTo(idx);
+    if (bounds.minTo > bounds.maxTo) return decision;
+    const int step = kRaiseIncrement;
+    int to = decision.toAmount;
+    if (to < bounds.maxTo) {
+      to = ((to + step ~/ 2) ~/ step) * step;
+      if (to < bounds.minTo) to = bounds.minTo;
+      if (to % step != 0) to = ((to + step - 1) ~/ step) * step;
+    }
+    // At or past the whole stack it is an all-in, which needs no step.
+    if (to >= bounds.maxTo) to = bounds.maxTo;
+    if (to == decision.toAmount) return decision;
+    return (
+      action: decision.action,
+      toAmount: to,
+      confidence: decision.confidence,
+      strength: decision.strength,
     );
   }
 

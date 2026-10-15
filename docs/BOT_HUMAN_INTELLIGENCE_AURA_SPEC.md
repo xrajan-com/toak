@@ -659,3 +659,17 @@ near-certain read to re-raise; preflop, a top-3.5% hand (QQ+, AK) to 4-bet.
 The converted call then goes through the range and price checks. The report
 gains a "Postflop detail" table (c-bets split by hit/air, the lead flag,
 bets when checked to, raises per bet faced, all-ins, calls, folds).
+
+**Refused bets (a real-game bug).** The postflop detail table showed the
+real cause of the high AF: bots "bet" 57-61% of the times they were checked
+to, yet far fewer bets were ever faced. The engine accepts bets and raises
+only in steps of `kRaiseIncrement` (10 chips; an all-in excepted), and bot
+sizes, scaled by temperament and noise, rarely landed on a step. The engine
+refused them and the bot loop (`tickBots`, the async runner) fell back to a
+check, or a fold when facing a bet. In the live game this meant most bot
+bets never happened and aggressive bots folded hands they meant to raise;
+it also left the preflop raiser unmarked as the betting leader, which is why
+the lead rule seemed not to work at low Aura. `_withLegalAmount`, the last
+gate in `suggest()`, snaps every bet and raise to a legal amount.
+`test/bot_bet_amount_legal_test.dart` plays 480 hands across the Aura bands
+and fails on any action the engine refuses; the report counts refusals too.
