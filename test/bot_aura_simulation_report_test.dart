@@ -8,7 +8,10 @@
 // What to look for:
 //   * VPIP (share of hands played) near the preflop_range.dart targets:
 //     Aura 95 ~20%, 80 ~25%, 50 ~35%, 20 ~50%, PFR below it;
-//   * fold to a bet, preflop and postflop, in a human range;
+//   * fold to a bet, preflop and postflop, in a human range (postflop about
+//     40-50% for strong players, less for weak ones);
+//   * flop c-bet: how often the preflop raiser bets the flop when checked
+//     to (people: roughly 50-70%); postflop AF about 1.5-3;
 //   * "Unstable": real deals whose first decision is replayed with the same
 //     cards. High Aura should nearly always give the same answer; low Aura
 //     should change its mind more, and more with variance on than off.
@@ -28,6 +31,8 @@ class _Stats {
   int pfr = 0;
   int postflopAggressive = 0;
   int postflopCalls = 0;
+  int cbetChances = 0;
+  int cbets = 0;
   int facedBetPre = 0;
   int foldedToBetPre = 0;
   int facedBetPost = 0;
@@ -38,6 +43,7 @@ class _Stats {
   double get af => postflopCalls == 0
       ? postflopAggressive.toDouble()
       : postflopAggressive / postflopCalls;
+  double get cbetRate => cbetChances == 0 ? 0 : cbets / cbetChances;
   double get foldToBetPre =>
       facedBetPre == 0 ? 0 : foldedToBetPre / facedBetPre;
   double get foldToBetPost =>
@@ -82,6 +88,8 @@ _Stats _playBand(int aura) {
     if (e.startNewHand(seed: 31 * aura + hand) != eng.ActionResult.ok) break;
     final voluntary = <int>{};
     final raisedPre = <int>{};
+    int lastPreflopRaiser = -1;
+    bool cbetCounted = false;
     int steps = 0;
     while (e.phase != eng.GamePhase.handOver &&
         e.phase != eng.GamePhase.showdown &&
@@ -94,8 +102,21 @@ _Stats _playBand(int aura) {
       final a = advice.action;
       if (preflop) {
         if (a == eng.ActionType.call || _aggressive(a)) voluntary.add(seat);
-        if (_aggressive(a)) raisedPre.add(seat);
+        if (_aggressive(a)) {
+          raisedPre.add(seat);
+          lastPreflopRaiser = seat;
+        }
       } else {
+        // Continuation bet: the preflop raiser's first flop action when it
+        // is checked to them.
+        if (!cbetCounted &&
+            e.phase == eng.GamePhase.flop &&
+            seat == lastPreflopRaiser &&
+            toCall == 0) {
+          cbetCounted = true;
+          stats.cbetChances++;
+          if (_aggressive(a)) stats.cbets++;
+        }
         if (_aggressive(a)) stats.postflopAggressive++;
         if (a == eng.ActionType.call) stats.postflopCalls++;
       }
@@ -191,7 +212,8 @@ void main() {
         final u = _unstableShare(aura);
         unstable[mode]![aura] = u;
         rows.add('| $aura | $mode | ${_pct(s.vpipRate)} | ${_pct(s.pfrRate)} | '
-            '${s.af.toStringAsFixed(2)} | ${_pct(s.foldToBetPre)} | '
+            '${s.af.toStringAsFixed(2)} | ${_pct(s.cbetRate)} | '
+            '${_pct(s.foldToBetPre)} | '
             '${_pct(s.foldToBetPost)} | ${_pct(u)} |');
 
         expect(s.hands, greaterThan(0));
@@ -209,9 +231,9 @@ void main() {
           '$_spotReplays replays of the same cards. "on" = Aura in every '
           'decision, "off" = without.')
       ..writeln()
-      ..writeln('| Aura | Variance | VPIP | PFR | Postflop AF | '
+      ..writeln('| Aura | Variance | VPIP | PFR | Postflop AF | Flop c-bet | '
           'Fold to bet (preflop) | Fold to bet (postflop) | Unstable |')
-      ..writeln('|---|---|---|---|---|---|---|---|');
+      ..writeln('|---|---|---|---|---|---|---|---|---|');
     rows.forEach(report.writeln);
 
     // ignore: avoid_print

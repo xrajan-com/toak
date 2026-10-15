@@ -313,7 +313,107 @@ class BotAdvisor {
   static ({ActionType action, int toAmount, double confidence, double strength})
       suggest(GameEngine eng, int idx) {
     final decision = _suggestCore(eng, idx);
-    return _withinPreflopRange(eng, idx, decision);
+    return _withinPostflopPrice(
+      eng,
+      idx,
+      _withinPreflopRange(eng, idx, decision),
+    );
+  }
+
+  /// A bot's traits, effective Aura (rocks read at 80 or better) and its
+  /// read error for the current decision; the same values _suggestCore
+  /// derives, for the checks that run after it.
+  static ({
+    BotTemperament temperament,
+    BotSkill skill,
+    double auraSkill,
+    double readError,
+  }) _botView(GameEngine eng, int idx) {
+    final Player p = eng.players[idx];
+    final traits = _traitsForAura(
+      aura: p.aura,
+      name: p.name,
+      seed: eng.tableSeed,
+    );
+    final BotTemperament temperament = p.temperament ?? traits.temperament;
+    double auraSkill = p.aura.clamp(0, 100) / 100.0;
+    if (temperament == BotTemperament.worldChamp) {
+      auraSkill = max(auraSkill, 0.80);
+    }
+    return (
+      temperament: temperament,
+      skill: p.skill ?? traits.skill,
+      auraSkill: auraSkill,
+      readError: BotAuraVariance.readError(
+        auraSkill: auraSkill,
+        handKey: '${eng.tableSeed}|${eng.handNumber}|$idx|${p.name}',
+        decisionKey: '${eng.tableSeed}|${eng.handNumber}|${eng.phase.index}|'
+            '${eng.currentBet}|${eng.pot}|$idx|${p.name}',
+      ),
+    );
+  }
+
+  /// After the flop, a call has to be worth its price. The decision tree
+  /// has several routes to a call that never look at the price (a small bet
+  /// is "cheap", the hand was playable preflop, the occasional hero call),
+  /// which is why strong bots folded to almost no postflop bets. Here the
+  /// bot compares the equity it believes it has (against the bettor's likely
+  /// hands, through its Aura read error) with the pot odds, plus slack:
+  /// calling stations and weak Aura levels call light, like real
+  /// recreational players; draws get implied odds; a bettor who keeps
+  /// applying pressure gets called a little wider. Short of that, it folds.
+  /// All-in spots keep their own logic.
+  static ({ActionType action, int toAmount, double confidence, double strength})
+      _withinPostflopPrice(
+    GameEngine eng,
+    int idx,
+    ({ActionType action, int toAmount, double confidence, double strength})
+        decision,
+  ) {
+    if (eng.phase != GamePhase.flop &&
+        eng.phase != GamePhase.turn &&
+        eng.phase != GamePhase.river) {
+      return decision;
+    }
+    if (decision.action != ActionType.call) return decision;
+    final Player p = eng.players[idx];
+    final int toCall = eng.toCallFor(idx);
+    if (toCall <= 0 || p.hole.length < 2) return decision;
+    if (toCall * 20 >= p.chips * 19) return decision;
+    if (_activeAllInOpponents(eng: eng, idx: idx, currentBetOnly: true) > 0) {
+      return decision;
+    }
+
+    final view = _botView(eng, idx);
+    final double equity =
+        (_decisionEquity(eng: eng, idx: idx, auraSkill: view.auraSkill) +
+                view.readError)
+            .clamp(0.01, 0.99);
+    final double need = _breakEvenEquity(potBeforeCall: eng.pot, toCall: toCall);
+
+    double slack = switch (view.temperament) {
+      BotTemperament.stoic => 0.07,
+      BotTemperament.aggressive => 0.04,
+      BotTemperament.worldChamp => 0.0,
+    };
+    slack += (1.0 - view.auraSkill) * 0.10;
+    if (view.skill == BotSkill.fluke) slack += 0.02;
+    if (eng.phase != GamePhase.river) {
+      final double draw = _estimateDrawPotential(eng: eng, idx: idx);
+      slack += draw * (eng.phase == GamePhase.flop ? 0.20 : 0.12);
+    }
+    final int bettor = _bettorIndex(eng, idx);
+    if (bettor >= 0 && eng.opponentMemoryForSeat(bettor).appliesRepeatPressure) {
+      slack += 0.04;
+    }
+    if (equity + slack >= need) return decision;
+    if (!eng.legalActionsFor(idx).contains(ActionType.fold)) return decision;
+    return (
+      action: ActionType.fold,
+      toAmount: 0,
+      confidence: decision.confidence,
+      strength: decision.strength,
+    );
   }
 
   /// Keeps preflop play inside the bot's hand range (preflop_range.dart):
@@ -344,23 +444,11 @@ class BotAdvisor {
       return decision;
     }
 
-    final traits = _traitsForAura(
-      aura: p.aura,
-      name: p.name,
-      seed: eng.tableSeed,
-    );
-    final BotTemperament temperament = p.temperament ?? traits.temperament;
-    final BotSkill skill = p.skill ?? traits.skill;
-    double auraSkill = p.aura.clamp(0, 100) / 100.0;
-    if (temperament == BotTemperament.worldChamp) {
-      auraSkill = max(auraSkill, 0.80);
-    }
-    final double readError = BotAuraVariance.readError(
-      auraSkill: auraSkill,
-      handKey: '${eng.tableSeed}|${eng.handNumber}|$idx|${p.name}',
-      decisionKey: '${eng.tableSeed}|${eng.handNumber}|${eng.phase.index}|'
-          '${eng.currentBet}|${eng.pot}|$idx|${p.name}',
-    );
+    final view = _botView(eng, idx);
+    final BotTemperament temperament = view.temperament;
+    final BotSkill skill = view.skill;
+    final double auraSkill = view.auraSkill;
+    final double readError = view.readError;
 
     final int seats = eng.players.length;
     final int seatsFromButton = eng.dealerIndex >= 0
@@ -2039,7 +2127,13 @@ class BotAdvisor {
         (memory.showdownStrength - 0.5) -
         (memory.aggressionIndex - 0.5) * 1.2;
     credibility = credibility.clamp(0.3, 1.3).toDouble();
-    if (memory.appliesRepeatPressure) credibility *= 0.3;
+    // Big bets again and again (the pattern repeat-pressure defense exists
+    // for) earn little respect; merely betting often earns somewhat less.
+    if (memory.largePressureActions >= 2 && memory.pressureHeat >= 0.42) {
+      credibility *= 0.3;
+    } else if (memory.appliesRepeatPressure) {
+      credibility *= 0.7;
+    }
     final double trustBet =
         ((0.25 + 0.65 * auraSkill) * credibility).clamp(0.0, 0.95);
     final double trustRange = 0.20 + 0.60 * auraSkill.clamp(0.0, 1.0);
@@ -2789,9 +2883,30 @@ class BotAdvisor {
       if (skill == BotSkill.fluke) {
         stabChance = (stabChance * 1.35 + 0.08).clamp(0.0, 0.92);
       }
+      // People rarely lead into the player who bet the last street.
+      bool someoneElseHasTheLead = false;
+      for (int i = 0; i < eng.players.length; i++) {
+        if (i != idx && eng.wasAggressorPreviousStreet(i)) {
+          someoneElseHasTheLead = true;
+          break;
+        }
+      }
+      if (someoneElseHasTheLead) stabChance *= 0.45;
       if (eng.handRng.nextDouble() < stabChance) {
-        final int wish = eng.bigBlind * (shortRun ? 2 : 1);
-        final int? stabTo = scaledBoundedTo(wish);
+        // A third to half the pot, like a person; it used to be one big
+        // blind whatever the pot, which no human bets.
+        final double stabFrac = switch (temperament) {
+          BotTemperament.aggressive => 0.55,
+          BotTemperament.stoic => 0.33,
+          BotTemperament.worldChamp => 0.40,
+        };
+        int snapStab(int v) =>
+            ((v / kRaiseIncrement).round() * kRaiseIncrement);
+        final int wish = snapStab(
+          max(eng.bigBlind, (max(0, eng.pot) * stabFrac).round()),
+        );
+        final int? stabTo =
+            scaledBoundedTo(wish) ?? scaledBoundedTo(eng.bigBlind);
         if (stabTo != null) {
           action = ActionType.bet;
           toAmount = stabTo;
@@ -2898,14 +3013,41 @@ class BotAdvisor {
       }
     }
 
+    // Keeping the betting lead. This used to force every bot that bet the
+    // previous street to check, so the preflop raiser never continuation-
+    // bet and the caller led every flop: a pattern people notice at once.
+    // Now strong hands keep betting, and weaker ones keep up the pressure
+    // some of the time: often on the flop, less on the turn and river.
     if (!hasToCall &&
         eng.currentBet == 0 &&
         sameBotAggressedLastStreet &&
         (action == ActionType.bet || action == ActionType.raise) &&
         legal.contains(ActionType.check)) {
-      action = ActionType.check;
-      toAmount = 0;
-      confidence = (confidence * 0.92).clamp(0.05, 0.95);
+      final bool valueHand = strengthScore >= 0.66 || winProb >= 0.62;
+      if (!valueHand) {
+        double keepChance = switch (eng.phase) {
+          GamePhase.flop => 0.62,
+          GamePhase.turn => 0.45,
+          GamePhase.river => 0.32,
+          _ => 0.40,
+        };
+        keepChance *= switch (temperament) {
+          BotTemperament.aggressive => 1.30,
+          BotTemperament.stoic => 0.60,
+          BotTemperament.worldChamp => 0.85,
+        };
+        if (multiway) keepChance *= 0.60;
+        final double keepRoll = _decisionUnit(
+          eng: eng,
+          idx: idx,
+          salt: 'continuation_bet',
+        );
+        if (keepRoll >= keepChance.clamp(0.0, 0.90)) {
+          action = ActionType.check;
+          toAmount = 0;
+          confidence = (confidence * 0.92).clamp(0.05, 0.95);
+        }
+      }
     }
 
     final guarded = BotSafetyGuard.enforce(

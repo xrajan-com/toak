@@ -574,3 +574,29 @@ the bettor's showdown strength, falls with their aggression, and drops to
 30% for a player applying repeat pressure, so bots still call down someone
 who bets every hand. A 20-Aura bot mostly thinks about its own cards; a
 95-Aura bot reads ranges.
+
+## Postflop: betting lead, sizing and calling discipline (1.2.11+88)
+
+The second report still had Aura 95 bots folding to 3% of postflop bets and
+postflop aggression at 2-4.5 (people: about 1.5-3). Four causes, four fixes:
+
+- **No continuation bets.** A rule from the June checkpoint forced any bot
+  that bet the previous street to check, so the preflop raiser never c-bet
+  and the caller led every flop. Now value hands keep betting and weaker
+  hands keep the lead with probability flop 62% / turn 45% / river 32%
+  (maniacs x1.3, calling stations x0.6, rocks x0.85, multiway x0.6).
+- **One-big-blind stabs.** Bluff stabs bet one big blind whatever the pot.
+  Now a third to half the pot by temperament, and bots lead into the
+  previous street's bettor less than half as often.
+- **Calls that ignored the price.** Several routes to a postflop call never
+  compared equity with pot odds (a small bet counted as cheap, the hand was
+  playable preflop, hero calls). `_withinPostflopPrice` now folds a call
+  whose believed equity (range-aware, through the Aura read error) plus
+  slack is below the pot odds. Slack: calling stations 0.07, maniacs 0.04,
+  rocks 0, plus (1 - aura) x 0.10, draws get implied odds, a repeat-pressure
+  bettor +0.04. All-in spots keep their own logic.
+- **Everyone looked like a bluffer.** In a busy table almost every player
+  trips `appliesRepeatPressure`, which cut bet credibility to 30%. Now only
+  repeated *large* pressure does; frequent ordinary betting costs 30%.
+
+The report gains a flop c-bet column (people: roughly 50-70%).
