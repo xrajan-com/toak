@@ -15,6 +15,7 @@ import firebase_core
 import firebase_crashlytics
 import gal
 import google_sign_in_ios
+import in_app_review
 import just_audio
 import share_plus
 import shared_preferences_foundation
@@ -31,6 +32,7 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   FLTFirebaseCrashlyticsPlugin.register(with: registry.registrar(forPlugin: "FLTFirebaseCrashlyticsPlugin"))
   GalPlugin.register(with: registry.registrar(forPlugin: "GalPlugin"))
   FLTGoogleSignInPlugin.register(with: registry.registrar(forPlugin: "FLTGoogleSignInPlugin"))
+  InAppReviewPlugin.register(with: registry.registrar(forPlugin: "InAppReviewPlugin"))
   JustAudioPlugin.register(with: registry.registrar(forPlugin: "JustAudioPlugin"))
   SharePlusMacosPlugin.register(with: registry.registrar(forPlugin: "SharePlusMacosPlugin"))
   SharedPreferencesPlugin.register(with: registry.registrar(forPlugin: "SharedPreferencesPlugin"))

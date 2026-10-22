@@ -27,6 +27,7 @@ import 'package:ten_of_a_kind_poker/features/venue/game_mode.dart';
 import 'package:ten_of_a_kind_poker/game/bot/policy_model.dart'
     show BotLearnedPolicyRegistry, BotLearnedPolicyWeights, BotPolicyAdjustment;
 import 'package:ten_of_a_kind_poker/services/game_analytics.dart';
+import 'package:ten_of_a_kind_poker/services/rating_prompt.dart';
 import 'package:ten_of_a_kind_poker/services/rival_service.dart';
 import 'package:ten_of_a_kind_poker/game/bot/table_talk.dart';
 import 'package:ten_of_a_kind_poker/game/bot/style_read.dart';
@@ -2166,6 +2167,13 @@ class _GameScreenState extends State<GameScreen>
   void dispose() {
     if (!_matchOver) {
       unawaited(_recordAbandonIfNeeded());
+    }
+    // Leaving a fort or title they just won: the moment to ask for a
+    // rating. The store decides whether its sheet shows.
+    if (_campaignWinConfirmed) {
+      unawaited(RatingPrompt.instance.afterWin(
+        kind: widget.campaignMainEvent ? 'title' : 'fort',
+      ));
     }
     _disposing = true;
     WidgetsBinding.instance.removeObserver(this);

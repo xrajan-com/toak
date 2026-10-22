@@ -143,6 +143,11 @@ class GameAnalytics {
         'saved': saved ? 1 : 0,
       });
 
+  /// The store was asked to show its rating sheet after a win; [ask] counts
+  /// the asks on this install (the store may still choose not to show it).
+  static Future<void> ratingAsked({required String kind, required int ask}) =>
+      _log('rating_asked', <String, Object>{'kind': kind, 'ask': ask});
+
   /// The player sent a win card through the share sheet.
   static Future<void> winCardShared({required String kind}) =>
       _log('win_card_shared', <String, Object>{'kind': kind});

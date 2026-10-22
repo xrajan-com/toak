@@ -47,6 +47,8 @@ dependencies:
   share_plus: '>=9.0.0 <11.0.0'
   # Saves win cards to the phone's photos (Android, iOS).
   gal: ^2.3.2
+  # The store's own rating sheet after a fort or title win.
+  in_app_review: ^2.0.10
 
   # Icons / cards
   cupertino_icons: ^1.0.6
