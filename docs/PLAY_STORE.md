@@ -89,7 +89,8 @@ Bump `pubspec.yaml` `version: x.y.z+N` for every Play upload (the `+N` must incr
 
 ### Recommended public title
 
-`X Poker`
+`X Poker: Texas Hold'em Offline` (the live title; the source of truth is
+`fastlane/metadata/android/en-US/title.txt`)
 
 ### Testing track title
 
