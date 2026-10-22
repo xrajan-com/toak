@@ -9,7 +9,10 @@
  *   node backend/scripts/backfill_trailblazers.js --apply    # writes the board
  *
  * Safe to re-run: it uses the same transaction the server uses on every fort
- * clear, so it can only ever leave the correct top ten.
+ * clear, so it can only ever leave the correct top ten. Re-run it after a
+ * deploy that changes who may be on the board (players without a name are
+ * now left off) and to store every player's trail score for their own
+ * "#23 of everyone" place.
  */
 const { fortsClearedCount } = require('../src/economy/catalog');
 const { SERVER_PROGRESS_COLLECTION } = require('../src/economy/store');

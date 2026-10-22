@@ -18,8 +18,8 @@ const {
   isOpaqueLeaderboardDocumentId,
   leaderboardDocumentId,
 } = require('../leaderboard_identity');
-const { SERVER_PROGRESS_COLLECTION } = require('../economy/store');
-const { fortsClearedCount } = require('../economy/catalog');
+const { SERVER_PROGRESS_COLLECTION, firestore } = require('../economy/store');
+const { FORT_TOTAL, fortsClearedCount } = require('../economy/catalog');
 const { playerRateLimit } = require('../security/rate_limit');
 
 const LEADERBOARD_COLLECTION = 'leaderboard';
@@ -29,6 +29,16 @@ const LEADERBOARD_COLLECTION = 'leaderboard';
 const TRAILBLAZERS_COLLECTION = 'trailblazers';
 // Orders by forts, then Aura: forts * (max Aura milli + 1) + Aura milli.
 const TRAIL_FORT_MULTIPLIER = MAX_TOTAL_AURA_MILLI + 1;
+// Kept on each server_progress document so a player's place among everyone
+// is one indexed count query (like totalAup for the AUP rank):
+//   trailScore      forts and Aura, as on the board
+//   trailRankScore  the same for a player with a name, -1 without one, so
+//                   unnamed accounts never push anyone down
+//   trailName       the name the board last used, so a new or changed name
+//                   reaches the board the next time the player looks
+const TRAIL_SCORE_FIELD = 'trailScore';
+const TRAIL_RANK_SCORE_FIELD = 'trailRankScore';
+const TRAIL_NAME_FIELD = 'trailName';
 const USERS_COLLECTION = 'users';
 
 const AURA_MILLI_MULTIPLIER = 2000000000;
@@ -170,6 +180,15 @@ function _displayNameFor(profile) {
   const username = _cleanDisplayName(profile?.username);
   if (username) return username;
   return 'Player';
+}
+
+/**
+ * A registered player's own name for the public boards, or '' when they never
+ * set one up (those accounts would only show as "Player").
+ */
+function _registeredNameFor(profile) {
+  return _cleanDisplayName(profile?.displayName) ||
+    _cleanDisplayName(profile?.username);
 }
 
 function _publicLeaderboardProjection(data) {
@@ -353,10 +372,24 @@ function _trailScore(fortsCleared, auraMilli) {
   );
 }
 
+function _trailFields({ fortsCleared, trailScore, displayName }) {
+  return {
+    [TRAIL_SCORE_FIELD]: trailScore,
+    [TRAIL_RANK_SCORE_FIELD]: displayName && fortsCleared > 0 ? trailScore : -1,
+    [TRAIL_NAME_FIELD]: displayName,
+  };
+}
+
+function _trailFieldsMatch(progress, fields) {
+  return Object.entries(fields).every(([key, value]) => progress?.[key] === value);
+}
+
 /**
  * Keeps the player's Trailblazers row current: written while they are in the
  * top ten by forts cleared (ties go to more Aura), removed when they have
- * none. Same shape and rules as _syncLeaderboard, ranked by trailScore.
+ * none or have no player name yet, so unregistered "Player" rows never take a
+ * place on the board. Same shape and rules as _syncLeaderboard, ranked by
+ * trailScore.
  */
 async function _syncTrailblazers({ db, uid }) {
   const publicId = leaderboardDocumentId(uid);
@@ -373,14 +406,28 @@ async function _syncTrailblazers({ db, uid }) {
     const progressSnap = await tx.get(progressRef);
     const top10Snap = await tx.get(top10Query);
     const rowSnap = await tx.get(rowRef);
+    const profileSnap = await tx.get(profileRef);
     const progress = progressSnap.data();
     const fortsCleared = fortsClearedCount(progress?.cleared);
     const { auraMilli } = _progressStats(progress);
     const trailScore = _trailScore(fortsCleared, auraMilli);
+    const displayName = _registeredNameFor(profileSnap.data());
+
+    if (progressSnap.exists) {
+      const fields = _trailFields({ fortsCleared, trailScore, displayName });
+      if (!_trailFieldsMatch(progress, fields)) {
+        tx.set(progressRef, fields, { merge: true });
+      }
+    }
 
     if (!progressSnap.exists || fortsCleared <= 0) {
       if (rowSnap.exists) tx.delete(rowRef);
       return { synced: false, removed: rowSnap.exists, reason: 'no_forts' };
+    }
+
+    if (!displayName) {
+      if (rowSnap.exists) tx.delete(rowRef);
+      return { synced: false, removed: rowSnap.exists, reason: 'no_name' };
     }
 
     const inTop10 = top10Snap.docs.some((doc) => doc.id === publicId);
@@ -394,8 +441,6 @@ async function _syncTrailblazers({ db, uid }) {
       return { synced: false, removed: false, reason: 'below_top_10' };
     }
 
-    const profileSnap = await tx.get(profileRef);
-    const displayName = _displayNameFor(profileSnap.data());
     // A newcomer replaces the current tenth row in the same transaction, so
     // the collection never grows past ten.
     if (!rowSnap.exists && !inTop10 && top10Snap.docs.length >= 10) {
@@ -405,6 +450,54 @@ async function _syncTrailblazers({ db, uid }) {
     tx.set(rowRef, { ...entry, updatedAt: FieldValue.serverTimestamp() });
     return { synced: true, removed: false, entry };
   });
+}
+
+/**
+ * Where the signed-in player stands on Trailblazers: forts cleared, and their
+ * place among every named player (1 + the number with a higher score, so
+ * ties share a place). A player without a name gets the place they would
+ * take once they set one, and named: false so the app can ask for it.
+ *
+ * Normally two reads and one count. When the stored score or name is out of
+ * date (a name just set or changed, or a wallet from before this existed),
+ * it runs the board sync first, so setting a name puts the player on the
+ * board without waiting for their next fort.
+ */
+async function trailStandingForUser({ db, uid }) {
+  const progressRef = db.collection(SERVER_PROGRESS_COLLECTION).doc(uid);
+  const profileRef = db.collection(USERS_COLLECTION).doc(uid);
+  const [progressSnap, profileSnap] = await Promise.all([
+    progressRef.get(),
+    profileRef.get(),
+  ]);
+  const progress = progressSnap.exists ? progressSnap.data() : null;
+  const fortsCleared = fortsClearedCount(progress?.cleared);
+  const { auraMilli } = _progressStats(progress);
+  const trailScore = _trailScore(fortsCleared, auraMilli);
+  const displayName = _registeredNameFor(profileSnap.data());
+  const named = Boolean(displayName);
+
+  if (
+    progress &&
+    !_trailFieldsMatch(
+      progress,
+      _trailFields({ fortsCleared, trailScore, displayName }),
+    )
+  ) {
+    await _syncTrailblazers({ db, uid });
+  }
+
+  if (fortsCleared <= 0) {
+    return { fortsCleared: 0, fortTotal: FORT_TOTAL, rank: null, named };
+  }
+  const ahead = (
+    await db
+      .collection(SERVER_PROGRESS_COLLECTION)
+      .where(TRAIL_RANK_SCORE_FIELD, '>', trailScore)
+      .count()
+      .get()
+  ).data().count;
+  return { fortsCleared, fortTotal: FORT_TOTAL, rank: ahead + 1, named };
 }
 
 /**
@@ -426,6 +519,21 @@ function leaderboardRouter() {
   const router = express.Router();
 
   const syncLimiter = playerRateLimit({ windowMs: 60 * 1000, max: 30 });
+  const standingLimiter = playerRateLimit({ windowMs: 60 * 1000, max: 30 });
+
+  router.get(
+    '/trailblazers/me',
+    requireRegisteredFirebaseAuth,
+    standingLimiter,
+    _asyncHandler(async (req, res) => {
+      res.set('Cache-Control', 'no-store');
+      const standing = await trailStandingForUser({
+        db: firestore(),
+        uid: req.auth.uid,
+      });
+      return res.json({ ok: true, ...standing });
+    }),
+  );
 
   router.post(
     '/sync',
@@ -458,4 +566,5 @@ module.exports = {
   _syncLeaderboard,
   _syncTrailblazers,
   _trailScore,
+  trailStandingForUser,
 };

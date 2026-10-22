@@ -27,16 +27,25 @@ extension VenueEntryModeX on VenueEntryMode {
         VenueEntryMode.quickGame => 'Enter Quick Game',
         VenueEntryMode.career => 'Begin Career Run',
       };
-
-  String get venueHeading => switch (this) {
-        VenueEntryMode.quickGame => 'Choose a Venue',
-        VenueEntryMode.career => 'Choose a Kingdom',
-      };
-
-  String get venueSummary => switch (this) {
-        VenueEntryMode.quickGame =>
-          'Every kingdom is open and free here. Pick any venue for one quick game.',
-        VenueEntryMode.career =>
-          'Pick a kingdom, conquer its forts, then reach the title match against the toughest table.',
-      };
 }
+
+/// The introduction the venue screen cycles through, in place of a heading:
+/// one list for Quick Game and Career alike, so every player learns what the
+/// whole game offers before picking a kingdom. Counts come from the catalog
+/// so the copy never drifts from the map.
+List<String> venueIntroLines({
+  required int kingdoms,
+  required int forts,
+  required int maxAura,
+}) =>
+    <String>[
+      "Welcome to X Poker: Texas Hold'em across $kingdoms kingdoms and $forts forts.",
+      'Career is the journey: take all $forts forts and win $kingdoms titles across the world.',
+      "Clear a kingdom's forts to reach its title match. Win it and the title is yours.",
+      'Every title lifts your Aura, up to $maxAura. AUP pays your entry fees and grows as you win.',
+      'Quick Game: every kingdom open and free, one table. The last player with chips wins.',
+      'Opponents play like real people: they talk, read your style and come back as rivals.',
+      'Win a fort, a kingdom or a title and save its card to your phone, or share it.',
+      'Clear the most forts to join the Trailblazers. Tap the flag up top to see them.',
+      'Play money only. No deposits, no cash-outs, just poker.',
+    ];

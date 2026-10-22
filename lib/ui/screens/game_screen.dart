@@ -17,7 +17,7 @@ import 'package:ten_of_a_kind_poker/config/blind_structure.dart';
 import 'package:ten_of_a_kind_poker/config/campaign_events.dart' as ce;
 import 'package:ten_of_a_kind_poker/config/sub_kingdoms.dart';
 import 'package:ten_of_a_kind_poker/config/venues.dart'
-    show VenueGroup, kVenueGroups, venuesForGroup;
+    show VenueGroup, kVenueGroups, venueGroupLabel, venuesForGroup;
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen/finish_notes.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen/first_game_tips.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen/share_hand.dart';
@@ -57,6 +57,9 @@ import 'package:ten_of_a_kind_poker/game/events.dart' as ge;
 import 'package:ten_of_a_kind_poker/ui/widgets/slash_avatar.dart'
     show DealerAvatarStyle;
 import 'package:ten_of_a_kind_poker/ui/widgets/app_settings_sheet.dart';
+import 'package:ten_of_a_kind_poker/ui/utils/card_image.dart'
+    show CardSaveResultMessage;
+import 'package:ten_of_a_kind_poker/ui/widgets/win_card.dart';
 
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen/table.dart'
     show WoodType;
@@ -601,6 +604,10 @@ class _GameScreenState extends State<GameScreen>
 
   // The game's most share-worthy hand (game_screen/share_hand.dart).
   ShareMoment? _shareMoment;
+  // Set once the server (or the offline wallet) confirms this table cleared
+  // its fort or title: the finish screen then offers a win card.
+  bool _campaignWinConfirmed = false;
+  int? _kingdomClearedBefore;
   int _heroFinalWinnings = 0;
   bool _heroFinishOverlayShown = false;
   Future<void>? _tournamentSettlementFuture;
@@ -2533,6 +2540,7 @@ class _GameScreenState extends State<GameScreen>
 
       if (result.accepted) {
         if (rank == 1 && result.clearConfirmed) {
+          _campaignWinConfirmed = true;
           unawaited(GameAnalytics.campaignWon(
             title: widget.campaignMainEvent,
             circuit: group.name,
@@ -2546,6 +2554,12 @@ class _GameScreenState extends State<GameScreen>
         }
         final CampaignProgressService? progress = _campaignProgressService;
         if (progress != null) {
+          // Before this result lands, so the win card can tell a kingdom's
+          // last fort from a replay of an already conquered one.
+          _kingdomClearedBefore = progress.clearedCount(
+            group: group,
+            kingdomName: kingdomName,
+          );
           final authoritativeProgress = result.progress;
           if (authoritativeProgress != null) {
             // A conclusive settlement snapshot is the sole source of truth.
@@ -2776,6 +2790,79 @@ class _GameScreenState extends State<GameScreen>
     );
     final ShareMoment? best = _shareMoment;
     if (best == null || moment.score > best.score) _shareMoment = moment;
+  }
+
+  /// The win card for a confirmed fort or title win: a fort, the kingdom
+  /// when that fort was its last, or the title. Null for anything else.
+  WinCardData? _winCardData(Seat heroSeat) {
+    if (!_isCampaignEvent || !_campaignWinConfirmed) return null;
+    final VenueGroup? group = widget.campaignGroup;
+    final CampaignProgressService? progress = _campaignProgressService;
+    final String kingdom = (widget.venue?.name ?? '').toString().trim();
+    if (group == null || progress == null || kingdom.isEmpty) return null;
+
+    final int kingdomForts =
+        subKingdomCountFor(group: group, kingdomName: kingdom);
+    final int clearedHere =
+        progress.clearedCount(group: group, kingdomName: kingdom);
+    final int? fortNumber = widget.campaignSubKingdomIndex;
+    final bool title = widget.campaignMainEvent;
+    final WinKind kind = title
+        ? WinKind.title
+        : (kingdomForts > 0 &&
+                clearedHere >= kingdomForts &&
+                (_kingdomClearedBefore ?? 0) < kingdomForts)
+            ? WinKind.kingdom
+            : WinKind.fort;
+    final String kingdomTitle =
+        kingdomTitleFor(group: group, kingdomName: kingdom);
+
+    String player = (_profileService?.displayName ?? '').trim();
+    if (player.isEmpty) {
+      final String seatName = heroSeat.name.trim();
+      final String lower = seatName.toLowerCase();
+      if (lower != 'you' && lower != 'player') player = seatName;
+    }
+
+    return WinCardData(
+      kind: kind,
+      playerName: player,
+      kingdom: kingdom,
+      flagAsset: (widget.venue?.flagAsset ?? '').toString(),
+      circuit: venueGroupLabel(group),
+      fortName: (!title && fortNumber != null)
+          ? subKingdomDisplayName(
+              group: group,
+              kingdomName: kingdom,
+              index: fortNumber,
+            )
+          : '',
+      fortNumber: clearedHere,
+      kingdomForts: kingdomForts,
+      title: kingdomTitle == 'N/A' ? '' : kingdomTitle,
+      fortsCleared: progress.totalClearedCount(),
+      fortTotal: totalSubKingdomCount(),
+      titlesWon: progress.totalTitlesEarned(),
+      titlesTotal: kVenueGroups.fold<int>(
+        0,
+        (sum, g) => sum + venuesForGroup(g).length,
+      ),
+      wonAt: DateTime.now(),
+    );
+  }
+
+  Future<void> _openWinCard(WinCardData data) async {
+    if (!mounted) return;
+    unawaited(GameAnalytics.winCardOpened(kind: data.kind.name));
+    await showWinCardSheet(
+      context,
+      data: data,
+      onSaved: (result) => unawaited(
+        GameAnalytics.winCardSaved(kind: data.kind.name, saved: result.ok),
+      ),
+      onShared: () =>
+          unawaited(GameAnalytics.winCardShared(kind: data.kind.name)),
+    );
   }
 
   Future<void> _openShareHand() async {
@@ -3275,6 +3362,8 @@ class _GameScreenState extends State<GameScreen>
       );
     }
 
+    final WinCardData? winCard = rank == 1 ? _winCardData(heroSeat) : null;
+
     await go.showHeroFinishOverlay(
       context,
       heroSeat: heroSeat,
@@ -3283,6 +3372,8 @@ class _GameScreenState extends State<GameScreen>
       closeCall: closeCall,
       progressNote: progressNote,
       onShareHand: _shareMoment == null ? null : _openShareHand,
+      shareWinLabel: winCard?.buttonLabel,
+      onShareWin: winCard == null ? null : () => _openWinCard(winCard),
       handsPlayed: handsPlayed,
       finalChips: finalChips,
       winnings: winnings,

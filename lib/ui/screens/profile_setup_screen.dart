@@ -18,10 +18,15 @@ class ProfileSetupScreen extends StatefulWidget {
   final Widget? destination;
   final bool managedByAuthGate;
 
+  /// Opened from somewhere the player should return to (Trailblazers' "Set
+  /// name"): saving pops back with true instead of moving on.
+  final bool popWhenSaved;
+
   const ProfileSetupScreen({
     super.key,
     this.destination,
     this.managedByAuthGate = false,
+    this.popWhenSaved = false,
   });
 
   @override
@@ -243,6 +248,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
       if (!mounted) return;
       if (widget.managedByAuthGate) return;
+      if (widget.popWhenSaved) {
+        Navigator.of(context).pop(true);
+        return;
+      }
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => widget.destination ?? const GameModeScreen(),

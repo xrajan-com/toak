@@ -12,6 +12,7 @@ const {
   _refreshPublicBoards,
   _syncTrailblazers,
   _trailScore,
+  trailStandingForUser,
 } = require('../src/routes/leaderboard');
 const { FakeFirestore } = require('./firestore_fake');
 
@@ -92,6 +93,35 @@ test('no forts means no row, and an old row is removed', async () => {
   assert.equal(db.dump(TRAILBLAZERS_COLLECTION, publicId), undefined);
 });
 
+test('a player with no name of their own never takes a place on the board', async () => {
+  const uid = 'nameless';
+  const publicId = leaderboardDocumentId(uid);
+  const db = new FakeFirestore({
+    [SERVER_PROGRESS_COLLECTION]: {
+      [uid]: { schemaVersion: 1, cleared: FORT_IDS.slice(0, 17) },
+      named: { schemaVersion: 1, cleared: FORT_IDS.slice(0, 2) },
+    },
+    [USERS_COLLECTION]: {
+      [uid]: { email: 'someone@example.com', displayName: '  ' },
+      named: { username: 'Peter Power' },
+    },
+    [TRAILBLAZERS_COLLECTION]: {
+      [publicId]: { displayName: 'Player', fortsCleared: 17, trailScore: _trailScore(17, 0) },
+    },
+  });
+
+  const result = await _syncTrailblazers({ db, uid });
+  assert.deepEqual(result, { synced: false, removed: true, reason: 'no_name' });
+  assert.equal(db.dump(TRAILBLAZERS_COLLECTION, publicId), undefined);
+
+  const named = await _syncTrailblazers({ db, uid: 'named' });
+  assert.equal(named.synced, true);
+  assert.equal(
+    db.dump(TRAILBLAZERS_COLLECTION, leaderboardDocumentId('named')).displayName,
+    'Peter Power',
+  );
+});
+
 test('a newcomer with more forts replaces the tenth row; fewer forts does not', async () => {
   const board = {};
   for (let forts = 1; forts <= 10; forts += 1) {
@@ -107,7 +137,10 @@ test('a newcomer with more forts replaces the tenth row; fewer forts does not', 
       tied: { schemaVersion: 1, cleared: FORT_IDS.slice(0, 1) },
       newcomer: { schemaVersion: 1, cleared: FORT_IDS.slice(0, 20) },
     },
-    [USERS_COLLECTION]: { newcomer: { displayName: 'Fort Runner' } },
+    [USERS_COLLECTION]: {
+      tied: { displayName: 'Tied Up' },
+      newcomer: { displayName: 'Fort Runner' },
+    },
   });
 
   const tied = await _syncTrailblazers({ db, uid: 'tied' });
@@ -142,4 +175,82 @@ test('one refresh updates both the Aura board and Trailblazers', async () => {
   assert.equal(result.trailblazers.synced, true);
   assert.equal(db.dump(LEADERBOARD_COLLECTION, publicId).displayName, 'Both');
   assert.equal(db.dump(TRAILBLAZERS_COLLECTION, publicId).fortsCleared, 2);
+});
+
+test('standing: a named player sees their forts and place among named players', async () => {
+  const db = new FakeFirestore({
+    [SERVER_PROGRESS_COLLECTION]: {
+      top: { schemaVersion: 1, cleared: FORT_IDS.slice(0, 30) },
+      nameless: { schemaVersion: 1, cleared: FORT_IDS.slice(0, 20) },
+      me: { schemaVersion: 1, cleared: FORT_IDS.slice(0, 4) },
+      behind: { schemaVersion: 1, cleared: FORT_IDS.slice(0, 1) },
+    },
+    [USERS_COLLECTION]: {
+      top: { displayName: 'Top Dog' },
+      nameless: { email: 'x@example.com' },
+      me: { displayName: 'Peter Power' },
+      behind: { displayName: 'Behind' },
+    },
+  });
+  // Fort clears keep the stored scores current.
+  for (const uid of ['top', 'nameless', 'me', 'behind']) {
+    await _syncTrailblazers({ db, uid });
+  }
+
+  const mine = await trailStandingForUser({ db, uid: 'me' });
+  // The unnamed 20-fort player does not count against anyone.
+  assert.deepEqual(mine, { fortsCleared: 4, fortTotal: 500, rank: 2, named: true });
+
+  const theirs = await trailStandingForUser({ db, uid: 'nameless' });
+  // Without a name: where they would stand once they set one.
+  assert.deepEqual(theirs, { fortsCleared: 20, fortTotal: 500, rank: 2, named: false });
+});
+
+test('standing: setting a name puts the player on the board right away', async () => {
+  const uid = 'renamed';
+  const publicId = leaderboardDocumentId(uid);
+  const db = new FakeFirestore({
+    [SERVER_PROGRESS_COLLECTION]: {
+      [uid]: { schemaVersion: 1, cleared: FORT_IDS.slice(0, 5) },
+    },
+    [USERS_COLLECTION]: { [uid]: { email: 'r@example.com' } },
+  });
+  await _syncTrailblazers({ db, uid });
+  assert.equal(db.dump(TRAILBLAZERS_COLLECTION, publicId), undefined);
+
+  // The player sets their name in the app; the next look syncs the board.
+  await db.collection(USERS_COLLECTION).doc(uid).set(
+    { displayName: 'New Name' },
+    { merge: true },
+  );
+  const standing = await trailStandingForUser({ db, uid });
+  assert.equal(standing.named, true);
+  assert.equal(standing.rank, 1);
+  assert.equal(db.dump(TRAILBLAZERS_COLLECTION, publicId).displayName, 'New Name');
+});
+
+test('standing: no forts means no place, and an old wallet heals itself', async () => {
+  const db = new FakeFirestore({
+    [SERVER_PROGRESS_COLLECTION]: {
+      fresh: { schemaVersion: 1, cleared: [] },
+      // Saved before trail scores existed: no trailScore stored yet.
+      legacy: { schemaVersion: 1, cleared: FORT_IDS.slice(0, 3) },
+    },
+    [USERS_COLLECTION]: {
+      fresh: { displayName: 'Fresh' },
+      legacy: { displayName: 'Legacy' },
+    },
+  });
+
+  assert.deepEqual(
+    await trailStandingForUser({ db, uid: 'fresh' }),
+    { fortsCleared: 0, fortTotal: 500, rank: null, named: true },
+  );
+  const legacy = await trailStandingForUser({ db, uid: 'legacy' });
+  assert.equal(legacy.rank, 1);
+  const saved = db.dump(SERVER_PROGRESS_COLLECTION, 'legacy');
+  assert.equal(saved.trailScore, _trailScore(3, 0));
+  assert.equal(saved.trailRankScore, saved.trailScore);
+  assert.equal(saved.trailName, 'Legacy');
+  assert.ok(db.dump(TRAILBLAZERS_COLLECTION, leaderboardDocumentId('legacy')));
 });

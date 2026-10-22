@@ -2,7 +2,7 @@ name: ten_of_a_kind_poker
 description: X Poker, an offline Texas Hold'em game
 publish_to: 'none'
 
-version: 1.2.11+88
+version: 1.2.10+91
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -45,6 +45,8 @@ dependencies:
   # 9.x-10.x: newer releases need package:web 1.x, which the 2024 Firebase
   # web plugins pinned above do not allow.
   share_plus: '>=9.0.0 <11.0.0'
+  # Saves win cards to the phone's photos (Android, iOS).
+  gal: ^2.3.2
 
   # Icons / cards
   cupertino_icons: ^1.0.6

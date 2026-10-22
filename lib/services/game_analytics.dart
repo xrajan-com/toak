@@ -85,6 +85,25 @@ class GameAnalytics {
   static Future<void> handShared({required bool heroWon}) =>
       _log('hand_shared', <String, Object>{'won': heroWon ? 1 : 0});
 
+  /// The player opened the card for a fort, kingdom or title win
+  /// ([kind] is fort, kingdom or title).
+  static Future<void> winCardOpened({required String kind}) =>
+      _log('win_card_opened', <String, Object>{'kind': kind});
+
+  /// The player saved a win card to their device ([saved] 0 if it failed).
+  static Future<void> winCardSaved({
+    required String kind,
+    required bool saved,
+  }) =>
+      _log('win_card_saved', <String, Object>{
+        'kind': kind,
+        'saved': saved ? 1 : 0,
+      });
+
+  /// The player sent a win card through the share sheet.
+  static Future<void> winCardShared({required String kind}) =>
+      _log('win_card_shared', <String, Object>{'kind': kind});
+
   static Future<void> _log(String name, Map<String, Object> parameters) async {
     if (!_enabled) return;
     try {

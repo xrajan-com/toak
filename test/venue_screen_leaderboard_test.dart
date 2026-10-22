@@ -7,6 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
 import 'package:ten_of_a_kind_poker/services/app_settings_service.dart';
+import 'package:ten_of_a_kind_poker/services/leaderboard_firestore_service.dart';
+import 'package:ten_of_a_kind_poker/features/venue/game_mode.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/venue_screen.dart';
 
 void main() {
@@ -49,7 +51,7 @@ void main() {
     await binding.setSurfaceSize(const Size(1200, 900));
     addTearDown(() => binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(const MaterialApp(home: VenueScreen()));
+    await tester.pumpWidget(const MaterialApp(home: VenueScreen(autoShowTrailblazers: false)));
     await tester.pump();
 
     await tester.tap(find.text('Australasia'));
@@ -64,7 +66,7 @@ void main() {
     await binding.setSurfaceSize(const Size(1200, 900));
     addTearDown(() => binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(const MaterialApp(home: VenueScreen()));
+    await tester.pumpWidget(const MaterialApp(home: VenueScreen(autoShowTrailblazers: false)));
     await tester.pump();
 
     expect(find.byTooltip('My Profile'), findsOneWidget);
@@ -80,7 +82,7 @@ void main() {
 
     await tester.pumpWidget(
       const MaterialApp(
-        home: VenueScreen(),
+        home: VenueScreen(autoShowTrailblazers: false),
       ),
     );
     await tester.pump();
@@ -121,7 +123,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider<AppSettingsService>(
         create: (_) => AppSettingsService(),
-        child: const MaterialApp(home: VenueScreen()),
+        child: const MaterialApp(home: VenueScreen(autoShowTrailblazers: false)),
       ),
     );
     await tester.pump();
@@ -134,5 +136,86 @@ void main() {
     expect(find.text('Sound effects'), findsOneWidget);
     expect(find.text('Lounge sounds'), findsOneWidget);
     expect(find.text('Reduce motion'), findsOneWidget);
+  });
+
+  Future<List<LeaderboardEntry>> board() async => const [
+        LeaderboardEntry(
+          uid: 'a',
+          displayName: 'Peter Power',
+          auraMilli: 0,
+          totalAup: 0,
+          activityScore: 0,
+          fortsCleared: 17,
+        ),
+      ];
+
+  testWidgets('Trailblazers shows by itself, then closes after 4 seconds',
+      (tester) async {
+    await binding.setSurfaceSize(const Size(1200, 900));
+    addTearDown(() => binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(home: VenueScreen(trailblazersLoader: board)),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('TRAILBLAZERS'), findsOneWidget);
+    expect(find.text('PETER POWER'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 3));
+    expect(find.text('TRAILBLAZERS'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 1, milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('TRAILBLAZERS'), findsNothing);
+    // The venue screen itself is still there.
+    expect(find.byTooltip('Trailblazers'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a tap outside closes the automatic Trailblazers at once',
+      (tester) async {
+    await binding.setSurfaceSize(const Size(1200, 900));
+    addTearDown(() => binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      MaterialApp(home: VenueScreen(trailblazersLoader: board)),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('TRAILBLAZERS'), findsOneWidget);
+
+    await tester.tapAt(const Offset(20, 880));
+    // One frame starts the closing animation, the next finishes it.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('TRAILBLAZERS'), findsNothing);
+  });
+
+  testWidgets('the logo is centred and the old heading is gone',
+      (tester) async {
+    await binding.setSurfaceSize(const Size(1200, 900));
+    addTearDown(() => binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: VenueScreen(
+          mode: VenueEntryMode.quickGame,
+          autoShowTrailblazers: false,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Choose a Venue'), findsNothing);
+    final logo = tester.getCenter(find.byKey(const ValueKey('venue-logo')));
+    expect(logo.dx, closeTo(600, 1));
+    expect(find.textContaining('Welcome to X Poker'), findsOneWidget);
+
+    // The introduction moves on by itself.
+    await tester.pump(const Duration(milliseconds: 4600));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.textContaining('Career is the journey'), findsOneWidget);
   });
 }

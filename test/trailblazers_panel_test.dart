@@ -18,6 +18,7 @@ Future<void> _open(
   WidgetTester tester,
   Future<List<LeaderboardEntry>> Function() load, {
   Size size = const Size(1200, 900),
+  TrailblazersViewer? viewer,
 }) async {
   await tester.binding.setSurfaceSize(size);
   addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -27,7 +28,8 @@ Future<void> _open(
         builder: (context) => Scaffold(
           body: Center(
             child: TextButton(
-              onPressed: () => showTrailblazers(context, load: load),
+              onPressed: () =>
+                  showTrailblazers(context, load: load, viewer: viewer),
               child: const Text('open'),
             ),
           ),
@@ -53,6 +55,20 @@ void main() {
     expect(rows[1].displayName, 'TieLowAura');
     expect(rows.any((row) => row.displayName == 'None'), isFalse);
     expect(rows.any((row) => row.displayName == 'Low'), isFalse);
+  });
+
+  test('rows: players without a name of their own stay off the board', () {
+    final rows = trailblazerRows([
+      _entry('Player', 17),
+      _entry('Peter Power', 17),
+      _entry('  ', 9),
+      _entry('PLAYER', 4),
+      _entry('Long Xiao', 3),
+    ]);
+    expect(
+      rows.map((row) => row.displayName),
+      ['Peter Power', 'Long Xiao'],
+    );
   });
 
   testWidgets('shows the top players as forts out of the total, in white',
@@ -97,5 +113,136 @@ void main() {
     expect(tester.getTopLeft(box).dy, greaterThanOrEqualTo(0));
     expect(tester.getBottomRight(box).dy, lessThanOrEqualTo(360));
     expect(tester.takeException(), isNull);
+  });
+
+  Future<List<LeaderboardEntry>> board() async =>
+      [_entry('Peter Power', 17), _entry('Long Xiao', 3)];
+
+  testWidgets('a guest is asked to log in, and the button does it',
+      (tester) async {
+    var signIns = 0;
+    await _open(
+      tester,
+      board,
+      viewer: TrailblazersViewer(
+        registered: false,
+        onSignIn: () => signIns += 1,
+      ),
+    );
+    expect(
+      find.text('Log in to save your forts and join the Trailblazers.'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Log in'));
+    await tester.pumpAndSettle();
+    expect(signIns, 1);
+    // The panel closed first.
+    expect(find.text('TRAILBLAZERS'), findsNothing);
+  });
+
+  testWidgets('a named player sees their own place under the top ten',
+      (tester) async {
+    await _open(
+      tester,
+      board,
+      viewer: TrailblazersViewer(
+        registered: true,
+        name: 'Shawn',
+        loadStanding: () async => const TrailStanding(
+          fortsCleared: 2,
+          fortTotal: 500,
+          rank: 23,
+          named: true,
+        ),
+      ),
+    );
+    final own = find.byKey(const ValueKey<String>('trailblazers-own-row'));
+    expect(own, findsOneWidget);
+    expect(
+      find.descendant(of: own, matching: find.text('#23')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: own, matching: find.text('YOU · SHAWN')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: own, matching: find.text('2 / 500')),
+      findsOneWidget,
+    );
+    expect(find.text('Set name'), findsNothing);
+  });
+
+  testWidgets('a player without a name is asked to set one, with the place '
+      'it would take', (tester) async {
+    var setNames = 0;
+    await _open(
+      tester,
+      board,
+      viewer: TrailblazersViewer(
+        registered: true,
+        loadStanding: () async => const TrailStanding(
+          fortsCleared: 17,
+          fortTotal: 500,
+          rank: 1,
+          named: false,
+        ),
+        onSetName: () => setNames += 1,
+      ),
+    );
+    expect(
+      find.text("You'd be #1 on the board. Set your player name to take "
+          'your place.'),
+      findsOneWidget,
+    );
+    expect(find.text('YOU'), findsOneWidget);
+    await tester.tap(find.text('Set name'));
+    await tester.pumpAndSettle();
+    expect(setNames, 1);
+    expect(find.text('TRAILBLAZERS'), findsNothing);
+  });
+
+  testWidgets('a failed standing load leaves just the board', (tester) async {
+    await _open(
+      tester,
+      board,
+      viewer: TrailblazersViewer(
+        registered: true,
+        loadStanding: () async => throw StateError('offline'),
+      ),
+    );
+    expect(find.text('PETER POWER'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey<String>('trailblazers-own-row')),
+      findsNothing,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  test('standing JSON: no forts means no place', () {
+    final none = TrailStanding.fromJson(<String, dynamic>{
+      'ok': true,
+      'fortsCleared': 0,
+      'fortTotal': 500,
+      'rank': null,
+      'named': true,
+    });
+    expect(none.rank, isNull);
+    expect(none.onBoard, isFalse);
+    final top = TrailStanding.fromJson(<String, dynamic>{
+      'fortsCleared': 9,
+      'fortTotal': 500,
+      'rank': 4,
+      'named': true,
+    });
+    expect(top.rank, 4);
+    expect(top.onBoard, isTrue);
+    final unnamed = TrailStanding.fromJson(<String, dynamic>{
+      'fortsCleared': 9,
+      'fortTotal': 500,
+      'rank': 4,
+      'named': false,
+    });
+    expect(unnamed.onBoard, isFalse);
   });
 }

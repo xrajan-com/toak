@@ -658,6 +658,8 @@ Future<void> showHeroFinishOverlay(
   String? closeCall,
   String? progressNote,
   Future<void> Function()? onShareHand,
+  String? shareWinLabel,
+  Future<void> Function()? onShareWin,
 }) async {
   final bool podiumFinish = rank > 0 && rank <= 3;
   final bool champion = rank == 1;
@@ -905,6 +907,39 @@ Future<void> showHeroFinishOverlay(
                                                       0xFF00B5C8),
                                                   fontSize: 12.5,
                                                   fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                            ],
+                                            if (onShareWin != null) ...[
+                                              const SizedBox(height: 12),
+                                              Center(
+                                                child: FilledButton.icon(
+                                                  key: const ValueKey<String>(
+                                                    'finish-share-win',
+                                                  ),
+                                                  onPressed: () =>
+                                                      onShareWin!(),
+                                                  style:
+                                                      FilledButton.styleFrom(
+                                                    backgroundColor:
+                                                        const Color(
+                                                            0xFFFFD76E),
+                                                    foregroundColor:
+                                                        Colors.black,
+                                                  ),
+                                                  icon: const Icon(
+                                                    Icons.workspace_premium,
+                                                    size: 18,
+                                                  ),
+                                                  label: Text(
+                                                    shareWinLabel ??
+                                                        'SHARE YOUR WIN',
+                                                    style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w900,
+                                                      letterSpacing: 0.6,
+                                                    ),
+                                                  ),
                                                 ),
                                               ),
                                             ],

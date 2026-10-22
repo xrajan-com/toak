@@ -1,9 +1,5 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart' show NumberFormat;
-import 'package:share_plus/share_plus.dart';
 
 import 'package:ten_of_a_kind_poker/game/hand_evaluator.dart'
     show HandCategory;
@@ -11,6 +7,7 @@ import 'package:ten_of_a_kind_poker/ui/screens/game_screen/cards.dart'
     show PlayingCard;
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen/models.dart'
     show GCard;
+import 'package:ten_of_a_kind_poker/ui/widgets/card_sheet.dart';
 
 /// The hand worth sharing from a game: a big pot won at showdown, or a bad
 /// beat. Everything the share card shows, captured when the hand ended.
@@ -75,102 +72,24 @@ class ShareMoment {
       };
 }
 
-/// Opens the share card for [moment]: a preview, and a Share button that
-/// sends it as a 1080 x 1350 image (Instagram's portrait size).
+/// Opens the share card for [moment]: a preview, with Save (to the phone's
+/// photos) and Share, as a 1080 x 1350 image (Instagram's portrait size).
 Future<void> showShareHandSheet(
   BuildContext context, {
   required ShareMoment moment,
   required String placeLine,
   String kingdomTitle = '',
 }) {
-  final GlobalKey cardKey = GlobalKey();
-  return showDialog<void>(
-    context: context,
-    barrierColor: Colors.black.withValues(alpha: 0.75),
-    builder: (ctx) {
-      bool sharing = false;
-      return StatefulBuilder(
-        builder: (ctx, setState) => Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: RepaintBoundary(
-                    key: cardKey,
-                    child: ShareHandCard(
-                      moment: moment,
-                      placeLine: placeLine,
-                      kingdomTitle: kingdomTitle,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.of(ctx).pop(),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.white70,
-                    ),
-                    child: const Text('Close'),
-                  ),
-                  const SizedBox(width: 8),
-                  FilledButton.icon(
-                    onPressed: sharing
-                        ? null
-                        : () async {
-                            setState(() => sharing = true);
-                            await _shareCard(cardKey);
-                            if (ctx.mounted) setState(() => sharing = false);
-                          },
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF2800),
-                      foregroundColor: Colors.white,
-                    ),
-                    icon: const Icon(Icons.ios_share),
-                    label: const Text(
-                      'Share',
-                      style: TextStyle(fontWeight: FontWeight.w800),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      );
-    },
+  return showCardSheet(
+    context,
+    card: ShareHandCard(
+      moment: moment,
+      placeLine: placeLine,
+      kingdomTitle: kingdomTitle,
+    ),
+    fileStem: moment.heroWon ? 'big-win' : 'hand',
+    shareText: 'My hand at X Poker · tenofakind.com',
   );
-}
-
-Future<void> _shareCard(GlobalKey key) async {
-  try {
-    final boundary =
-        key.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-    if (boundary == null) return;
-    // The card is laid out at 360 x 450; x3 gives 1080 x 1350.
-    final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
-    final data = await image.toByteData(format: ui.ImageByteFormat.png);
-    if (data == null) return;
-    await Share.shareXFiles(
-      <XFile>[
-        XFile.fromData(
-          data.buffer.asUint8List(),
-          mimeType: 'image/png',
-          name: 'x-poker-hand.png',
-        ),
-      ],
-      text: 'My hand at X Poker · tenofakind.com',
-    );
-  } catch (_) {
-    // Sharing is a bonus; never an error the player has to deal with.
-  }
 }
 
 /// The card itself, laid out at 360 x 450 (4:5).

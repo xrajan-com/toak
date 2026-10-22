@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 
 import 'package:ten_of_a_kind_poker/config/kingdom_titles.dart';
 import 'package:ten_of_a_kind_poker/config/sub_kingdoms.dart'
-    show subKingdomCountFor, totalSubKingdomCount;
+    show subKingdomCountFor, totalKingdomCount, totalSubKingdomCount;
 import 'package:ten_of_a_kind_poker/config/venues.dart';
 import 'package:ten_of_a_kind_poker/features/venue/game_mode.dart';
 import 'package:ten_of_a_kind_poker/ui/theme/colors.dart';
@@ -22,10 +22,12 @@ import 'package:ten_of_a_kind_poker/services/auth_service.dart';
 import 'package:ten_of_a_kind_poker/services/aura_points_service.dart';
 import 'package:ten_of_a_kind_poker/services/campaign_progress_service.dart';
 import 'package:ten_of_a_kind_poker/services/economy_api_service.dart';
+import 'package:ten_of_a_kind_poker/services/leaderboard_firestore_service.dart';
 import 'package:ten_of_a_kind_poker/services/profile_service.dart';
 import 'package:ten_of_a_kind_poker/services/x_music_service.dart';
 import 'package:ten_of_a_kind_poker/core/aup.dart' as aup;
 import 'package:ten_of_a_kind_poker/ui/screens/profile_screen.dart';
+import 'package:ten_of_a_kind_poker/ui/screens/profile_setup_screen.dart';
 import 'package:ten_of_a_kind_poker/ui/widgets/app_settings_sheet.dart';
 import 'package:ten_of_a_kind_poker/ui/widgets/stadium_banner.dart';
 import 'package:ten_of_a_kind_poker/ui/widgets/trailblazers_panel.dart';
@@ -125,19 +127,19 @@ class _HeaderActions extends StatelessWidget {
   }
 }
 
-/// Slim, transparent header: logo and heading on the left, circuit tabs in
-/// the middle, account actions on the right. It paints no background of its
-/// own so the ambient backdrop shows through and every row of kingdoms keeps
-/// the vertical space.
+/// Slim, transparent header: the X logo in the centre of the screen,
+/// account actions on the right, circuit tabs on the row below. It paints no
+/// background of its own so the ambient backdrop shows through and every row
+/// of kingdoms keeps the vertical space.
 class _VenueHeader extends StatelessWidget {
   final String logoAsset;
-  final String title;
+  final String semanticTitle;
   final bool compact;
   final Widget tabs;
   final Widget actions;
   const _VenueHeader({
     required this.logoAsset,
-    required this.title,
+    required this.semanticTitle,
     required this.compact,
     required this.tabs,
     required this.actions,
@@ -145,71 +147,42 @@ class _VenueHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final logoSize = compact ? 36.0 : 42.0;
-    final brand = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ClipOval(
-          child: Image.asset(
-            logoAsset,
-            width: logoSize,
-            height: logoSize,
-            fit: BoxFit.cover,
-            filterQuality: FilterQuality.high,
-            gaplessPlayback: true,
-          ),
+    final logoSize = compact ? 40.0 : 48.0;
+    final logo = Semantics(
+      header: true,
+      label: semanticTitle,
+      child: ClipOval(
+        key: const ValueKey<String>('venue-logo'),
+        child: Image.asset(
+          logoAsset,
+          width: logoSize,
+          height: logoSize,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.high,
+          gaplessPlayback: true,
+          excludeFromSemantics: true,
         ),
-        const SizedBox(width: 10),
-        Text(
-          title,
-          maxLines: 1,
-          softWrap: false,
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w800,
-            fontSize: compact ? 15 : 17,
-            letterSpacing: 0.2,
-          ),
-        ),
-      ],
+      ),
     );
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth >= 760) {
-          return SizedBox(
-            height: compact ? 48 : 56,
-            child: Row(
-              children: [
-                brand,
-                const SizedBox(width: 16),
-                Expanded(child: Center(child: tabs)),
-                const SizedBox(width: 16),
-                actions,
-              ],
-            ),
-          );
-        }
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: FittedBox(fit: BoxFit.scaleDown, child: brand),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                actions,
-              ],
-            ),
-            const SizedBox(height: 8),
-            tabs,
-          ],
-        );
-      },
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // A Stack, not a Row, so the logo sits on the screen's true centre
+        // whatever the width of the actions beside it.
+        SizedBox(
+          height: math.max(logoSize, _HeaderIconFace.size + 4),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              logo,
+              Align(alignment: Alignment.centerRight, child: actions),
+            ],
+          ),
+        ),
+        SizedBox(height: compact ? 6 : 8),
+        tabs,
+      ],
     );
   }
 }
@@ -267,10 +240,27 @@ class VenueScreen extends StatefulWidget {
   static const routeName = '/venue';
   final VenueEntryMode mode;
 
+  /// Opens Trailblazers by itself for a few seconds when the screen first
+  /// shows. Off in tests that are not about it.
+  final bool autoShowTrailblazers;
+
+  /// Where Trailblazers loads from; tests pass a fake.
+  final TrailblazersLoader? trailblazersLoader;
+
+  /// Who is looking at Trailblazers; by default the signed-in player. Tests
+  /// pass their own.
+  final TrailblazersViewer? trailblazersViewer;
+
   const VenueScreen({
     super.key,
     this.mode = VenueEntryMode.career,
+    this.autoShowTrailblazers = true,
+    this.trailblazersLoader,
+    this.trailblazersViewer,
   });
+
+  /// How long the automatic Trailblazers stays up.
+  static const Duration trailblazersPreview = Duration(seconds: 4);
   @override
   State<VenueScreen> createState() => _VenueScreenState();
 }
@@ -302,6 +292,62 @@ class _VenueScreenState extends State<VenueScreen>
       if (!mounted) return;
       setState(() {});
     });
+
+    if (widget.autoShowTrailblazers) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        // Only while this screen is on top: not over a game pushed in the
+        // same frame, and never twice for one visit.
+        if (ModalRoute.of(context)?.isCurrent == false) return;
+        unawaited(
+          _openTrailblazers(autoCloseAfter: VenueScreen.trailblazersPreview),
+        );
+      });
+    }
+  }
+
+  Future<void> _openTrailblazers({Duration? autoCloseAfter}) {
+    return showTrailblazers(
+      context,
+      load: widget.trailblazersLoader,
+      autoCloseAfter: autoCloseAfter,
+      viewer: widget.trailblazersViewer ?? _trailblazersViewer(),
+    );
+  }
+
+  /// The signed-in player as Trailblazers sees them: their own row, and a
+  /// nudge to log in or set a name when that is what keeps them off it.
+  TrailblazersViewer _trailblazersViewer() {
+    final user = _maybeRead<AuthService>()?.currentUser;
+    final registered = user != null && !user.isAnonymous;
+    final name = (_maybeRead<ProfileService>()?.displayName ?? '').trim();
+    return TrailblazersViewer(
+      registered: registered,
+      name: name,
+      loadStanding: registered
+          ? leaderboardFirestoreService.fetchMyTrailStanding
+          : null,
+      onSetName: () => unawaited(_setNameForTrailblazers()),
+      onSignIn: _pushSignIn,
+    );
+  }
+
+  T? _maybeRead<T>() {
+    try {
+      return context.read<T>();
+    } on ProviderNotFoundException {
+      return null;
+    }
+  }
+
+  Future<void> _setNameForTrailblazers() async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => const ProfileSetupScreen(popWhenSaved: true),
+      ),
+    );
+    // Straight back to the board, now with their name on it.
+    if (saved == true && mounted) unawaited(_openTrailblazers());
   }
 
   @override
@@ -368,6 +414,10 @@ class _VenueScreenState extends State<VenueScreen>
 
   void _openSignIn(BuildContext dialogContext) {
     Navigator.pop(dialogContext);
+    _pushSignIn();
+  }
+
+  void _pushSignIn() {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => const AuthScreen(
@@ -762,13 +812,15 @@ class _VenueScreenState extends State<VenueScreen>
                 children: [
                   _VenueHeader(
                     logoAsset: _bannerAsset,
-                    title: widget.mode.venueHeading,
+                    semanticTitle: widget.mode == VenueEntryMode.quickGame
+                        ? 'Choose a venue'
+                        : 'Choose a kingdom',
                     compact: compact,
                     tabs: _TitleAndTabs(controller: _tab),
                     actions: _HeaderActions(
                       onProfile: _showMyProfileDialog,
                       onTrailblazers: () {
-                        unawaited(showTrailblazers(context));
+                        unawaited(_openTrailblazers());
                       },
                       onSettings: () {
                         unawaited(showAppSettingsSheet(context));
@@ -776,8 +828,12 @@ class _VenueScreenState extends State<VenueScreen>
                     ),
                   ),
                   SizedBox(height: compact ? 4 : 6),
-                  _ModeSummary(
-                    text: widget.mode.venueSummary,
+                  _VenueIntro(
+                    lines: venueIntroLines(
+                      kingdoms: totalKingdomCount(),
+                      forts: totalSubKingdomCount(),
+                      maxAura: aup.kAupMaxAuraTotal,
+                    ),
                     compact: compact,
                   ),
                   SizedBox(height: compact ? 6 : 10),
@@ -1274,28 +1330,135 @@ class _TitleAndTabsState extends State<_TitleAndTabs> {
   }
 }
 
-class _ModeSummary extends StatelessWidget {
-  final String text;
+/// The introduction under the circuit tabs: one short line at a time,
+/// changing every few seconds, so a newcomer learns the whole game without a
+/// wall of text. Tap to move to the next line.
+class _VenueIntro extends StatefulWidget {
+  final List<String> lines;
   final bool compact;
 
-  const _ModeSummary({
-    required this.text,
+  const _VenueIntro({
+    required this.lines,
     required this.compact,
   });
 
+  static const Duration interval = Duration(milliseconds: 4500);
+
+  @override
+  State<_VenueIntro> createState() => _VenueIntroState();
+}
+
+class _VenueIntroState extends State<_VenueIntro> {
+  int _index = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _restart();
+  }
+
+  @override
+  void didUpdateWidget(covariant _VenueIntro oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_index >= widget.lines.length) _index = 0;
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _restart() {
+    _timer?.cancel();
+    if (widget.lines.length < 2) return;
+    _timer = Timer.periodic(_VenueIntro.interval, (_) => _next());
+  }
+
+  void _next() {
+    if (!mounted || widget.lines.isEmpty) return;
+    setState(() => _index = (_index + 1) % widget.lines.length);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
+    if (widget.lines.isEmpty) return const SizedBox.shrink();
+    final compact = widget.compact;
+    final fontSize = compact ? 11.5 : 12.5;
+    final still = MediaQuery.disableAnimationsOf(context);
+    // Wide screens fit every line on one row; narrow ones get two, so the
+    // kingdoms below keep as much height as they can.
+    final lineCount = MediaQuery.sizeOf(context).width >= 700 ? 1 : 2;
+    final line = widget.lines[_index];
+    final text = Text(
+      line,
+      key: ValueKey<int>(_index),
       textAlign: TextAlign.center,
-      maxLines: 2,
+      maxLines: lineCount,
       overflow: TextOverflow.ellipsis,
       style: TextStyle(
-        color: Colors.white.withValues(alpha: 0.58),
+        color: Colors.white.withValues(alpha: 0.72),
         fontWeight: FontWeight.w600,
-        fontSize: compact ? 11.5 : 12.5,
+        fontSize: fontSize,
         letterSpacing: 0.2,
         height: 1.2,
+      ),
+    );
+
+    return Semantics(
+      key: const ValueKey<String>('venue-intro'),
+      liveRegion: false,
+      button: widget.lines.length > 1,
+      label: line,
+      hint: widget.lines.length > 1 ? 'Next tip' : null,
+      excludeSemantics: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          _next();
+          _restart();
+        },
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // A fixed height, so the grid below never jumps when a short
+            // line follows a long one.
+            SizedBox(
+              height: fontSize * 1.2 * lineCount + 2,
+              child: Center(
+                child: still
+                    ? text
+                    : AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 350),
+                        child: text,
+                      ),
+              ),
+            ),
+            if (widget.lines.length > 1) ...[
+              const SizedBox(height: 3),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (var i = 0; i < widget.lines.length; i++)
+                    AnimatedContainer(
+                      duration: still
+                          ? Duration.zero
+                          : const Duration(milliseconds: 250),
+                      margin: const EdgeInsets.symmetric(horizontal: 2),
+                      width: i == _index ? 12 : 4,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white
+                            .withValues(alpha: i == _index ? 0.75 : 0.25),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

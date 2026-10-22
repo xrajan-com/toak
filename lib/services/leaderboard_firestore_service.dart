@@ -37,6 +37,42 @@ class LeaderboardEntry {
   double get aura => cappedAuraMilli / 1000.0;
 }
 
+/// Where the signed-in player stands on Trailblazers.
+///
+/// [rank] is their place among every named player (ties share a place), or
+/// null before their first fort. [named] is false for an account that never
+/// set a player name: it stays off the board, and [rank] is where it would
+/// stand once it has one.
+@immutable
+class TrailStanding {
+  final int fortsCleared;
+  final int fortTotal;
+  final int? rank;
+  final bool named;
+
+  const TrailStanding({
+    required this.fortsCleared,
+    required this.fortTotal,
+    required this.rank,
+    required this.named,
+  });
+
+  /// In the top ten, so already on the board above.
+  bool get onBoard => named && rank != null && rank! <= 10;
+
+  factory TrailStanding.fromJson(Map<String, dynamic> json) {
+    int whole(Object? raw) => raw is num && raw.isFinite ? raw.toInt() : 0;
+    final forts = whole(json['fortsCleared']);
+    final rawRank = whole(json['rank']);
+    return TrailStanding(
+      fortsCleared: forts < 0 ? 0 : forts,
+      fortTotal: whole(json['fortTotal']),
+      rank: forts > 0 && rawRank > 0 ? rawRank : null,
+      named: json['named'] == true,
+    );
+  }
+}
+
 class LeaderboardLoadException implements Exception {
   final String message;
   final Object? cause;
@@ -273,6 +309,26 @@ class LeaderboardFirestoreService {
         'Could not load the Trailblazers.',
         cause: error,
       );
+    }
+  }
+
+  /// The signed-in player's own Trailblazers standing, from the backend.
+  /// Null for a guest, without a backend, or when it cannot be reached:
+  /// the board still shows, just without the player's own row.
+  Future<TrailStanding?> fetchMyTrailStanding() async {
+    final user = _authOrNull()?.currentUser;
+    if (user == null || user.isAnonymous || !_apiClient.isConfigured) {
+      return null;
+    }
+    try {
+      final response = await _apiClient.get('/v1/leaderboard/trailblazers/me');
+      if (response is! Map<String, dynamic> || response['ok'] != true) {
+        return null;
+      }
+      return TrailStanding.fromJson(response);
+    } catch (error) {
+      debugPrint('Trailblazers standing fetch failed: $error');
+      return null;
     }
   }
 

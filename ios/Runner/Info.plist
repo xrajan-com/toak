@@ -39,8 +39,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Save your fort, kingdom and title cards to your photos.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Choose an optional profile photo from your photo library.</string>
+	<string>Choose an optional profile photo, and save your win cards to an X Poker album.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
