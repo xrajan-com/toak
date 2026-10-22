@@ -14,8 +14,9 @@ const MAX_TOTAL_AURA_MILLI = MAX_TOTAL_AURA * AURA_MILLI_PER_AURA;
 const MAX_CAMPAIGN_WIN_AUP = 25000000;
 const MAX_ENTRY_FEE = 10000000;
 
-// Granted once, spread across the circuits, to a registered player whose
-// wallet is empty.
+// Granted once, spread across the circuits, to any account whose wallet is
+// empty: registered players and, since October 2026, guest (anonymous)
+// accounts playing Career. The name and its stored flag predate guests.
 const REGISTERED_STARTER_AUP = 10000;
 
 // What a game can cost. The entry fee is the most a player can lose: a

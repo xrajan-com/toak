@@ -3,7 +3,9 @@
 const express = require('express');
 
 const {
+  _isRegisteredFirebaseAuth,
   isAccountDeletedError,
+  requireFirebaseAuth,
   requireRegisteredFirebaseAuth,
 } = require('../security/firebase_auth');
 const { playerRateLimit } = require('../security/rate_limit');
@@ -68,6 +70,17 @@ async function refreshLeaderboardSafely({
   }
 }
 
+/**
+ * The public boards (Aura leaderboard, Trailblazers) list registered players
+ * only. Guest (anonymous) accounts play Career on wallets of their own but
+ * never appear there; once a guest links a sign-in, keeping the same uid,
+ * their next result puts them on the boards.
+ */
+function shouldRefreshPublicBoards(auth, result) {
+  if (!_isRegisteredFirebaseAuth(auth)) return false;
+  return Boolean(result?.auraChanged) || result?.clearRecorded === true;
+}
+
 function economyRouter({ refreshLeaderboard } = {}) {
   const router = express.Router();
   // Counted per signed-in player, after authentication.
@@ -81,7 +94,7 @@ function economyRouter({ refreshLeaderboard } = {}) {
     const catalogVersion = catalogVersionForRequest(req);
     const result = await operation({ req, db, uid: req.auth.uid, catalogVersion });
     // A fort clear moves the Trailblazers board even when no Aura changed.
-    if (result.auraChanged || result.clearRecorded === true) {
+    if (shouldRefreshPublicBoards(req.auth, result)) {
       await refreshLeaderboardSafely({
         db,
         uid: req.auth.uid,
@@ -98,7 +111,7 @@ function economyRouter({ refreshLeaderboard } = {}) {
 
   router.get(
     '/wallet',
-    requireRegisteredFirebaseAuth,
+    requireFirebaseAuth,
     handle(
       ({ db, uid }) => walletForUser({ db, uid }),
       (result) => ({ exists: result.exists }),
@@ -124,7 +137,7 @@ function economyRouter({ refreshLeaderboard } = {}) {
 
   router.get(
     '/entries/:attemptId',
-    requireRegisteredFirebaseAuth,
+    requireFirebaseAuth,
     writeLimiter,
     handle(
       ({ req, db, uid }) => entryReservationStatus({
@@ -143,7 +156,7 @@ function economyRouter({ refreshLeaderboard } = {}) {
 
   router.post(
     '/entries/reserve',
-    requireRegisteredFirebaseAuth,
+    requireFirebaseAuth,
     writeLimiter,
     handle(
       ({ req, db, uid, catalogVersion }) => reserveEntry({
@@ -159,7 +172,7 @@ function economyRouter({ refreshLeaderboard } = {}) {
   for (const transition of ['commit', 'refund', 'recover']) {
     router.post(
       `/entries/${transition}`,
-      requireRegisteredFirebaseAuth,
+      requireFirebaseAuth,
       writeLimiter,
       handle(
         ({ req, db, uid }) => transitionEntryReservation({
@@ -176,7 +189,7 @@ function economyRouter({ refreshLeaderboard } = {}) {
 
   router.post(
     '/events',
-    requireRegisteredFirebaseAuth,
+    requireFirebaseAuth,
     writeLimiter,
     handle(
       ({ req, db, uid, catalogVersion }) => applyEconomyEvent({
@@ -205,5 +218,6 @@ module.exports = {
   catalogVersionForRequest,
   economyRouter,
   refreshLeaderboardSafely,
+  shouldRefreshPublicBoards,
   rulesVersionForRequest,
 };

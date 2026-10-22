@@ -29,7 +29,10 @@ const {
 } = require('../src/economy/catalog');
 const { leaderboardDocumentId } = require('../src/leaderboard_identity');
 const { FakeFirestore } = require('./firestore_fake');
-const { economyRouter } = require('../src/routes/economy');
+const {
+  economyRouter,
+  shouldRefreshPublicBoards,
+} = require('../src/routes/economy');
 const { leaderboardRouter } = require('../src/routes/leaderboard');
 
 const originalEnv = { ...process.env };
@@ -210,16 +213,38 @@ test('shared economy guard rejects anonymous Firebase users only', () => {
   assert.equal(responseBody.code, 'registered_account_required');
 });
 
-test('every shared economy route requires registration while guest deletion remains available', () => {
-  const sharedRouters = [economyRouter(), leaderboardRouter()];
-  for (const router of sharedRouters) {
-    for (const layer of router.stack.filter((candidate) => candidate.route)) {
-      const middlewareNames = layer.route.stack.map((entry) => entry.name);
+test('guests play Career; public boards, ranks and standings stay registered-only', () => {
+  // Wallet, entries and results take any signed-in account, guests included.
+  const guestPaths = new Set([
+    '/wallet',
+    '/entries/:attemptId',
+    '/entries/reserve',
+    '/entries/commit',
+    '/entries/refund',
+    '/entries/recover',
+    '/events',
+  ]);
+  for (const layer of economyRouter().stack.filter((c) => c.route)) {
+    const middlewareNames = layer.route.stack.map((entry) => entry.name);
+    if (guestPaths.has(layer.route.path)) {
+      assert.ok(
+        middlewareNames.includes('requireFirebaseAuth'),
+        `${layer.route.path} must take guest accounts`,
+      );
+      assert.equal(middlewareNames.includes('requireRegisteredFirebaseAuth'), false);
+    } else {
       assert.ok(
         middlewareNames.includes('requireRegisteredFirebaseAuth'),
         `${layer.route.path} must reject anonymous users`,
       );
     }
+  }
+  for (const layer of leaderboardRouter().stack.filter((c) => c.route)) {
+    const middlewareNames = layer.route.stack.map((entry) => entry.name);
+    assert.ok(
+      middlewareNames.includes('requireRegisteredFirebaseAuth'),
+      `${layer.route.path} must reject anonymous users`,
+    );
   }
 
   const deleteRoute = authRouter().stack.find(
@@ -230,6 +255,22 @@ test('every shared economy route requires registration while guest deletion rema
   // once, so it pays for the revocation check that gameplay routes skip.
   assert.ok(middlewareNames.includes('requireFreshFirebaseAuth'));
   assert.equal(middlewareNames.includes('requireRegisteredFirebaseAuth'), false);
+});
+
+test('a guest result never reaches the public boards', () => {
+  const guest = { firebase: { sign_in_provider: 'anonymous' } };
+  const google = { firebase: { sign_in_provider: 'google.com' } };
+  const fortWin = { auraChanged: true, clearRecorded: true };
+  assert.equal(shouldRefreshPublicBoards(guest, fortWin), false);
+  assert.equal(shouldRefreshPublicBoards(google, fortWin), true);
+  assert.equal(
+    shouldRefreshPublicBoards(google, { auraChanged: false, clearRecorded: true }),
+    true,
+  );
+  assert.equal(
+    shouldRefreshPublicBoards(google, { auraChanged: false }),
+    false,
+  );
 });
 
 test('account deletion creates a durable lock before removing user data', async () => {

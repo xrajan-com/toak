@@ -21,13 +21,13 @@ List<SingleChildWidget> buildAppProviders() {
     ChangeNotifierProxyProvider<AuthService, AuraPointsService>(
       create: (_) => AuraPointsService(),
       update: (_, auth, aura) {
+        // Guest (anonymous) accounts play Career on a server wallet of their
+        // own; only local guests, with no account at all, stay on-device.
         final user = auth.currentUser;
-        final registeredUid =
-            user != null && !user.isAnonymous ? user.uid : null;
         return aura!
           ..bindUserId(
-            registeredUid,
-            registeredUser: registeredUid != null,
+            user?.uid,
+            registeredUser: user != null && !user.isAnonymous,
           );
       },
     ),

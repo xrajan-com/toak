@@ -1118,7 +1118,8 @@ class AuraPointsService extends ChangeNotifier {
     required bool authorityConfirmed,
   }) async {
     if (!authorityConfirmed) return;
-    if (!_registeredUser || _registeredStarterGranted) return;
+    // Every account gets it, guests included (the server grants the same).
+    if (_uid == null || _registeredStarterGranted) return;
     if (!_loaded) await init();
 
     if (totalAup <= 0) {

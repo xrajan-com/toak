@@ -6,8 +6,8 @@ Model identifier: `authenticated-client-outcome-claims-v1`
 ## Decision
 
 Ten of a Kind is a local, single-player poker game. For this release, the
-registered Firebase account is trusted to report the outcome of a match that
-ran on its device. The backend does not attest the cards, player actions,
+signed-in Firebase account (registered, or a guest's anonymous account) is
+trusted to report the outcome of a match that ran on its device. The backend does not attest the cards, player actions,
 random-number stream, placement, or win.
 
 The backend remains authoritative for:
@@ -48,8 +48,14 @@ and no-prize single-player entertainment.
 
 ## Required controls
 
-- Require a registered, revocation-checked Firebase token for shared economy
-  mutations.
+- Require a signature-checked Firebase token for economy mutations. Guest
+  (anonymous) accounts may play Career on wallets of their own; only
+  registered accounts appear on, or are ranked by, the public boards
+  (`shouldRefreshPublicBoards` in `backend/src/routes/economy.js`). Decided
+  October 2026 so new players can start the journey before signing up; a
+  guest who links Google or email keeps the same uid, wallet and progress.
+  Anonymous accounts are free to create, which is acceptable only because
+  AUP has no value and guests never reach a public board.
 - Derive fees, payouts, table sizes, and prerequisites from a content-hashed
   server catalog; never accept client-provided values for them.
 - Require a committed, catalog-versioned entry reservation before campaign

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:ten_of_a_kind_poker/config/sub_kingdoms.dart'
     show totalKingdomCount, totalSubKingdomCount;
@@ -23,8 +24,11 @@ void main() {
     expect(find.text('Begin Career Run'), findsOneWidget);
   });
 
-  testWidgets('unregistered career tap opens login/register screen',
+  testWidgets('Career with no account and no connection explains why',
       (tester) async {
+    // Firebase is unavailable in tests: no guest account can be made, the
+    // same as a first launch with no connection.
+    SharedPreferences.setMockInitialValues(const <String, Object>{});
     await tester.pumpWidget(
       ChangeNotifierProvider<AuthService>(
         create: (_) => AuthService(),
@@ -37,8 +41,10 @@ void main() {
     await tester.tap(find.text('Begin Career Run'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Login or Register for Career'), findsOneWidget);
-    expect(find.text('Continue as Guest'), findsNothing);
+    // No sign-in wall any more: guests play Career.
+    expect(find.text('Login or Register for Career'), findsNothing);
+    expect(find.textContaining('Connect to the internet'), findsOneWidget);
+    expect(find.text('Game Mode'), findsOneWidget);
   });
 
   testWidgets('home screen invites players onto the whole-map run',

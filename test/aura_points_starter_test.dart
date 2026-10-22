@@ -31,7 +31,21 @@ void main() {
     expect(service.northAmericaAup, 2000);
   });
 
-  test('anonymous users do not receive starter AUP', () async {
+  test('guest accounts get the same starter wallet for Career', () async {
+    final service = AuraPointsService();
+
+    // An anonymous Firebase account: not registered, but it has a uid.
+    service.bindUserId('guest-account');
+    final paid = await service.payEntryFee(
+      group: VenueGroup.india,
+      amount: 2000,
+    );
+
+    expect(paid, isTrue);
+    expect(service.totalAup, aup.kRegisteredStarterAup - 2000);
+  });
+
+  test('local guests with no account at all get no starter AUP', () async {
     final service = AuraPointsService();
 
     service.bindUserId(null);

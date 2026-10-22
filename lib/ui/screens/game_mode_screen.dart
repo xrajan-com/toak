@@ -13,7 +13,6 @@ import 'package:ten_of_a_kind_poker/services/aura_points_service.dart';
 import 'package:ten_of_a_kind_poker/services/campaign_progress_service.dart';
 import 'package:ten_of_a_kind_poker/services/game_analytics.dart';
 import 'package:ten_of_a_kind_poker/services/x_music_service.dart';
-import 'package:ten_of_a_kind_poker/ui/screens/auth_screen.dart';
 import 'package:ten_of_a_kind_poker/features/venue/game_mode.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/venue_screen.dart';
 import 'package:ten_of_a_kind_poker/ui/theme/colors.dart';
@@ -54,21 +53,22 @@ class _GameModeScreenState extends State<GameModeScreen> {
     XMusicService.instance.stop();
     unawaited(XMusicService.instance.unlock());
     if (mode == VenueEntryMode.career) {
-      final user = context.read<AuthService>().currentUser;
-      final isRegisteredUser = user != null && !user.isAnonymous;
-      if (!isRegisteredUser) {
-        await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => const AuthScreen(
-              requireRegisteredUser: true,
-              postAuthDestination: VenueScreen(mode: VenueEntryMode.career),
-              title: 'Login or Register for Career',
-              message:
-                  'Career progress is saved to your account across kingdoms, forts, titles, and Aura.',
+      // Guests play Career on a guest account; signing in later keeps it.
+      // A player with no account at all (offline at first launch, or signed
+      // out) gets one now.
+      final AuthService auth = context.read<AuthService>();
+      if (auth.currentUser == null) await auth.startGuestPlay();
+      if (!context.mounted) return;
+      if (auth.currentUser == null) {
+        XMusicService.instance.playHomepage();
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Career saves your journey online. Connect to the internet to '
+              'start it; Quick Game works offline.',
             ),
           ),
         );
-        if (mounted) XMusicService.instance.playHomepage();
         return;
       }
     }

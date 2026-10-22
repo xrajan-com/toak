@@ -42,6 +42,40 @@ String friendlyAuthErrorMessage(FirebaseAuthException error) {
   };
 }
 
+/// Firebase errors meaning the Google account already has a player of its
+/// own; the guest then signs in to that account instead.
+const Set<String> _googleAccountTaken = <String>{
+  'credential-already-in-use',
+  'email-already-in-use',
+};
+
+/// Signs in, keeping a guest's account when there is one.
+///
+/// A guest (anonymous) account is linked to the new sign-in with [link], so
+/// the uid, wallet and Career progress stay. Anyone else, or a guest whose
+/// link fails with a code in [switchAccountOn], is signed in with [signIn]
+/// (the Firebase error's own credential first, when it carries one). Other
+/// errors reach the caller unchanged, so an email that is already registered
+/// still says so.
+@visibleForTesting
+Future<UserCredential> keepGuestProgress(
+  FirebaseAuth auth, {
+  required Future<UserCredential> Function(User guest) link,
+  required Future<UserCredential> Function() signIn,
+  Set<String> switchAccountOn = const <String>{},
+}) async {
+  final User? guest = auth.currentUser;
+  if (guest == null || !guest.isAnonymous) return signIn();
+  try {
+    return await link(guest);
+  } on FirebaseAuthException catch (error) {
+    if (!switchAccountOn.contains(error.code)) rethrow;
+    final AuthCredential? existing = error.credential;
+    if (existing != null) return auth.signInWithCredential(existing);
+    return signIn();
+  }
+}
+
 class AuthScreen extends StatefulWidget {
   final bool requireRegisteredUser;
   final Widget? postAuthDestination;
@@ -200,9 +234,16 @@ class _AuthScreenState extends State<AuthScreen> {
           password: password,
         );
       } else {
-        credential = await auth.createUserWithEmailAndPassword(
-          email: email,
-          password: password,
+        // A guest who registers keeps their account and journey.
+        credential = await keepGuestProgress(
+          auth,
+          link: (guest) => guest.linkWithCredential(
+            EmailAuthProvider.credential(email: email, password: password),
+          ),
+          signIn: () => auth.createUserWithEmailAndPassword(
+            email: email,
+            password: password,
+          ),
         );
       }
 
@@ -288,10 +329,17 @@ class _AuthScreenState extends State<AuthScreen> {
         return;
       }
 
+      // A guest who signs in with Google keeps their account and journey,
+      // unless that Google account already plays: then it signs in to that.
       UserCredential userCred;
       if (kIsWeb) {
         final provider = GoogleAuthProvider();
-        userCred = await auth.signInWithPopup(provider);
+        userCred = await keepGuestProgress(
+          auth,
+          link: (guest) => guest.linkWithPopup(provider),
+          signIn: () => auth.signInWithPopup(provider),
+          switchAccountOn: _googleAccountTaken,
+        );
       } else {
         final googleUser = await GoogleSignIn().signIn();
         if (googleUser == null) {
@@ -303,7 +351,12 @@ class _AuthScreenState extends State<AuthScreen> {
           accessToken: googleAuth.accessToken,
           idToken: googleAuth.idToken,
         );
-        userCred = await auth.signInWithCredential(credential);
+        userCred = await keepGuestProgress(
+          auth,
+          link: (guest) => guest.linkWithCredential(credential),
+          signIn: () => auth.signInWithCredential(credential),
+          switchAccountOn: _googleAccountTaken,
+        );
       }
 
       final user = userCred.user ?? auth.currentUser;
@@ -391,7 +444,7 @@ class _AuthScreenState extends State<AuthScreen> {
     }
     if (!mounted) return;
     if (widget.requireRegisteredUser && user.isAnonymous) {
-      _showError('Login or register to save Career progress.');
+      _showError('Sign in or register to keep your journey.');
       return;
     }
     if (widget.managedByAuthGate) return;

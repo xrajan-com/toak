@@ -423,8 +423,10 @@ class _VenueScreenState extends State<VenueScreen>
         builder: (_) => const AuthScreen(
           requireRegisteredUser: true,
           postAuthDestination: VenueScreen(mode: VenueEntryMode.career),
-          title: 'Login or Register',
-          message: 'Login or register to save Career progress.',
+          title: 'Keep Your Journey',
+          message:
+              'Sign in to keep your forts and titles on every device and join '
+              'the leaderboards. Your progress so far comes with you.',
         ),
       ),
     );

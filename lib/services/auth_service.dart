@@ -20,7 +20,9 @@ class AuthService extends ChangeNotifier {
 
   AuthService({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient() {
     final auth = _authOrNull();
-    _authSub = auth?.authStateChanges().listen((_) {
+    // userChanges, not authStateChanges: a guest who links Google or email
+    // keeps the same account, and only userChanges reports that.
+    _authSub = auth?.userChanges().listen((_) {
       notifyListeners();
     });
     unawaited(_restoreGuestPlay());
@@ -64,7 +66,8 @@ class AuthService extends ChangeNotifier {
       }
     }
     if (user == null) continueAsLocalGuest();
-    await _rememberGuestPlay(true);
+    // Saved in the background: play must never wait on local storage.
+    unawaited(_rememberGuestPlay(true));
   }
 
   FirebaseAuth? _authOrNull() {

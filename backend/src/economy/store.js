@@ -75,7 +75,7 @@ function saveProgress(tx, ref, progress, extraFields = {}) {
 /**
  * Runs `work` in one Firestore transaction on the player's wallet. Before it
  * runs, a deleted account is refused, the wallet is loaded (or started), and
- * a registered player's starter AUP is granted in memory. `work` decides
+ * the starter AUP is granted in memory (guest accounts included). `work` decides
  * whether to save, and gets:
  *   tx, ref                 the transaction and the wallet document
  *   progress                the wallet, already normalised
