@@ -17,20 +17,99 @@ void main() {
     SharedPreferences.setMockInitialValues(const <String, Object>{});
   });
 
-  testWidgets('disclaimer waits for explicit Continue',
+  testWidgets('welcome waits for an explicit PLAY tap',
       (WidgetTester tester) async {
     await tester.pumpWidget(
       const MaterialApp(home: DisclaimerSplash()),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Before You Play'), findsOneWidget);
-    expect(find.byKey(const ValueKey('disclaimer_continue')), findsOneWidget);
+    expect(find.byKey(const ValueKey('welcome_play')), findsOneWidget);
+    expect(find.textContaining("you confirm you're 18"), findsOneWidget);
 
     await tester.pump(const Duration(seconds: 10));
 
-    expect(find.text('Before You Play'), findsOneWidget);
-    expect(find.byKey(const ValueKey('disclaimer_continue')), findsOneWidget);
+    expect(find.byKey(const ValueKey('welcome_play')), findsOneWidget);
+  });
+
+  testWidgets('Details shows the full notice', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: DisclaimerSplash()),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('welcome_details')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Before you play'), findsOneWidget);
+    expect(
+      find.textContaining('You must be at least 18'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('PLAY starts guest play and deals the first table',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AuthService>(
+        create: (_) => AuthService(),
+        child: MaterialApp(
+          home: DisclaimerSplash(
+            home: const Text('game menu'),
+            firstTableBuilder: (_) => const Text('first table'),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('welcome_play')));
+    await tester.pumpAndSettle();
+
+    // Straight to a table: no sign-in, no menus.
+    expect(find.text('first table'), findsOneWidget);
+    final BuildContext context = tester.element(find.text('first table'));
+    expect(context.read<AuthService>().isLocalGuest, isTrue);
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool(DisclaimerSplash.acceptanceKey), isTrue);
+    expect(prefs.getBool(AuthService.guestPlayKey), isTrue);
+
+    // When the first table closes, the game menu is waiting.
+    Navigator.of(context).pop();
+    await tester.pumpAndSettle();
+    expect(find.text('game menu'), findsOneWidget);
+  });
+
+  testWidgets('a returning player skips the welcome screen',
+      (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues(const <String, Object>{
+      DisclaimerSplash.acceptanceKey: true,
+    });
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: DisclaimerSplash(home: Text('game menu')),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('welcome_play')), findsNothing);
+    expect(find.text('game menu'), findsOneWidget);
+  });
+
+  testWidgets('an offline guest is not asked to sign in again',
+      (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues(const <String, Object>{
+      AuthService.guestPlayKey: true,
+    });
+    final auth = AuthService();
+    await tester.pumpAndSettle();
+    expect(auth.isLocalGuest, isTrue);
+
+    await auth.logout();
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool(AuthService.guestPlayKey), isNull);
+    auth.dispose();
   });
 
   testWidgets('auth exposes reset and explicit guest choices',

@@ -34,7 +34,14 @@ class _GameModeScreenState extends State<GameModeScreen> {
   void initState() {
     super.initState();
     XMusicService.instance.playHomepage();
-    unawaited(GameAnalytics.onboarding(OnboardingStep.modeShown));
+    // Only once the menu is really on screen: a new player's first table
+    // opens on top of it straight away (DisclaimerSplash logs it later).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (ModalRoute.of(context)?.isCurrent ?? true) {
+        unawaited(GameAnalytics.onboarding(OnboardingStep.modeShown));
+      }
+    });
   }
 
   Future<void> _openMode(BuildContext context, VenueEntryMode mode) async {

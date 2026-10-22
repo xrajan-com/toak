@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:ten_of_a_kind_poker/services/api_client.dart';
 
@@ -13,11 +14,57 @@ class AuthService extends ChangeNotifier {
   final ApiClient _apiClient;
   bool _isLocalGuest = false;
 
+  /// Set once this device has chosen guest play, so a guest who is offline
+  /// on a later launch goes straight back to the game, not to sign-in.
+  static const String guestPlayKey = 'auth.guest_play.v1';
+
   AuthService({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient() {
     final auth = _authOrNull();
     _authSub = auth?.authStateChanges().listen((_) {
       notifyListeners();
     });
+    unawaited(_restoreGuestPlay());
+  }
+
+  Future<void> _restoreGuestPlay() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (!(prefs.getBool(guestPlayKey) ?? false)) return;
+      if (currentUser != null || _isLocalGuest) return;
+      _isLocalGuest = true;
+      notifyListeners();
+    } catch (_) {
+      // Without saved preferences the player simply sees sign-in.
+    }
+  }
+
+  Future<void> _rememberGuestPlay(bool chosen) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (chosen) {
+        await prefs.setBool(guestPlayKey, true);
+      } else {
+        await prefs.remove(guestPlayKey);
+      }
+    } catch (_) {}
+  }
+
+  /// One tap from the welcome screen into a game: an anonymous account when
+  /// Firebase answers within [timeout], otherwise local guest play, which
+  /// covers Quick Game with no connection at all. Remembered on this device.
+  Future<void> startGuestPlay({
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
+    User? user;
+    if (_authOrNull() != null) {
+      try {
+        user = await signInAnonymously().timeout(timeout);
+      } catch (_) {
+        user = null;
+      }
+    }
+    if (user == null) continueAsLocalGuest();
+    await _rememberGuestPlay(true);
   }
 
   FirebaseAuth? _authOrNull() {
@@ -101,6 +148,7 @@ class AuthService extends ChangeNotifier {
 
   // 🔓 Sign out
   Future<bool> logout() async {
+    unawaited(_rememberGuestPlay(false));
     if (_isLocalGuest) {
       _isLocalGuest = false;
       notifyListeners();
@@ -125,6 +173,7 @@ class AuthService extends ChangeNotifier {
   Future<AccountDeletionResult> deleteCurrentAccount() async {
     final result = await _apiClient.deleteCurrentAccount();
     if (result.deleted) {
+      unawaited(_rememberGuestPlay(false));
       final auth = _authOrNull();
       try {
         await auth?.signOut();
