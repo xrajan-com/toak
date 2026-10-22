@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:ten_of_a_kind_poker/app/startup/auth_gate.dart';
+import 'package:ten_of_a_kind_poker/services/game_analytics.dart';
 
 class DisclaimerSplash extends StatefulWidget {
   static const String acceptanceKey = 'disclaimer.accepted.v2';
@@ -47,11 +50,16 @@ class _DisclaimerSplashState extends State<DisclaimerSplash> {
       _accepted = accepted;
       _checking = false;
     });
+    // A fresh install: the new-player funnel starts here.
+    if (!accepted) {
+      unawaited(GameAnalytics.onboarding(OnboardingStep.welcomeShown));
+    }
   }
 
   Future<void> _continue() async {
     if (_saving) return;
     setState(() => _saving = true);
+    unawaited(GameAnalytics.onboarding(OnboardingStep.disclaimerAccepted));
     try {
       final prefs = await SharedPreferences.getInstance();
       final saved = await prefs.setBool(DisclaimerSplash.acceptanceKey, true);

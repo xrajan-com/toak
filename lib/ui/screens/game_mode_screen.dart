@@ -11,6 +11,7 @@ import 'package:ten_of_a_kind_poker/core/aup.dart' as aup;
 import 'package:ten_of_a_kind_poker/services/auth_service.dart';
 import 'package:ten_of_a_kind_poker/services/aura_points_service.dart';
 import 'package:ten_of_a_kind_poker/services/campaign_progress_service.dart';
+import 'package:ten_of_a_kind_poker/services/game_analytics.dart';
 import 'package:ten_of_a_kind_poker/services/x_music_service.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/auth_screen.dart';
 import 'package:ten_of_a_kind_poker/features/venue/game_mode.dart';
@@ -33,9 +34,16 @@ class _GameModeScreenState extends State<GameModeScreen> {
   void initState() {
     super.initState();
     XMusicService.instance.playHomepage();
+    unawaited(GameAnalytics.onboarding(OnboardingStep.modeShown));
   }
 
   Future<void> _openMode(BuildContext context, VenueEntryMode mode) async {
+    unawaited(GameAnalytics.onboarding(
+      OnboardingStep.modeChosen,
+      parameters: <String, Object>{
+        'mode': mode == VenueEntryMode.career ? 'career' : 'quick',
+      },
+    ));
     XMusicService.instance.stop();
     unawaited(XMusicService.instance.unlock());
     if (mode == VenueEntryMode.career) {

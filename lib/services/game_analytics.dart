@@ -1,6 +1,33 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// The steps a brand-new player passes on the way into their first game, in
+/// order. Each becomes an Analytics event sent at most once per install, so a
+/// funnel built from them (Firebase console -> Analytics -> Explore -> Funnel
+/// exploration) counts players, not visits, and shows where new players stop.
+enum OnboardingStep {
+  /// The first screen of a fresh install. Opens the funnel: the other steps
+  /// are only sent on installs where this one was.
+  welcomeShown('onboard_welcome_shown'),
+  disclaimerAccepted('onboard_disclaimer_accepted'),
+  signInShown('onboard_signin_shown'),
+  guestChosen('onboard_guest_chosen'),
+  signedIn('onboard_signed_in'),
+  modeShown('onboard_mode_shown'),
+  modeChosen('onboard_mode_chosen'),
+  firstGameStarted('onboard_first_game_started'),
+  firstHandDealt('onboard_first_hand_dealt'),
+  firstHandFinished('onboard_first_hand_finished'),
+  firstGameFinished('onboard_first_game_finished'),
+  firstGameLeft('onboard_first_game_left');
+
+  const OnboardingStep(this.eventName);
+
+  /// The Analytics event name; Analytics allows 40 characters at most.
+  final String eventName;
+}
 
 /// Product analytics through Google Analytics for Firebase: how many new
 /// players come back on day 1, 7 and 30 (Firebase console -> Analytics ->
@@ -16,6 +43,22 @@ class GameAnalytics {
   GameAnalytics._();
 
   static bool _enabled = false;
+
+  static const String _onboardingPrefix = 'analytics.onboarding.';
+  static const String _onboardingStartedKey = '${_onboardingPrefix}started_ms';
+  static final Set<OnboardingStep> _onboardingSent = <OnboardingStep>{};
+  static void Function(String name, Map<String, Object> parameters)?
+      _debugSink;
+
+  /// Tests only: send events to [sink] instead of Firebase, and forget which
+  /// onboarding steps this run has already sent. Pass null to stop.
+  @visibleForTesting
+  static void debugCaptureEvents(
+    void Function(String name, Map<String, Object> parameters)? sink,
+  ) {
+    _debugSink = sink;
+    _onboardingSent.clear();
+  }
 
   /// True once events are being sent.
   static bool get enabled => _enabled;
@@ -104,7 +147,45 @@ class GameAnalytics {
   static Future<void> winCardShared({required String kind}) =>
       _log('win_card_shared', <String, Object>{'kind': kind});
 
+  /// A new player reached [step] on the way into their first game.
+  ///
+  /// Sent once per install, and only on installs that began with
+  /// [OnboardingStep.welcomeShown], so players from before this build never
+  /// enter the funnel. Every step carries `elapsed_s`: the seconds since the
+  /// welcome screen, which makes "time to first hand" readable in Analytics.
+  static Future<void> onboarding(
+    OnboardingStep step, {
+    Map<String, Object> parameters = const <String, Object>{},
+  }) async {
+    if (!_enabled && _debugSink == null) return;
+    if (!_onboardingSent.add(step)) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final int now = DateTime.now().millisecondsSinceEpoch;
+      int? started = prefs.getInt(_onboardingStartedKey);
+      if (started == null) {
+        if (step != OnboardingStep.welcomeShown) return;
+        started = now;
+        await prefs.setInt(_onboardingStartedKey, started);
+      }
+      final String key = '$_onboardingPrefix${step.name}';
+      if (prefs.getBool(key) ?? false) return;
+      await prefs.setBool(key, true);
+      await _log(step.eventName, <String, Object>{
+        ...parameters,
+        'elapsed_s': ((now - started) / 1000).round(),
+      });
+    } catch (_) {
+      // Analytics must never become a failure of its own.
+    }
+  }
+
   static Future<void> _log(String name, Map<String, Object> parameters) async {
+    final sink = _debugSink;
+    if (sink != null) {
+      sink(name, parameters);
+      return;
+    }
     if (!_enabled) return;
     try {
       await FirebaseAnalytics.instance.logEvent(

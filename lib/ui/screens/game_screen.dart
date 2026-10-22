@@ -2044,6 +2044,10 @@ class _GameScreenState extends State<GameScreen>
       kind: _analyticsKind,
       circuit: widget.campaignGroup?.name,
     ));
+    unawaited(GameAnalytics.onboarding(
+      OnboardingStep.firstGameStarted,
+      parameters: <String, Object>{'kind': _analyticsKind},
+    ));
     _initEngineAndStart();
     _scheduleInitialPresentation();
   }
@@ -2506,6 +2510,13 @@ class _GameScreenState extends State<GameScreen>
       place: finishRank.clamp(1, _totalPlayerCount),
       players: _totalPlayerCount,
     ));
+    unawaited(GameAnalytics.onboarding(
+      OnboardingStep.firstGameFinished,
+      parameters: <String, Object>{
+        'kind': _analyticsKind,
+        'place': finishRank.clamp(1, _totalPlayerCount),
+      },
+    ));
     _recordRivalResults(heroWon: heroWon, heroRank: finishRank);
     final AuraPointsService? service = _auraService;
     if (service == null) return;
@@ -2611,6 +2622,10 @@ class _GameScreenState extends State<GameScreen>
       kind: _analyticsKind,
       circuit: widget.campaignGroup?.name,
     ));
+    unawaited(GameAnalytics.onboarding(
+      OnboardingStep.firstGameLeft,
+      parameters: <String, Object>{'kind': _analyticsKind},
+    ));
     final AuraPointsService? service = _auraService;
     if (service == null) return Future<void>.value();
     return _matchActivitySettlementFuture = () async {
@@ -2682,6 +2697,7 @@ class _GameScreenState extends State<GameScreen>
         continue;
       }
       if (ev is ge.HandStarted) {
+        unawaited(GameAnalytics.onboarding(OnboardingStep.firstHandDealt));
         _showRivalNotesOnce();
         _handWinSoundPlayed = false;
         needsSeatRefresh = _clearSeatActions() || needsSeatRefresh;
@@ -2698,6 +2714,7 @@ class _GameScreenState extends State<GameScreen>
         continue;
       }
       if (ev is ge.HandSettled) {
+        unawaited(GameAnalytics.onboarding(OnboardingStep.firstHandFinished));
         _clearSeatActions();
         _planTableTalk(ev);
         _refreshStyleReads();

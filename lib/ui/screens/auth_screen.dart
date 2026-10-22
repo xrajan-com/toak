@@ -1,4 +1,5 @@
 // lib/ui/screens/auth_screen.dart
+import 'dart:async';
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ import 'package:ten_of_a_kind_poker/ui/theme/colors.dart';
 import 'package:ten_of_a_kind_poker/services/aura_points_service.dart';
 import 'package:ten_of_a_kind_poker/services/auth_service.dart';
 import 'package:ten_of_a_kind_poker/services/campaign_progress_service.dart';
+import 'package:ten_of_a_kind_poker/services/game_analytics.dart';
 import 'package:ten_of_a_kind_poker/services/profile_service.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/game_mode_screen.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/profile_setup_screen.dart';
@@ -67,6 +69,16 @@ class _AuthScreenState extends State<AuthScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   FirebaseAuth? _auth;
+
+  @override
+  void initState() {
+    super.initState();
+    // The sign-in screen a new player meets at launch (not the one Career
+    // opens later).
+    if (widget.managedByAuthGate) {
+      unawaited(GameAnalytics.onboarding(OnboardingStep.signInShown));
+    }
+  }
 
   FirebaseAuth? _authOrNull() {
     if (widget.authOverride != null) return widget.authOverride;
@@ -329,6 +341,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
   Future<void> _continueAsGuest() async {
     if (_isLoading) return;
+    unawaited(GameAnalytics.onboarding(OnboardingStep.guestChosen));
     _setLoading(true);
     try {
       final auth = _authOrNull();
@@ -373,6 +386,9 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Future<void> _completeAuth(User user) async {
+    if (!user.isAnonymous) {
+      unawaited(GameAnalytics.onboarding(OnboardingStep.signedIn));
+    }
     if (!mounted) return;
     if (widget.requireRegisteredUser && user.isAnonymous) {
       _showError('Login or register to save Career progress.');
