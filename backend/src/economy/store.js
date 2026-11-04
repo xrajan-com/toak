@@ -91,7 +91,7 @@ async function withWallet(db, uid, work) {
     const loaded = await _loadProgress(tx, ref);
     const { progress } = loaded;
     const totalBefore = totalAup(progress);
-    const starterBefore = progress.registeredStarterGranted;
+    const starterBefore = progress.starterVersion;
     grantRegisteredStarterAup(progress);
     return work({
       tx,
@@ -99,7 +99,7 @@ async function withWallet(db, uid, work) {
       progress,
       existed: loaded.existed,
       normalizedCircuitAup: loaded.normalizedCircuitAup,
-      starterGranted: starterBefore !== progress.registeredStarterGranted,
+      starterGranted: starterBefore !== progress.starterVersion,
       auraChanged: () => totalAup(progress) !== totalBefore,
     });
   });

@@ -14,10 +14,19 @@ const MAX_TOTAL_AURA_MILLI = MAX_TOTAL_AURA * AURA_MILLI_PER_AURA;
 const MAX_CAMPAIGN_WIN_AUP = 25000000;
 const MAX_ENTRY_FEE = 10000000;
 
-// Granted once, spread across the circuits, to any account whose wallet is
-// empty: registered players and, since October 2026, guest (anonymous)
-// accounts playing Career. The name and its stored flag predate guests.
-const REGISTERED_STARTER_AUP = 10000;
+// Granted once, spread evenly across the five circuits (400,000 each), to any
+// account whose wallet is empty: registered players and guest (anonymous)
+// accounts alike. Paid forts cost 52,000-376,000 (median about 100,000) and
+// third place returns 1.5x the fee, so 400,000 a circuit is about three real
+// attempts before the free forts are the way back. It was 10,000 in all
+// (2,000 a circuit) until October 2026, which could not pay for a single
+// paid fort. The name and its stored flag predate guests.
+const REGISTERED_STARTER_AUP = 2000000;
+const STARTER_AUP_PER_CIRCUIT = REGISTERED_STARTER_AUP / 5;
+// Starter version 2 (October 2026): every circuit of every wallet holds at
+// least STARTER_AUP_PER_CIRCUIT once, so players who started on the old
+// 10,000 are topped up too. Applied once per wallet; never lowers a balance.
+const STARTER_VERSION = 2;
 
 // What a game can cost. The entry fee is the most a player can lose: a
 // finish outside the prizes, leaving the table, and a game interrupted
@@ -106,6 +115,8 @@ module.exports = {
   MAX_TOTAL_AURA_MILLI,
   MIGRATION_COMPLETE_VERSION,
   REGISTERED_STARTER_AUP,
+  STARTER_AUP_PER_CIRCUIT,
+  STARTER_VERSION,
   normalizeCircuitAup,
   requestedRulesVersion,
 };

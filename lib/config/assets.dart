@@ -19,19 +19,19 @@ class AppAssets {
   static const String checkSound = 'assets/sounds/check.wav';
   static const String coinSound = 'assets/sounds/coin.wav';
   static const String betSound = 'assets/sounds/bet.wav';
-  // Swapped per request:
-  // - calls use bet.wav
-  // - bet/raise uses coin.wav
-  static const String callCoinSound = betSound;
-  static const String raiseSound = coinSound;
+  // Every chip that goes into the pot clinks (coinSound); a bet or raise adds
+  // the heavier stack push (betSound) on top.
+  static const String raiseSound = betSound;
+  // Chips swept to the winner of a hand: eight clinks from coin.wav and
+  // bet.wav, pitched and staggered (built with ffmpeg, Oct 2026).
+  static const String chipsRakeSound = 'assets/sounds/chips_rake.wav';
   static const String actionTapSound = 'assets/sounds/action.wav';
   static const String heroTurnNotificationSound =
       'assets/sounds/notification.mp3';
   static const String playerAllInSound = 'assets/sounds/all_in_warning.wav';
   static const String welcomeSound = 'assets/sounds/welcome.wav';
-  static const String handWinSound = 'assets/sounds/hand winner.wav';
   static const String gameWinSound = 'assets/sounds/game_win_epic.wav';
-  static const String gameLostSound = foldSound; // temporary placeholder
+  // Fanfare kept for big pots the player wins.
   static const String heroLeaderSound = 'assets/sounds/hand winner hero.wav';
   static const String heroDangerSound = playerAllInSound;
   static const String playerBustedSound = 'assets/sounds/shatter.wav';

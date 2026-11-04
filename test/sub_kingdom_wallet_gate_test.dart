@@ -150,6 +150,15 @@ void main() {
 
     expect(find.text('Need more AUP?'), findsOneWidget);
     expect(wallet.indiaAup, 0);
+
+    // The way out: the kingdom's free fort, one tap from the dialog.
+    expect(find.textContaining('$freeFortName costs nothing'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('play_free_fort')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Need more AUP?'), findsNothing);
+    // Its entry sheet opens (not swallowed as a double tap).
+    expect(find.text('${kingdom.name} — $freeFortName'), findsOneWidget);
   });
 
   testWidgets('entry tap lock survives a provider rebuild', (tester) async {

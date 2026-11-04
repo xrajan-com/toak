@@ -1,3 +1,4 @@
+const { STARTER_VERSION } = require('../src/economy/constants');
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
 
@@ -202,6 +203,7 @@ test('an unchanged wallet read does not require a leaderboard refresh', async ()
         schemaVersion: 1,
         indiaAup: 5000000,
         registeredStarterGranted: true,
+        starterVersion: STARTER_VERSION,
       },
     },
   });

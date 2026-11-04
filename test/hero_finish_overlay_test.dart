@@ -255,4 +255,104 @@ void main() {
     expect(events, <String>['before-exit', 'after-dialog']);
     expect(find.text('GAME OVER'), findsNothing);
   });
+
+  testWidgets('PLAY AGAIN is the main way out of a finished game', (
+    tester,
+  ) async {
+    final heroSeat = Seat(
+      name: 'Hero',
+      chips: 0,
+      startChips: 10000,
+      bet: 0,
+      isHero: true,
+    );
+    final List<String> events = <String>[];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) {
+            return Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () => go.showHeroFinishOverlay(
+                    context,
+                    heroSeat: heroSeat,
+                    rank: 5,
+                    totalPlayers: 6,
+                    handsPlayed: 21,
+                    finalChips: 0,
+                    winnings: 0,
+                    onExitToVenue: () => events.add('exit'),
+                    playAgainLabel: 'PLAY AGAIN',
+                    onPlayAgain: () => events.add('again'),
+                  ),
+                  child: const Text('Open finish overlay'),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open finish overlay'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('YOU FINISHED 5TH OF 6.'), findsOneWidget);
+    expect(find.text('EXIT TO VENUE'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey<String>('finish-play-again')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(events, <String>['again']);
+    expect(find.text('GAME OVER'), findsNothing);
+  });
+
+  testWidgets('without a way back in, the overlay offers only the exit', (
+    tester,
+  ) async {
+    final heroSeat = Seat(
+      name: 'Hero',
+      chips: 0,
+      startChips: 10000,
+      bet: 0,
+      isHero: true,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) {
+            return Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () => go.showHeroFinishOverlay(
+                    context,
+                    heroSeat: heroSeat,
+                    rank: 4,
+                    totalPlayers: 10,
+                    handsPlayed: 30,
+                    finalChips: 0,
+                    winnings: 0,
+                  ),
+                  child: const Text('Open finish overlay'),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open finish overlay'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.byKey(const ValueKey<String>('finish-play-again')),
+        findsNothing);
+    expect(find.text('EXIT TO VENUE'), findsOneWidget);
+  });
 }

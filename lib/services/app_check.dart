@@ -4,6 +4,7 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:ten_of_a_kind_poker/config/app_check_config.dart';
+import 'package:ten_of_a_kind_poker/services/firebase_ready.dart';
 
 /// Firebase App Check: proves to the backend that a request comes from a real
 /// copy of X Poker (Play Integrity on Android, reCAPTCHA Enterprise on the
@@ -34,7 +35,7 @@ class AppCheckService {
 
   /// Call once Firebase has initialized. Does nothing if it did not.
   static Future<void> start() async {
-    if (!supported || Firebase.apps.isEmpty) return;
+    if (!supported || !firebaseReady()) return;
     try {
       await FirebaseAppCheck.instance.activate(
         androidProvider: AndroidProvider.playIntegrity,

@@ -14,8 +14,13 @@ const {
   ECONOMY_RULES_VERSION,
   MAX_AUP_PER_CIRCUIT,
   MAX_CAMPAIGN_WIN_AUP,
+  REGISTERED_STARTER_AUP,
+  STARTER_AUP_PER_CIRCUIT,
+  STARTER_VERSION,
   requestedRulesVersion,
 } = require('../src/economy/constants');
+
+const STARTER_PER_CIRCUIT = STARTER_AUP_PER_CIRCUIT;
 const {
   entryReservationStatus,
   reserveEntry,
@@ -215,7 +220,7 @@ test('client-asserted rewarded ads never mint AUP', async () => {
   assert.equal(result.accepted, false);
   assert.equal(result.delta, 0);
   assert.equal(result.reason, 'rewarded_ad_verification_required');
-  assert.equal(result.progress.indiaAup, 2000);
+  assert.equal(result.progress.indiaAup, STARTER_PER_CIRCUIT);
   assert.equal(result.progress.rewardedAdDayCount, 0);
 });
 
@@ -256,6 +261,7 @@ test('an affordable paid fort can be reserved without clearing predecessors',
           schemaVersion: 1,
           internationalAup: event.entryFee + 1000,
           registeredStarterGranted: true,
+          starterVersion: STARTER_VERSION,
           cleared: [],
         },
       },
@@ -278,6 +284,7 @@ test('economy event applies inside a transaction and persists the result', async
         schemaVersion: 1,
         indiaAup: 5000,
         registeredStarterGranted: true,
+        starterVersion: STARTER_VERSION,
       },
     },
   });
@@ -313,6 +320,7 @@ test('Quick Game never changes the wallet, win, loss or quit', async () => {
         schemaVersion: 1,
         indiaAup: 150000000,
         registeredStarterGranted: true,
+        starterVersion: STARTER_VERSION,
       },
     },
   });
@@ -346,6 +354,7 @@ test('a loss or a quit costs the entry fee and nothing more, whatever the wallet
         schemaVersion: 1,
         internationalAup: start,
         registeredStarterGranted: true,
+        starterVersion: STARTER_VERSION,
       },
     },
   });
@@ -472,6 +481,7 @@ test('a legitimate title-match reward above 10M is credited in full', async () =
         schemaVersion: 1,
         euroAup: main.entryFee,
         registeredStarterGranted: true,
+        starterVersion: STARTER_VERSION,
         cleared: main.requiredFortIds,
       },
     },
@@ -506,6 +516,7 @@ test('an entry the player cannot afford is refused without a deduction', async (
         schemaVersion: 1,
         euroAup: event.entryFee - 1,
         registeredStarterGranted: true,
+        starterVersion: STARTER_VERSION,
       },
     },
   });
@@ -532,6 +543,7 @@ test('client-priced entry fees are refused; entries go through a reservation', a
         schemaVersion: 1,
         indiaAup: 5000,
         registeredStarterGranted: true,
+        starterVersion: STARTER_VERSION,
       },
     },
   });
@@ -608,7 +620,7 @@ test('a settled entry pays once, whatever eventId it is reported under', async (
   assert.equal(sameEntryNewEvent.delta, 0);
   assert.equal(
     db.dump(SERVER_PROGRESS_COLLECTION, uid).internationalAup,
-    2000 + FREE_FORT_WIN,
+    STARTER_PER_CIRCUIT + FREE_FORT_WIN,
   );
 });
 
@@ -638,7 +650,10 @@ test('fort replays have no play-count limit and history stays bounded', async ()
   const saved = db.dump(SERVER_PROGRESS_COLLECTION, uid);
   assert.equal(
     saved.internationalAup,
-    Math.min(2000 + (replays * FREE_FORT_WIN), MAX_AUP_PER_CIRCUIT),
+    Math.min(
+      STARTER_PER_CIRCUIT + (replays * FREE_FORT_WIN),
+      MAX_AUP_PER_CIRCUIT,
+    ),
   );
   assert.equal(saved.appliedEventIds.length, 500);
   assert.equal(saved.entryReservations.length, 40);
@@ -695,8 +710,8 @@ test('catalog-backed entry and win ignore client fee, group, and prize claims', 
   assert.equal(win.delta, 143400);
 
   const afterWin = db.dump(SERVER_PROGRESS_COLLECTION, uid);
-  assert.equal(afterWin.indiaAup, 2000);
-  assert.equal(afterWin.internationalAup, 145400);
+  assert.equal(afterWin.indiaAup, STARTER_PER_CIRCUIT);
+  assert.equal(afterWin.internationalAup, STARTER_PER_CIRCUIT + 143400);
   assert.deepEqual(afterWin.cleared, [freeFort]);
   assert.equal(afterWin.entryReservations[0].status, 'settled');
 
@@ -714,7 +729,10 @@ test('catalog-backed entry and win ignore client fee, group, and prize claims', 
   assert.equal(paid.reservation.amount, 68000);
   assert.equal(paid.reservation.group, 'international');
   assert.equal(paid.delta, -68000);
-  assert.equal(paid.progress.internationalAup, 77400);
+  assert.equal(
+    paid.progress.internationalAup,
+    STARTER_PER_CIRCUIT + 143400 - 68000,
+  );
 });
 
 test('secure catalog reservations allow unlimited fort replays with unique attempts', async () => {
@@ -741,7 +759,7 @@ test('secure catalog reservations allow unlimited fort replays with unique attem
   }
 
   const saved = db.dump(SERVER_PROGRESS_COLLECTION, uid);
-  assert.equal(saved.internationalAup, 2000 + (5 * 143400));
+  assert.equal(saved.internationalAup, STARTER_PER_CIRCUIT + (5 * 143400));
   assert.deepEqual(saved.cleared, [campaignId]);
   assert.equal(
     saved.entryReservations.filter((entry) => entry.status === 'settled').length,
@@ -756,6 +774,7 @@ async function interruptedEntry({ uid }) {
         schemaVersion: 1,
         internationalAup: 100000,
         registeredStarterGranted: true,
+        starterVersion: STARTER_VERSION,
         cleared: ['sk:international:arabia:3'],
       },
     },
@@ -1224,7 +1243,7 @@ test('the server ignores pre-server collections; a new wallet starts migrated', 
 
   assert.equal(result.progress.legacyMigrationVersion, 1);
   assert.equal(result.progress.registeredStarterGranted, true);
-  assert.equal(totalAup(result.progress), 10000);
+  assert.equal(totalAup(result.progress), REGISTERED_STARTER_AUP);
   assert.deepEqual(result.progress.cleared, []);
 });
 
@@ -1279,3 +1298,63 @@ test('a wallet saved before totalAup existed is healed and ranked', async () => 
   assert.deepEqual(result, { totalAup: 600, rank: 2, rankedPlayers: 2 });
   assert.equal(db.dump(SERVER_PROGRESS_COLLECTION, 'legacy').totalAup, 600);
 });
+
+test('a new wallet can pay for real fort attempts in every circuit', async () => {
+  const db = new FakeFirestore();
+  const { progress } = await walletForUser({ db, uid: 'newcomer' });
+  const forts = Object.values(economyCatalog.events)
+    .filter((event) => event.kind !== 'main' && event.entryFee > 0);
+  const fields = {
+    india: 'indiaAup',
+    euro: 'euroAup',
+    oceania: 'oceaniaAup',
+    northAmerica: 'northAmericaAup',
+    international: 'internationalAup',
+  };
+  for (const [group, field] of Object.entries(fields)) {
+    const fees = forts
+      .filter((event) => event.group === group)
+      .map((event) => event.entryFee)
+      .sort((a, b) => a - b);
+    const median = fees[Math.floor(fees.length / 2)];
+    // At least three typical entries, and the dearest fort at least once.
+    assert.ok(progress[field] >= 3 * median, `${group}: ${progress[field]}`);
+    assert.ok(progress[field] >= fees[fees.length - 1], `${group} dearest fort`);
+  }
+});
+
+test('an older wallet is topped up to the starter once, and never lowered', async () => {
+  const db = new FakeFirestore({
+    [SERVER_PROGRESS_COLLECTION]: {
+      veteran: {
+        legacyMigrationVersion: 1,
+        // Started on the old 10,000 starter, then lost it in India and won
+        // big in Eurasia.
+        registeredStarterGranted: true,
+        indiaAup: 0,
+        internationalAup: 2000,
+        euroAup: 5000000,
+        oceaniaAup: 2000,
+        northAmericaAup: 2000,
+      },
+    },
+  });
+
+  const { progress } = await walletForUser({ db, uid: 'veteran' });
+  assert.equal(progress.indiaAup, STARTER_AUP_PER_CIRCUIT);
+  assert.equal(progress.internationalAup, STARTER_AUP_PER_CIRCUIT);
+  assert.equal(progress.euroAup, 5000000);
+  assert.equal(progress.starterVersion, STARTER_VERSION);
+  const saved = db.dump(SERVER_PROGRESS_COLLECTION, 'veteran');
+  assert.equal(saved.indiaAup, STARTER_AUP_PER_CIRCUIT);
+  assert.equal(saved.starterVersion, STARTER_VERSION);
+
+  // Spent again later: the top-up does not come back.
+  await db.collection(SERVER_PROGRESS_COLLECTION).doc('veteran').set(
+    { indiaAup: 0 },
+    { merge: true },
+  );
+  const again = await walletForUser({ db, uid: 'veteran' });
+  assert.equal(again.progress.indiaAup, 0);
+});
+

@@ -554,8 +554,10 @@ class _PotPill extends StatelessWidget {
     // 0.42/0.30 were sized against a 22-44px pill floating on the felt and
     // bottom out at their clamp floors at this height, which leaves the
     // capsule looking half empty.
-    final double fontSize = (h * 0.50).clamp(9.0, 18.0).toDouble();
-    final double labelSize = (h * 0.36).clamp(7.5, 12.0).toDouble();
+    // Raised Oct 2026 (0.50 / 0.36): at the ~24 px rail the pot read at
+    // 12 px and its label under 9 px.
+    final double fontSize = (h * 0.56).clamp(10.0, 18.0).toDouble();
+    final double labelSize = (h * 0.40).clamp(8.5, 12.0).toDouble();
 
     final String blindsSemantics = !showBlinds
         ? ''

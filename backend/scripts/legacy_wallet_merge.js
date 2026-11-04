@@ -3,7 +3,10 @@
 // aura_wallets/{uid}. This merges those into one server wallet. Only
 // scripts/migrate_legacy_wallets.js uses it; the running server never reads
 // the old collections.
-const { MIGRATION_COMPLETE_VERSION } = require('../src/economy/constants');
+const {
+  MIGRATION_COMPLETE_VERSION,
+  REGISTERED_STARTER_AUP,
+} = require('../src/economy/constants');
 
 const CIRCUIT_FIELDS = Object.freeze([
   'indiaAup',
@@ -63,7 +66,7 @@ function _looksLikeFreshStarterServer(data) {
   const source = _object(data);
   const total = _totalAup(source);
   return (
-    total <= 10000 &&
+    total <= REGISTERED_STARTER_AUP &&
     _number(source.walletVersion) <= 1 &&
     _number(source.matchesPlayed) === 0 &&
     _strings(source.cleared).length === 0 &&

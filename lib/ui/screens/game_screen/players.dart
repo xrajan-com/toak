@@ -1423,7 +1423,7 @@ class _SeatInfoChip extends StatelessWidget {
         style: const TextStyle(
           color: Colors.white,
           fontWeight: FontWeight.w700,
-          fontSize: 11,
+          fontSize: 12,
           letterSpacing: 0.6,
         ),
       ),
@@ -1473,7 +1473,7 @@ class _SeatStackBadge extends StatelessWidget {
                 color: Colors.white,
                 fontFamily: 'OpenSans',
                 fontWeight: FontWeight.w800,
-                fontSize: 11.5,
+                fontSize: 13,
                 height: 1,
               ),
             ),
@@ -1491,7 +1491,7 @@ class _SeatStackBadge extends StatelessWidget {
                       color: _kSeatStackTextColor,
                       fontFamily: 'OpenSans',
                       fontWeight: FontWeight.w900,
-                      fontSize: 10.5,
+                      fontSize: 12.5,
                       height: 1,
                     ),
                   ),
@@ -1500,7 +1500,7 @@ class _SeatStackBadge extends StatelessWidget {
                       ' • ',
                       style: TextStyle(
                         color: Colors.white54,
-                        fontSize: 9,
+                        fontSize: 11,
                         height: 1,
                       ),
                     ),
@@ -1511,7 +1511,7 @@ class _SeatStackBadge extends StatelessWidget {
                         color: _kSeatBetTextColor,
                         fontFamily: 'OpenSans',
                         fontWeight: FontWeight.w900,
-                        fontSize: 10.5,
+                        fontSize: 12.5,
                         height: 1,
                       ),
                     ),
@@ -1541,10 +1541,20 @@ class _SeatInfoText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double nameSize =
-        ((height * 0.23) * 0.90).clamp(9.5, 15.3).toDouble();
-    final double metaSize =
-        ((height * 0.18) * 0.90).clamp(8.2, 11.9).toDouble();
+    // Names, bets and stacks are what a player reads to decide, on a 6-inch
+    // phone held sideways: floors of 11.5 / 10.5 px, larger when the plate
+    // allows, and scaled down together only when three lines would not fit.
+    final double nameGap = (height * 0.04).clamp(1.0, 3.0).toDouble();
+    final double metaGap = (height * 0.025).clamp(0.5, 2.0).toDouble();
+    double nameSize = ((height * 0.23) * 0.90).clamp(11.5, 15.3).toDouble();
+    double metaSize = ((height * 0.18) * 0.90).clamp(10.5, 12.5).toDouble();
+    final double textHeight = nameSize + metaSize * 2;
+    final double room = height - nameGap - metaGap;
+    if (room > 0 && textHeight > room) {
+      final double k = room / textHeight;
+      nameSize *= k;
+      metaSize *= k;
+    }
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1561,7 +1571,7 @@ class _SeatInfoText extends StatelessWidget {
             height: 1.0,
           ),
         ),
-        SizedBox(height: (height * 0.04).clamp(1.0, 3.0).toDouble()),
+        SizedBox(height: nameGap),
         Text(
           betLabel,
           maxLines: 1,
@@ -1574,7 +1584,7 @@ class _SeatInfoText extends StatelessWidget {
             height: 1.0,
           ),
         ),
-        SizedBox(height: (height * 0.025).clamp(0.5, 2.0).toDouble()),
+        SizedBox(height: metaGap),
         Text(
           stackLabel,
           maxLines: 1,

@@ -2,6 +2,7 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ten_of_a_kind_poker/services/firebase_ready.dart';
 
 /// The steps a brand-new player passes on the way into their first game, in
 /// order. Each becomes an Analytics event sent at most once per install, so a
@@ -68,7 +69,7 @@ class GameAnalytics {
 
   /// Call once Firebase has initialized. Does nothing if it did not.
   static Future<void> start() async {
-    if (Firebase.apps.isEmpty) return;
+    if (!firebaseReady()) return;
     try {
       // Written on every launch, so a debug build installed over a release
       // one stops counting too.
@@ -147,6 +148,14 @@ class GameAnalytics {
   /// the asks on this install (the store may still choose not to show it).
   static Future<void> ratingAsked({required String kind, required int ask}) =>
       _log('rating_asked', <String, Object>{'kind': kind, 'ask': ask});
+
+  /// From the game-over screen, the player went straight into another table
+  /// ([choice] is play_again or next_table).
+  static Future<void> playedAgain({
+    required String kind,
+    required String choice,
+  }) =>
+      _log('game_again', <String, Object>{'kind': kind, 'choice': choice});
 
   /// The player sent a win card through the share sheet.
   static Future<void> winCardShared({required String kind}) =>

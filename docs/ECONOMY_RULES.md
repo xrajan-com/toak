@@ -20,6 +20,15 @@ same thing. Prices and prizes come from the catalog
 **The entry fee is the most a game can cost.** The entry sheet shows the fee,
 the prize for each paid place, and this rule before anything is charged.
 
+**Starting bankroll.** Every account, guests included, holds at least
+400,000 AUP in each circuit (2,000,000 in all): about three entries at a
+typical fort (median paid fort 78,000-120,000 by circuit; the dearest is
+376,000). Granted once per wallet; wallets that began on the old 10,000
+starter are topped up to it once, and no balance is ever lowered
+(`STARTER_VERSION` 2 in `backend/src/economy/constants.js`). Every kingdom
+also has one free fort, the way back after a bad run: a player short of AUP
+for a paid fort is offered it straight from the "Need more AUP?" dialog.
+
 Forts pay 60/25/15% of their prize pool to 1st, 2nd and 3rd
 (`kFortPayoutShares`). Main events are winner takes all. Wallet caps: 20 Aura
 per circuit, 100 Aura in all.
@@ -42,6 +51,11 @@ player is told about change.
 
 ## History
 
+**October 2026 (build 92).** The starter went from 10,000 AUP in all (2,000
+a circuit, less than the cheapest paid fort at 52,000) to 400,000 a circuit,
+and existing wallets were topped up to it once. Before, a new player could
+enter only free forts and had to win one before any paid fort.
+
 **October 2026 (build 87).** Before this, every non-winning finish also took
 0.1% of the whole wallet and every quit took 0.3%; an interrupted game was
 refunded minus 0.3%. Because the charge grew with the wallet while prizes did
@@ -55,5 +69,6 @@ is now free.
 ## Table structure
 
 Every table plays the blind structure in `lib/config/blind_structure.dart`:
-twenty levels from 100/200 to 15,000/30,000, two orbits each, with antes of
-about 12.5% of the big blind from level 4.
+twenty levels from 100/200 to 15,000/30,000, one orbit each (a turbo
+sit-and-go pace; two orbits until build 92), with antes of about 12.5% of
+the big blind from level 4. Stacks start at 50 big blinds.

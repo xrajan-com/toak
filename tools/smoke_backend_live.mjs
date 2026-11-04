@@ -400,6 +400,53 @@ async function main() {
     throw new Error(`a Quick Game loss changed the wallet: ${JSON.stringify(practice)}`);
   }
   console.log('Quick Game ok: a loss is free');
+
+  // A new wallet holds about three fort entries a circuit, so lose this fort
+  // until the circuit cannot pay for it; then the gate must refuse.
+  const circuitField = `${paidEvent.group}Aup`;
+  let drained = afterPractice;
+  let drainRounds = 0;
+  while ((Number(drained.progress?.[circuitField]) || 0) >= paidEvent.entryFee) {
+    drainRounds += 1;
+    if (drainRounds > 20) {
+      throw new Error('could not spend the circuit down to test the affordability gate');
+    }
+    const attemptId = `smoke:drain_entry:${drainRounds}:${stamp}`;
+    const reserved = await request('/v1/economy/entries/reserve', {
+      method: 'POST',
+      token,
+      body: { campaignId: paidCampaignId, attemptId },
+    });
+    if (reserved.accepted !== true) {
+      throw new Error(`drain entry reservation failed: ${JSON.stringify(reserved)}`);
+    }
+    const committed = await request('/v1/economy/entries/commit', {
+      method: 'POST',
+      token,
+      body: { attemptId },
+    });
+    if (committed.accepted !== true) {
+      throw new Error(`drain entry commit failed: ${JSON.stringify(committed)}`);
+    }
+    const loss = await request('/v1/economy/events', {
+      method: 'POST',
+      token,
+      body: {
+        action: 'campaign_result',
+        campaignId: paidCampaignId,
+        entryAttemptId: attemptId,
+        placement: paidEvent.maxPlayers,
+        totalPlayers: paidEvent.maxPlayers,
+        eventId: `smoke:drain_loss:${drainRounds}:${stamp}`,
+      },
+    });
+    if (loss.accepted !== true || loss.delta !== 0) {
+      throw new Error(`drain loss settlement failed: ${JSON.stringify(loss)}`);
+    }
+    drained = await request('/v1/economy/wallet', { token });
+  }
+  console.log(`starter covers real attempts ok: ${drainRounds + 1} paid entries before the gate`);
+
   const rejectedPaidAttempt = await request('/v1/economy/entries/reserve', {
     method: 'POST',
     token,
@@ -417,7 +464,7 @@ async function main() {
     );
   }
   const afterRejectedEntry = await request('/v1/economy/wallet', { token });
-  if (totalAup(afterRejectedEntry.progress) !== totalAup(afterPaidLoss.progress)) {
+  if (totalAup(afterRejectedEntry.progress) !== totalAup(drained.progress)) {
     throw new Error('rejected paid entry unexpectedly changed the wallet');
   }
   console.log('paid entry affordability gate ok: insufficient funds rejected');

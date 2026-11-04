@@ -22,7 +22,11 @@ const int kAupRewardUnit = 1000;
 const int kAupEntryFeeUnit = kAupRewardUnit;
 
 const int kAupMaxTotal = kAupPerCircuit * 5;
-const int kRegisteredStarterAup = 10000;
+/// Every account's starting bankroll, spread evenly over the five circuits
+/// (400,000 each): about three fort entries a circuit. Mirrors the server's
+/// REGISTERED_STARTER_AUP (backend/src/economy/constants.js); the server
+/// grants it, and tops older wallets up to it once.
+const int kRegisteredStarterAup = 2000000;
 const int kRewardedAdAupBonus = 2000;
 
 // Entry fee tuning:

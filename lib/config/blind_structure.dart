@@ -1,10 +1,13 @@
 // The blind structure every X Poker table plays: forts, title matches and
 // Quick Game.
 //
-// It follows the shape of an online tournament structure. Blinds rise every
-// two orbits of the dealer button, by roughly a quarter to a third each
-// level, and from level 4 every player also pays an ante of about 12.5% of
-// the big blind. Twenty levels take the big blind from 200 to 30,000, well
+// It follows the shape of an online turbo sit-and-go, the standard format
+// for a single-table tournament played on a phone: blinds rise every orbit
+// of the dealer button, by roughly a quarter to a third each level, and from
+// level 4 every player also pays an ante of about 12.5% of the big blind.
+// Stacks start at 50 big blinds, so the early levels still reward patient,
+// skilful play; the rising blinds make a six-seat fort a game of minutes,
+// not an hour. (Until build 92 blinds rose every two orbits.) Twenty levels take the big blind from 200 to 30,000, well
 // past the point where the chips in play run out (a ten-seat title match
 // has 100,000), so the pressure keeps rising until someone wins.
 //
@@ -14,7 +17,7 @@ import 'package:ten_of_a_kind_poker/game/models.dart'
     show BlindLevel, BlindSchedule;
 
 /// Completed dealer orbits per level.
-const int kOrbitsPerBlindLevel = 2;
+const int kOrbitsPerBlindLevel = 1;
 
 /// The first level with an ante, counting from 1.
 const int kFirstAnteLevel = 4;
@@ -67,6 +70,9 @@ String blindStructureSummary({String Function(int amount)? format}) {
     bigBlind: first.bigBlind,
     format: format,
   );
-  return 'Blinds start at $start and rise every $kOrbitsPerBlindLevel '
-      'orbits. Antes from level $kFirstAnteLevel.';
+  final String every = kOrbitsPerBlindLevel == 1
+      ? 'every orbit'
+      : 'every $kOrbitsPerBlindLevel orbits';
+  return 'Blinds start at $start and rise $every. '
+      'Antes from level $kFirstAnteLevel.';
 }

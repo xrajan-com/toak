@@ -7,6 +7,42 @@ import '../config/.env.dart';
 import '../config/assets.dart';
 import '../services/x_music_service.dart';
 
+/// Playback levels for the table.
+///
+/// Every effect file in assets/sounds was levelled to about -20 dBFS RMS
+/// (Oct 2026), and the dealer voice clips sit near -13 dBFS, so these numbers
+/// are the mix itself: cards and chips in front (about -28 dB), the dealer
+/// voice just behind them (-23 dB), big moments a little louder, and music
+/// (XMusicService.maxVolume) well underneath.
+class SoundMix {
+  SoundMix._();
+
+  static const double shuffle = 0.56;
+  static const double deal = 0.50;
+  static const double boardCard = 0.53;
+  static const double foldCards = 0.30;
+  static const double checkKnock = 0.50;
+  static const double potChips = 0.60;
+  static const double raiseChips = 0.40;
+  static const double allInChips = 0.55;
+  static const double actionTap = 0.26;
+  static const double heroTurn = 0.73;
+  static const double rakeToHero = 0.66;
+  static const double rakeToOther = 0.37;
+  static const double bigPotFanfare = 0.76;
+  static const double playerBusted = 0.46;
+  static const double heroBust = 0.69;
+  static const double gameWin = 1.0;
+  static const double applause = 0.46;
+  static const double welcome = 0.46;
+
+  static const double voiceAllIn = 0.33;
+  static const double voiceCall = 0.30;
+  static const double voiceCheck = 0.38;
+  static const double voiceFold = 0.34;
+  static const double voiceRaise = 0.27;
+}
+
 /// Lightweight helper that manages short poker table sound effects.
 class SoundFx {
   SoundFx._();
@@ -33,6 +69,11 @@ class SoundFx {
   // than this window either layers the sample on itself or restarts it every
   // 80 ms, which reads as a stutter.
   static const Duration _kDealRoundWindow = Duration(milliseconds: 1800);
+  // The flop arrives as three CardDealt events at once; one card sound per
+  // street reads as the dealer spreading it.
+  static const Duration _kBoardCardWindow = Duration(milliseconds: 300);
+  // Blinds and antes land in the pot together; one clink covers them.
+  static const Duration _kPotChipsWindow = Duration(milliseconds: 150);
   // Sound effects are on by default, so they start unmuted and preload
   // ready to play immediately — settings load mutes them only if the user
   // has turned them off. Lounge/table music (XMusicService) is the one
@@ -40,16 +81,25 @@ class SoundFx {
   // informational.
   bool _soundEffectsMuted = false;
   // The dealer voice is on by default too, so it starts unmuted — settings
-  // load mutes it only if the user has turned it off.
+  // load mutes it only if the user has turned it off. By default she calls
+  // only all-ins, the way a live dealer does; calling every check, call,
+  // raise and fold is an opt-in setting.
   bool _voiceMuted = false;
+  bool _voiceEveryAction = false;
   bool _unlocked = !kIsWeb;
-  DateTime? _lastHandWinAt;
   DateTime? _lastShuffleAt;
+  DateTime? _lastBoardCardAt;
+  DateTime? _lastPotChipsAt;
   DateTime? _lastDealAt;
   DateTime? _lastAnnouncerAt;
   String? _lastAnnouncerAsset;
   bool _shufflePlaying = false;
   bool _dealPlaying = false;
+
+  /// Test seam: when set, every sound that would play is reported here
+  /// (asset and volume) instead of reaching an audio player.
+  @visibleForTesting
+  void Function(String asset, double volume)? debugOnPlay;
 
   bool get _baseEnabled => Env.soundEnabled && _unlocked;
   bool get _soundEffectsEnabled => _baseEnabled && !_soundEffectsMuted;
@@ -76,6 +126,14 @@ class SoundFx {
     if (value) unawaited(stopAnnouncer());
   }
 
+  /// When true the dealer voice calls every action; otherwise only all-ins.
+  void setVoiceEveryAction(bool value) {
+    _voiceEveryAction = value;
+  }
+
+  @visibleForTesting
+  bool get voiceEveryAction => _voiceEveryAction;
+
   Future<void> unlock() async {
     if (_unlocked) return;
     _unlocked = true;
@@ -89,19 +147,16 @@ class SoundFx {
       AppAssets.foldSound,
       AppAssets.checkSound,
       AppAssets.welcomeSound,
-      AppAssets.handWinSound,
+      AppAssets.chipsRakeSound,
       AppAssets.heroLeaderSound,
       AppAssets.gameWinSound,
       AppAssets.playerBustedSound,
-      AppAssets.playerAllInSound,
       AppAssets.heroBustSound,
-      AppAssets.raiseSound,
-      AppAssets.callCoinSound,
+      AppAssets.coinSound,
+      AppAssets.betSound,
       AppAssets.actionTapSound,
       AppAssets.heroTurnNotificationSound,
       AppAssets.applauseSound,
-      AppAssets.doorKnockSound,
-      AppAssets.knock1Sound,
       ..._announcerAssets,
     };
     await Future.wait(assets.map(_ensurePlayer));
@@ -126,16 +181,41 @@ class SoundFx {
     _lastDealAt = now;
     _dealPlaying = true;
     try {
-      await _play(AppAssets.dealCardSound, volume: 0.5, allowOverlap: false);
+      await _play(AppAssets.dealCardSound,
+          volume: SoundMix.deal, allowOverlap: false);
     } finally {
       _dealPlaying = false;
     }
   }
 
-  Future<void> playFold() =>
-      _playAnnouncer(AppAssets.renoirFemaleFoldAnnouncer, volume: 0.46);
-  Future<void> playCheck() =>
-      _playAnnouncer(AppAssets.renoirFemaleCheckAnnouncer, volume: 0.54);
+  /// A player folds: the cards slide into the muck, quietly.
+  Future<void> playFold() async {
+    await _play(AppAssets.foldSound, volume: SoundMix.foldCards);
+    if (_voiceEveryAction) {
+      await _playAnnouncer(AppAssets.renoirFemaleFoldAnnouncer,
+          volume: SoundMix.voiceFold);
+    }
+  }
+
+  /// A community card is turned. The flop's three cards share one sound.
+  Future<void> playBoardCard() async {
+    final DateTime now = DateTime.now();
+    if (_lastBoardCardAt != null &&
+        now.difference(_lastBoardCardAt!) < _kBoardCardWindow) {
+      return;
+    }
+    _lastBoardCardAt = now;
+    await _play(AppAssets.foldSound, volume: SoundMix.boardCard);
+  }
+
+  /// A player checks: a knock on the felt.
+  Future<void> playCheck() async {
+    await _play(AppAssets.checkSound, volume: SoundMix.checkKnock);
+    if (_voiceEveryAction) {
+      await _playAnnouncer(AppAssets.renoirFemaleCheckAnnouncer,
+          volume: SoundMix.voiceCheck);
+    }
+  }
 
   Future<void> playShuffle() async {
     // Prevent accidental double-trigger (observed when shuffle fires twice).
@@ -149,53 +229,93 @@ class SoundFx {
     _shufflePlaying = true;
     try {
       await _stopPlayers(AppAssets.shuffleSound);
-      await _play(AppAssets.shuffleSound, volume: 0.45, allowOverlap: false);
+      await _play(AppAssets.shuffleSound,
+          volume: SoundMix.shuffle, allowOverlap: false);
     } finally {
       _shufflePlaying = false;
     }
   }
 
-  Future<void> playWelcome() =>
-      _play(AppAssets.welcomeSound, volume: 0.8, allowOverlap: false);
-  Future<void> playHandWin() async {
-    _lastHandWinAt = DateTime.now();
-    await _play(AppAssets.handWinSound, volume: 0.95, allowOverlap: false);
+  Future<void> playWelcome() => _play(AppAssets.welcomeSound,
+      volume: SoundMix.welcome, allowOverlap: false);
+
+  /// Chips swept to the winner of a hand. Only a big pot the player wins gets
+  /// the fanfare; a pot a bot wins is just chips moving.
+  Future<void> playChipsToWinner({
+    required bool heroWon,
+    bool bigPot = false,
+  }) async {
+    if (heroWon && bigPot) {
+      await _play(AppAssets.heroLeaderSound,
+          volume: SoundMix.bigPotFanfare, allowOverlap: false);
+    }
+    await _play(AppAssets.chipsRakeSound,
+        volume: heroWon ? SoundMix.rakeToHero : SoundMix.rakeToOther,
+        allowOverlap: false);
   }
 
-  Future<void> playHeroHandWin() =>
-      _play(AppAssets.heroLeaderSound, volume: 0.95, allowOverlap: false);
-  Future<void> playGameWin() =>
-      _play(AppAssets.gameWinSound, volume: 0.95, allowOverlap: false);
-  Future<void> playGameLost() =>
-      _play(AppAssets.gameLostSound, volume: 0.85, allowOverlap: false);
-  Future<void> playGameWinnerApplause() =>
-      _play(AppAssets.applauseSound, volume: 0.48, allowOverlap: false);
+  Future<void> playGameWin() => _play(AppAssets.gameWinSound,
+      volume: SoundMix.gameWin, allowOverlap: false);
+  Future<void> playGameWinnerApplause() => _play(AppAssets.applauseSound,
+      volume: SoundMix.applause, allowOverlap: false);
   Future<void> playHeroLeader() async {
     // Temporarily disabled per product request.
   }
   Future<void> playHeroDanger() async {
     // Temporarily disabled per product request.
   }
-  Future<void> playPlayerBusted() =>
-      _play(AppAssets.playerBustedSound, volume: 0.85, allowOverlap: false);
-  Future<void> playPlayerAllIn() =>
-      _playAnnouncer(AppAssets.renoirFemaleAllInAnnouncer, volume: 0.47);
-  Future<void> playHeroBust() =>
-      _play(AppAssets.heroBustSound, volume: 0.92, allowOverlap: false);
-  Future<void> playRaiseAtm() =>
-      _playAnnouncer(AppAssets.renoirFemaleRaiseAnnouncer, volume: 0.46);
-  Future<void> playActionTap() => _play(AppAssets.actionTapSound, volume: 0.7);
+  Future<void> playPlayerBusted() => _play(AppAssets.playerBustedSound,
+      volume: SoundMix.playerBusted, allowOverlap: false);
+
+  /// An all-in: the chips go in, and the dealer calls it.
+  Future<void> playPlayerAllIn() async {
+    await _play(AppAssets.betSound, volume: SoundMix.allInChips);
+    await _playAnnouncer(AppAssets.renoirFemaleAllInAnnouncer,
+        volume: SoundMix.voiceAllIn);
+  }
+
+  Future<void> playHeroBust() => _play(AppAssets.heroBustSound,
+      volume: SoundMix.heroBust, allowOverlap: false);
+
+  /// A bet or raise: a stack of chips pushed forward. The clink of the chips
+  /// landing comes from [playPotIncrease].
+  Future<void> playRaiseAtm() async {
+    await _play(AppAssets.raiseSound, volume: SoundMix.raiseChips);
+    if (_voiceEveryAction) {
+      await _playAnnouncer(AppAssets.renoirFemaleRaiseAnnouncer,
+          volume: SoundMix.voiceRaise);
+    }
+  }
+
+  Future<void> playActionTap() =>
+      _play(AppAssets.actionTapSound, volume: SoundMix.actionTap);
   Future<void> playHeroTurnNotification() => _play(
         AppAssets.heroTurnNotificationSound,
-        volume: 0.9,
+        volume: SoundMix.heroTurn,
         allowOverlap: false,
       );
-  Future<void> playCallCoin() =>
-      _playAnnouncer(AppAssets.renoirFemaleCallAnnouncer, volume: 0.46);
-  Future<void> playPotIncrease() =>
-      _play(AppAssets.potIncreaseSound, volume: 0.9);
-  Future<void> playApplause() =>
-      _play(AppAssets.applauseSound, volume: 0.4, allowOverlap: false);
+
+  /// A call. Its chips clink through [playPotIncrease]; the voice is opt-in.
+  Future<void> playCallCoin() async {
+    if (_voiceEveryAction) {
+      await _playAnnouncer(AppAssets.renoirFemaleCallAnnouncer,
+          volume: SoundMix.voiceCall);
+    }
+  }
+
+  /// Chips land in the pot (blinds, antes, calls, bets and raises).
+  Future<void> playPotIncrease() async {
+    final DateTime now = DateTime.now();
+    if (_lastPotChipsAt != null &&
+        now.difference(_lastPotChipsAt!) < _kPotChipsWindow) {
+      return;
+    }
+    _lastPotChipsAt = now;
+    await _play(AppAssets.potIncreaseSound, volume: SoundMix.potChips);
+  }
+
+  Future<void> playApplause() => _play(AppAssets.applauseSound,
+      volume: SoundMix.applause, allowOverlap: false);
 
   Future<void> stopAnnouncer() async {
     for (final String announcerAsset in _announcerAssets) {
@@ -218,6 +338,8 @@ class SoundFx {
     _dealPlaying = false;
     _lastShuffleAt = null;
     _lastDealAt = null;
+    _lastBoardCardAt = null;
+    _lastPotChipsAt = null;
   }
 
   Future<void> dispose() async {
@@ -236,6 +358,11 @@ class SoundFx {
   Future<void> _play(String asset,
       {double volume = 1.0, bool allowOverlap = true}) async {
     if (!_soundEffectsEnabled) return;
+    final void Function(String, double)? onPlay = debugOnPlay;
+    if (onPlay != null) {
+      onPlay(asset, volume);
+      return;
+    }
     try {
       final player = await _ensurePlayer(asset, allowOverlap: allowOverlap);
       if (player == null) return;
@@ -268,6 +395,11 @@ class SoundFx {
     }
     _lastAnnouncerAsset = asset;
     _lastAnnouncerAt = now;
+    final void Function(String, double)? onPlay = debugOnPlay;
+    if (onPlay != null) {
+      onPlay(asset, volume);
+      return;
+    }
     await _trimAnnouncerOverlap();
     final AudioPlayer? player = await _ensurePlayer(asset, allowOverlap: true);
     if (player == null) return;

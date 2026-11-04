@@ -38,6 +38,9 @@ class _SubKingdomScreenState extends State<SubKingdomScreen> {
   static const String _bannerAsset = 'assets/images/x_poker_logo.png';
 
   bool _entryActionInProgress = false;
+  // A fort the game-over screen asked for (TRY AGAIN / NEXT FORT). Entered
+  // after the next build, so the entry sees the wallet as the game left it.
+  int? _queuedFortEntry;
 
   VenueTheme get kingdom => widget.kingdom;
   VenueGroup get group => widget.group;
@@ -50,14 +53,18 @@ class _SubKingdomScreenState extends State<SubKingdomScreen> {
     XMusicService.instance.playCareerCircuit(group);
   }
 
-  Future<void> _showInsufficientAupDialog(
+  /// The entry costs more than the circuit holds. With [freeFortName], the
+  /// kingdom's free fort is offered as the way to earn it; returns true when
+  /// the player picks it.
+  Future<bool> _showInsufficientAupDialog(
     BuildContext context, {
     required int requiredAup,
     required String entryLabel,
+    String? freeFortName,
   }) async {
     final String feeLabel = aup.formatAup(requiredAup);
 
-    await showDialog<void>(
+    final bool? playFreeFort = await showDialog<bool>(
       context: context,
       builder: (dialogCtx) {
         return StatefulBuilder(
@@ -81,35 +88,55 @@ class _SubKingdomScreenState extends State<SubKingdomScreen> {
                       color: Colors.white.withValues(alpha: 0.88),
                     ),
                   ),
+                  if (freeFortName != null) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      '$freeFortName costs nothing to enter. Finish in the '
+                      'money there to win AUP, then come back.',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.72),
+                      ),
+                    ),
+                  ],
                 ],
               ),
               actions: [
                 TextButton(
                   onPressed: () =>
-                      Navigator.of(dialogCtx, rootNavigator: true).pop(),
+                      Navigator.of(dialogCtx, rootNavigator: true).pop(false),
                   child: const Text('Not now'),
                 ),
+                if (freeFortName != null)
+                  FilledButton(
+                    key: const ValueKey('play_free_fort'),
+                    onPressed: () =>
+                        Navigator.of(dialogCtx, rootNavigator: true).pop(true),
+                    child: const Text('Play the free fort'),
+                  ),
               ],
             );
           },
         );
       },
     );
+    return playFreeFort ?? false;
   }
 
-  Future<void> _showEntryFailure(
+  /// Returns true when the player chose the kingdom's free fort instead.
+  Future<bool> _showEntryFailure(
     BuildContext context, {
     required EntryPaymentResult result,
     required int requiredAup,
     required String entryLabel,
+    String? freeFortName,
   }) async {
     if (result.status == EntryPaymentStatus.insufficientFunds) {
-      await _showInsufficientAupDialog(
+      return _showInsufficientAupDialog(
         context,
         requiredAup: requiredAup,
         entryLabel: entryLabel,
+        freeFortName: freeFortName,
       );
-      return;
     }
     final message = switch (result.status) {
       EntryPaymentStatus.walletLoading => 'AUP wallet is still loading.',
@@ -127,13 +154,14 @@ class _SubKingdomScreenState extends State<SubKingdomScreen> {
         'Your wallet changed on another device. Refresh and try again.',
       _ => 'Entry could not be verified. Please try again.',
     };
-    if (!context.mounted) return;
+    if (!context.mounted) return false;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         duration: const Duration(seconds: 3),
       ),
     );
+    return false;
   }
 
   Future<void> _recoverInterruptedEntry(
@@ -190,7 +218,9 @@ class _SubKingdomScreenState extends State<SubKingdomScreen> {
     );
   }
 
-  Future<void> _openReservedGame({
+  /// Opens the reserved table; returns what the player picked on its
+  /// game-over screen besides leaving, if anything.
+  Future<GameExitChoice?> _openReservedGame({
     required BuildContext context,
     required AuraPointsService auraService,
     required EntryReservation reservation,
@@ -202,12 +232,13 @@ class _SubKingdomScreenState extends State<SubKingdomScreen> {
     unawaited(SoundFx.instance.unlock());
     unawaited(DeckCache.ensureDeckReadySafely());
     try {
-      await Navigator.of(context).push<void>(
-        MaterialPageRoute<void>(
+      final Object? choice = await Navigator.of(context).push<Object?>(
+        MaterialPageRoute<Object?>(
           builder: (BuildContext routeContext) =>
               builder(routeContext, reservation),
         ),
       );
+      return choice is GameExitChoice ? choice : null;
     } catch (_) {
       await auraService.refundEntry(reservation);
       rethrow;
@@ -642,6 +673,180 @@ class _SubKingdomScreenState extends State<SubKingdomScreen> {
                         crossAxisCount;
                 final childAspectRatio = tileWidth / tileHeight;
 
+                /// The fort after [idx] in the order shown that is not yet
+                /// cleared, for NEXT FORT; [idx] itself if every other one is.
+                int nextFortAfter(int idx) {
+                  final List<int> order = displaySubKingdomIndices;
+                  final int at = order.indexOf(idx);
+                  for (int step = 1; step < order.length; step++) {
+                    final int candidate = order[(at + step) % order.length];
+                    if (!progress.isCleared(
+                      group: group,
+                      kingdomName: kingdom.name,
+                      subKingdomIndex: candidate,
+                    )) {
+                      return candidate;
+                    }
+                  }
+                  return idx;
+                }
+
+                /// Enters fort [idx]: the tile tap, the free-fort way out of
+                /// "Need more AUP?", and TRY AGAIN / NEXT FORT.
+                Future<void> enterFort(int idx) async {
+                  final int entryFee = aup.entryFeeForSubKingdomEvent(
+                    group: group,
+                    kingdomName: kingdom.name,
+                    subKingdomIndex: idx,
+                  );
+                  final bool canPayEntry = entryFee <= 0 ||
+                      (walletReady && walletAup >= entryFee) ||
+                      devUnlockAll;
+                  final name = subKingdomDisplayName(
+                    group: group,
+                    kingdomName: kingdom.name,
+                    index: idx,
+                  );
+                  if (hasPendingSettlement ||
+                      interruptedEntry != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          hasPendingSettlement
+                              ? 'Wait for the queued tournament result first.'
+                              : 'Close your unfinished table first.',
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+                  if (_entryActionInProgress) return;
+                  _entryActionInProgress = true;
+                  // Short of AUP for a paid fort: the kingdom's free fort is
+                  // the way to earn it, one tap from the dialog.
+                  final String? freeFortName =
+                      idx != freeSubKingdomIndex && freeSubKingdomIndex >= 1
+                          ? subKingdomDisplayName(
+                              group: group,
+                              kingdomName: kingdom.name,
+                              index: freeSubKingdomIndex,
+                            )
+                          : null;
+                  var playFreeFortNext = false;
+                  GameExitChoice? afterGame;
+                  try {
+                    if (entryFee > 0 && !walletReady) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('AUP wallet is still loading.'),
+                          duration: Duration(milliseconds: 900),
+                        ),
+                      );
+                      return;
+                    }
+                    if (!canPayEntry &&
+                        !auraService.isAuthorityUnavailable) {
+                      playFreeFortNext = await _showInsufficientAupDialog(
+                        context,
+                        requiredAup: entryFee,
+                        entryLabel: 'this table',
+                        freeFortName: freeFortName,
+                      );
+                      return;
+                    }
+                    final fortSpec = ce.subKingdomEventSpec(
+                      group: group,
+                      kingdomName: kingdom.name,
+                      subKingdomIndex: idx,
+                    );
+                    final bool enter = await showEntryStakesSheet(
+                      context,
+                      stakes: EntryStakes(
+                        tableName: '${kingdom.name} — $name',
+                        isMainEvent: false,
+                        // Seated exactly as the game screen seats it.
+                        seats: GameScreen.resolvedTableMaxSeats(
+                          venueMode: VenueEntryMode.career,
+                          campaignMainEvent: false,
+                          isFreeSubKingdom: idx == freeSubKingdomIndex,
+                          campaignMaxPlayers: fortSpec.maxPlayers,
+                        ),
+                        startingChips: fortSpec.startingStack,
+                        entryFee: entryFee,
+                        payouts: aup.payoutsForSubKingdomEvent(
+                          group: group,
+                          kingdomName: kingdom.name,
+                          subKingdomIndex: idx,
+                        ),
+                        circuitLabel:
+                            walletReady ? _circuitLabel : null,
+                        walletAup: walletReady ? walletAup : null,
+                      ),
+                    );
+                    if (!enter || !context.mounted) return;
+
+                    final entry =
+                        await auraService.reserveCampaignEntry(
+                      group: group,
+                      kingdomName: kingdom.name,
+                      isMainEvent: false,
+                      subKingdomIndex: idx,
+                      expectedEntryFee: entryFee,
+                    );
+                    if (!entry.canEnter || entry.reservation == null) {
+                      if (!context.mounted) return;
+                      playFreeFortNext = await _showEntryFailure(
+                        context,
+                        result: entry,
+                        requiredAup: entryFee,
+                        entryLabel: 'this table',
+                        freeFortName: freeFortName,
+                      );
+                      return;
+                    }
+                    if (!context.mounted) {
+                      await auraService.refundEntry(entry.reservation!);
+                      return;
+                    }
+                    afterGame = await _openReservedGame(
+                      context: context,
+                      auraService: auraService,
+                      reservation: entry.reservation!,
+                      builder: (_, EntryReservation reservation) =>
+                          GameScreen.guestTable(
+                        tableName: '${kingdom.name} — $name',
+                        venue: kingdom,
+                        playIntroWelcome: false,
+                        venueMode: VenueEntryMode.career,
+                        campaignGroup: group,
+                        campaignSubKingdomIndex: idx,
+                        campaignEntryReservation: reservation,
+                      ),
+                    );
+                  } finally {
+                    _entryActionInProgress = false;
+                    // After the lock is released, so the free fort's own
+                    // entry is not refused as a double tap.
+                    if (playFreeFortNext && context.mounted) {
+                      unawaited(enterFort(freeSubKingdomIndex));
+                    }
+                    if (afterGame != null && mounted) {
+                      final int target = afterGame == GameExitChoice.nextTable
+                          ? nextFortAfter(idx)
+                          : idx;
+                      setState(() => _queuedFortEntry = target);
+                    }
+                  }
+                }
+
+                final int? queuedFort = _queuedFortEntry;
+                if (queuedFort != null) {
+                  _queuedFortEntry = null;
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) unawaited(enterFort(queuedFort));
+                  });
+                }
+
                 return SliverGrid(
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: crossAxisCount,
@@ -715,113 +920,7 @@ class _SubKingdomScreenState extends State<SubKingdomScreen> {
                         felt: kingdom.felt,
                         cleared: isCleared,
                         unlocked: isUnlocked,
-                        onTap: () async {
-                          if (hasPendingSettlement ||
-                              interruptedEntry != null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  hasPendingSettlement
-                                      ? 'Wait for the queued tournament result first.'
-                                      : 'Close your unfinished table first.',
-                                ),
-                              ),
-                            );
-                            return;
-                          }
-                          if (_entryActionInProgress) return;
-                          _entryActionInProgress = true;
-                          try {
-                            if (entryFee > 0 && !walletReady) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('AUP wallet is still loading.'),
-                                  duration: Duration(milliseconds: 900),
-                                ),
-                              );
-                              return;
-                            }
-                            if (!canPayEntry &&
-                                !auraService.isAuthorityUnavailable) {
-                              await _showInsufficientAupDialog(
-                                context,
-                                requiredAup: entryFee,
-                                entryLabel: 'this table',
-                              );
-                              return;
-                            }
-                            final fortSpec = ce.subKingdomEventSpec(
-                              group: group,
-                              kingdomName: kingdom.name,
-                              subKingdomIndex: idx,
-                            );
-                            final bool enter = await showEntryStakesSheet(
-                              context,
-                              stakes: EntryStakes(
-                                tableName: '${kingdom.name} — $name',
-                                isMainEvent: false,
-                                // Seated exactly as the game screen seats it.
-                                seats: GameScreen.resolvedTableMaxSeats(
-                                  venueMode: VenueEntryMode.career,
-                                  campaignMainEvent: false,
-                                  isFreeSubKingdom: idx == freeSubKingdomIndex,
-                                  campaignMaxPlayers: fortSpec.maxPlayers,
-                                ),
-                                startingChips: fortSpec.startingStack,
-                                entryFee: entryFee,
-                                payouts: aup.payoutsForSubKingdomEvent(
-                                  group: group,
-                                  kingdomName: kingdom.name,
-                                  subKingdomIndex: idx,
-                                ),
-                                circuitLabel:
-                                    walletReady ? _circuitLabel : null,
-                                walletAup: walletReady ? walletAup : null,
-                              ),
-                            );
-                            if (!enter || !context.mounted) return;
-
-                            final entry =
-                                await auraService.reserveCampaignEntry(
-                              group: group,
-                              kingdomName: kingdom.name,
-                              isMainEvent: false,
-                              subKingdomIndex: idx,
-                              expectedEntryFee: entryFee,
-                            );
-                            if (!entry.canEnter || entry.reservation == null) {
-                              if (!context.mounted) return;
-                              await _showEntryFailure(
-                                context,
-                                result: entry,
-                                requiredAup: entryFee,
-                                entryLabel: 'this table',
-                              );
-                              return;
-                            }
-                            if (!context.mounted) {
-                              await auraService.refundEntry(entry.reservation!);
-                              return;
-                            }
-                            await _openReservedGame(
-                              context: context,
-                              auraService: auraService,
-                              reservation: entry.reservation!,
-                              builder: (_, EntryReservation reservation) =>
-                                  GameScreen.guestTable(
-                                tableName: '${kingdom.name} — $name',
-                                venue: kingdom,
-                                playIntroWelcome: false,
-                                venueMode: VenueEntryMode.career,
-                                campaignGroup: group,
-                                campaignSubKingdomIndex: idx,
-                                campaignEntryReservation: reservation,
-                              ),
-                            );
-                          } finally {
-                            _entryActionInProgress = false;
-                          }
-                        },
+                        onTap: () => enterFort(idx),
                       );
                     },
                     childCount: total,

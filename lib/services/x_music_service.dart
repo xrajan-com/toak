@@ -34,11 +34,18 @@ class XMusicService extends WidgetsBindingObserver {
 
   static const String _homepageAsset = 'assets/sounds/x_music/homepage.mp3';
   static const String _loungePrefix = 'assets/sounds/x lounge/';
-  static const double maxVolume = 0.30;
+  // Music sits well under the table sounds (about -28 dBFS; see SoundMix).
+  static const double maxVolume = 0.22;
   static const Duration _fadeInDuration = Duration(seconds: 3);
   static const Duration _fadeOutDuration = Duration(seconds: 4);
   static const Duration _transitionFadeDuration = Duration(milliseconds: 900);
   static const Duration _fallbackTrackDuration = Duration(seconds: 31);
+  // Dropping into the bottom half can happen every few hands; its cue may
+  // play once in this window.
+  static const Map<XMusicEvent, Duration> _eventMinGap =
+      <XMusicEvent, Duration>{
+    XMusicEvent.heroInBottomHalf: Duration(minutes: 4),
+  };
 
   static const Map<XMusicEvent, String> _eventAssets = <XMusicEvent, String>{
     XMusicEvent.gameOverNoPrize: '${_loungePrefix}game over with no prize.mp3',
@@ -65,6 +72,10 @@ class XMusicService extends WidgetsBindingObserver {
   _XMusicMode _mode = _XMusicMode.stopped;
   VenueGroup? _careerGroup;
   bool _includeLoungeInCareer = false;
+  // At the table, one track walks the player in; after that the table is
+  // left to cards and chips, and music returns only for event cues.
+  bool _tableWalkInPlayed = false;
+  final Map<XMusicEvent, DateTime> _lastEventAt = <XMusicEvent, DateTime>{};
   // Lounge music is opt-in. AppSettingsService restores the user's saved
   // preference after startup, but keeping the player muted here also prevents
   // audio from starting during that asynchronous load.
@@ -75,7 +86,6 @@ class XMusicService extends WidgetsBindingObserver {
   bool _playingEvent = false;
   bool _observingLifecycle = false;
   int _revision = 0;
-  int _careerSequenceIndex = 0;
   double _currentVolume = 0;
   Completer<void>? _interrupt;
   List<String>? _loungeAssets;
@@ -145,8 +155,9 @@ class XMusicService extends WidgetsBindingObserver {
     );
   }
 
-  /// Alternates the selected circuit theme with the dynamic lounge library
-  /// during Career gameplay.
+  /// At a Career table: the circuit theme plays once as the walk-in, then
+  /// music returns only for event cues (short stack, in the money, game
+  /// over). A 30-second track looping under a 20-minute game wears thin.
   void playCareerGameplay(VenueGroup group) {
     _setMode(
       _XMusicMode.career,
@@ -155,7 +166,8 @@ class XMusicService extends WidgetsBindingObserver {
     );
   }
 
-  /// Shuffles the dynamic lounge library during Quick Game gameplay.
+  /// At a Quick Game table: one lounge track as the walk-in, then event cues
+  /// only, as in Career.
   void playQuickGameplay() {
     _setMode(_XMusicMode.quickGameplay);
   }
@@ -171,6 +183,13 @@ class XMusicService extends WidgetsBindingObserver {
     // replay sounds for moments that have already passed.
     if (_muted) return;
     if (_eventQueue.contains(event)) return;
+    final Duration? minGap = _eventMinGap[event];
+    final DateTime now = DateTime.now();
+    final DateTime? last = _lastEventAt[event];
+    if (minGap != null && last != null && now.difference(last) < minGap) {
+      return;
+    }
+    _lastEventAt[event] = now;
     _eventQueue.add(event);
     if (!_playingEvent) {
       _revision++;
@@ -195,7 +214,7 @@ class XMusicService extends WidgetsBindingObserver {
     _mode = mode;
     _careerGroup = group;
     _includeLoungeInCareer = includeLoungeInCareer;
-    _careerSequenceIndex = 0;
+    _tableWalkInPlayed = false;
     _eventQueue.clear();
     _unplayableAssets.clear();
     _revision++;
@@ -243,6 +262,8 @@ class XMusicService extends WidgetsBindingObserver {
             ? null
             : _homepageAsset;
       case _XMusicMode.quickGameplay:
+        if (_tableWalkInPlayed) return null;
+        _tableWalkInPlayed = true;
         return _nextLoungeAsset();
       case _XMusicMode.career:
         final VenueGroup? group = _careerGroup;
@@ -252,14 +273,11 @@ class XMusicService extends WidgetsBindingObserver {
           return _unplayableAssets.contains(circuit) ? null : circuit;
         }
 
-        // Keep the selected circuit identifiable while mixing in soothing
-        // lounge variety: circuit, lounge, lounge, then repeat.
-        final int position = _careerSequenceIndex++ % 3;
-        if (position == 0 && !_unplayableAssets.contains(circuit)) {
-          return circuit;
-        }
-        return await _nextLoungeAsset() ??
-            (_unplayableAssets.contains(circuit) ? null : circuit);
+        // At the table the circuit theme is the walk-in, played once.
+        if (_tableWalkInPlayed) return null;
+        _tableWalkInPlayed = true;
+        if (!_unplayableAssets.contains(circuit)) return circuit;
+        return _nextLoungeAsset();
     }
   }
 

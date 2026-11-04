@@ -366,17 +366,22 @@ class _VenueScreenState extends State<VenueScreen>
   }
 
   Future<void> _pushQuickGame(VenueTheme venue, VenueGroup group) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => GameScreen.guestTable(
-          tableName: '${venue.name} — Quick Game',
-          venue: venue,
-          playIntroWelcome: false,
-          venueMode: VenueEntryMode.quickGame,
-          campaignGroup: group,
+    // PLAY AGAIN on the game-over screen comes back here and deals a fresh
+    // table at the same venue.
+    Object? choice;
+    do {
+      choice = await Navigator.of(context).push<Object?>(
+        MaterialPageRoute<Object?>(
+          builder: (_) => GameScreen.guestTable(
+            tableName: '${venue.name} — Quick Game',
+            venue: venue,
+            playIntroWelcome: false,
+            venueMode: VenueEntryMode.quickGame,
+            campaignGroup: group,
+          ),
         ),
-      ),
-    );
+      );
+    } while (mounted && choice == GameExitChoice.playAgain);
     if (mounted) XMusicService.instance.stop();
   }
 

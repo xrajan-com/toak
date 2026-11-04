@@ -1,3 +1,4 @@
+const { STARTER_VERSION } = require('../src/economy/constants');
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
 
@@ -11,6 +12,7 @@ test('split legacy wallet and campaign documents merge field by field', () => {
       indiaAup: 45000,
       matchesPlayed: 3,
       registeredStarterGranted: true,
+      starterVersion: STARTER_VERSION,
     },
     campaignData: {
       indiaAup: 1000,
@@ -59,10 +61,12 @@ test('a pre-cutover empty starter document can recover a richer legacy wallet', 
       oceaniaAup: 2000,
       northAmericaAup: 2000,
       registeredStarterGranted: true,
+      starterVersion: STARTER_VERSION,
     },
     campaignData: {
       indiaAup: 25000,
       registeredStarterGranted: true,
+      starterVersion: STARTER_VERSION,
     },
   });
 

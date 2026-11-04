@@ -64,7 +64,7 @@ void main() {
           '300/600 · ante 75');
       expect(blindLevelLabel(smallBlind: 100, bigBlind: 200), '100/200');
       expect(blindStructureSummary(),
-          'Blinds start at 100/200 and rise every 2 orbits. Antes from level 4.');
+          'Blinds start at 100/200 and rise every orbit. Antes from level 4.');
     });
   });
 

@@ -22,6 +22,7 @@ import 'package:ten_of_a_kind_poker/services/game_analytics.dart';
 import 'package:ten_of_a_kind_poker/services/rival_service.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen/first_game_tips.dart';
 import 'package:ten_of_a_kind_poker/services/poker_bot_learning_service.dart';
+import 'package:ten_of_a_kind_poker/services/firebase_ready.dart';
 
 enum AppErrorSeverity { warning, error, fatal }
 
@@ -106,9 +107,9 @@ Future<void> bootstrapApp() async {
       // blocked FlutterFire module request in a browser must not replace the
       // entire offline-capable game with a fatal startup screen.
       await _initializeOptionalFirebase();
-      await CrashReporting.start();
-      await AppCheckService.start();
-      await GameAnalytics.start();
+      await _startOptional('crash_reporting', CrashReporting.start);
+      await _startOptional('app_check', AppCheckService.start);
+      await _startOptional('analytics', GameAnalytics.start);
       unawaited(RivalService.instance.load());
       await FirstGameTips.instance.load();
       _initializeAds();
@@ -260,7 +261,7 @@ Future<void> _loadEnvironment() async {
 }
 
 Future<void> _initializeFirebase() async {
-  if (Firebase.apps.isNotEmpty) return;
+  if (firebaseReady()) return;
   if (kIsWeb) {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -268,6 +269,22 @@ Future<void> _initializeFirebase() async {
     return;
   }
   await Firebase.initializeApp();
+}
+
+/// Starts a service the game can run without. If it fails (a browser that
+/// blocked Firebase, say), the game still opens.
+Future<void> _startOptional(String name, Future<void> Function() start) async {
+  try {
+    await start().timeout(const Duration(seconds: 10));
+  } catch (error, stack) {
+    await AppErrorReporter.report(
+      category: name,
+      message: 'Optional service $name did not start.',
+      severity: AppErrorSeverity.warning,
+      debugError: error,
+      debugStack: stack,
+    );
+  }
 }
 
 Future<void> _initializeOptionalFirebase() async {

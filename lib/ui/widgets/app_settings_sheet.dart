@@ -57,7 +57,9 @@ class _AppSettingsSheet extends StatelessWidget {
                   SwitchListTile.adaptive(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                     title: const Text('Lounge sounds'),
-                    subtitle: const Text('Music and event tracks'),
+                    subtitle: const Text(
+                      'Music in the lobby; at the table only at big moments',
+                    ),
                     value: settings.loungeSoundsEnabled,
                     onChanged: (bool value) {
                       unawaited(settings.setLoungeSoundsEnabled(value));
@@ -66,12 +68,26 @@ class _AppSettingsSheet extends StatelessWidget {
                   SwitchListTile.adaptive(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                     title: const Text('Dealer voice'),
-                    subtitle:
-                        const Text('Spoken check, call, raise and fold cues'),
+                    subtitle: const Text('Calls all-ins, like a live dealer'),
                     value: settings.dealerVoiceEnabled,
                     onChanged: (bool value) {
                       unawaited(settings.setDealerVoiceEnabled(value));
                     },
+                  ),
+                  SwitchListTile.adaptive(
+                    key: const ValueKey<String>('settings_voice_every_action'),
+                    contentPadding: const EdgeInsets.only(left: 24, right: 8),
+                    title: const Text('Call every action'),
+                    subtitle: const Text('Check, call, raise and fold too'),
+                    value: settings.dealerVoiceEnabled &&
+                        settings.dealerVoiceEveryAction,
+                    onChanged: settings.dealerVoiceEnabled
+                        ? (bool value) {
+                            unawaited(
+                              settings.setDealerVoiceEveryAction(value),
+                            );
+                          }
+                        : null,
                   ),
                   SwitchListTile.adaptive(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 8),

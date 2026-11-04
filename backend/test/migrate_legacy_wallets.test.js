@@ -1,3 +1,4 @@
+const { STARTER_VERSION } = require('../src/economy/constants');
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
 
@@ -6,6 +7,7 @@ const {
   LEGACY_PROGRESS_COLLECTION,
   migrateLegacyWallet,
 } = require('../scripts/migrate_legacy_wallets');
+const { REGISTERED_STARTER_AUP } = require('../src/economy/constants');
 const { totalAup } = require('../src/economy/progress');
 const { SERVER_PROGRESS_COLLECTION } = require('../src/economy/store');
 const { walletForUser } = require('../src/economy/wallet');
@@ -48,7 +50,7 @@ test('pre-server progress becomes a migrated server wallet; the starter comes on
 
   const opened = await walletForUser({ db, uid: 'player1' });
   assert.equal(opened.progress.registeredStarterGranted, true);
-  assert.equal(totalAup(opened.progress), 10000);
+  assert.equal(totalAup(opened.progress), REGISTERED_STARTER_AUP);
 });
 
 test('the dedicated version-2 client wallet wins over campaign_progress', async () => {
@@ -59,6 +61,7 @@ test('the dedicated version-2 client wallet wins over campaign_progress', async 
         walletStorageVersion: 2,
         indiaAup: 45000,
         registeredStarterGranted: true,
+        starterVersion: STARTER_VERSION,
       },
     },
     [LEGACY_PROGRESS_COLLECTION]: {
@@ -66,6 +69,7 @@ test('the dedicated version-2 client wallet wins over campaign_progress', async 
         schemaVersion: 1,
         indiaAup: 1000,
         registeredStarterGranted: true,
+        starterVersion: STARTER_VERSION,
       },
     },
   });
@@ -88,6 +92,7 @@ test('a server wallet stuck below the marker is brought up to it', async () => {
         schemaVersion: 1,
         indiaAup: 3000,
         registeredStarterGranted: true,
+        starterVersion: STARTER_VERSION,
         legacyMigrationVersion: 0,
       },
     },
@@ -107,6 +112,7 @@ test('a balance that disagrees with the server is left for a person', async () =
     indiaAup: 5000,
     matchesPlayed: 3,
     registeredStarterGranted: true,
+    starterVersion: STARTER_VERSION,
     legacyMigrationVersion: 0,
   };
   const db = new FakeFirestore({

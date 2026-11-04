@@ -385,6 +385,18 @@ Duration get _kRenoirDealHold => Duration(milliseconds: pace.kDealGapMs - 40);
 enum _Phase { predeal, preflop, flop, turn, river, showdown }
 
 /* =============================== Widget =================================== */
+/// What the player picked on the game-over screen, other than leaving.
+///
+/// The screen that opened the table acts on it, so its own bookkeeping
+/// (music, wallet, onboarding) runs exactly as it does after a normal exit.
+enum GameExitChoice {
+  /// The same table again: a new Quick Game, or the same fort.
+  playAgain,
+
+  /// Career: the next fort in this kingdom.
+  nextTable,
+}
+
 class GameScreen extends StatefulWidget {
   final String tableName;
   final dynamic venue; // { name, flagAsset, background, felt }
@@ -2680,8 +2692,9 @@ class _GameScreenState extends State<GameScreen>
         _pushDealEvent(ev);
         if (_dealSfxEnabled) {
           if (ev.isBoard) {
-            // Use fold sfx for community reveals per UX request.
-            unawaited(SoundFx.instance.playFold());
+            // A card sound, never the dealer voice: until Oct 2026 this
+            // called playFold(), which had become the spoken "Fold".
+            unawaited(SoundFx.instance.playBoardCard());
           } else {
             unawaited(SoundFx.instance.playDeal());
           }
@@ -3123,6 +3136,10 @@ class _GameScreenState extends State<GameScreen>
     if (_bustSounded.contains(idx)) return;
     _bustSounded.add(idx);
     if (idx == _heroIndex) {
+      // Going out 2nd or 3rd is a podium finish: _playMatchEndCue plays the
+      // win cue, so the bust sting would only fight it.
+      final int? rank = _bustRankBySeat[idx];
+      if (rank != null && _isPodiumFinish(rank)) return;
       unawaited(SoundFx.instance.playHeroBust());
     } else {
       unawaited(SoundFx.instance.playPlayerBusted());
@@ -3300,7 +3317,7 @@ class _GameScreenState extends State<GameScreen>
       _heroInDanger = false;
       _heroInBottomHalf = false;
       _playMatchEndCue(
-        heroWon: ev.rank > 0 && ev.rank <= 3,
+        heroWon: _isPodiumFinish(ev.rank),
         winnings: ev.winnings,
       );
     }
@@ -3317,9 +3334,63 @@ class _GameScreenState extends State<GameScreen>
           ? XMusicEvent.gameOverWithPrize
           : XMusicEvent.gameOverNoPrize,
     );
-    unawaited(heroWon
-        ? SoundFx.instance.playGameWin()
-        : SoundFx.instance.playGameLost());
+    // Out of the podium, the bust sting (_playBustSound) is the closing cue.
+    if (heroWon) unawaited(SoundFx.instance.playGameWin());
+  }
+
+  static bool _isPodiumFinish(int rank) => rank > 0 && rank <= 3;
+
+  /// The game-over screen's one-tap way back in. Quick Game: another table.
+  /// Career fort: the next fort after a podium finish, the same fort
+  /// otherwise. A title match (Main Event) has none: entering one is a bigger
+  /// decision, made on the kingdom screen.
+  GameExitChoice? _againChoiceFor(int rank) {
+    if (widget.venueMode == VenueEntryMode.quickGame) {
+      return GameExitChoice.playAgain;
+    }
+    if (widget.campaignMainEvent || widget.campaignSubKingdomIndex == null) {
+      return null;
+    }
+    return _isPodiumFinish(rank)
+        ? GameExitChoice.nextTable
+        : GameExitChoice.playAgain;
+  }
+
+  String _againLabel(GameExitChoice choice) => switch (choice) {
+        GameExitChoice.nextTable => 'NEXT FORT',
+        GameExitChoice.playAgain =>
+          widget.venueMode == VenueEntryMode.career ? 'TRY AGAIN' : 'PLAY AGAIN',
+      };
+
+  Future<void> _leaveForAnotherTable(GameExitChoice choice) async {
+    if (!mounted || _disposing) return;
+    final NavigatorState nav = Navigator.of(context);
+    if (!nav.canPop()) {
+      // Nothing underneath to deal the next table; leave the normal way.
+      await _exitToVenue();
+      return;
+    }
+    unawaited(GameAnalytics.playedAgain(
+      kind: _analyticsKind,
+      choice: choice == GameExitChoice.nextTable ? 'next_table' : 'play_again',
+    ));
+    // The result must be settled before the next entry is reserved.
+    await _recordAbandonIfNeeded();
+    if (!mounted || _disposing) return;
+    nav.pop(choice);
+  }
+
+  /// A pot worth a quarter of every chip at the table earns the fanfare.
+  bool _isBigPotForHero(List<eng.Payout> payouts) {
+    final eng.GameEngine? e = _engine;
+    if (e == null || _heroIndex < 0) return false;
+    final int heroAmount = payouts
+        .where((p) => p.playerIndex == _heroIndex)
+        .fold<int>(0, (int acc, p) => acc + p.amount);
+    final int chipsInPlay =
+        e.players.fold<int>(0, (int acc, p) => acc + p.chips);
+    if (chipsInPlay <= 0) return false;
+    return heroAmount * 4 >= chipsInPlay;
   }
 
   Future<void> _showHeroFinishOverlay({
@@ -3388,6 +3459,7 @@ class _GameScreenState extends State<GameScreen>
     }
 
     final WinCardData? winCard = rank == 1 ? _winCardData(heroSeat) : null;
+    final GameExitChoice? againChoice = _againChoiceFor(rank);
 
     await go.showHeroFinishOverlay(
       context,
@@ -3418,9 +3490,13 @@ class _GameScreenState extends State<GameScreen>
                 group: campaignGroup,
               )
           : null,
-      onExitToVenue: (widget.campaignGroup != null)
-          ? () => Navigator.of(context).maybePop()
-          : _exitToVenue,
+      // The match is over, so leaving needs no "Exit to venue?" check:
+      // maybePop() went through the back-button guard and asked again.
+      onExitToVenue: () => unawaited(_exitToVenue()),
+      playAgainLabel: againChoice == null ? null : _againLabel(againChoice),
+      onPlayAgain: againChoice == null
+          ? null
+          : () => unawaited(_leaveForAnotherTable(againChoice)),
     );
     if (!mounted) return;
     setState(() {});
@@ -4129,11 +4205,10 @@ class _GameScreenState extends State<GameScreen>
 
     if (!_handWinSoundPlayed) {
       _handWinSoundPlayed = true;
-      if (heroWonHand) {
-        unawaited(SoundFx.instance.playHeroHandWin());
-      } else {
-        unawaited(SoundFx.instance.playHandWin());
-      }
+      unawaited(SoundFx.instance.playChipsToWinner(
+        heroWon: heroWonHand,
+        bigPot: heroWonHand && _isBigPotForHero(payouts),
+      ));
     }
     final overlayDuration = Duration(milliseconds: pace.kOverlayMinShowMs);
     bool overlayShown = false;

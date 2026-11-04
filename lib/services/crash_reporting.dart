@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
+import 'package:ten_of_a_kind_poker/services/firebase_ready.dart';
 
 /// Crash reports from players' phones, through Firebase Crashlytics.
 ///
@@ -26,7 +27,7 @@ class CrashReporting {
 
   /// Call once Firebase has initialized. Does nothing if it did not.
   static Future<void> start() async {
-    if (kIsWeb || Firebase.apps.isEmpty) return;
+    if (kIsWeb || !firebaseReady()) return;
     try {
       // Written on every launch, so a debug build installed over a release
       // one stops reporting too.

@@ -13,8 +13,10 @@ void main() {
     SharedPreferences.setMockInitialValues(const <String, Object>{});
   });
 
-  test('registered users receive one 10,000 AUP starter wallet', () async {
+  test('registered users receive the starter bankroll in every circuit',
+      () async {
     final service = AuraPointsService();
+    const int perCircuit = aup.kRegisteredStarterAup ~/ 5;
 
     service.bindUserId('registered-user', registeredUser: true);
     final paid = await service.payEntryFee(
@@ -24,11 +26,17 @@ void main() {
 
     expect(paid, isTrue);
     expect(service.totalAup, aup.kRegisteredStarterAup - 2000);
-    expect(service.indiaAup, 0);
-    expect(service.internationalAup, 2000);
-    expect(service.euroAup, 2000);
-    expect(service.oceaniaAup, 2000);
-    expect(service.northAmericaAup, 2000);
+    expect(service.indiaAup, perCircuit - 2000);
+    expect(service.internationalAup, perCircuit);
+    expect(service.euroAup, perCircuit);
+    expect(service.oceaniaAup, perCircuit);
+    expect(service.northAmericaAup, perCircuit);
+  });
+
+  test('the starter pays for real fort entries, not just the free forts', () {
+    // The cheapest paid fort costs 52,000 AUP; the old 10,000 starter
+    // (2,000 a circuit) could not pay for one.
+    expect(aup.kRegisteredStarterAup ~/ 5, greaterThanOrEqualTo(3 * 120000));
   });
 
   test('guest accounts get the same starter wallet for Career', () async {

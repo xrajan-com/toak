@@ -15,16 +15,21 @@ class AppSettingsService extends ChangeNotifier {
   static const String _soundEffectsKey = 'settings.sound_effects.v1';
   static const String _loungeSoundsKey = 'settings.lounge_sounds.v1';
   static const String _dealerVoiceKey = 'settings.dealer_voice.v1';
+  static const String _dealerVoiceEveryActionKey =
+      'settings.dealer_voice_every_action.v1';
   static const String _reducedMotionKey = 'settings.reduced_motion.v1';
 
   // Lounge/table music defaults to off: it's ambient, not informational,
   // and a first run that is quiet by default is easier to recover from than
   // one that is loud. Users can turn it on in settings. Sound effects and the
   // dealer voice are deliberately left on in every game, since they carry
-  // information about the hand as it happens.
+  // information about the hand as it happens. The voice calls all-ins only
+  // unless the player asks for every action: a dealer naming every check and
+  // fold at a full table never stops talking.
   bool _soundEffectsEnabled = true;
   bool _loungeSoundsEnabled = false;
   bool _dealerVoiceEnabled = true;
+  bool _dealerVoiceEveryAction = false;
   bool _reducedMotion = false;
   bool _loaded = false;
   Future<void>? _loadFuture;
@@ -32,6 +37,7 @@ class AppSettingsService extends ChangeNotifier {
   bool get soundEffectsEnabled => _soundEffectsEnabled;
   bool get loungeSoundsEnabled => _loungeSoundsEnabled;
   bool get dealerVoiceEnabled => _dealerVoiceEnabled;
+  bool get dealerVoiceEveryAction => _dealerVoiceEveryAction;
   bool get reducedMotion => _reducedMotion;
   bool get loaded => _loaded;
 
@@ -65,6 +71,14 @@ class AppSettingsService extends ChangeNotifier {
     await _persist(_dealerVoiceKey, value);
   }
 
+  Future<void> setDealerVoiceEveryAction(bool value) async {
+    if (_dealerVoiceEveryAction == value) return;
+    _dealerVoiceEveryAction = value;
+    SoundFx.instance.setVoiceEveryAction(value);
+    notifyListeners();
+    await _persist(_dealerVoiceEveryActionKey, value);
+  }
+
   Future<void> setReducedMotion(bool value) async {
     if (_reducedMotion == value) return;
     _reducedMotion = value;
@@ -78,6 +92,8 @@ class AppSettingsService extends ChangeNotifier {
       _soundEffectsEnabled = prefs.getBool(_soundEffectsKey) ?? true;
       _loungeSoundsEnabled = prefs.getBool(_loungeSoundsKey) ?? false;
       _dealerVoiceEnabled = prefs.getBool(_dealerVoiceKey) ?? true;
+      _dealerVoiceEveryAction =
+          prefs.getBool(_dealerVoiceEveryActionKey) ?? false;
       _reducedMotion = prefs.getBool(_reducedMotionKey) ?? false;
     } catch (error, stack) {
       debugPrint('Settings load failed: $error\n$stack');
@@ -85,6 +101,7 @@ class AppSettingsService extends ChangeNotifier {
       SoundFx.instance.setSoundEffectsMuted(!_soundEffectsEnabled);
       XMusicService.instance.setMuted(!_loungeSoundsEnabled);
       SoundFx.instance.setVoiceMuted(!_dealerVoiceEnabled);
+      SoundFx.instance.setVoiceEveryAction(_dealerVoiceEveryAction);
       _loaded = true;
       notifyListeners();
     }

@@ -9,7 +9,8 @@ const {
   MAX_ENTRY_FEE,
   MAX_STORED_ENTRY_RESERVATIONS,
   MIGRATION_COMPLETE_VERSION,
-  REGISTERED_STARTER_AUP,
+  STARTER_AUP_PER_CIRCUIT,
+  STARTER_VERSION,
   normalizeCircuitAup,
 } = require('./constants');
 const {
@@ -154,6 +155,7 @@ function baseProgress(data = {}) {
     cleared: _stringList(data.cleared, 500),
     mainEventsCleared: _stringList(data.mainEventsCleared, 200),
     registeredStarterGranted: data.registeredStarterGranted === true,
+    starterVersion: int(data.starterVersion, { min: 0, max: STARTER_VERSION }),
     legacyMigrationVersion: int(data.legacyMigrationVersion, {
       min: 0,
       max: MIGRATION_COMPLETE_VERSION,
@@ -231,20 +233,23 @@ function deductAup(progress, group, amount) {
   return amount;
 }
 
+/**
+ * The starter bankroll (version 2): every circuit holds at least
+ * STARTER_AUP_PER_CIRCUIT, once per wallet. A new wallet gets the whole
+ * starter; an older one is topped up where it is short and never lowered,
+ * so players who began on the old 10,000 can afford paid forts too.
+ */
 function grantRegisteredStarterAup(progress) {
-  if (progress.registeredStarterGranted) return progress;
-  const total = totalAup(progress);
-  if (total <= 0) {
-    let remaining = REGISTERED_STARTER_AUP;
-    CIRCUIT_FIELDS.forEach((field, index) => {
-      const grant = index === CIRCUIT_FIELDS.length - 1
-        ? remaining
-        : Math.trunc(REGISTERED_STARTER_AUP / CIRCUIT_FIELDS.length);
-      progress[field] = clamp(progress[field] + grant, 0, MAX_AUP_PER_CIRCUIT);
-      remaining -= grant;
-    });
+  if (progress.starterVersion >= STARTER_VERSION) return progress;
+  for (const field of CIRCUIT_FIELDS) {
+    progress[field] = clamp(
+      Math.max(progress[field], STARTER_AUP_PER_CIRCUIT),
+      0,
+      MAX_AUP_PER_CIRCUIT,
+    );
   }
   progress.registeredStarterGranted = true;
+  progress.starterVersion = STARTER_VERSION;
   return progress;
 }
 

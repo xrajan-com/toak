@@ -655,6 +655,11 @@ Future<void> showHeroFinishOverlay(
   String rewardedAdUnavailableMessage = 'Rewarded ad is not ready yet.',
   Future<int> Function()? onWatchRewardedAd,
   VoidCallback? onExitToVenue,
+  // The main button when set: straight into another table (PLAY AGAIN,
+  // TRY AGAIN, NEXT FORT). The minute after a game ends is when players
+  // decide whether to keep going, so the way back in is one tap.
+  String? playAgainLabel,
+  VoidCallback? onPlayAgain,
   String? closeCall,
   String? progressNote,
   Future<void> Function()? onShareHand,
@@ -730,6 +735,18 @@ Future<void> showHeroFinishOverlay(
             await Future<void>.delayed(Duration.zero);
             onExitToVenue?.call();
           }
+
+          Future<void> playAgainNow() async {
+            if (exiting || rewarding) return;
+            setState(() => exiting = true);
+            if (!dialogCtx.mounted) return;
+            Navigator.of(dialogCtx, rootNavigator: true).pop();
+            await Future<void>.delayed(Duration.zero);
+            onPlayAgain?.call();
+          }
+
+          final bool showPlayAgain = onPlayAgain != null &&
+              (playAgainLabel?.trim().isNotEmpty ?? false);
 
           Future<void> watchRewardedAd() async {
             final action = onWatchRewardedAd;
@@ -1201,31 +1218,98 @@ Future<void> showHeroFinishOverlay(
                                   ],
                                   const SizedBox(height: 10),
                                 ],
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: FilledButton(
-                                    onPressed:
-                                        (exiting || rewarding) ? null : exitNow,
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: Colors.white,
-                                      foregroundColor: Colors.black,
-                                      minimumSize: const Size.fromHeight(54),
-                                      shape: const StadiumBorder(),
-                                      textStyle: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: 0.2,
+                                if (showPlayAgain) ...[
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: FilledButton.icon(
+                                      key: const ValueKey<String>(
+                                        'finish-play-again',
+                                      ),
+                                      onPressed: (exiting || rewarding)
+                                          ? null
+                                          : playAgainNow,
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: const Color(
+                                          0xFFFF2800,
+                                        ),
+                                        foregroundColor: Colors.white,
+                                        minimumSize:
+                                            const Size.fromHeight(56),
+                                        shape: const StadiumBorder(),
+                                        textStyle: const TextStyle(
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 0.6,
+                                        ),
+                                      ),
+                                      icon: const Icon(
+                                        Icons.replay_rounded,
+                                        size: 22,
+                                      ),
+                                      label: Text(
+                                        exiting
+                                            ? 'PLEASE WAIT'
+                                            : playAgainLabel!.trim(),
                                       ),
                                     ),
-                                    child: Text(
-                                      exiting
-                                          ? 'PLEASE WAIT'
-                                          : podiumFinish
-                                              ? 'COLLECT AND EXIT'
-                                              : 'EXIT TO VENUE',
+                                  ),
+                                  const SizedBox(height: 10),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: OutlinedButton(
+                                      onPressed: (exiting || rewarding)
+                                          ? null
+                                          : exitNow,
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: Colors.white,
+                                        side: BorderSide(
+                                          color: Colors.white
+                                              .withValues(alpha: 0.32),
+                                        ),
+                                        minimumSize:
+                                            const Size.fromHeight(48),
+                                        shape: const StadiumBorder(),
+                                        textStyle: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 0.2,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        podiumFinish
+                                            ? 'COLLECT AND EXIT'
+                                            : 'EXIT TO VENUE',
+                                      ),
                                     ),
                                   ),
-                                ),
+                                ] else
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: FilledButton(
+                                      onPressed: (exiting || rewarding)
+                                          ? null
+                                          : exitNow,
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: Colors.white,
+                                        foregroundColor: Colors.black,
+                                        minimumSize:
+                                            const Size.fromHeight(54),
+                                        shape: const StadiumBorder(),
+                                        textStyle: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 0.2,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        exiting
+                                            ? 'PLEASE WAIT'
+                                            : podiumFinish
+                                                ? 'COLLECT AND EXIT'
+                                                : 'EXIT TO VENUE',
+                                      ),
+                                    ),
+                                  ),
                               ],
                             ),
                           ),

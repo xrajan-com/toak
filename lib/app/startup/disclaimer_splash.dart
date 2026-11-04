@@ -133,11 +133,15 @@ class _DisclaimerSplashState extends State<DisclaimerSplash> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       XMusicService.instance.stop();
-      await Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: widget.firstTableBuilder ?? _starterTable,
-        ),
-      );
+      // PLAY AGAIN on the game-over screen deals another starter table.
+      Object? choice;
+      do {
+        choice = await Navigator.of(context).push<Object?>(
+          MaterialPageRoute<Object?>(
+            builder: widget.firstTableBuilder ?? _starterTable,
+          ),
+        );
+      } while (mounted && choice == GameExitChoice.playAgain);
       if (!mounted) return;
       XMusicService.instance.playHomepage();
       unawaited(GameAnalytics.onboarding(OnboardingStep.modeShown));

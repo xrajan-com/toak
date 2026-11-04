@@ -18,6 +18,7 @@ void main() {
     await first.setSoundEffectsEnabled(false);
     await first.setLoungeSoundsEnabled(true);
     await first.setDealerVoiceEnabled(false);
+    await first.setDealerVoiceEveryAction(true);
     await first.setReducedMotion(true);
 
     final AppSettingsService restored = AppSettingsService();
@@ -26,6 +27,7 @@ void main() {
     expect(restored.soundEffectsEnabled, isFalse);
     expect(restored.loungeSoundsEnabled, isTrue);
     expect(restored.dealerVoiceEnabled, isFalse);
+    expect(restored.dealerVoiceEveryAction, isTrue);
     expect(restored.reducedMotion, isTrue);
     expect(restored.loaded, isTrue);
   });
@@ -40,6 +42,8 @@ void main() {
         reason: 'sound effects carry information and stay on in every game');
     expect(settings.dealerVoiceEnabled, isTrue,
         reason: 'the dealer voice carries information and stays on');
+    expect(settings.dealerVoiceEveryAction, isFalse,
+        reason: 'like a live dealer, she calls all-ins, not every fold');
   });
 
   testWidgets('device-level reduced motion is always respected',
