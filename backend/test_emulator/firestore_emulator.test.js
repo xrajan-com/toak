@@ -17,7 +17,9 @@ const {
   reserveEntry,
   transitionEntryReservation,
 } = require('../src/economy/entries');
+const { STARTER_AUP_PER_CIRCUIT } = require('../src/economy/constants');
 const { applyEconomyEvent } = require('../src/economy/events');
+const { claimDailyTribute } = require('../src/economy/tribute');
 const {
   ECONOMY_RECEIPTS_COLLECTION,
   SERVER_PROGRESS_COLLECTION,
@@ -133,9 +135,43 @@ test('economy transaction is idempotent for duplicate event ids', async () => {
   assert.equal(second.accepted, true);
   assert.equal(second.duplicate, true);
   assert.equal(second.delta, 0);
-  assert.equal(server.internationalAup, 2000 + 143400);
+  // The starter bankroll, then the fort's first prize.
+  assert.equal(server.internationalAup, STARTER_AUP_PER_CIRCUIT + 143400);
   assert.deepEqual(server.awardedEventIds, [campaignId]);
   assert.deepEqual(server.appliedEventIds, ['emu:campaign:win:1']);
+});
+
+test('the daily tribute pays once a day in a real transaction', async () => {
+  const database = db();
+  const uid = 'emu-tribute';
+  const nowMs = Date.parse('2026-11-04T04:30:00Z');
+  const body = { tzOffsetMinutes: 330 };
+
+  const [first, second] = await Promise.all([
+    claimDailyTribute({ db: database, uid, body, nowMs }),
+    claimDailyTribute({ db: database, uid, body, nowMs }),
+  ]);
+  const server = await read(database, SERVER_PROGRESS_COLLECTION, uid);
+
+  // Two taps at once: Firestore retries the loser, which then sees the claim.
+  assert.equal([first, second].filter((r) => r.accepted).length, 1);
+  assert.equal(
+    [first, second].find((r) => !r.accepted).reason,
+    'already_claimed',
+  );
+  assert.equal(server.indiaAup, STARTER_AUP_PER_CIRCUIT + 50000);
+  assert.equal(server.tributeStreak, 1);
+  assert.equal(server.tributeLastDayKey, '2026-11-04');
+
+  const nextDay = await claimDailyTribute({
+    db: database,
+    uid,
+    body,
+    nowMs: nowMs + 24 * 60 * 60 * 1000,
+  });
+  assert.equal(nextDay.accepted, true);
+  assert.equal(nextDay.streak, 2);
+  assert.equal(nextDay.delta, 75000);
 });
 
 test('leaderboard sync writes an opaque row and excludes legacy rows', async () => {
