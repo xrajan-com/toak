@@ -16,6 +16,7 @@ import 'package:ten_of_a_kind_poker/services/x_music_service.dart';
 import 'package:ten_of_a_kind_poker/features/venue/game_mode.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/venue_screen.dart';
 import 'package:ten_of_a_kind_poker/ui/theme/colors.dart';
+import 'package:ten_of_a_kind_poker/ui/widgets/daily_tribute.dart';
 import 'package:ten_of_a_kind_poker/ui/widgets/stadium_banner.dart';
 import 'package:ten_of_a_kind_poker/ui/widgets/update_banner.dart';
 
@@ -81,6 +82,61 @@ class _GameModeScreenState extends State<GameModeScreen> {
     if (mounted) XMusicService.instance.playHomepage();
   }
 
+  /// "Game Mode", with the daily tribute beside it on wide screens (where
+  /// it costs no height on a landscape phone) and under it on narrow ones.
+  Widget _titleRow(
+    BuildContext context, {
+    required bool compact,
+    required bool stacked,
+    required double width,
+  }) {
+    final Widget title = Text(
+      'Game Mode',
+      style: TextStyle(
+        color: Colors.white,
+        fontSize: compact ? 24 : 34,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 0.3,
+      ),
+    );
+    void playFort() => unawaited(_openMode(context, VenueEntryMode.career));
+    if (stacked) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          title,
+          Padding(
+            padding: EdgeInsets.only(top: compact ? 4 : 6),
+            child: DailyTributeChip(
+              compact: compact,
+              maxWidth: width,
+              onPlayFort: playFort,
+            ),
+          ),
+        ],
+      );
+    }
+    // Half the row, less half the title, keeps the chip clear of it.
+    final double chipMax = (width / 2 - (compact ? 80 : 110)).clamp(
+      180.0,
+      300.0,
+    );
+    return Stack(
+      alignment: Alignment.center,
+      children: <Widget>[
+        title,
+        Align(
+          alignment: Alignment.centerRight,
+          child: DailyTributeChip(
+            compact: compact,
+            maxWidth: chipMax,
+            onPlayFort: playFort,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -134,14 +190,11 @@ class _GameModeScreenState extends State<GameModeScreen> {
                             maxWidth: compact ? 300 : 400,
                           ),
                           SizedBox(height: compact ? 10 : 16),
-                          Text(
-                            'Game Mode',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: compact ? 24 : 34,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.3,
-                            ),
+                          _titleRow(
+                            context,
+                            compact: compact,
+                            stacked: stacked,
+                            width: contentMaxWidth,
                           ),
                           SizedBox(height: compact ? 6 : 10),
                           ConstrainedBox(

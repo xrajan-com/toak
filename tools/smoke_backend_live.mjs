@@ -469,6 +469,38 @@ async function main() {
   }
   console.log('paid entry affordability gate ok: insufficient funds rejected');
 
+  // The daily tribute pays at most once a day. A test account an earlier
+  // smoke already claimed with today is refused both times; that is a pass.
+  const claimTribute = () => request('/v1/economy/tribute/claim', {
+    method: 'POST',
+    token,
+    body: { tzOffsetMinutes: 0 },
+  });
+  const firstTribute = await claimTribute();
+  const refusedReasons = new Set(['already_claimed', 'too_soon']);
+  if (
+    firstTribute.accepted === true
+      ? !(firstTribute.delta > 0 && firstTribute.streak >= 1)
+      : !refusedReasons.has(firstTribute.reason)
+  ) {
+    throw new Error(`daily tribute claim failed: ${JSON.stringify(firstTribute)}`);
+  }
+  const repeatTribute = await claimTribute();
+  if (
+    repeatTribute.accepted !== false ||
+    repeatTribute.delta !== 0 ||
+    !refusedReasons.has(repeatTribute.reason)
+  ) {
+    throw new Error(
+      `daily tribute paid twice: ${JSON.stringify(repeatTribute)}`,
+    );
+  }
+  console.log(
+    `daily tribute ok: ${firstTribute.accepted
+      ? `+${firstTribute.delta} AUP (day ${firstTribute.streak})`
+      : 'already claimed today'}, repeat refused`,
+  );
+
   // This server-authoritative sync also performs the bounded migration/prune
   // that replaces any legacy raw-UID leaderboard document ids with opaque ids.
   // Keep it in the required deploy smoke so privacy migration is not deferred

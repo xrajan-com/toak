@@ -20,6 +20,7 @@ const { applyEconomyEvent } = require('../economy/events');
 const { snapshot } = require('../economy/progress');
 const { rankForUser } = require('../economy/rank');
 const { firestore } = require('../economy/store');
+const { claimDailyTribute } = require('../economy/tribute');
 const { walletForUser } = require('../economy/wallet');
 
 function _asyncHandler(fn) {
@@ -207,6 +208,24 @@ function economyRouter({ refreshLeaderboard } = {}) {
         penaltyDelta: result.penaltyDelta || 0,
         clearRecorded: result.clearRecorded === true,
         matchRecorded: result.matchRecorded === true,
+      }),
+    ),
+  );
+
+  // The daily tribute; guests included, like every Career wallet.
+  router.post(
+    '/tribute/claim',
+    requireFirebaseAuth,
+    writeLimiter,
+    handle(
+      ({ req, db, uid }) => claimDailyTribute({ db, uid, body: req.body || {} }),
+      (result) => ({
+        accepted: result.accepted,
+        duplicate: result.duplicate,
+        reason: result.reason,
+        delta: result.delta,
+        streak: result.streak,
+        group: result.group,
       }),
     ),
   );

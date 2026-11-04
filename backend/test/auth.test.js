@@ -223,6 +223,7 @@ test('guests play Career; public boards, ranks and standings stay registered-onl
     '/entries/refund',
     '/entries/recover',
     '/events',
+    '/tribute/claim',
   ]);
   for (const layer of economyRouter().stack.filter((c) => c.route)) {
     const middlewareNames = layer.route.stack.map((entry) => entry.name);

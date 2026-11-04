@@ -23,6 +23,10 @@ class EconomyProgressSnapshot {
   final bool registeredStarterGranted;
   final int legacyMigrationVersion;
   final String catalogVersion;
+  final int tributeStreak;
+  final String tributeLastDayKey;
+  final int tributeLastClaimAtMs;
+  final int tributeLastAmount;
 
   const EconomyProgressSnapshot({
     this.walletVersion = 0,
@@ -44,6 +48,10 @@ class EconomyProgressSnapshot {
     required this.registeredStarterGranted,
     this.legacyMigrationVersion = 0,
     this.catalogVersion = '',
+    this.tributeStreak = 0,
+    this.tributeLastDayKey = '',
+    this.tributeLastClaimAtMs = 0,
+    this.tributeLastAmount = 0,
   });
 
   factory EconomyProgressSnapshot.fromJson(Map<String, dynamic> json) {
@@ -67,6 +75,10 @@ class EconomyProgressSnapshot {
       registeredStarterGranted: json['registeredStarterGranted'] == true,
       legacyMigrationVersion: _int(json['legacyMigrationVersion']),
       catalogVersion: (json['catalogVersion'] as String?) ?? '',
+      tributeStreak: _int(json['tributeStreak']),
+      tributeLastDayKey: (json['tributeLastDayKey'] as String?) ?? '',
+      tributeLastClaimAtMs: _int(json['tributeLastClaimAtMs']),
+      tributeLastAmount: _int(json['tributeLastAmount']),
     );
   }
 
@@ -242,6 +254,37 @@ class EconomyRank {
   }
 }
 
+/// The answer to a daily tribute claim.
+class DailyTributeClaim {
+  /// Paid now.
+  final bool accepted;
+
+  /// Already paid today (a retry, or a second tap on another phone).
+  final bool alreadyClaimed;
+
+  /// The server could not be reached; nothing changed.
+  final bool unavailable;
+
+  final int delta;
+  final int streak;
+
+  /// The circuit paid ('india', 'euro', …), or '' when nothing was.
+  final String group;
+  final String reason;
+  final EconomyProgressSnapshot? progress;
+
+  const DailyTributeClaim({
+    required this.accepted,
+    this.alreadyClaimed = false,
+    this.unavailable = false,
+    this.delta = 0,
+    this.streak = 0,
+    this.group = '',
+    this.reason = '',
+    this.progress,
+  });
+}
+
 class EconomyApiService {
   static const bool _allowLocalEconomyInRelease =
       bool.fromEnvironment('ALLOW_LOCAL_ECONOMY_DEV');
@@ -335,6 +378,56 @@ class EconomyApiService {
       );
     }
     return EconomyRank.fromJson(response);
+  }
+
+  /// Claims today's daily tribute. [tzOffsetMinutes] is the phone's UTC
+  /// offset, so that "today" is the player's day.
+  Future<DailyTributeClaim> claimDailyTribute({
+    required int tzOffsetMinutes,
+  }) async {
+    try {
+      final response = await _apiClient.post(
+        '/v1/economy/tribute/claim',
+        <String, dynamic>{'tzOffsetMinutes': tzOffsetMinutes},
+      );
+      final progress = _progressMap(response);
+      if (response is! Map<String, dynamic> || progress == null) {
+        return const DailyTributeClaim(
+          accepted: false,
+          reason: 'malformed_response',
+        );
+      }
+      final snapshot = EconomyProgressSnapshot.fromJson(progress);
+      if (!_isCatalogCompatible(snapshot) || !_isMigrationComplete(snapshot)) {
+        return const DailyTributeClaim(
+          accepted: false,
+          reason: 'catalog_version_mismatch',
+        );
+      }
+      return DailyTributeClaim(
+        accepted: response['accepted'] == true,
+        alreadyClaimed: response['reason'] == 'already_claimed' ||
+            response['reason'] == 'too_soon',
+        delta: EconomyProgressSnapshot._int(response['delta']),
+        streak: EconomyProgressSnapshot._int(response['streak']),
+        group: response['group']?.toString() ?? '',
+        reason: response['reason']?.toString() ?? '',
+        progress: snapshot,
+      );
+    } on ApiException catch (error) {
+      final bool transient = error.kind == ApiFailureKind.timeout ||
+          error.kind == ApiFailureKind.network ||
+          error.kind == ApiFailureKind.rateLimited ||
+          error.kind == ApiFailureKind.server;
+      return DailyTributeClaim(
+        accepted: false,
+        unavailable: transient,
+        reason: error.code ?? error.kind.name,
+      );
+    } catch (error) {
+      debugPrint('Daily tribute claim unavailable: $error');
+      return const DailyTributeClaim(accepted: false, unavailable: true);
+    }
   }
 
   /// Compatibility surface for existing test doubles.

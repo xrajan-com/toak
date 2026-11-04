@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:ten_of_a_kind_poker/services/app_settings_service.dart';
+import 'package:ten_of_a_kind_poker/services/return_reminders.dart';
 
 Future<void> showAppSettingsSheet(BuildContext context) {
   return showModalBottomSheet<void>(
@@ -89,6 +90,8 @@ class _AppSettingsSheet extends StatelessWidget {
                           }
                         : null,
                   ),
+                  if (ReturnReminders.instance.supported)
+                    const _RemindersSwitch(),
                   SwitchListTile.adaptive(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                     title: const Text('Reduce motion'),
@@ -118,6 +121,50 @@ class _AppSettingsSheet extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Daily tribute and comeback reminders. Kept by [ReturnReminders] rather
+/// than [AppSettingsService]: it is phone-only, and saying yes also asks the
+/// system for notification permission.
+class _RemindersSwitch extends StatefulWidget {
+  const _RemindersSwitch();
+
+  @override
+  State<_RemindersSwitch> createState() => _RemindersSwitchState();
+}
+
+class _RemindersSwitchState extends State<_RemindersSwitch> {
+  bool? _on;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_load());
+  }
+
+  Future<void> _load() async {
+    final ReturnReminders reminders = ReturnReminders.instance;
+    final bool offered = !await reminders.shouldOffer();
+    final bool enabled = await reminders.isEnabled();
+    if (mounted) setState(() => _on = offered && enabled);
+  }
+
+  Future<void> _set(bool value) async {
+    setState(() => _on = value);
+    await ReturnReminders.instance.setEnabled(value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile.adaptive(
+      key: const ValueKey<String>('settings_reminders'),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+      title: const Text('Reminders'),
+      subtitle: const Text('When your daily tribute is ready'),
+      value: _on ?? false,
+      onChanged: _on == null ? null : (bool value) => unawaited(_set(value)),
     );
   }
 }

@@ -157,6 +157,25 @@ class GameAnalytics {
   }) =>
       _log('game_again', <String, Object>{'kind': kind, 'choice': choice});
 
+  /// The daily tribute was paid: [streak] is the run it reached.
+  static Future<void> tributeClaimed({
+    required int streak,
+    required int amount,
+  }) =>
+      _log('tribute_claimed', <String, Object>{
+        'streak': streak,
+        'amount': amount,
+      });
+
+  /// The game was opened from one of its reminders ([id]: 101 tribute,
+  /// 102 comeback).
+  static Future<void> reminderOpened({required int id}) =>
+      _log('reminder_opened', <String, Object>{'id': id});
+
+  /// The player answered the system's notification permission prompt.
+  static Future<void> reminderPermission({required bool granted}) =>
+      _log('reminder_permission', <String, Object>{'granted': granted ? 1 : 0});
+
   /// The player sent a win card through the share sheet.
   static Future<void> winCardShared({required String kind}) =>
       _log('win_card_shared', <String, Object>{'kind': kind});

@@ -71,6 +71,11 @@ function fieldForCircuit(group) {
   }
 }
 
+/** A stored YYYY-MM-DD day, or '' for anything else. */
+function _dayKey(raw) {
+  return typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : '';
+}
+
 function totalAup(progress) {
   return CIRCUIT_FIELDS.reduce((sum, field) => sum + int(progress[field]), 0);
 }
@@ -179,6 +184,18 @@ function baseProgress(data = {}) {
       ? data.rewardedAdDayKey.slice(0, 16)
       : '',
     rewardedAdDayCount: int(data.rewardedAdDayCount, { min: 0, max: 100000 }),
+    // The daily tribute (tribute.js).
+    tributeStreak: int(data.tributeStreak, { min: 0, max: MAX_COUNTER }),
+    tributeLastDayKey: _dayKey(data.tributeLastDayKey),
+    tributeLastClaimAtMs: int(data.tributeLastClaimAtMs, {
+      min: 0,
+      max: MAX_TIMESTAMP_MS,
+    }),
+    tributeLastAmount: int(data.tributeLastAmount, {
+      min: 0,
+      max: MAX_AUP_PER_CIRCUIT,
+    }),
+    tributeClaims: int(data.tributeClaims, { min: 0, max: MAX_COUNTER }),
     entryReservations: Array.isArray(data.entryReservations)
       ? data.entryReservations
         .map(_reservation)
@@ -210,6 +227,10 @@ function snapshot(progress, catalogVersion = ECONOMY_CATALOG_VERSION) {
     abandonedGames: progress.abandonedGames,
     matchesPlayed: progress.matchesPlayed,
     finishPermilleSum: progress.finishPermilleSum,
+    tributeStreak: progress.tributeStreak,
+    tributeLastDayKey: progress.tributeLastDayKey,
+    tributeLastClaimAtMs: progress.tributeLastClaimAtMs,
+    tributeLastAmount: progress.tributeLastAmount,
     catalogVersion,
   };
 }
@@ -369,7 +390,9 @@ module.exports = {
   circuit,
   clamp,
   cleanId,
+  dayKeyUtc,
   deductAup,
+  fieldForCircuit,
   finishPermille,
   findReservation,
   grantRegisteredStarterAup,

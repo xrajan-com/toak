@@ -28,6 +28,22 @@ const STARTER_AUP_PER_CIRCUIT = REGISTERED_STARTER_AUP / 5;
 // 10,000 are topped up too. Applied once per wallet; never lowers a balance.
 const STARTER_VERSION = 2;
 
+// The daily tribute (November 2026): a gift for coming back, paid once per
+// local calendar day into the circuit the player last entered a fort in.
+// Claiming on consecutive days climbs the ladder; a missed day starts it
+// again at day 1, and day 7 onwards pays the top step every day. A day 1 is
+// about half a typical fort entry, a day 7 about three: a reason to come back
+// and play a fort, not a way to skip the free forts. Mirrored by
+// kDailyTributeLadder in lib/core/daily_tribute.dart.
+const DAILY_TRIBUTE_LADDER = Object.freeze([
+  50000, 75000, 100000, 125000, 150000, 200000, 300000,
+]);
+// A claim needs at least this long since the last one, whatever the
+// calendar says, so changing the phone's time zone cannot pay twice in a row.
+const DAILY_TRIBUTE_MIN_GAP_MS = 4 * 60 * 60 * 1000;
+// UTC-12 to UTC+14, in minutes; anything else is treated as UTC.
+const MAX_TZ_OFFSET_MINUTES = 14 * 60;
+
 // What a game can cost. The entry fee is the most a player can lose: a
 // finish outside the prizes, leaving the table, and a game interrupted
 // before it finished all cost the fee and nothing more. Quick Game is
@@ -103,6 +119,8 @@ function normalizeCircuitAup(data = {}) {
 module.exports = {
   AUP_PER_AURA,
   AURA_MILLI_PER_AURA,
+  DAILY_TRIBUTE_LADDER,
+  DAILY_TRIBUTE_MIN_GAP_MS,
   ECONOMY_RULES_VERSION,
   ENTRY_RECOVERY_DELAY_MS,
   ENTRY_RESERVATION_TTL_MS,
@@ -113,6 +131,7 @@ module.exports = {
   MAX_STORED_ENTRY_RESERVATIONS,
   MAX_TOTAL_AUP,
   MAX_TOTAL_AURA_MILLI,
+  MAX_TZ_OFFSET_MINUTES,
   MIGRATION_COMPLETE_VERSION,
   REGISTERED_STARTER_AUP,
   STARTER_AUP_PER_CIRCUIT,

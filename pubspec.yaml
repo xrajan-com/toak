@@ -2,7 +2,7 @@ name: ten_of_a_kind_poker
 description: X Poker, an offline Texas Hold'em game
 publish_to: 'none'
 
-version: 1.2.10+92
+version: 1.2.10+93
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -49,6 +49,10 @@ dependencies:
   gal: ^2.3.2
   # The store's own rating sheet after a fort or title win.
   in_app_review: ^2.0.10
+  # Daily tribute and comeback reminders, scheduled on the phone
+  # (lib/services/return_reminders.dart). 17.x is the line that resolves with
+  # timezone 0.9 and the 2024 Firebase plugins pinned above.
+  flutter_local_notifications: ^17.2.1
 
   # Icons / cards
   cupertino_icons: ^1.0.6

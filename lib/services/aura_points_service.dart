@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ten_of_a_kind_poker/config/campaign_events.dart' as ce;
 import 'package:ten_of_a_kind_poker/config/venues.dart' show VenueGroup;
 import 'package:ten_of_a_kind_poker/core/aup.dart' as aup;
+import 'package:ten_of_a_kind_poker/core/daily_tribute.dart';
 import 'package:ten_of_a_kind_poker/game/models.dart' show PayoutTable;
 import 'package:ten_of_a_kind_poker/services/economy_api_service.dart';
 
@@ -272,6 +273,10 @@ class AuraPointsService extends ChangeNotifier {
   int _matchesPlayed = 0;
   int _finishPermilleSum = 0;
   bool _registeredStarterGranted = false;
+  // The daily tribute, as the server last reported it.
+  int _tributeStreak = 0;
+  String _tributeLastDayKey = '';
+  bool _tributeClaiming = false;
   final Set<String> _purgedStorageOwners = <String>{};
   List<_PendingCampaignWin> _pendingCampaignWins = <_PendingCampaignWin>[];
   List<EntryReservation> _entryReservations = <EntryReservation>[];
@@ -321,6 +326,42 @@ class AuraPointsService extends ChangeNotifier {
             event.action == 'campaign_result' ||
             event.action == 'campaign_abandoned',
       );
+  /// The daily tribute needs a server wallet: any account, guests included,
+  /// but not a local guest with no account at all.
+  bool get dailyTributeAvailable =>
+      _uid != null && _usingServerAuthority && !_remoteHydrating;
+
+  bool get isClaimingDailyTribute => _tributeClaiming;
+
+  /// The tribute as the player sees it at [now] (default: this moment).
+  DailyTributeState dailyTribute([DateTime? now]) => DailyTributeState(
+        lastStreak: _tributeStreak,
+        lastDayKey: _tributeLastDayKey,
+        now: now ?? DateTime.now(),
+      );
+
+  /// Claims today's tribute. Returns null when there is no server wallet.
+  Future<DailyTributeClaim?> claimDailyTribute({DateTime? now}) async {
+    if (!dailyTributeAvailable || _tributeClaiming) return null;
+    _tributeClaiming = true;
+    notifyListeners();
+    try {
+      final DateTime at = now ?? DateTime.now();
+      final result = await _economyApi.claimDailyTribute(
+        tzOffsetMinutes: at.timeZoneOffset.inMinutes,
+      );
+      final progress = result.progress;
+      if (progress != null) {
+        _applyAuthoritativeSnapshot(progress);
+        await _persist(syncRemote: false);
+      }
+      return result;
+    } finally {
+      _tributeClaiming = false;
+      notifyListeners();
+    }
+  }
+
   String? takeEntryRecoveryNotice() {
     final notice = _entryRecoveryNotice;
     _entryRecoveryNotice = null;
@@ -716,6 +757,8 @@ class AuraPointsService extends ChangeNotifier {
     _matchesPlayed = snapshot.matchesPlayed;
     _finishPermilleSum = snapshot.finishPermilleSum;
     _registeredStarterGranted = snapshot.registeredStarterGranted;
+    _tributeStreak = snapshot.tributeStreak;
+    _tributeLastDayKey = snapshot.tributeLastDayKey;
     _hydratingRemote = false;
   }
 
@@ -827,6 +870,8 @@ class AuraPointsService extends ChangeNotifier {
   }
 
   void _resetState() {
+    _tributeStreak = 0;
+    _tributeLastDayKey = '';
     _indiaAup = 0;
     _internationalAup = 0;
     _euroAup = 0;

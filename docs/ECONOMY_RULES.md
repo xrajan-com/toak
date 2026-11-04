@@ -29,6 +29,20 @@ starter are topped up to it once, and no balance is ever lowered
 also has one free fort, the way back after a bad run: a player short of AUP
 for a paid fort is offered it straight from the "Need more AUP?" dialog.
 
+**Daily tribute (build 93 on).** Once per calendar day (the phone's day,
+from the UTC offset it sends), any account with a server wallet can claim
+AUP on the home screen: 50,000, 75,000, 100,000, 125,000, 150,000, 200,000
+and 300,000 on days 1-7 of a run of consecutive days, then 300,000 every
+day. A missed day starts the run again at day 1. It is paid into the circuit
+of the player's latest fort entry (Indian Ocean before the first), so it
+lands where AUP is being spent. Claims need four hours between them whatever
+the calendar says, so changing time zone cannot pay twice
+(`DAILY_TRIBUTE_LADDER` in `backend/src/economy/constants.js`, mirrored by
+`kDailyTributeLadder` in `lib/core/daily_tribute.dart`;
+`test/daily_tribute_test.dart` checks they match). A day 1 is about half a
+typical fort entry and a day 7 about three: a reason to come back and play,
+not a way around the free forts.
+
 Forts pay 60/25/15% of their prize pool to 1st, 2nd and 3rd
 (`kFortPayoutShares`). Main events are winner takes all. Wallet caps: 20 Aura
 per circuit, 100 Aura in all.
@@ -50,6 +64,9 @@ another.
 player is told about change.
 
 ## History
+
+**November 2026 (build 93).** The daily tribute (above), with optional
+reminders on the phone when it is ready.
 
 **October 2026 (build 92).** The starter went from 10,000 AUP in all (2,000
 a circuit, less than the cheapest paid fort at 52,000) to 400,000 a circuit,
