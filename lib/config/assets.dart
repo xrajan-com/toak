@@ -4,7 +4,7 @@ class AppAssets {
   static const String renoirDealer = 'assets/images/renoir_tux.png';
 
   // 🔹 Cards
-  static const String cardBack = 'assets/images/cards/back_custom_01.webp';
+  static const String cardBack = 'assets/images/cards/back_custom_07.webp';
   static const String cardBasePath = 'assets/images/cards/';
   static String card(String rank, String suit) =>
       '$cardBasePath${rank}_of_$suit.png';

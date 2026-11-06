@@ -394,6 +394,9 @@ class TableFelt extends StatelessWidget {
   final Widget? bottomRailChild;
   final double bottomRailYOffset;
   final String? watermarkPngAsset, watermarkSvgAsset;
+
+  /// A drawn watermark (the fort emblem); used instead of any asset.
+  final Widget? watermarkChild;
   final KingdomMark? watermarkKingdom;
   final String? monumentVenueName;
   final bool tintWhite;
@@ -418,6 +421,7 @@ class TableFelt extends StatelessWidget {
     this.bottomRailYOffset = 0.0,
     this.watermarkPngAsset,
     this.watermarkSvgAsset,
+    this.watermarkChild,
     this.watermarkKingdom,
     this.monumentVenueName,
     this.tintWhite = false,
@@ -478,7 +482,20 @@ class TableFelt extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  if (watermarkPngAsset != null || resolvedSvg != null)
+                  if (watermarkChild != null)
+                    Padding(
+                      padding: watermarkPadding + EdgeInsets.all(railWidth),
+                      child: IgnorePointer(
+                        child: Align(
+                          alignment: watermarkAlignment,
+                          child: Opacity(
+                            opacity: watermarkOpacity,
+                            child: watermarkChild,
+                          ),
+                        ),
+                      ),
+                    )
+                  else if (watermarkPngAsset != null || resolvedSvg != null)
                     Padding(
                       padding: watermarkPadding + EdgeInsets.all(railWidth),
                       child: _SafeWatermark(

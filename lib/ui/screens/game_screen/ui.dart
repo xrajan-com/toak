@@ -11,6 +11,10 @@ import 'package:flutter/widgets.dart' show SingleTickerProviderStateMixin;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:ten_of_a_kind_poker/core/sound_fx.dart';
+import 'package:ten_of_a_kind_poker/config/venues.dart' show feltHighlight;
+import 'package:ten_of_a_kind_poker/ui/art/fort_backdrop.dart';
+import 'package:ten_of_a_kind_poker/ui/art/fort_emblem.dart';
+import 'package:ten_of_a_kind_poker/ui/art/fort_style.dart';
 
 import '../../../game/core.dart' as gc show Card, Rank, Suit, rankValue;
 import '../../../game/game_engine.dart' show GameEngine, GameEngineBotLogic;
@@ -381,6 +385,10 @@ class GameScreenUI extends StatefulWidget {
   final double deckScale; // compat (unused)
   final bool playIntroWelcome;
 
+  /// Renoir's opening line over the players as the game starts
+  /// (lib/config/story.dart).
+  final String welcomeTitle;
+
   // Betting controls
   final double raiseAmount, minRaise, maxRaise;
   final bool canCallOrCheck, canRaise, canAllIn, canFold;
@@ -492,6 +500,7 @@ class GameScreenUI extends StatefulWidget {
     this.deckOffset,
     this.deckScale = 1.0,
     this.playIntroWelcome = true,
+    this.welcomeTitle = 'Ladies and gentlemen, welcome to the table.',
     this.onRenoirShuffle,
   });
 
@@ -2105,7 +2114,29 @@ class _GameScreenUIState extends State<GameScreenUI>
                           ).center,
                       ];
 
-                return Center(
+                // The fort behind the table, laid out around where the
+                // table lands once lifted and scaled (docs/ART_DIRECTION.md).
+                final Rect tableOnScreen = Rect.fromCenter(
+                  center: Offset(c.maxWidth / 2, c.maxHeight / 2 + tableLiftPx),
+                  width: ui.tableW * ui.tableVisualScale,
+                  height: tableHeight * ui.tableVisualScale,
+                );
+                final FortStyle fortStyle =
+                    fortStyleForKingdom(widget.venueName);
+
+                return Stack(
+                  children: [
+                    Positioned.fill(
+                      child: FortBackdrop(
+                        geometry: FortGeometry.table(
+                          Size(c.maxWidth, c.maxHeight),
+                          table: tableOnScreen,
+                          style: fortStyle,
+                        ),
+                        bannerColors: <Color>[feltHighlight(widget.felt)],
+                      ),
+                    ),
+                    Center(
                   child: Transform.translate(
                     offset: Offset(0, tableLiftPx),
                     child: Transform.scale(
@@ -2128,6 +2159,13 @@ class _GameScreenUIState extends State<GameScreenUI>
                                   (widget.monumentPath?.isNotEmpty ?? false)
                                       ? widget.monumentPath
                                       : null,
+                              watermarkChild: FortEmblem(
+                                style: fortStyle,
+                                color: _watermarkColorForFelt(widget.felt),
+                                seed: stableArtSeed(
+                                  widget.monumentPath ?? widget.venueName,
+                                ),
+                              ),
                               watermarkOpacity: 0.18,
                               watermarkAlignment: Alignment.center,
                               watermarkColor:
@@ -2185,6 +2223,7 @@ class _GameScreenUIState extends State<GameScreenUI>
                                     _renoirLayerKey, // <— allows hide/shuffle/next-hand
                                 renoirAsset: widget.renoirAsset,
                                 playIntroWelcome: widget.playIntroWelcome,
+                                welcomeTitle: widget.welcomeTitle,
                                 showDealerBadge: widget.showDealerBadge,
                                 renoirRadius: ui.renoirR,
                                 renoirLiftPx: widget.renoirLiftPx,
@@ -2347,6 +2386,8 @@ class _GameScreenUIState extends State<GameScreenUI>
                       ),
                     ),
                   ),
+                    ),
+                  ],
                 );
               },
             );

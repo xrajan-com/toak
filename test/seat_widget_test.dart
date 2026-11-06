@@ -4,9 +4,8 @@ import 'package:ten_of_a_kind_poker/ui/screens/game_screen/cards.dart';
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen/players.dart';
 
 void main() {
-  // Since the nameplate became a turn signal, the visible plate belongs to
-  // the seat that is to act. The accessible name and stack are still
-  // unconditional, and are asserted below via semantics.
+  // Every opponent shows a name-and-stack plate; the seat to act gets a
+  // blue rim. The accessible name and stack are asserted via semantics.
   testWidgets('the seat to act shows name and stack, and tap reveals details',
       (tester) async {
     // The plate is gated on ActionGate as well as isTurn, and the gate is a
@@ -69,5 +68,45 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('Riya'), findsOneWidget);
     expect(find.text('2.4K'), findsOneWidget);
+  });
+
+  testWidgets('a seat that is not acting still shows its name and stack',
+      (tester) async {
+    final Seat seat = Seat(
+      name: 'Kofi Adeyemi',
+      chips: 9800,
+      startChips: 10000,
+      bet: 0,
+      avatarKey: 'bot',
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Material(
+          color: Colors.black,
+          child: Center(
+            child: SizedBox(
+              width: 88,
+              height: 88,
+              child: SeatWidget(
+                seat: seat,
+                isLeader: false,
+                growWhenOthersGone: false,
+                isTurn: false,
+                isSB: false,
+                isBB: false,
+                fallbackAvatarAsset: '',
+                seatMaxWidth: 156,
+                seatHeight: 88,
+                showTopBubble: false,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Kofi'), findsOneWidget);
+    expect(find.text('9.8K'), findsOneWidget);
   });
 }

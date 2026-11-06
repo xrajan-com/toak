@@ -52,6 +52,7 @@ class GameTableLayer extends StatefulWidget {
     required this.felt,
     required this.wood,
     this.watermarkSvgAsset,
+    this.watermarkChild,
     this.watermarkOpacity = 0.18,
     this.watermarkAlignment = Alignment.center,
     this.tintWhite = false,
@@ -113,6 +114,9 @@ class GameTableLayer extends StatefulWidget {
   final Color felt;
   final WoodType wood;
   final String? watermarkSvgAsset;
+
+  /// A drawn watermark (the fort emblem), used instead of the SVG.
+  final Widget? watermarkChild;
   final double watermarkOpacity;
   final Alignment watermarkAlignment;
   final bool tintWhite;
@@ -298,6 +302,7 @@ class _GameTableLayerState extends State<GameTableLayer> {
                         widget.watermarkSvgAsset!.isNotEmpty)
                     ? widget.watermarkSvgAsset
                     : null,
+                watermarkChild: widget.watermarkChild,
                 watermarkOpacity: widget.watermarkOpacity,
                 watermarkAlignment: widget.watermarkAlignment,
                 tintWhite: widget.tintWhite,

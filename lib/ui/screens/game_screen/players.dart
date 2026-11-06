@@ -604,28 +604,31 @@ class _SeatWidgetState extends State<SeatWidget> with TickerProviderStateMixin {
                                 isTurn: canShowTurn,
                               ),
                             ),
-                          // The plate is now a turn indicator, not permanent
-                          // furniture: one seat wears it at a time, and never
-                          // the hero — their name and stack already live in
-                          // the HUD and action bar, and the plate sat on top
-                          // of their own hole cards.
-                          if (!isBusted &&
-                              !showExpandedSeat &&
-                              canShowTurn &&
-                              !seat.isHero)
+                          // Every opponent wears a name-and-stack plate all
+                          // the time: stacks are what a player reads the table
+                          // by. The seat to act gets a brand-blue rim, a
+                          // folded seat a dimmed plate. Never the hero: their
+                          // stack lives in the HUD and action bar, and the
+                          // plate would sit on their own hole cards.
+                          if (!isBusted && !showExpandedSeat && !seat.isHero)
                             Positioned(
                               left: -(pillH * 0.14),
                               right: -(pillH * 0.14),
                               bottom: -2,
                               child: IgnorePointer(
-                                child: _SeatStackBadge(
-                                  name: _seatFirstName(seat.name),
-                                  stackLabel: _formatAmount(seat.chips),
-                                  betLabel: seat.contributedThisHand > 0
-                                      ? _formatAmount(
-                                          seat.contributedThisHand,
-                                        )
-                                      : null,
+                                child: AnimatedOpacity(
+                                  opacity: isFolded ? 0.55 : 1.0,
+                                  duration: _kDefaultFadeDuration,
+                                  child: _SeatStackBadge(
+                                    name: _seatFirstName(seat.name),
+                                    stackLabel: _formatAmount(seat.chips),
+                                    betLabel: seat.contributedThisHand > 0
+                                        ? _formatAmount(
+                                            seat.contributedThisHand,
+                                          )
+                                        : null,
+                                    acting: canShowTurn,
+                                  ),
                                 ),
                               ),
                             ),
@@ -1436,11 +1439,15 @@ class _SeatStackBadge extends StatelessWidget {
     required this.name,
     required this.stackLabel,
     this.betLabel,
+    this.acting = false,
   });
 
   final String name;
   final String stackLabel;
   final String? betLabel;
+
+  /// This seat is to act: the plate's rim turns brand blue.
+  final bool acting;
 
   @override
   Widget build(BuildContext context) {
@@ -1449,8 +1456,10 @@ class _SeatStackBadge extends StatelessWidget {
         color: Colors.black.withValues(alpha: 0.84),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.22),
-          width: 0.8,
+          color: acting
+              ? const Color(0xFF00B5C8)
+              : Colors.white.withValues(alpha: 0.22),
+          width: acting ? 1.4 : 0.8,
         ),
         boxShadow: const <BoxShadow>[
           BoxShadow(

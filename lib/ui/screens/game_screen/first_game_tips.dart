@@ -10,11 +10,10 @@ enum CoachTip { yourTurn, theFlop, handOver }
 
 extension CoachTipText on CoachTip {
   String get text => switch (this) {
-        CoachTip.yourTurn => 'Your turn. Fold to sit this hand out, Call to '
-            'match the bet, or Raise to bet more. The best hand at the end '
-            'wins the pot.',
-        CoachTip.theFlop => 'These cards are shared by everyone. Your hand is '
-            'the best five cards from your two plus the table.',
+        CoachTip.yourTurn => 'Your turn. Fold sits this hand out, Call matches '
+            'the bet, Raise bets more. Best hand at the end wins the pot.',
+        CoachTip.theFlop => 'These cards are shared. Your hand is the best five '
+            'from your two plus the table.',
         CoachTip.handOver => 'Win chips hand by hand. The last player with '
             'chips wins the table, and every fort you win moves you along '
             'the journey.',

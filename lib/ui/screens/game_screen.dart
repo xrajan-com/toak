@@ -23,6 +23,7 @@ import 'package:ten_of_a_kind_poker/ui/screens/game_screen/first_game_tips.dart'
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen/share_hand.dart';
 import 'package:ten_of_a_kind_poker/config/kingdom_titles.dart'
     show kingdomTitleFor;
+import 'package:ten_of_a_kind_poker/config/story.dart';
 import 'package:ten_of_a_kind_poker/features/venue/game_mode.dart';
 import 'package:ten_of_a_kind_poker/game/bot/policy_model.dart'
     show BotLearnedPolicyRegistry, BotLearnedPolicyWeights, BotPolicyAdjustment;
@@ -608,6 +609,10 @@ class _GameScreenState extends State<GameScreen>
   final Map<int, int> _bustRankBySeat = <int, int>{};
   ({int seat, String line})? _pendingTalk;
   bool _rivalNotesShown = false;
+
+  // At a title match, the player holding the kingdom's crown
+  // (lib/config/story.dart, docs/STORY.md).
+  String? _titleHolderName;
 
   // Guided first game (game_screen/first_game_tips.dart).
   late final bool _coachTipsActive = FirstGameTips.instance.pending;
@@ -2331,7 +2336,23 @@ class _GameScreenState extends State<GameScreen>
             .where((s) => s.aura >= 99 && !s.busted)
             .toList(growable: false)
           ..shuffle(_rng);
-        picked.addAll(elites.take(eliteNeeded));
+        // The kingdom's title holder sits first: the same player every
+        // time, so the crown has a face (lib/config/story.dart).
+        final String? holder = StoryLines.pickTitleHolder(
+          elites.map((s) => s.name),
+          vname,
+        );
+        if (holder != null) {
+          final Seat holderSeat =
+              elites.firstWhere((s) => s.name.trim() == holder);
+          picked.add(holderSeat);
+          _titleHolderName = holderSeat.name;
+        }
+        picked.addAll(
+          elites
+              .where((s) => !picked.contains(s))
+              .take(math.max(0, eliteNeeded - picked.length)),
+        );
 
         // Defensive: if the pool ever has fewer elites than needed, top up by aura.
         if (picked.length < eliteNeeded) {
@@ -2361,6 +2382,21 @@ class _GameScreenState extends State<GameScreen>
       picked.addAll(remaining.take(botsNeeded - picked.length));
       for (final s in picked) {
         s.rivalNote = RivalService.instance.noteFor(s.name);
+      }
+      // The title holder is announced over their seat at the first hand.
+      final String? holderName = _titleHolderName;
+      final VenueGroup? titleGroup = widget.campaignGroup;
+      if (isTitleGame && holderName != null && titleGroup != null) {
+        final String crown =
+            kingdomTitleFor(group: titleGroup, kingdomName: vname);
+        if (crown.trim().isNotEmpty && crown != 'N/A') {
+          for (final s in picked) {
+            if (s.name == holderName) {
+              s.rivalNote =
+                  StoryLines.titleHolderNote(title: crown, kingdom: vname);
+            }
+          }
+        }
       }
       picked.shuffle(_rng); // randomize seating order
     }
@@ -3058,6 +3094,31 @@ class _GameScreenState extends State<GameScreen>
         _showSeatNote(seat, 'Read: $read', SeatNoteKind.info);
       });
     }
+  }
+
+  /// Renoir's opening line for this table, shown over the players as the
+  /// game starts (lib/config/story.dart).
+  String get _storyOpeningLine {
+    final String kingdom = (widget.venue?.name ?? '').toString().trim();
+    final VenueGroup? group = widget.campaignGroup;
+    final String? crown = (group == null || kingdom.isEmpty)
+        ? null
+        : kingdomTitleFor(group: group, kingdomName: kingdom);
+    final int? idx = widget.campaignSubKingdomIndex;
+    final String? fort = (group != null &&
+            !widget.campaignMainEvent &&
+            idx != null &&
+            idx > 0)
+        ? subKingdomDisplayName(group: group, kingdomName: kingdom, index: idx)
+        : null;
+    return StoryLines.openingLine(
+      kingdom: kingdom,
+      title: crown,
+      fortName: fort,
+      titleMatch: group != null && widget.campaignMainEvent,
+      titleHolder: _titleHolderName,
+      firstTable: _coachTipsActive,
+    );
   }
 
   /// At the first hand, shows each returning rival's record over their seat.
@@ -4672,6 +4733,7 @@ class _GameScreenState extends State<GameScreen>
           wood: _currentWood,
           monumentPath: _monumentPath,
           renoirAsset: renoirNow,
+          welcomeTitle: _storyOpeningLine,
           defaultProfileAsset: _defaultProfile,
           cardBackAsset: CardBackTheme.current,
           pot: pot,
@@ -4733,17 +4795,31 @@ class _GameScreenState extends State<GameScreen>
           dealerAvatarStyle: _dealerAvatarStyle,
               ),
             ),
+            // First-game tips sit in the band above the rail, between the
+            // kingdom and to-call pills, over the dealer: never over the
+            // board or anyone's cards.
             if (_coachTip case final CoachTip tip)
               Positioned(
                 left: 16,
                 right: 16,
-                top: MediaQuery.paddingOf(context).top + 64,
-                child: Center(
-                  child: CoachTipBanner(
-                    key: ValueKey<CoachTip>(tip),
-                    text: tip.text,
-                    onDismiss: _dismissCoachTip,
-                  ),
+                top: MediaQuery.paddingOf(context).top + 6,
+                child: LayoutBuilder(
+                  builder: (BuildContext context, BoxConstraints box) {
+                    // The game's own canvas, not the device screen.
+                    final double sceneWidth = box.maxWidth + 32;
+                    return Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: math.min(440.0, sceneWidth * 0.44),
+                        ),
+                        child: CoachTipBanner(
+                          key: ValueKey<CoachTip>(tip),
+                          text: tip.text,
+                          onDismiss: _dismissCoachTip,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
           ],
