@@ -170,7 +170,7 @@ const List<VenueTheme> internationalVenues = [
       felt: kFeltSkyBlue,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/africa.png',
+      flagAsset: 'assets/images/flags/world/eg.png',
       timeZoneId: 'Africa/Cairo'),
   VenueTheme(
       name: 'Sub-Saharan Africa',
@@ -194,7 +194,7 @@ const List<VenueTheme> internationalVenues = [
       felt: kFeltDeepPurple,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/arabia.png',
+      flagAsset: 'assets/images/flags/world/ir.png',
       timeZoneId: 'Asia/Tehran'),
   VenueTheme(
       name: 'Central Asia',
@@ -202,7 +202,7 @@ const List<VenueTheme> internationalVenues = [
       felt: kFeltDarkGreen,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/russia.png',
+      flagAsset: 'assets/images/flags/world/uz.png',
       timeZoneId: 'Asia/Tashkent'),
   VenueTheme(
       name: 'Indian Ocean Isles',
@@ -210,7 +210,7 @@ const List<VenueTheme> internationalVenues = [
       felt: kFeltTurmeric,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/oceania/indian_ocean.png',
+      flagAsset: 'assets/images/flags/world/lk.png',
       timeZoneId: 'Indian/Mauritius'),
   VenueTheme(
       name: 'Atlantic Isles',
@@ -218,7 +218,7 @@ const List<VenueTheme> internationalVenues = [
       felt: kFeltMagenta,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/oceania/british_isles.png',
+      flagAsset: 'assets/images/flags/world/bm.png',
       timeZoneId: 'Atlantic/Bermuda'),
   VenueTheme(
       name: 'French & Dutch Isles',
@@ -226,7 +226,7 @@ const List<VenueTheme> internationalVenues = [
       felt: kFeltOrange,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/oceania/french_isles.png',
+      flagAsset: 'assets/images/flags/world/cw.png',
       timeZoneId: 'America/Guadeloupe'),
   VenueTheme(
       name: 'Pacific',
@@ -234,7 +234,7 @@ const List<VenueTheme> internationalVenues = [
       felt: kFeltNavyBlue,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/oceania/pacific.png',
+      flagAsset: 'assets/images/flags/world/nz.png',
       timeZoneId: 'Pacific/Auckland'),
   VenueTheme(
       name: 'Arctic',
@@ -242,7 +242,7 @@ const List<VenueTheme> internationalVenues = [
       felt: kFeltTeal,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/oceania/alaska.png',
+      flagAsset: 'assets/images/flags/world/us.png',
       timeZoneId: 'America/Anchorage'),
 ];
 
@@ -253,7 +253,7 @@ const List<VenueTheme> euroVenues = [
       felt: kFeltNavyBlue,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/euro/britain.png',
+      flagAsset: 'assets/images/flags/world/gb_eng.png',
       timeZoneId: 'Europe/London'),
   VenueTheme(
       name: 'France',
@@ -261,7 +261,7 @@ const List<VenueTheme> euroVenues = [
       felt: kFeltSkyBlue,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/euro/france.png',
+      flagAsset: 'assets/images/flags/world/fr.png',
       timeZoneId: 'Europe/Paris'),
   VenueTheme(
       name: 'Italy',
@@ -269,7 +269,7 @@ const List<VenueTheme> euroVenues = [
       felt: kFeltLime,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/euro/italy.png',
+      flagAsset: 'assets/images/flags/world/it.png',
       timeZoneId: 'Europe/Rome'),
   VenueTheme(
       name: 'Iberia',
@@ -277,7 +277,7 @@ const List<VenueTheme> euroVenues = [
       felt: kFeltRed,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/euro/spain.png',
+      flagAsset: 'assets/images/flags/world/es.png',
       timeZoneId: 'Europe/Madrid'),
   VenueTheme(
       name: 'Low Countries',
@@ -285,7 +285,7 @@ const List<VenueTheme> euroVenues = [
       felt: kFeltDeepPurple,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/euro/north_sea.png',
+      flagAsset: 'assets/images/flags/world/nl.png',
       timeZoneId: 'Europe/Amsterdam'),
   VenueTheme(
       name: 'Scandinavia',
@@ -301,7 +301,7 @@ const List<VenueTheme> euroVenues = [
       felt: kFeltTurmeric,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/europe.png',
+      flagAsset: 'assets/images/flags/world/eu.png',
       timeZoneId: 'Europe/Vienna'),
   VenueTheme(
       name: 'Balkans & Mediterranean',
@@ -309,7 +309,7 @@ const List<VenueTheme> euroVenues = [
       felt: kFeltMagenta,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/euro/mediterranean.png',
+      flagAsset: 'assets/images/flags/world/hr.png',
       timeZoneId: 'Europe/Athens'),
   VenueTheme(
       name: 'Baltic Marches',
@@ -317,7 +317,7 @@ const List<VenueTheme> euroVenues = [
       felt: kFeltOrange,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/euro/baltic_marches.png',
+      flagAsset: 'assets/images/flags/world/ua.png',
       timeZoneId: 'Europe/Riga'),
   VenueTheme(
       name: 'Russia & Siberia',
@@ -325,7 +325,7 @@ const List<VenueTheme> euroVenues = [
       felt: kFeltTeal,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/euro/russia_siberia.png',
+      flagAsset: 'assets/images/flags/world/ru.png',
       timeZoneId: 'Europe/Moscow'),
 ];
 
@@ -336,7 +336,7 @@ const List<VenueTheme> oceaniaVenues = [
       felt: kFeltNavyBlue,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/china.png',
+      flagAsset: 'assets/images/flags/world/cn.png',
       timeZoneId: 'Asia/Shanghai'),
   VenueTheme(
       name: 'Japan',
@@ -344,7 +344,7 @@ const List<VenueTheme> oceaniaVenues = [
       felt: kFeltSkyBlue,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/japan.png',
+      flagAsset: 'assets/images/flags/world/jp.png',
       timeZoneId: 'Asia/Tokyo'),
   VenueTheme(
       name: 'Korea',
@@ -352,7 +352,7 @@ const List<VenueTheme> oceaniaVenues = [
       felt: kFeltLime,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/china.png',
+      flagAsset: 'assets/images/flags/world/kr.png',
       timeZoneId: 'Asia/Seoul'),
   VenueTheme(
       name: 'Taiwan',
@@ -360,7 +360,7 @@ const List<VenueTheme> oceaniaVenues = [
       felt: kFeltRed,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/oceania/dragonland.png',
+      flagAsset: 'assets/images/flags/world/tw.png',
       timeZoneId: 'Asia/Taipei'),
   VenueTheme(
       name: 'Vietnam',
@@ -368,7 +368,7 @@ const List<VenueTheme> oceaniaVenues = [
       felt: kFeltDeepPurple,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/asean.png',
+      flagAsset: 'assets/images/flags/world/vn.png',
       timeZoneId: 'Asia/Ho_Chi_Minh'),
   VenueTheme(
       name: 'Mekong',
@@ -376,7 +376,7 @@ const List<VenueTheme> oceaniaVenues = [
       felt: kFeltDarkGreen,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/asean.png',
+      flagAsset: 'assets/images/flags/world/th.png',
       timeZoneId: 'Asia/Bangkok'),
   VenueTheme(
       name: 'Philippines',
@@ -384,7 +384,7 @@ const List<VenueTheme> oceaniaVenues = [
       felt: kFeltTurmeric,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/oceania/american_isles.png',
+      flagAsset: 'assets/images/flags/world/ph.png',
       timeZoneId: 'Asia/Manila'),
   VenueTheme(
       name: 'Straits',
@@ -392,7 +392,7 @@ const List<VenueTheme> oceaniaVenues = [
       felt: kFeltMagenta,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/oceania/straits.png',
+      flagAsset: 'assets/images/flags/world/my.png',
       timeZoneId: 'Asia/Singapore'),
   VenueTheme(
       name: 'Indonesia',
@@ -400,7 +400,7 @@ const List<VenueTheme> oceaniaVenues = [
       felt: kFeltOrange,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/oceania/straits.png',
+      flagAsset: 'assets/images/flags/world/id.png',
       timeZoneId: 'Asia/Jakarta'),
   VenueTheme(
       name: 'Australia',
@@ -408,7 +408,7 @@ const List<VenueTheme> oceaniaVenues = [
       felt: kFeltTeal,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/australia.png',
+      flagAsset: 'assets/images/flags/world/au.png',
       timeZoneId: 'Australia/Sydney'),
 ];
 
@@ -419,7 +419,7 @@ const List<VenueTheme> northAmericanVenues = [
       felt: kFeltNavyBlue,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/us/canada.png',
+      flagAsset: 'assets/images/flags/world/ca.png',
       timeZoneId: 'America/Toronto'),
   VenueTheme(
       name: 'Northeast USA',
@@ -459,7 +459,7 @@ const List<VenueTheme> northAmericanVenues = [
       felt: kFeltDarkGreen,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/us/texas.png',
+      flagAsset: 'assets/images/flags/world/mx.png',
       timeZoneId: 'America/Mexico_City'),
   VenueTheme(
       name: 'Caribbean',
@@ -467,7 +467,7 @@ const List<VenueTheme> northAmericanVenues = [
       felt: kFeltTurmeric,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/oceania/caribbean.png',
+      flagAsset: 'assets/images/flags/world/pr.png',
       timeZoneId: 'America/Puerto_Rico'),
   VenueTheme(
       name: 'Brazil',
@@ -475,7 +475,7 @@ const List<VenueTheme> northAmericanVenues = [
       felt: kFeltMagenta,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/amazon.png',
+      flagAsset: 'assets/images/flags/world/br.png',
       timeZoneId: 'America/Sao_Paulo'),
   VenueTheme(
       name: 'Andes',
@@ -483,7 +483,7 @@ const List<VenueTheme> northAmericanVenues = [
       felt: kFeltOrange,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/us/colorado.png',
+      flagAsset: 'assets/images/flags/world/ve.png',
       timeZoneId: 'America/Lima'),
   VenueTheme(
       name: 'Southern Cone',
@@ -491,9 +491,24 @@ const List<VenueTheme> northAmericanVenues = [
       felt: kFeltTeal,
       accent: _red,
       accentAlt: _blue,
-      flagAsset: 'assets/images/flags/us/virginia.png',
+      flagAsset: 'assets/images/flags/world/cl.png',
       timeZoneId: 'America/Argentina/Buenos_Aires'),
 ];
+
+/// The flag of the kingdom called [name], in any circuit and any letter
+/// case, or null when no kingdom has that name. Lists that show a player's
+/// kingdom use this before their own older tables, so a kingdom's flag is
+/// the same everywhere.
+String? kingdomFlagAsset(String name) {
+  final String wanted = name.trim().toLowerCase();
+  if (wanted.isEmpty) return null;
+  for (final VenueGroup group in kVenueGroups) {
+    for (final VenueTheme venue in venuesForGroup(group)) {
+      if (venue.name.toLowerCase() == wanted) return venue.flagAsset;
+    }
+  }
+  return null;
+}
 
 List<VenueTheme> venuesForGroup(VenueGroup group) => switch (group) {
       VenueGroup.international => internationalVenues,

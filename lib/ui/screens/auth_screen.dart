@@ -11,6 +11,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 
 import 'package:ten_of_a_kind_poker/ui/theme/colors.dart';
+import 'package:ten_of_a_kind_poker/config/third_party_notices.dart'
+    show kFlagIconsCredit;
 import 'package:ten_of_a_kind_poker/services/aura_points_service.dart';
 import 'package:ten_of_a_kind_poker/services/auth_service.dart';
 import 'package:ten_of_a_kind_poker/services/campaign_progress_service.dart';
@@ -538,6 +540,11 @@ class _AuthScreenState extends State<AuthScreen> {
                   const Text(
                     'The Author would like to stay anonymous.',
                     style: TextStyle(color: Colors.white70),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    kFlagIconsCredit,
+                    style: TextStyle(color: Colors.white54, fontSize: 12),
                   ),
                 ],
               ),

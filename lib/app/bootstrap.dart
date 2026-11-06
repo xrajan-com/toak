@@ -11,6 +11,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:ten_of_a_kind_poker/app/app.dart';
 import 'package:ten_of_a_kind_poker/app/system_ui.dart';
 import 'package:ten_of_a_kind_poker/config/app_build.dart';
+import 'package:ten_of_a_kind_poker/config/third_party_notices.dart';
 import 'package:ten_of_a_kind_poker/core/venue_time.dart';
 import 'package:ten_of_a_kind_poker/firebase_options.dart';
 import 'package:ten_of_a_kind_poker/game/bot/policy_model.dart'
@@ -99,6 +100,7 @@ Future<void> bootstrapApp() async {
   await runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
     _installErrorHandlers();
+    registerThirdPartyNotices();
     try {
       await applyAppSystemUi();
       VenueTime.initialize();

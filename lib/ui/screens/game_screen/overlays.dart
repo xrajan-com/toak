@@ -17,6 +17,7 @@ import 'package:ten_of_a_kind_poker/ui/screens/game_screen/players.dart'
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen/models.dart'
     show truncateNice;
 import 'package:ten_of_a_kind_poker/core/sound_fx.dart';
+import 'package:ten_of_a_kind_poker/config/venues.dart' show kingdomFlagAsset;
 import 'package:ten_of_a_kind_poker/ui/widgets/slash_avatar.dart'
     show DealerAvatarStyle, SlashJacketTone, buildDealerSkinAvatar;
 
@@ -2935,6 +2936,10 @@ List<PlayerBrief> briefsFromSeats(List<Seat> seats,
 String _flagForKingdom(String kingdomRaw) {
   final k = kingdomRaw.toLowerCase().trim();
   if (k.isEmpty) return '';
+  // A current kingdom flies its own flag (lib/config/venues.dart); the table
+  // below covers the older region names some players still carry.
+  final String? kingdomFlag = kingdomFlagAsset(kingdomRaw);
+  if (kingdomFlag != null) return kingdomFlag;
   const flags = {
     'baroda': 'assets/images/flags/baroda.png',
     'hyderabad': 'assets/images/flags/hyderabad.png',

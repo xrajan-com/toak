@@ -86,6 +86,8 @@ flutter:
     - assets/images/flags/international/
     - assets/images/flags/oceania/
     - assets/images/flags/us/
+    # Country flags rendered from flag-icons 7.6.0 (MIT), docs/licenses/.
+    - assets/images/flags/world/
     - assets/images/cards/
     - assets/images/watermarks/
     - assets/images/watermarks/Africa/

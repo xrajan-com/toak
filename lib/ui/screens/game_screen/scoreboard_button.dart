@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'overlays.dart' as go;
 import 'players.dart' show Seat; // Seat{name, chips, startChips, busted, about}
 import 'models.dart' show truncateNice;
+import 'package:ten_of_a_kind_poker/config/venues.dart' show kingdomFlagAsset;
 
 Future<void> showScoreboardSheet(
   BuildContext context,
@@ -59,6 +60,9 @@ Future<void> showScoreboardSheet(
   String flagForKingdom(String kingdomRaw) {
     final k = kingdomRaw.toLowerCase().trim();
     if (k.isEmpty) return '';
+    // A current kingdom flies its own flag (lib/config/venues.dart).
+    final String? kingdomFlag = kingdomFlagAsset(kingdomRaw);
+    if (kingdomFlag != null) return kingdomFlag;
     const flags = {
       // Indian circuit
       'baroda': 'assets/images/flags/baroda.png',
