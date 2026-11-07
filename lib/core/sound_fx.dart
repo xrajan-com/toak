@@ -5,6 +5,7 @@ import 'package:just_audio/just_audio.dart';
 
 import '../config/.env.dart';
 import '../config/assets.dart';
+import '../services/ambience_service.dart';
 import '../services/x_music_service.dart';
 
 /// Playback levels for the table.
@@ -112,6 +113,7 @@ class SoundFx {
     _voiceMuted = value;
     if (value) unawaited(stopAll());
     XMusicService.instance.setMuted(value);
+    AmbienceService.instance.setMuted(value);
   }
 
   void setSoundEffectsMuted(bool value) {
@@ -401,6 +403,8 @@ class SoundFx {
       return;
     }
     await _trimAnnouncerOverlap();
+    // The scene's own sound steps back while the dealer speaks.
+    AmbienceService.instance.duck();
     final AudioPlayer? player = await _ensurePlayer(asset, allowOverlap: true);
     if (player == null) return;
     _activeAnnouncerPlayers[player] = now;

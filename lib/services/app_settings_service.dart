@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:ten_of_a_kind_poker/core/sound_fx.dart';
+import 'package:ten_of_a_kind_poker/services/ambience_service.dart';
 import 'package:ten_of_a_kind_poker/services/x_music_service.dart';
 
 /// User-controlled accessibility and audio preferences.
@@ -14,6 +15,7 @@ import 'package:ten_of_a_kind_poker/services/x_music_service.dart';
 class AppSettingsService extends ChangeNotifier {
   static const String _soundEffectsKey = 'settings.sound_effects.v1';
   static const String _loungeSoundsKey = 'settings.lounge_sounds.v1';
+  static const String _sceneSoundsKey = 'settings.scene_sounds.v1';
   static const String _dealerVoiceKey = 'settings.dealer_voice.v1';
   static const String _dealerVoiceEveryActionKey =
       'settings.dealer_voice_every_action.v1';
@@ -28,6 +30,10 @@ class AppSettingsService extends ChangeNotifier {
   // fold at a full table never stops talking.
   bool _soundEffectsEnabled = true;
   bool _loungeSoundsEnabled = false;
+  // The sound of the scene behind the table (waves, a pub, a stadium) is on
+  // by default: it is quiet, sits well under the cards and chips, and is
+  // what makes the place feel like a place.
+  bool _sceneSoundsEnabled = true;
   bool _dealerVoiceEnabled = true;
   bool _dealerVoiceEveryAction = false;
   bool _reducedMotion = false;
@@ -36,6 +42,7 @@ class AppSettingsService extends ChangeNotifier {
 
   bool get soundEffectsEnabled => _soundEffectsEnabled;
   bool get loungeSoundsEnabled => _loungeSoundsEnabled;
+  bool get sceneSoundsEnabled => _sceneSoundsEnabled;
   bool get dealerVoiceEnabled => _dealerVoiceEnabled;
   bool get dealerVoiceEveryAction => _dealerVoiceEveryAction;
   bool get reducedMotion => _reducedMotion;
@@ -61,6 +68,14 @@ class AppSettingsService extends ChangeNotifier {
     XMusicService.instance.setMuted(!value);
     notifyListeners();
     await _persist(_loungeSoundsKey, value);
+  }
+
+  Future<void> setSceneSoundsEnabled(bool value) async {
+    if (_sceneSoundsEnabled == value) return;
+    _sceneSoundsEnabled = value;
+    AmbienceService.instance.setMuted(!value);
+    notifyListeners();
+    await _persist(_sceneSoundsKey, value);
   }
 
   Future<void> setDealerVoiceEnabled(bool value) async {
@@ -91,6 +106,7 @@ class AppSettingsService extends ChangeNotifier {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       _soundEffectsEnabled = prefs.getBool(_soundEffectsKey) ?? true;
       _loungeSoundsEnabled = prefs.getBool(_loungeSoundsKey) ?? false;
+      _sceneSoundsEnabled = prefs.getBool(_sceneSoundsKey) ?? true;
       _dealerVoiceEnabled = prefs.getBool(_dealerVoiceKey) ?? true;
       _dealerVoiceEveryAction =
           prefs.getBool(_dealerVoiceEveryActionKey) ?? false;
@@ -100,6 +116,7 @@ class AppSettingsService extends ChangeNotifier {
     } finally {
       SoundFx.instance.setSoundEffectsMuted(!_soundEffectsEnabled);
       XMusicService.instance.setMuted(!_loungeSoundsEnabled);
+      AmbienceService.instance.setMuted(!_sceneSoundsEnabled);
       SoundFx.instance.setVoiceMuted(!_dealerVoiceEnabled);
       SoundFx.instance.setVoiceEveryAction(_dealerVoiceEveryAction);
       _loaded = true;

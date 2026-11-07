@@ -41,6 +41,7 @@ import 'package:ten_of_a_kind_poker/services/campaign_progress_service.dart';
 import 'package:ten_of_a_kind_poker/services/poker_bot_learning_service.dart';
 import 'package:ten_of_a_kind_poker/services/profile_service.dart';
 import 'package:ten_of_a_kind_poker/services/x_music_service.dart';
+import 'package:ten_of_a_kind_poker/services/ambience_service.dart';
 import 'package:ten_of_a_kind_poker/ui/theme/colors.dart';
 import 'package:ten_of_a_kind_poker/ui/utils/dealer_avatar_assignment.dart';
 import 'package:ten_of_a_kind_poker/ui/utils/deck_cache.dart';
@@ -48,6 +49,7 @@ import 'package:ten_of_a_kind_poker/ui/utils/rewarded_aup.dart';
 import 'package:ten_of_a_kind_poker/ui/utils/watermark_resolver.dart';
 import 'package:ten_of_a_kind_poker/ui/utils/author_flash_gate.dart';
 import 'package:ten_of_a_kind_poker/config/app_tier.dart';
+import 'package:ten_of_a_kind_poker/config/kingdom_scenes.dart';
 import 'game_screen/renoir_ui.dart' show RenoirSignals;
 import 'package:ten_of_a_kind_poker/game/game_engine.dart' as eng;
 import 'package:ten_of_a_kind_poker/game/models.dart' as game_models
@@ -613,6 +615,13 @@ class _GameScreenState extends State<GameScreen>
   // At a title match, the player holding the kingdom's crown
   // (lib/config/story.dart, docs/STORY.md).
   String? _titleHolderName;
+
+  // The kingdom scene behind this game's table, picked once per game
+  // (lib/config/kingdom_scenes.dart). Null keeps the fort at dusk.
+  late final KingdomScene? _scene = pickKingdomScene(
+    (widget.venue?.name ?? '').toString(),
+    titleMatch: widget.campaignMainEvent,
+  );
 
   // Guided first game (game_screen/first_game_tips.dart).
   late final bool _coachTipsActive = FirstGameTips.instance.pending;
@@ -1956,6 +1965,9 @@ class _GameScreenState extends State<GameScreen>
     } else {
       XMusicService.instance.playQuickGameplay();
     }
+    // The sound of the scene behind the table (ambience_service.dart).
+    unawaited(AmbienceService.instance.unlock());
+    unawaited(AmbienceService.instance.play(_scene));
 
     _campaignSpec = () {
       final group = widget.campaignGroup;
@@ -2194,6 +2206,7 @@ class _GameScreenState extends State<GameScreen>
     }
     _disposing = true;
     WidgetsBinding.instance.removeObserver(this);
+    unawaited(AmbienceService.instance.stop());
     _engineTicker?.cancel();
     _stuckKickTimer?.cancel();
     _renoirTimer?.cancel();
@@ -3324,6 +3337,7 @@ class _GameScreenState extends State<GameScreen>
         break;
       case eng.ActionType.allIn:
         unawaited(SoundFx.instance.playPlayerAllIn());
+        unawaited(AmbienceService.instance.react(AmbienceMoment.allIn));
         break;
       case eng.ActionType.bet:
       case eng.ActionType.raise:
@@ -4266,10 +4280,14 @@ class _GameScreenState extends State<GameScreen>
 
     if (!_handWinSoundPlayed) {
       _handWinSoundPlayed = true;
+      final bool heroBigPot = heroWonHand && _isBigPotForHero(payouts);
       unawaited(SoundFx.instance.playChipsToWinner(
         heroWon: heroWonHand,
-        bigPot: heroWonHand && _isBigPotForHero(payouts),
+        bigPot: heroBigPot,
       ));
+      if (heroBigPot) {
+        unawaited(AmbienceService.instance.react(AmbienceMoment.heroBigWin));
+      }
     }
     final overlayDuration = Duration(milliseconds: pace.kOverlayMinShowMs);
     bool overlayShown = false;
@@ -4734,6 +4752,7 @@ class _GameScreenState extends State<GameScreen>
           monumentPath: _monumentPath,
           renoirAsset: renoirNow,
           welcomeTitle: _storyOpeningLine,
+          sceneId: _scene?.id,
           defaultProfileAsset: _defaultProfile,
           cardBackAsset: CardBackTheme.current,
           pot: pot,

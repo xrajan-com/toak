@@ -17,7 +17,7 @@ One rule: **the world is drawn, people are portraits.**
 | Place | What | Code |
 |---|---|---|
 | Welcome screen | The whole fort at dusk, gate open, Renoir standing in it; the premise beside it | `FortGeometry.welcome`, `lib/app/startup/disclaimer_splash.dart` |
-| Behind the table | The parapet above the rail (merlons, torches, the gatehouse behind the dealer with the kingdom's banners, a sentry), the floor under the action bar | `FortGeometry.table`, `GameScreenUI` in `game_screen/ui.dart` |
+| Behind the table | One of the kingdom's seven scenes, picked per game (rules below); the fort parapet only when a game has no kingdom | `KingdomSceneBackdrop` in `lib/ui/art/kingdom_scene.dart`, `pickKingdomScene` in `lib/config/kingdom_scenes.dart`; the fallback is `FortGeometry.table` |
 | On the felt | A fort emblem in the kingdom's style, 18% opacity | `FortEmblem` in `lib/ui/art/fort_emblem.dart` |
 | Card backs | Classic engraved backs in red and blue only | `lib/config/card_backs.dart` |
 | Kingdom flags | Modern national flags (rules below) | `lib/config/venues.dart` |
@@ -72,6 +72,38 @@ Portuguese colonial flag, Philippines the US Virgin Islands', Brazil
 UNASUR's, Russia & Siberia Serbia's, Central Asia Russia's, Canada the 1964
 Pearson pennant, France and Italy old royal flags, Mexico & Central America,
 Andes and Southern Cone US state flags (Texas, Colorado, Virginia).
+
+## Kingdom scenes
+
+Every kingdom has seven scenes of its own, drawn for that place:
+
+| Slot | What | Examples |
+|---|---|---|
+| history | a battle, a siege or a fort from the kingdom's past | Panipat (New Delhi), the Great Wall (China), the Alamo (Southern USA) |
+| animals | the wildlife it is known for | Gir lions (Baroda), pandas (China), kangaroos (Australia) |
+| bar | a bar, pub or casino with local character | an Irish pub, a Macau casino, a tango bar |
+| rock | a concert | a stadium of light sticks (Taiwan), desert blues by the fire (North Africa) |
+| sport | its sport | sumo, buzkashi, a Boxing Day Test |
+| wild (two) | landscapes, festivals, space | the Northern Lights, Día de Muertos, a launch over the steppe |
+
+A game picks one at random, never the scene the player saw last time in that
+kingdom; a title match always gets the history scene. 350 scenes in all.
+
+Only the strip above the rail, the four corners and the floor strip show, so
+each scene is a panorama: something tall behind the dealer, rim-lit
+silhouettes in the two hero zones either side of him, low shapes under the
+HUD pills, backlit pieces in the corners. Light sits behind the silhouettes
+(a bright horizon band), never on them.
+
+Scenes are written as canvas code in `tools/scenes/` (one list of all 350 in
+`kingdoms.js`), recorded to small display lists in `assets/scenes/`, and
+drawn by the app once per game into an image. See `tools/scenes/README.md`.
+Silhouettes of animals, ships and soldiers come from game-icons.net
+(CC BY 3.0, credited in the About box and `docs/licenses/`).
+
+Avoid: working places of worship as the subject of a scene (ancient ruins are
+fine), sites of slavery, real
+people, and anything that reads as a joke about a culture.
 
 ## Fort styles
 

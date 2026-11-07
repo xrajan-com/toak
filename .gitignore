@@ -56,3 +56,7 @@ app.*.map.json
 
 # Flutter web build output copied into the hosting site by tools/deploy_web.sh
 hosting/web/
+
+# Source recordings for the scene sounds (tools/sounds/build_ambience.py);
+# large, and only the built files in assets/sounds/ambience/ ship.
+/tools/sounds/source/

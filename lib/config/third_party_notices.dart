@@ -33,6 +33,25 @@ SOFTWARE.''';
 const String kFlagIconsCredit =
     'Country flags: flag-icons by Panayiotis Lipiridis, MIT licence.';
 
+/// Silhouettes in the kingdom scenes (assets/scenes/icons.json, drawn by
+/// tools/scenes) come from game-icons.net. The author of each icon is listed
+/// in icons.json; a test checks every one of them is credited here.
+const String kGameIconsLicense = '''
+Silhouettes from game-icons.net (https://game-icons.net), used under the
+Creative Commons Attribution 3.0 Unported licence:
+https://creativecommons.org/licenses/by/3.0/
+
+Icons by Delapouite (https://delapouite.com), Lorc
+(https://lorcblog.blogspot.com), Caro Asercion, Skoll and Cathelineau.
+
+In the kingdom scenes the icons are recoloured, scaled and combined with
+other artwork. The scenes are not endorsed by the icon authors.''';
+
+/// One line for the About box.
+const String kGameIconsCredit =
+    'Scene silhouettes: game-icons.net by Delapouite, Lorc, Caro Asercion, '
+    'Skoll and Cathelineau, CC BY 3.0.';
+
 bool _registered = false;
 
 /// Adds the notices above to Flutter's licence registry, once.
@@ -41,5 +60,6 @@ void registerThirdPartyNotices() {
   _registered = true;
   LicenseRegistry.addLicense(() async* {
     yield const LicenseEntryWithLineBreaks(<String>['flag-icons'], kFlagIconsLicense);
+    yield const LicenseEntryWithLineBreaks(<String>['game-icons.net'], kGameIconsLicense);
   });
 }

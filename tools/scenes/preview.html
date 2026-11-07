@@ -1,0 +1,32 @@
+<!doctype html>
+<!-- Preview a kingdom's scenes: open tools/scenes/preview.html?k=Jaipur
+     (add &overlay=path/to/table.png to lay a table screenshot on top). -->
+<html><head><meta charset="utf-8"><title>Kingdom scenes</title>
+<style>body{margin:0;background:#111;color:#ddd;font:14px system-ui}h3{margin:10px 12px 4px;font-weight:600}canvas{display:block;margin:0 12px}</style></head>
+<body>
+<script>window.__NativePath2D = window.Path2D;</script>
+<script src="engine/rec.js"></script><script src="engine/interp.js"></script><script src="engine/icons.js"></script>
+<script>window.Path2D = RecPath;</script>
+<script src="kit.js"></script><script src="kit2.js"></script><script src="t_animals.js"></script><script src="t_animals2.js"></script><script src="t_bars.js"></script><script src="t_bars0.js"></script><script src="t_bars2.js"></script><script src="t_history.js"></script><script src="t_history2.js"></script><script src="t_rock.js"></script><script src="t_rock2.js"></script><script src="t_sport.js"></script><script src="t_sport2.js"></script><script src="t_wild.js"></script><script src="t_wild2.js"></script><script src="t_world1.js"></script><script src="t_world2.js"></script><script src="t_world3.js"></script><script src="kingdoms.js"></script>
+<script>
+const SLOTS = ['history', 'animals', 'bar', 'rock', 'sport', 'wild-1', 'wild-2'];
+const slug = (s) => s.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+function hash(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+const q = new URLSearchParams(location.search), W = +(q.get('w') || 1280), H = +(q.get('h') || 576);
+const names = q.get('k') ? [q.get('k')] : Object.keys(KINGDOMS);
+const overlay = q.get('overlay') ? Object.assign(new Image(), { src: q.get('overlay') }) : null;
+let pending = 0;
+try {
+  for (const k of names) KINGDOMS[k].forEach(([kind, t, title, o], i) => {
+    if (q.has('s') && +q.get('s') !== i) return;
+    const id = slug(k) + '-' + SLOTS[i];
+    const rec = new Rec(); TEMPLATES[t](rec, rng(hash(id)), o || {});
+    const scene = JSON.parse(JSON.stringify(rec.finish({ id })));
+    const h = document.createElement('h3'); h.textContent = `${k} · ${kind} · ${title} (${id}, ${(JSON.stringify(scene).length / 1024).toFixed(0)} KB)`; document.body.appendChild(h);
+    const c = document.createElement('canvas'); c.width = W; c.height = H; document.body.appendChild(c);
+    const ctx = c.getContext('2d'); drawScene(ctx, scene, ICONS, W, H);
+    if (overlay) { pending++; const draw = () => { ctx.drawImage(overlay, 0, 0, W, H); if (--pending === 0) document.title = 'ready'; }; overlay.complete ? draw() : overlay.addEventListener('load', draw); }
+  });
+  if (!pending) document.title = 'ready';
+} catch (e) { document.title = 'ERR:' + e.message; throw e; }
+</script></body></html>

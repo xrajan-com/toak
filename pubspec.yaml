@@ -2,7 +2,7 @@ name: ten_of_a_kind_poker
 description: X Poker, an offline Texas Hold'em game
 publish_to: 'none'
 
-version: 1.2.10+94
+version: 1.2.10+96
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -88,6 +88,7 @@ flutter:
     - assets/images/flags/us/
     # Country flags rendered from flag-icons 7.6.0 (MIT), docs/licenses/.
     - assets/images/flags/world/
+    - assets/scenes/
     - assets/images/cards/
     - assets/images/watermarks/
     - assets/images/watermarks/Africa/
@@ -165,6 +166,8 @@ flutter:
     - assets/sounds/announcer/
     - assets/sounds/announcer/female/
     - assets/sounds/x_music/
+    # The sound of the scene behind the table (lib/services/ambience_service.dart).
+    - assets/sounds/ambience/
     # Dynamic X Lounge library. The four event-named tracks are reserved by
     # the music service; any other supported audio file joins the shuffle.
     - "assets/sounds/x lounge/"

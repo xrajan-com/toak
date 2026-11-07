@@ -13,6 +13,7 @@ import 'package:intl/intl.dart';
 import 'package:ten_of_a_kind_poker/core/sound_fx.dart';
 import 'package:ten_of_a_kind_poker/config/venues.dart' show feltHighlight;
 import 'package:ten_of_a_kind_poker/ui/art/fort_backdrop.dart';
+import 'package:ten_of_a_kind_poker/ui/art/kingdom_scene.dart';
 import 'package:ten_of_a_kind_poker/ui/art/fort_emblem.dart';
 import 'package:ten_of_a_kind_poker/ui/art/fort_style.dart';
 
@@ -389,6 +390,10 @@ class GameScreenUI extends StatefulWidget {
   /// (lib/config/story.dart).
   final String welcomeTitle;
 
+  /// The kingdom scene behind the table (lib/config/kingdom_scenes.dart);
+  /// null falls back to the fort at dusk.
+  final String? sceneId;
+
   // Betting controls
   final double raiseAmount, minRaise, maxRaise;
   final bool canCallOrCheck, canRaise, canAllIn, canFold;
@@ -501,6 +506,7 @@ class GameScreenUI extends StatefulWidget {
     this.deckScale = 1.0,
     this.playIntroWelcome = true,
     this.welcomeTitle = 'Ladies and gentlemen, welcome to the table.',
+    this.sceneId,
     this.onRenoirShuffle,
   });
 
@@ -2114,8 +2120,8 @@ class _GameScreenUIState extends State<GameScreenUI>
                           ).center,
                       ];
 
-                // The fort behind the table, laid out around where the
-                // table lands once lifted and scaled (docs/ART_DIRECTION.md).
+                // Behind the table: the kingdom's scene, or the fort at dusk
+                // laid out around where the table lands (docs/ART_DIRECTION.md).
                 final Rect tableOnScreen = Rect.fromCenter(
                   center: Offset(c.maxWidth / 2, c.maxHeight / 2 + tableLiftPx),
                   width: ui.tableW * ui.tableVisualScale,
@@ -2127,14 +2133,23 @@ class _GameScreenUIState extends State<GameScreenUI>
                 return Stack(
                   children: [
                     Positioned.fill(
-                      child: FortBackdrop(
-                        geometry: FortGeometry.table(
-                          Size(c.maxWidth, c.maxHeight),
-                          table: tableOnScreen,
-                          style: fortStyle,
-                        ),
-                        bannerColors: <Color>[feltHighlight(widget.felt)],
-                      ),
+                      child: widget.sceneId != null
+                          ? KingdomSceneBackdrop(
+                              sceneId: widget.sceneId!,
+                              fallback: const ColoredBox(
+                                color: Color(0xFF07080C),
+                              ),
+                            )
+                          : FortBackdrop(
+                              geometry: FortGeometry.table(
+                                Size(c.maxWidth, c.maxHeight),
+                                table: tableOnScreen,
+                                style: fortStyle,
+                              ),
+                              bannerColors: <Color>[
+                                feltHighlight(widget.felt),
+                              ],
+                            ),
                     ),
                     Center(
                   child: Transform.translate(

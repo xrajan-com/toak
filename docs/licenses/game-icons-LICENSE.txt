@@ -1,0 +1,11 @@
+Silhouettes from game-icons.net (https://game-icons.net,
+https://github.com/game-icons/icons), used under the Creative Commons
+Attribution 3.0 Unported licence:
+https://creativecommons.org/licenses/by/3.0/
+
+Icons by Delapouite (https://delapouite.com), Lorc
+(https://lorcblog.blogspot.com), Caro Asercion, Skoll and Cathelineau.
+The author of each icon the app uses is listed in assets/scenes/icons.json.
+
+In the kingdom scenes the icons are recoloured, scaled and combined with
+other artwork. The scenes are not endorsed by the icon authors.

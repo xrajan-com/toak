@@ -67,6 +67,18 @@ class _AppSettingsSheet extends StatelessWidget {
                     },
                   ),
                   SwitchListTile.adaptive(
+                    key: const ValueKey<String>('settings_scene_sounds'),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                    title: const Text('Scene sounds'),
+                    subtitle: const Text(
+                      'Waves, crowds and weather behind the table',
+                    ),
+                    value: settings.sceneSoundsEnabled,
+                    onChanged: (bool value) {
+                      unawaited(settings.setSceneSoundsEnabled(value));
+                    },
+                  ),
+                  SwitchListTile.adaptive(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                     title: const Text('Dealer voice'),
                     subtitle: const Text('Calls all-ins, like a live dealer'),

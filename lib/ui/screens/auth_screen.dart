@@ -12,7 +12,7 @@ import 'package:provider/provider.dart';
 
 import 'package:ten_of_a_kind_poker/ui/theme/colors.dart';
 import 'package:ten_of_a_kind_poker/config/third_party_notices.dart'
-    show kFlagIconsCredit;
+    show kFlagIconsCredit, kGameIconsCredit;
 import 'package:ten_of_a_kind_poker/services/aura_points_service.dart';
 import 'package:ten_of_a_kind_poker/services/auth_service.dart';
 import 'package:ten_of_a_kind_poker/services/campaign_progress_service.dart';
@@ -544,6 +544,11 @@ class _AuthScreenState extends State<AuthScreen> {
                   const SizedBox(height: 12),
                   const Text(
                     kFlagIconsCredit,
+                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    kGameIconsCredit,
                     style: TextStyle(color: Colors.white54, fontSize: 12),
                   ),
                 ],
