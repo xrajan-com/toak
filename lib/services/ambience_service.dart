@@ -64,7 +64,6 @@ class AmbienceService extends WidgetsBindingObserver {
     'ooh',
     'cheer',
     'toast',
-    'fireworks',
   ];
 
   /// Which reaction, if any, [scene] plays for [moment]; the name of a
@@ -83,8 +82,9 @@ class AmbienceService extends WidgetsBindingObserver {
           case AmbienceBed.pub:
           case AmbienceBed.casino:
             return 'toast';
+          // Not fireworks: the win fireworks bring their own sound.
           case AmbienceBed.festival:
-            return 'fireworks';
+            return 'cheer';
           default:
             return null;
         }

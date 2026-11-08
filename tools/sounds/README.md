@@ -24,3 +24,14 @@ no attribution needed, never to be used for AI training
 To change a sound, edit `BEDS` or `REACTIONS` in the script (a fragment of
 the recording's file name, its level, an ffmpeg filter) and run it again.
 Needs ffmpeg and numpy.
+
+## Win fireworks
+
+    python3 tools/sounds/build_fireworks.py         # rebuild assets/sounds/firework_*.wav
+
+Four booms cut from two recordings in the same bundle (two near shells,
+two across a town), plus a launch thump and a crackle made in code, since
+the recordings hold neither cleanly. Levelled like the table effects, with
+the peak held under -1 dBFS so the booms keep their punch. Played by the
+win fireworks (`lib/ui/screens/game_screen/action_burst.dart`, at most four
+sounds a show, only when the player wins) through `SoundFx.playFirework`.

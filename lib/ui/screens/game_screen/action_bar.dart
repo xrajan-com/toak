@@ -15,6 +15,49 @@ const kRed = AppColors.red;
 const kYellow = Color(0xFFFFD100); // JCB yellow
 const double _kActionBarScale = 0.64;
 const double _kActionBarHeightScale = 0.81;
+// The hero buttons' visible face against the tap target it sits in: about 50
+// design units tall (74 * 0.64 * 0.81 * 1.3), so the four main controls read
+// at a thumb's size on a phone and the bar no longer looks empty. Labels grow
+// with them.
+const double _kActionButtonFaceScale = 1.3;
+const double _kActionButtonLabelScale = 1.25;
+
+/// A hero button's visible face, in the bar's own units (about 50).
+/// GameLayout sizes the whole bar so this face is 32-40 logical pixels tall.
+const double kActionButtonFaceHeight =
+    74 * _kActionBarScale * _kActionBarHeightScale * _kActionButtonFaceScale;
+
+/// The bar's height in its own units, as [ActionBar] lays it out: as usual,
+/// or [raising] (the raise slider open above the buttons, the tallest it
+/// gets). [viewportScale] is how many logical pixels one unit measures; it
+/// matters only where 44 logical pixels of tap target need more than the
+/// usual 70 units. Mirrors [_ActionBarState.build]; a test holds them equal.
+double actionBarHeight({
+  required bool raising,
+  bool compact = false,
+  double viewportScale = 1.0,
+}) {
+  const double scale = _kActionBarScale;
+  final double minHitTarget = max(
+    _kCanonicalMinHitTarget,
+    viewportScale > 0 ? 44.0 / viewportScale : 44.0,
+  );
+  final double baseHeight =
+      (compact ? 76.0 : 90.0) * scale * _kActionBarHeightScale;
+  final double messageHeight = max(baseHeight, _kWinnerInfoPillHeight * scale);
+  final double extraForRaise =
+      raising ? (compact ? 42.0 : 52.0) * scale * _kActionBarHeightScale : 0.0;
+  final double contentHeight = max(baseHeight + extraForRaise, messageHeight);
+  final double baseAreaHeight = contentHeight + 3.2 * scale * 2;
+  final double buttonHeight = max(kActionButtonFaceHeight, minHitTarget);
+  final double framedFaces =
+      (buttonHeight + kActionButtonFaceHeight) / 2 + 19 * scale + 2 * scale;
+  final double areaHeight =
+      max(max(baseAreaHeight, buttonHeight), framedFaces);
+  if (!raising) return areaHeight;
+  // Open, the slider row (25) and its gap (10) sit above the buttons.
+  return max(areaHeight, 35 * scale + buttonHeight);
+}
 const double _kWinnerInfoPillHeight = 96.0;
 // A stable design-space target keeps the entire action cluster proportional
 // across desktop and phone viewports. The scale-aware term below only grows it
@@ -236,11 +279,21 @@ class _ActionBarState extends State<ActionBar> {
         minHeight < messageHeight ? messageHeight : minHeight;
     final double baseActionAreaMinHeight =
         actionAreaContentHeight + (actionFrameReservedInset * 2);
-    final double actionButtonVisualHeight = 74 * scale * _kActionBarHeightScale;
+    final double actionButtonVisualHeight =
+        74 * scale * _kActionBarHeightScale * _kActionButtonFaceScale;
     final double actionButtonHeight =
         max(actionButtonVisualHeight, minHitTarget);
-    final double actionAreaMinHeight =
-        max(baseActionAreaMinHeight, actionButtonHeight);
+    // The buttons sit at the bottom of the bar (level with the side circles),
+    // and the hand-strength guidance line needs its strip above their faces.
+    final double guidanceLabelHeight = 19 * scale;
+    final double framedFacesHeight =
+        (actionButtonHeight + actionButtonVisualHeight) / 2 +
+            guidanceLabelHeight +
+            2 * scale;
+    final double actionAreaMinHeight = max(
+      max(baseActionAreaMinHeight, actionButtonHeight),
+      framedFacesHeight,
+    );
     final double sideButtonSize = actionAreaMinHeight * 0.612;
     final double sideButtonHitSize = max(sideButtonSize, minHitTarget);
     final bool skipReady = widget.canSkipNow;
@@ -332,7 +385,7 @@ class _ActionBarState extends State<ActionBar> {
     final normalCenterFrame = Container(
       key: _kActionAreaFrameKey,
       height: _showRaiseStrip ? null : actionAreaMinHeight,
-      alignment: _showRaiseStrip ? null : Alignment.center,
+      alignment: _showRaiseStrip ? null : Alignment.bottomCenter,
       constraints: _showRaiseStrip
           ? BoxConstraints(minHeight: actionAreaMinHeight)
           : null,
@@ -468,7 +521,7 @@ class _ActionBarState extends State<ActionBar> {
                   (buttonWidth / 2) +
                   (actionGuidanceStyle.slot * (buttonWidth + actionGap));
               final double labelWidth = buttonWidth;
-              final double labelHeight = 19 * scale;
+              final double labelHeight = guidanceLabelHeight;
 
               return Stack(
                 clipBehavior: Clip.none,
@@ -1239,7 +1292,10 @@ class _PillActionButtonState extends State<_PillActionButton> {
 
   @override
   Widget build(BuildContext context) {
-    final double visualHeight = 74 * widget.scale * _kActionBarHeightScale;
+    final double visualHeight = 74 *
+        widget.scale *
+        _kActionBarHeightScale *
+        _kActionButtonFaceScale;
     final double height = max(visualHeight, widget.hitHeight ?? 0);
     final bool neutral = !widget.active;
     final bool emphasized = _hover || _pressed;
@@ -1385,7 +1441,7 @@ class _PillActionButtonState extends State<_PillActionButton> {
 TextStyle _buttonTitleStyle(Color color) => TextStyle(
       color: color,
       fontWeight: FontWeight.w800,
-      fontSize: 17.5 * 1.6 * _kActionBarScale,
+      fontSize: 17.5 * 1.6 * _kActionBarScale * _kActionButtonLabelScale,
       height: 1.0,
       letterSpacing: 0.34 * _kActionBarScale,
     );
@@ -1393,7 +1449,7 @@ TextStyle _buttonTitleStyle(Color color) => TextStyle(
 TextStyle _yellowActionLabelStyle() => TextStyle(
       color: Colors.black,
       fontWeight: FontWeight.w900,
-      fontSize: 20 * 1.6 * _kActionBarScale,
+      fontSize: 20 * 1.6 * _kActionBarScale * _kActionButtonLabelScale,
       letterSpacing: 0.20 * _kActionBarScale,
     );
 

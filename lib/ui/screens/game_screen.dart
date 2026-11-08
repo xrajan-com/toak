@@ -3539,6 +3539,8 @@ class _GameScreenState extends State<GameScreen>
     await go.showHeroFinishOverlay(
       context,
       heroSeat: heroSeat,
+      fireworks:
+          !context.read<AppSettingsService>().reduceMotionFor(context),
       rank: rank,
       totalPlayers: totalPlayers,
       closeCall: closeCall,

@@ -69,7 +69,7 @@ void main() {
     expect(
       AmbienceService.reactionFor(_scene(SceneKind.wild, AmbienceBed.festival),
           AmbienceMoment.heroBigWin),
-      'fireworks',
+      'cheer',
     );
     expect(
       AmbienceService.reactionFor(_scene(SceneKind.animals, AmbienceBed.meadow),

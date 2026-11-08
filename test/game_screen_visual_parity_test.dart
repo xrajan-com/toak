@@ -135,22 +135,47 @@ void main() {
           greaterThanOrEqualTo(2),
           reason: 'the table must not cover normal action controls',
         );
+        expect(
+          (layout.actionBar.top - layout.table.bottom) / layout.scene.height,
+          lessThan(0.055),
+          reason: 'no wide empty band between the table and the controls',
+        );
+        // The controls are sized by the finger, not by the screen: the bar
+        // is a similar physical height everywhere (game_layout.dart).
+        expect(
+          layout.actionBar.height,
+          inInclusiveRange(44.0, 62.0),
+          reason: 'the action bar should be thumb-sized in logical pixels',
+        );
       }
+      expect(
+        phone.actionBar.width / phone.scene.width,
+        greaterThan(0.88),
+        reason: 'on a phone the controls reach toward the bottom corners',
+      );
+      expect(
+        chrome.actionBar.height,
+        lessThan(phone.actionBar.height * 1.35),
+        reason: 'a bigger screen must not blow the controls up with it',
+      );
+      expect(
+        chrome.table.height / chrome.scene.height,
+        greaterThanOrEqualTo(phone.table.height / phone.scene.height),
+        reason: 'room the controls do not need goes to the table',
+      );
 
-      _expectRatioSame(
+      // Seats and cards follow the table, so the scene inside it keeps its
+      // proportions; on a 16:9 web screen the table is a little taller (the
+      // bar is smaller) while seats keep their phone size across the width.
+      _expectRatioClose(
         chrome.card.height / chrome.table.height,
         phone.card.height / phone.table.height,
         label: 'hero card height',
       );
-      _expectRatioSame(
+      _expectRatioClose(
         chrome.heroSeat.height / chrome.table.height,
         phone.heroSeat.height / phone.table.height,
         label: 'hero seat height',
-      );
-      _expectRatioSame(
-        chrome.actionBar.height / chrome.scene.height,
-        phone.actionBar.height / phone.scene.height,
-        label: 'action bar height',
       );
       expect(phone.scene.width, closeTo(712, 0.01));
       expect(phone.scene.height, closeTo(363, 0.01));
@@ -340,15 +365,15 @@ void _expectRectInside(
   );
 }
 
-void _expectRatioSame(
+void _expectRatioClose(
   double first,
   double second, {
   required String label,
 }) {
   expect(
     first,
-    closeTo(second, 0.001),
-    reason: '$label should scale with the table group',
+    closeTo(second, second * 0.08),
+    reason: '$label should stay in proportion with the table',
   );
 }
 

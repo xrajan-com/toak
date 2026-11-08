@@ -177,6 +177,54 @@ void main() {
     expect(leftInset, closeTo(rightInset, 0.01));
   });
 
+  for (final bool compact in <bool>[false, true]) {
+    testWidgets(
+        'actionBarHeight matches the laid-out bar, closed and raising '
+        '(compact: $compact)', (tester) async {
+      await tester.pumpWidget(_wrap(_bar(
+        winnerOverlayVisible: false,
+        compact: compact,
+        canAct: true,
+        minRaiseTo: 200,
+        maxRaiseTo: 1000,
+        sliderTo: 200,
+      )));
+      expect(
+        tester.getSize(find.byType(ActionBar)).height,
+        closeTo(actionBarHeight(raising: false, compact: compact), 0.01),
+      );
+
+      await tester.tap(find.byKey(raiseButtonKey));
+      await tester.pump();
+      expect(find.byType(Slider), findsOneWidget);
+      expect(
+        tester.getSize(find.byType(ActionBar)).height,
+        closeTo(actionBarHeight(raising: true, compact: compact), 0.01),
+      );
+    });
+  }
+
+  testWidgets('hero buttons fill most of the action bar', (tester) async {
+    await tester.pumpWidget(_wrap(_bar(
+      winnerOverlayVisible: false,
+      compact: false,
+      canAct: true,
+    )));
+
+    final Rect frame = tester.getRect(find.byKey(frameKey));
+    for (final Key key in <Key>[
+      allInButtonKey,
+      raiseButtonKey,
+      callButtonKey,
+      yellowButtonKey,
+    ]) {
+      final Rect face = tester.getRect(find.byKey(key));
+      expect(face.height / frame.height, greaterThan(0.62), reason: '$key');
+      expect(face.top, greaterThanOrEqualTo(frame.top), reason: '$key');
+      expect(face.bottom, lessThanOrEqualTo(frame.bottom), reason: '$key');
+    }
+  });
+
   testWidgets('side controls are shorter white circles with black icons',
       (tester) async {
     await tester.pumpWidget(_wrap(_bar(

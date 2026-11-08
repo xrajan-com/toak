@@ -17,6 +17,8 @@ import 'package:ten_of_a_kind_poker/ui/screens/game_screen/players.dart'
 import 'package:ten_of_a_kind_poker/ui/screens/game_screen/models.dart'
     show truncateNice;
 import 'package:ten_of_a_kind_poker/core/sound_fx.dart';
+import 'package:ten_of_a_kind_poker/ui/screens/game_screen/action_burst.dart'
+    show FireworkFinale;
 import 'package:ten_of_a_kind_poker/config/venues.dart' show kingdomFlagAsset;
 import 'package:ten_of_a_kind_poker/ui/widgets/slash_avatar.dart'
     show DealerAvatarStyle, SlashJacketTone, buildDealerSkinAvatar;
@@ -43,6 +45,38 @@ void _showCelebrationBurst(BuildContext context) {
 
   // Only applause; camera flash removed per request.
   unawaited(SoundFx.instance.playApplause());
+}
+
+/// Puts the game-win fireworks finale on screen, between the dimming barrier
+/// and the card of the dialog [dialogCtx] belongs to: the fireworks stay
+/// bright and the card stays readable. Falls back to the top of the overlay.
+OverlayEntry? _insertFireworkFinale(
+  BuildContext dialogCtx, {
+  required VoidCallback onDone,
+}) {
+  final OverlayState? overlay =
+      Navigator.of(dialogCtx, rootNavigator: true).overlay;
+  if (overlay == null) return null;
+  final OverlayEntry entry = OverlayEntry(
+    builder: (_) => FireworkFinale(
+      onDone: onDone,
+      onSound: SoundFx.instance.playFirework,
+    ),
+  );
+  OverlayEntry? barrier;
+  try {
+    final List<OverlayEntry> routeEntries =
+        ModalRoute.of(dialogCtx)?.overlayEntries ?? const <OverlayEntry>[];
+    if (routeEntries.length >= 2 && routeEntries.first.mounted) {
+      barrier = routeEntries.first;
+    }
+  } catch (_) {}
+  if (barrier != null) {
+    overlay.insert(entry, above: barrier);
+  } else {
+    overlay.insert(entry);
+  }
+  return entry;
 }
 
 /// Stores the most recent hand-winner snapshot so the Info button can recall it.
@@ -666,6 +700,9 @@ Future<void> showHeroFinishOverlay(
   Future<void> Function()? onShareHand,
   String? shareWinLabel,
   Future<void> Function()? onShareWin,
+  // Winning the game plays the fireworks finale; false when motion is
+  // reduced.
+  bool fireworks = true,
 }) async {
   final bool podiumFinish = rank > 0 && rank <= 3;
   final bool champion = rank == 1;
@@ -715,12 +752,27 @@ Future<void> showHeroFinishOverlay(
     });
   }
 
+  OverlayEntry? finaleEntry;
+  bool finaleStarted = false;
+  void endFinale() {
+    final OverlayEntry? entry = finaleEntry;
+    finaleEntry = null;
+    if (entry != null && entry.mounted) entry.remove();
+  }
+
   await showDialog<void>(
     context: context,
     useRootNavigator: true,
     barrierDismissible: false,
     barrierColor: Colors.black.withValues(alpha: 0.76),
     builder: (dialogCtx) {
+      if (champion && fireworks && !finaleStarted) {
+        finaleStarted = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!dialogCtx.mounted) return;
+          finaleEntry = _insertFireworkFinale(dialogCtx, onDone: endFinale);
+        });
+      }
       bool exiting = false;
       bool rewarding = false;
       String? rewardMessage;
@@ -1327,6 +1379,7 @@ Future<void> showHeroFinishOverlay(
     },
   );
   matchEndAdTimer?.cancel();
+  endFinale();
 }
 
 String _ordinalRank(int value) {

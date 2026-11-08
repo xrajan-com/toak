@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
@@ -37,12 +38,25 @@ class SoundMix {
   static const double applause = 0.46;
   static const double welcome = 0.46;
 
+  // Win fireworks. The boom files peak near -1 dBFS (about -24 dBFS RMS), so
+  // a boom lands about level with the chips but hits harder; the distant
+  // bursts and the crackle are quieter files and play nearer full volume.
+  static const double fireworkLaunch = 0.34;
+  static const double fireworkBoom = 0.55;
+  static const double fireworkFar = 0.85;
+  static const double fireworkCrackle = 0.60;
+
   static const double voiceAllIn = 0.33;
   static const double voiceCall = 0.30;
   static const double voiceCheck = 0.38;
   static const double voiceFold = 0.34;
   static const double voiceRaise = 0.27;
 }
+
+/// The sounds of the win fireworks (lib/ui/screens/game_screen/action_burst.dart):
+/// a shell launching, a big shell bursting close, a small one bursting far
+/// off, and glitter or split stars crackling.
+enum FireworkSound { launch, boom, far, crackle }
 
 /// Lightweight helper that manages short poker table sound effects.
 class SoundFx {
@@ -159,6 +173,10 @@ class SoundFx {
       AppAssets.actionTapSound,
       AppAssets.heroTurnNotificationSound,
       AppAssets.applauseSound,
+      AppAssets.fireworkLaunchSound,
+      ...AppAssets.fireworkBoomSounds,
+      ...AppAssets.fireworkFarSounds,
+      AppAssets.fireworkCrackleSound,
       ..._announcerAssets,
     };
     await Future.wait(assets.map(_ensurePlayer));
@@ -318,6 +336,29 @@ class SoundFx {
 
   Future<void> playApplause() => _play(AppAssets.applauseSound,
       volume: SoundMix.applause, allowOverlap: false);
+
+  final math.Random _fireworkRandom = math.Random();
+
+  /// One firework sound, timed by the show. Bursts overlap (shells open close
+  /// together), and each boom picks one of its recordings at random.
+  Future<void> playFirework(FireworkSound sound) {
+    String pick(List<String> assets) =>
+        assets[_fireworkRandom.nextInt(assets.length)];
+    switch (sound) {
+      case FireworkSound.launch:
+        return _play(AppAssets.fireworkLaunchSound,
+            volume: SoundMix.fireworkLaunch);
+      case FireworkSound.boom:
+        return _play(pick(AppAssets.fireworkBoomSounds),
+            volume: SoundMix.fireworkBoom);
+      case FireworkSound.far:
+        return _play(pick(AppAssets.fireworkFarSounds),
+            volume: SoundMix.fireworkFar);
+      case FireworkSound.crackle:
+        return _play(AppAssets.fireworkCrackleSound,
+            volume: SoundMix.fireworkCrackle);
+    }
+  }
 
   Future<void> stopAnnouncer() async {
     for (final String announcerAsset in _announcerAssets) {

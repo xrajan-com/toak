@@ -39,6 +39,19 @@ class AppAssets {
   static const String potIncreaseSound = coinSound;
   static const String cameraSound = 'assets/sounds/camera.wav';
   static const String applauseSound = 'assets/sounds/applause.wav';
+  // Win fireworks, built by tools/sounds/build_fireworks.py: two near booms
+  // and two distant ones, picked at random, plus a launch and a crackle.
+  static const String fireworkLaunchSound = 'assets/sounds/firework_launch.wav';
+  static const List<String> fireworkBoomSounds = <String>[
+    'assets/sounds/firework_boom_1.wav',
+    'assets/sounds/firework_boom_2.wav',
+  ];
+  static const List<String> fireworkFarSounds = <String>[
+    'assets/sounds/firework_far_1.wav',
+    'assets/sounds/firework_far_2.wav',
+  ];
+  static const String fireworkCrackleSound =
+      'assets/sounds/firework_crackle.wav';
   static const String doorKnockSound = 'assets/sounds/door_knock.mp3';
   static const String knock1Sound = 'assets/sounds/knock1.wav';
   static const String renoirFemaleCheckAnnouncer =

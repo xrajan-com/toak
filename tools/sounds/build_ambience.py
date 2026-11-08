@@ -11,7 +11,8 @@ Every bed is a steady 45-second stretch of one or more recordings, mixed to
 mono, levelled to -20 dBFS RMS like the table effects (SoundMix) and saved as
 48 kbps AAC. The app cross-fades the loop seam itself (AmbienceService), so
 the files need no loop points. Reactions are the loudest few seconds of a
-crowd, a horn or fireworks, levelled the same way with a soft tail.
+crowd or a horn, levelled the same way with a soft tail. (The win fireworks
+have their own sounds: build_fireworks.py.)
 
 Needs ffmpeg and numpy. Sources are found by a fragment of their file name.
 """
@@ -59,7 +60,6 @@ REACTIONS = {
     'horn': ('Cinematic Horn Braam, Epic, Cinematic, Dark, Instrument, Huge-32', 5.0, 'start'),
     'cheer': ('Small Club, 50 People, Crowd, Spanish, Cheering and Applause', 5.0, 'loudest'),
     'toast': ('Dinner Party Crowd in Terrace', 4.0, 'loudest'),
-    'fireworks': ('Fireworks_powerful explosions_multiples in a row_near', 4.0, 'loudest'),
     'ooh': ('Feminine League Match 017', 3.0, 'loudest'),
 }
 

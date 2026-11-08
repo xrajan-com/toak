@@ -90,8 +90,28 @@ void main() {
     expect(played, isEmpty);
   });
 
+  test('fireworks play their own files, and nothing when muted', () async {
+    for (final FireworkSound sound in FireworkSound.values) {
+      await fx.playFirework(sound);
+    }
+    expect(played, hasLength(FireworkSound.values.length));
+    expect(played[0], AppAssets.fireworkLaunchSound);
+    expect(AppAssets.fireworkBoomSounds, contains(played[1]));
+    expect(AppAssets.fireworkFarSounds, contains(played[2]));
+    expect(played[3], AppAssets.fireworkCrackleSound);
+
+    played.clear();
+    fx.setSoundEffectsMuted(true);
+    await fx.playFirework(FireworkSound.boom);
+    expect(played, isEmpty);
+  });
+
   test('every table sound file is in the app bundle', () {
     for (final String asset in <String>[
+      AppAssets.fireworkLaunchSound,
+      ...AppAssets.fireworkBoomSounds,
+      ...AppAssets.fireworkFarSounds,
+      AppAssets.fireworkCrackleSound,
       AppAssets.shuffleSound,
       AppAssets.foldSound,
       AppAssets.checkSound,

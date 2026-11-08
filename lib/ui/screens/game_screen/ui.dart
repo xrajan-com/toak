@@ -37,6 +37,8 @@ import 'table.dart'
     show PlayerSafeFeltClipper, WoodType, playerSafeFeltRRect; // wood visuals
 import 'action_bar.dart';
 import 'action_burst.dart';
+import 'game_layout.dart' show GameLayout, ScaledLayout;
+import 'viewport.dart' show GameViewportScale;
 import 'players.dart'
     show
         Seat,
@@ -74,8 +76,6 @@ import '../../../game/events.dart' show EngineEvent;
 /* ------------------------------ Tunables --------------------------------- */
 
 const double _kSeatScale = 0.85;
-const double _kTableScale = 0.94;
-const double _kTableVisualScale = 1.06;
 const double _kSeatMinW = kSeatDiameterPx * 0.7 * _kSeatScale;
 const double _kSeatMinH = kSeatDiameterPx * 0.7 * _kSeatScale;
 // Nudge seats off the wood rail so avatars just kiss the outer edge.
@@ -273,6 +273,9 @@ class PausedResumeOverlay extends StatelessWidget {
 
 /* ------------------------------- Metrics --------------------------------- */
 class _Ui {
+  /// How the canvas is shared between the table and the controls
+  /// (game_layout.dart).
+  final GameLayout layout;
   final double tableW, tableH;
   final double seatMaxW, seatH;
   final double cardW, cardH;
@@ -280,55 +283,48 @@ class _Ui {
   final double tableVisualScale;
   final double tableVerticalShift;
 
-  _Ui(double w, double h)
-      : // The logical viewport adapts to phone/web aspect ratios. A single
-        // visual transform then enlarges the complete table group, including
-        // every rail, seat, card, badge, effect, and dealer offset.
-        tableW = (() {
-          final double adaptiveMargin =
-              (w * 0.012).clamp(10.0, 30.0).toDouble();
-          final double raw = (w - adaptiveMargin * 2) * _kTableScale;
-          final double minWidth = math.min(300.0, w);
-          final double maxWidth = math.max(minWidth, w - adaptiveMargin * 2);
-          return raw.clamp(minWidth, maxWidth).toDouble();
-        })(),
-        tableH = (() {
-          return (h * 0.59).clamp(260.0, 780.0).toDouble();
-        })(),
-        cardW = (() {
-          final double designScale =
-              math.min(w / 1024, h / 576).clamp(0.75, 1.75).toDouble();
-          return (52.8 * designScale).clamp(52.0, 96.0).toDouble();
-        })(),
-        cardH = (() {
-          final double designScale =
-              math.min(w / 1024, h / 576).clamp(0.75, 1.75).toDouble();
-          return (76.0 * designScale).clamp(76.0, 132.0).toDouble();
-        })(),
-        seatH = (() {
-          final double designScale =
-              math.min(w / 1024, h / 576).clamp(0.75, 1.75).toDouble();
-          return kSeatDiameterPx * 0.7 * _kSeatScale * 1.2 * designScale;
-        })(),
-        seatMaxW = (() {
-          final double designScale =
-              math.min(w / 1024, h / 576).clamp(0.75, 1.75).toDouble();
-          final double seatHeight =
-              kSeatDiameterPx * 0.7 * _kSeatScale * 1.2 * designScale;
-          return (seatHeight * 2.12)
-              .clamp(seatHeight * 1.72, seatHeight * 2.18)
-              .toDouble();
-        })(),
-        renoirR = (() {
-          final double designScale =
-              math.min(w / 1024, h / 576).clamp(0.75, 1.75).toDouble();
-          return (32.0 * designScale).clamp(30.0, 54.0).toDouble();
-        })(),
-        tableVisualScale = _kTableVisualScale,
-        tableVerticalShift = (() {
-          final double raw = h * 0.024;
-          return -raw.clamp(12.0, 24.0).toDouble();
-        })();
+  const _Ui._({
+    required this.layout,
+    required this.tableW,
+    required this.tableH,
+    required this.seatMaxW,
+    required this.seatH,
+    required this.cardW,
+    required this.cardH,
+    required this.renoirR,
+    required this.tableVisualScale,
+    required this.tableVerticalShift,
+  });
+
+  /// [viewportScale] is how many logical pixels one canvas unit measures
+  /// ([GameViewportScale]); without it the phone layout is used.
+  factory _Ui(double w, double h, {double? viewportScale}) {
+    final GameLayout layout =
+        GameLayout.resolve(Size(w, h), viewportScale: viewportScale);
+    // A single visual transform enlarges the complete table group, including
+    // every rail, seat, card, badge, effect, and dealer offset. Seats, cards
+    // and the dealer also follow the table's size (contentScale), so the
+    // scene inside a bigger table keeps its proportions.
+    final double designScale =
+        math.min(w / 1024, h / 576).clamp(0.75, 1.75).toDouble() *
+            layout.contentScale;
+    final double seatHeight =
+        kSeatDiameterPx * 0.7 * _kSeatScale * 1.2 * designScale;
+    return _Ui._(
+      layout: layout,
+      tableW: layout.tableWidth,
+      tableH: layout.tableHeight,
+      cardW: (52.8 * designScale).clamp(52.0, 96.0).toDouble(),
+      cardH: (76.0 * designScale).clamp(76.0, 132.0).toDouble(),
+      seatH: seatHeight,
+      seatMaxW: (seatHeight * 2.12)
+          .clamp(seatHeight * 1.72, seatHeight * 2.18)
+          .toDouble(),
+      renoirR: (32.0 * designScale).clamp(30.0, 54.0).toDouble(),
+      tableVisualScale: GameLayout.tableVisualScale,
+      tableVerticalShift: layout.tableVerticalShift,
+    );
+  }
 }
 
 /* ----------------------------- GameScreenUI ------------------------------- */
@@ -842,7 +838,11 @@ class _GameScreenUIState extends State<GameScreenUI>
     _disposeWinChipPops();
 
     final size = MediaQuery.of(context).size;
-    final ui = _Ui(size.width, size.height);
+    final ui = _Ui(
+      size.width,
+      size.height,
+      viewportScale: GameViewportScale.maybeOf(context),
+    );
 
     final winners = snap.winners.where((w) => w.amount > 0).toList();
     if (winners.isEmpty) return;
@@ -943,12 +943,19 @@ class _GameScreenUIState extends State<GameScreenUI>
         widget.seats.where((seat) => !seat.busted && seat.chips > 0).length;
     final double intensity =
         winnerBurstIntensityForRemainingPlayers(remainingPlayers);
+    // A different show each hand: every one of them plays before any repeats.
+    final FireworkShow show = fireworkShowPicker.next();
+    // Heard only when the player won (or shared) the pot; a bot's win is
+    // silent fireworks, as it is only chips moving for the fanfare.
+    final bool heroWon = _winnerCycle.any((e) => e.isHero);
 
     final barRectG = _globalRectForKey(_actionBarKey);
     if (barRectG == null) {
       burst.burstAt(
         Offset(root.size.width / 2, root.size.height - 140),
         intensity: intensity,
+        show: show,
+        sound: heroWon,
       );
       return;
     }
@@ -963,7 +970,12 @@ class _GameScreenUIState extends State<GameScreenUI>
       for (final f in xs)
         root.globalToLocal(Offset(barRectG.left + barRectG.width * f, y)),
     ];
-    burst.burstAtMany(origins, intensity: intensity);
+    burst.burstAtMany(
+      origins,
+      intensity: intensity,
+      show: show,
+      sound: heroWon,
+    );
   }
 
   List<Widget> _buildWinChipPops() {
@@ -2000,7 +2012,11 @@ class _GameScreenUIState extends State<GameScreenUI>
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final ui = _Ui(size.width, size.height);
+    final ui = _Ui(
+      size.width,
+      size.height,
+      viewportScale: GameViewportScale.maybeOf(context),
+    );
 
     final seats = widget.seats;
     final leaderIdx = _leaderIndex(seats, _hiddenSeatIdx, widget.startingStack);
@@ -2417,7 +2433,10 @@ class _GameScreenUIState extends State<GameScreenUI>
           // behind the bar.
           Positioned.fill(
             child: IgnorePointer(
-              child: ActionBurstOverlay(key: _actionBurstKey),
+              child: ActionBurstOverlay(
+                key: _actionBurstKey,
+                onSound: SoundFx.instance.playFirework,
+              ),
             ),
           ),
 
@@ -2429,10 +2448,10 @@ class _GameScreenUIState extends State<GameScreenUI>
               alignment: Alignment.bottomCenter,
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  maxWidth: math.min(
-                    980.0,
-                    MediaQuery.sizeOf(context).width * 0.90,
-                  ),
+                  // Wide enough to reach into the bottom corners on phones;
+                  // narrower where the controls are drawn smaller, so the
+                  // buttons keep their shape (game_layout.dart).
+                  maxWidth: ui.layout.actionBarMaxWidth,
                 ),
                 child: Material(
                   color: Colors.transparent,
@@ -2441,7 +2460,16 @@ class _GameScreenUIState extends State<GameScreenUI>
                     children: [
                       const SizedBox(width: 12),
                       Expanded(
-                        child: ValueListenableBuilder<bool>(
+                        // Drawn by the finger: the whole bar, text and all,
+                        // scaled as one so its buttons stay 32-40 logical
+                        // pixels tall on any screen (game_layout.dart).
+                        child: ScaledLayout(
+                          scale: ui.layout.controlScale,
+                          child: GameViewportScale(
+                            scale: (GameViewportScale.maybeOf(context) ??
+                                    1.0) *
+                                ui.layout.controlScale,
+                            child: ValueListenableBuilder<bool>(
                           valueListenable: ActionGate.enabled,
                           builder: (context, actionsOn, _) {
                             return ValueListenableBuilder<bool>(
@@ -2555,6 +2583,8 @@ class _GameScreenUIState extends State<GameScreenUI>
                               },
                             );
                           },
+                        ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
